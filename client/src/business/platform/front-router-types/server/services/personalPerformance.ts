@@ -36,7 +36,7 @@ export function personalPerformanceDecimal(value: unknown) {
   return `${integer}.${fraction.padEnd(4, "0")}`;
 }
 export const PERSONAL_PERFORMANCE_BASIS =
-  "仅当前已验证业务员工在当前企业创建的人民币订单（crm_sales_orders.createdByUserId=本人，currency=CNY），同时受现行客户/需求真实可见scope限制；所有角色都不得统计其他创建人或其他币种。订单数及含税订单额：status=confirmed，createdAt为北京时间，按所选自然月[start,end)全量SQL聚合，不含cancelled；分页items来自同一SQL快照，分页不会改变全量汇总。实际回款：本人confirmed人民币订单的crm_sales_order_payments中method=bank/cash，按paymentDate落月；不要求订单创建于当月，也不按收款操作人归属。monthlyBookedAmount仅method=monthly的账期登记，绝非现金回款。币种为CRM人民币含税口径，不跨币种换算。未发现可核实销售退款账本，refundAmount=null，不能视为零退款；订单after-sale文本不作为退款现金。";
+  "仅当前已验证业务员工在当前企业创建的人民币订单（crm_sales_orders.createdByUserId=本人，currency=CNY），同时受现行客户/需求真实可见scope限制；所有角色都不得统计其他创建人或其他币种。订单数及订单原金额：status=confirmed，createdAt为北京时间，按所选自然月[start,end)全量SQL聚合，不含cancelled；分页items来自同一SQL快照，分页不会改变全量汇总。实际回款：本人confirmed人民币订单的crm_sales_order_payments中method=bank/cash，按paymentDate落月；不要求订单创建于当月，也不按收款操作人归属。monthlyBookedAmount仅method=monthly的账期登记，绝非现金回款。币种为人民币（按订单原税务口径），含税与未税订单均保留原金额，不作VAT换算，不跨币种换算。未发现可核实销售退款账本，refundAmount=null，不能视为零退款；订单after-sale文本不作为退款现金。";
 export async function summarizePersonalPerformance(
   scope: PersonalPerformanceScope,
   input: { month: string; page?: number; pageSize?: number },
@@ -138,7 +138,7 @@ export async function summarizePersonalPerformance(
         totalAmount: personalPerformanceDecimal(item.totalAmount),
         createdAt: new Date(`${item.createdAt}+08:00`).toISOString(),
         status: "confirmed" as const,
-        currencyLabel: "人民币（含税）" as const,
+        currencyLabel: "人民币（按订单原税务口径）" as const,
       })
     )
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id);
@@ -146,7 +146,7 @@ export async function summarizePersonalPerformance(
     status: "available",
     month: parsed.month,
     currency: "CNY",
-    currencyLabel: "人民币（含税）",
+    currencyLabel: "人民币（按订单原税务口径）",
     timezone: "Asia/Shanghai",
     orderCount: Number(summary.orderCount),
     orderAmount: personalPerformanceDecimal(summary.orderAmount),

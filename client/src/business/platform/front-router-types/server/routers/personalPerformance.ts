@@ -1,8 +1,9 @@
-import { createCrmPermissionProcedure, router } from "../_core/trpc";
+import { router } from "../_core/trpc";
+import { personalSalesReadProcedure } from "./personalSalesRead";
 import { personalPerformanceInputSchema } from "../../../shared/personalPerformance";
 import { summarizePersonalPerformance } from "../services/personalPerformance";
 export const personalPerformanceRouter = router({
-  summary: createCrmPermissionProcedure("sales.business_orders")
+  summary: personalSalesReadProcedure
     .input(personalPerformanceInputSchema)
     .query(({ ctx, input }) =>
       summarizePersonalPerformance(

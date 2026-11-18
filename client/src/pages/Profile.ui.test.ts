@@ -9,17 +9,17 @@ const state = vi.hoisted(() => {
   const user = { id: 101, username: "alice", openId: "local:101", hasNativeAdminAccount: true, loginMethod: "password" as string | null };
   const profile = { username: "alice", displayName: "本人甲", email: "alice@example.test", phone: "13800138000", adminRole: "auditor", phoneBinding: "legacy_unverified" };
   const performance = {
-    status: "available", month: "2026-11", currency: "CNY", currencyLabel: "人民币（含税）", timezone: "Asia/Shanghai",
+    status: "available", month: "2026-11", currency: "CNY", currencyLabel: "人民币（按订单原税务口径）", timezone: "Asia/Shanghai",
     orderCount: 27, orderAmount: "9000.0000", collectedAmount: "3000.0000", monthlyBookedAmount: "6000.0000",
     refundAmount: null, refundStatus: "unavailable", basis: "本人已确认订单按下单月份统计，现金回款按付款日期统计，分页不影响总数。",
-    items: [{ id: 1, orderNumber: "SELF-001", status: "confirmed", totalAmount: "100.0000", createdAt: "2026-11-01T03:00:00Z", currencyLabel: "人民币（含税）" }], total: 27, page: 1, pageSize: 10,
+    items: [{ id: 1, orderNumber: "SELF-001", status: "confirmed", totalAmount: "100.0000", createdAt: "2026-11-01T03:00:00Z", currencyLabel: "人民币（按订单原税务口径）" }], total: 27, page: 1, pageSize: 10,
   };
   return {
     user: user as typeof user | null, profile, performance, authError: null as Error | null,
     refresh: vi.fn(), logout: vi.fn(), navigate: vi.fn(), success: vi.fn(),
     rpc: { profile: { query: vi.fn() }, updateProfile: { mutate: vi.fn() }, changePassword: { mutate: vi.fn() },
       requestPhoneCode: { mutate: vi.fn() }, bindPhone: { mutate: vi.fn() },
-      performance: { query: vi.fn() }, commission: { query: vi.fn() } },
+      businessCompanies: { query: vi.fn() }, performance: { query: vi.fn() }, commission: { query: vi.fn() } },
   };
 });
 vi.mock("@/_core/hooks/useAuth", () => ({ useAuth: () => ({ user: state.user, loading: false, error: state.authError,
@@ -107,8 +107,9 @@ beforeEach(async () => {
   state.rpc.bindPhone.mutate.mockResolvedValue({ ...changed, phone: "13900139000" });
   state.rpc.performance.query.mockImplementation(async (value: { month: string; page: number }) => ({ ...state.performance,
     month: value.month, page: value.page, items: [{ ...state.performance.items[0], orderNumber: `SELF-00${value.page}` }] }));
-  state.rpc.commission.query.mockImplementation(async (value: { month: string }) => ({ status: "unconfigured", month: value.month,
-    amount: null, currency: "CNY", reason: "未配置可核实的提成规则与结算来源" }));
+  state.rpc.businessCompanies.query.mockResolvedValue([{ merchantId: 601, label: "合成测试授权公司" }]);
+  state.rpc.commission.query.mockImplementation(async (value: { month: string }) => ({ status: "unavailable", month: value.month,
+    amount: null, currency: "CNY", reason: "提成来源尚未配置" }));
   client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   container = document.createElement("div");
   document.body.append(container);
@@ -233,7 +234,7 @@ describe("Profile native self-service UI", () => {
     expect(text()).toContain("SELF-001");
     expect(text()).toContain("共 27 笔");
     expect(text()).toContain("尚未配置");
-    expect(state.rpc.commission.query.mock.calls.at(-1)?.[0]).toEqual({ month: input("pc-month")?.value });
+    expect(state.rpc.commission.query.mock.calls.at(-1)?.[0]).toEqual({ month: input("pc-month")?.value, merchantId: 601, page: 1, pageSize: 10 });
     expect(document.querySelectorAll('input[type="month"]')).toHaveLength(1);
     await click("下一页");
     expect(text()).toContain("SELF-002");
@@ -244,12 +245,12 @@ describe("Profile native self-service UI", () => {
     expect(state.rpc.commission.query).toHaveBeenCalledOnce();
     await fill("pc-month", "2026-10");
     await settle();
-    expect(state.rpc.performance.query.mock.calls.at(-1)?.[0]).toEqual({ month: "2026-10", page: 1, pageSize: 10 });
-    expect(state.rpc.commission.query.mock.calls.at(-1)?.[0]).toEqual({ month: "2026-10" });
+    expect(state.rpc.performance.query.mock.calls.at(-1)?.[0]).toEqual({ month: "2026-10", merchantId: 601, page: 1, pageSize: 10 });
+    expect(state.rpc.commission.query.mock.calls.at(-1)?.[0]).toEqual({ month: "2026-10", merchantId: 601, page: 1, pageSize: 10 });
   });
 
   it("shows unavailable performance rather than zeros and unconfigured commission rather than settled zero", async () => {
-    state.rpc.performance.query.mockResolvedValueOnce({ status: "unavailable", reason: "尚未关联有效业务员工" });
+    state.rpc.performance.query.mockImplementationOnce(async (value: { month: string }) => ({ status: "unavailable", month: value.month, reason: "尚未关联有效业务员工" }));
     await click("业绩与提成");
     expect(text()).toContain("尚未关联有效业务员工");
     expect(document.querySelector(".pc-stat-grid")).toBeNull();
@@ -429,9 +430,10 @@ describe("Profile native self-service UI", () => {
     expect(document.querySelector('[aria-label="我的提成"] [role="status"]')).not.toBeNull();
     await act(async () => commission.reject(new Error("提成来源暂不可用")));
     await settle();
-    expect(document.querySelector('[aria-label="我的提成"]')?.textContent).toContain("提成来源暂不可用");
+    expect(document.querySelector('[aria-label="我的提成"]')?.textContent).toContain("提成查询失败");
     expect(document.querySelector('[aria-label="我的业绩"]')?.textContent).toContain("9,000.0000");
-    await click("重试");
+    await act(async () => button("重试", document.querySelector('[aria-label="我的提成"]')!).click());
+    await settle();
     expect(text()).toContain("尚未配置");
     expect(state.rpc.performance.query).toHaveBeenCalledOnce();
     expect(text()).toContain("SELF-001");
@@ -445,7 +447,7 @@ describe("Profile native self-service UI", () => {
     expect(document.querySelector('[aria-label="我的提成"]')?.textContent).toContain("尚未配置");
     await act(async () => performance.reject(new Error("业绩读取失败")));
     await settle();
-    expect(document.querySelector('[aria-label="我的业绩"]')?.textContent).toContain("业绩读取失败");
+    expect(document.querySelector('[aria-label="我的业绩"]')?.textContent).toContain("业绩查询失败");
     expect(document.querySelector('[aria-label="我的提成"]')?.textContent).toContain("尚未配置");
     await click("重试");
     expect(text()).toContain("SELF-001");
@@ -465,7 +467,7 @@ describe("Profile native self-service UI", () => {
     expect(document.querySelectorAll(".pc-results [role='status']")).toHaveLength(2);
     await act(async () => {
       performance.resolve({ ...state.performance, month: "2026-10" });
-      commission.resolve({ status: "unconfigured", month: "2026-10", amount: null, reason: "十月规则尚未配置" });
+      commission.resolve({ status: "unavailable", month: "2026-10", amount: null, reason: "十月规则尚未配置" });
     });
     await settle();
     expect(text()).toContain("十月规则尚未配置");

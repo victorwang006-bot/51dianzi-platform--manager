@@ -17,7 +17,7 @@ export const personalPerformanceInputSchema = z
 const base = {
   month: personalMonthSchema,
   currency: z.literal("CNY"),
-  currencyLabel: z.literal("人民币（含税）"),
+  currencyLabel: z.literal("人民币（按订单原税务口径）"),
   timezone: z.literal("Asia/Shanghai"),
 };
 const amount = z.string().regex(/^\d+\.\d{4}$/);
@@ -29,7 +29,7 @@ export const personalPerformanceOrderSchema = z
     status: z.literal("confirmed"),
     totalAmount: amount,
     createdAt: z.iso.datetime(),
-    currencyLabel: z.literal("人民币（含税）"),
+    currencyLabel: z.literal("人民币（按订单原税务口径）"),
   })
   .strict();
 export const personalPerformanceResultSchema = z.discriminatedUnion("status", [
@@ -55,6 +55,8 @@ export const personalPerformanceResultSchema = z.discriminatedUnion("status", [
       ...base,
       status: z.literal("unavailable"),
       reason: z.string().max(500),
+      errorCategory: z.enum(["identity_scope", "delegation_unavailable", "source_invalid", "query_failed"]).optional(),
+      correlationId: z.uuid().optional(),
     })
     .strict(),
 ]);

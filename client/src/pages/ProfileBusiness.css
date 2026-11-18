@@ -1,0 +1,36 @@
+.personal-center .pc-company-select {
+  min-width: 160px;
+  max-width: min(100%, 360px);
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  font-size: 13px;
+}
+.personal-center .pc-company-select:focus-visible { outline: 2px solid #185fa5; outline-offset: 2px; }
+.personal-center .pc-business-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid #dbeafe;
+  border-radius: 5px;
+  color: #185fa5;
+  background: #eff6ff;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.personal-center .pc-business-status--pending { color: #92400e; border-color: #fde68a; background: #fffbeb; }
+.personal-center .pc-business-note { margin: 0; }
+.personal-center .pc-business-table { min-width: 1040px; }
+.personal-center .pc-business-table td { vertical-align: top; }
+.personal-center .pc-business-table small { display: block; margin-top: 4px; }
+.personal-center .pc-business-summaries { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1023px) {
+  .personal-center .pc-business-summaries { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+  .personal-center .pc-business-summaries { grid-template-columns: minmax(0, 1fr); }
+}

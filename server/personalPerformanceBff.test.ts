@@ -3,6 +3,8 @@ import { MySqlDialect } from "drizzle-orm/mysql-core";
 import type { SQLWrapper } from "drizzle-orm";
 import type { TrpcContext } from "./_core/context";
 let read: (typeof import("./businessRouter"))["readBusinessPersonalPerformance"];
+let commission: (typeof import("./businessRouter"))["readBusinessPersonalCommission"];
+let companies: (typeof import("./businessRouter"))["readPersonalBusinessCompanies"];
 let fenceHeld: boolean;
 let scope: string[];
 let binding: { frontUserId: number; bindingVersion: number } | null;
@@ -83,8 +85,11 @@ beforeEach(async () => {
       return binding;
     }),
     getActiveBusinessMerchantScope: calls,
+    listActiveBusinessMerchantScopes: vi.fn(async () => [{ merchantId: 999883, modulePermissions: scope, scopeVersion: 8 },
+      { merchantId: 999998, modulePermissions: scope, scopeVersion: 8 }]),
     getBusinessWorkbenchMerchantById: vi.fn(async (id: number) => ({
       id,
+      companyName: "虚构已授权公司",
       crmStatus: "enabled",
       registrationRegion: "CN",
       businessLicense: "FICTIONAL-CREDIT-CODE",
@@ -101,6 +106,7 @@ beforeEach(async () => {
   ({ readBusinessPersonalPerformance: read } = await import(
     "./businessRouter"
   ));
+  ({ readBusinessPersonalCommission: commission, readPersonalBusinessCompanies: companies } = await import("./businessRouter"));
 });
 afterEach(() => {
   vi.doUnmock("./db");
@@ -193,4 +199,30 @@ describe("personal performance fixed read-only BFF (fictional IO)", () => {
       expect(platform).not.toHaveBeenCalled();
     }
   );
+  it("commission follows the identical current binding/scope/session fence with a closed readonly method", async () => {
+    await commission(context(), 999883, { month: "2026-12", page: 2, pageSize: 5 });
+    expect(platform).toHaveBeenCalledWith(expect.objectContaining({ method: "personalCommission.summary", staffUserId: 999872,
+      params: { month: "2026-12", page: 2, pageSize: 5 } }));
+    platform.mockClear();
+    for (const revoke of ["scope", "session", "archive", "binding"]) {
+      scope = ["business.orders.read", "business.customers.read"]; nativeVersion = 3; archived = false;
+      binding = { frontUserId: 999872, bindingVersion: 6 };
+      if (revoke === "scope") scope = ["business.orders.read"];
+      if (revoke === "session") nativeVersion = 4;
+      if (revoke === "archive") archived = true;
+      if (revoke === "binding") binding = null;
+      await expect(commission(context(), 999883, { month: "2026-12" })).rejects.toBeTruthy();
+      expect(platform).not.toHaveBeenCalled();
+    }
+  });
+  it("companies lists only already-authorized allowed companies and fresh bindings, without platform commands", async () => {
+    expect(await companies(context())).toEqual([{ merchantId: 999883, label: "虚构已授权公司" }]);
+    scope = ["business.orders.read"];
+    expect(await companies(context())).toEqual([]);
+    binding = null;
+    expect(await companies(context())).toEqual([]);
+    archived = true;
+    await expect(companies(context())).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    expect(platform).not.toHaveBeenCalled();
+  });
 });
