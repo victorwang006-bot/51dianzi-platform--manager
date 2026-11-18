@@ -1,0 +1,102 @@
+[1mdiff --git a/client/src/pages/SearchPage.tsx b/client/src/pages/SearchPage.tsx[m
+[1mindex 03f6bfb..3723a3b 100644[m
+[1m--- a/client/src/pages/SearchPage.tsx[m
+[1m+++ b/client/src/pages/SearchPage.tsx[m
+[36m@@ -27,6 +27,7 @@[m [mimport {[m
+   readPopularSearchAction,[m
+ } from "@/lib/popularSearchAction";[m
+ import ChatActionButton from "@/components/ChatActionButton";[m
+[32m+[m[32mimport SupplierQQContact from "@/components/SupplierQQContact";[m
+ import SupplierProfileLink from "@/components/SupplierProfileLink";[m
+ import { useMaterialExposure } from "@/hooks/useMaterialExposure";[m
+ import WeComServicePopover from "@/components/WeComServicePopover";[m
+[36m@@ -411,6 +412,8 @@[m [minterface ItemRow {[m
+   supplierAvatarCropY?: number;[m
+   supplierId: number | null;[m
+   supplierName: string | null;[m
+[32m+[m[32m  supplierQq?: string | null;[m
+[32m+[m[32m  supplierQqs?: string[];[m
+   enterpriseId?: number | null;[m
+   supplierCompanyId?: number | null;[m
+   /** 供应商是否已通过企业认证 */[m
+[36m@@ -1196,17 +1199,32 @@[m [mexport function ItemCard({[m
+               <div className="search-price-line"><span>单价</span><span className="search-unit-price">¥{formatInventoryUnitPrice(unitPrice)}</span></div>[m
+               <div className="search-price-line search-subtotal-line"><span>小计</span><b>¥{fmt(subtotal)}</b></div>[m
+             </div>[m
+[32m+[m[32m            {item.isSelfOperated !== true && ([m
+[32m+[m[32m              <button className="btn-cart" onClick={() => onAddCart(item, qty)}>[m
+[32m+[m[32m                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">[m
+[32m+[m[32m                  <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />[m
+[32m+[m[32m                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />[m
+[32m+[m[32m                </svg>[m
+[32m+[m[32m                加入购物车[m
+[32m+[m[32m              </button>[m
+[32m+[m[32m            )}[m
+           </>[m
+         )}[m
+       </div>[m
+       <div className="item-action">[m
+[31m-        <InventoryPurchaseActions[m
+[32m+[m[32m        {item.isSelfOperated === true ? <InventoryPurchaseActions[m
+           onChat={() => onChat(item, quantityTouched ? qty : null)}[m
+           onAddCart={() => onAddCart(item, qty)}[m
+           onBuyNow={() => onBuyNow(item, qty)}[m
+           purchasable={!negotiable && !untaxed && canTransact && Number.isSafeInteger(qty) && qty >= moq && qty <= (quantityDisplay.spotQuantity ?? 0)}[m
+           disabledReason={untaxed ? "请通过聊一聊确认含税价格与交货方式" : negotiable ? "请通过聊一聊确认报价" : "请确认起订量与可售数量"}[m
+[31m-        />[m
+[32m+[m[32m        /> : <>[m
+[32m+[m[32m          {!negotiable && !untaxed && canTransact && <></>}[m
+[32m+[m[32m          <div className="search-contact-actions">[m
+[32m+[m[32m            <ChatActionButton fullWidth className="search-primary-chat" onClick={() => onChat(item, quantityTouched ? qty : null)}>聊一聊</ChatActionButton>[m
+[32m+[m[32m            <SupplierQQContact qq={item.supplierQq} qqs={item.supplierQqs} partNumber={item.partNumber} brand={item.brand} />[m
+[32m+[m[32m          </div>[m
+[32m+[m[32m        </>}[m
+       </div>[m
+     </div>[m
+   );[m
+[36m@@ -2609,16 +2627,18 @@[m [mfunction OrdinaryInventorySearchPage() {[m
+                     <span className="gc-price">[m
+                       ¥{formatInventoryUnitPrice(gPrice)}[m
+                     </span>[m
+[31m-                  ) : <span className="gc-price-negotiable">价格面议</span>}[m
+[32m+[m[32m                  ) : item.isSelfOperated === true ? <span className="gc-price-negotiable">价格面议</span> : ([m
+[32m+[m[32m                    <ChatActionButton className="gc-chat" onClick={event => { event.stopPropagation(); handleChat(item, null); }}>聊一聊</ChatActionButton>[m
+[32m+[m[32m                  )}[m
+                   <span className="gc-stock">{gridAvailability || "—"}{item.isSelfOperated === true && Number(gridQuantity.spotQuantity) > 0 && <span className="self-operated-spot">现货</span>}</span>[m
+                 </div>[m
+[31m-                <div onClick={event => event.stopPropagation()}>[m
+[32m+[m[32m                {item.isSelfOperated === true && <div onClick={event => event.stopPropagation()}>[m
+                   <InventoryPurchaseActions purchasable={gridPurchasable}[m
+                     disabledReason={item.taxIncluded === false ? "未税价仅供询价" : "请确认有效售价、起订量、包装倍数和现货数量"}[m
+                     onChat={() => handleChat(item, gridPurchasable ? gridQty : null)}[m
+                     onAddCart={() => handleAddCart(item, gridQty)}[m
+                     onBuyNow={() => handleBuyNow(item, gridQty)} />[m
+[31m-                </div>[m
+[32m+[m[32m                </div>}[m
+               </article>[m
+             );[m
+           })[m
+[36m@@ -3148,16 +3168,16 @@[m [mfunction OrdinaryInventorySearchPage() {[m
+         .supplier-qq-button img{width:22px;height:22px}[m
+         @media(max-width:1100px){.item-card .item-qtycol{display:flex;width:144px;flex-shrink:0}.item-card .item-action{width:136px}}[m
+         @media(max-width:768px){.item-card .item-qtycol{display:flex;width:100%;flex-basis:100%;padding:0;border:0}.item-card .item-action{width:100%}.item-card .search-contact-actions{width:100%}.item-card .search-price-summary{display:flex;flex-direction:row}}[m
+[31m-        .result-grid:has(.inventory-purchase-actions){grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr))}[m
+[32m+[m[32m        .result-grid:has(> .grid-card > .self-operated-badge):not(:has(> .grid-card > :first-child:not(.self-operated-badge))){grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr))}[m
+         .self-operated-filter{display:inline-flex;align-items:center;gap:7px;font-size:13px;white-space:nowrap;cursor:pointer}[m
+         .self-operated-filter input{width:16px;height:16px;margin:0;accent-color:var(--brand-blue,#185FA5)}[m
+         /* Three native purchase actions: same row, no QQ or duplicate cart. */[m
+[31m-        .item-card > .item-action{width:300px;flex-shrink:0;justify-content:center}[m
+[31m-        .item-card .inventory-purchase-actions{width:100%;justify-content:flex-end}[m
+[31m-        .item-card .inventory-purchase-actions > button{width:auto;height:36px;margin:0;flex:0 0 auto}[m
+[31m-        .item-card .inventory-purchase-actions > button[data-chat-action]{height:36px}[m
+[31m-        @media(max-width:1100px){.item-card > .item-action{width:290px}.item-card .inventory-purchase-actions{gap:6px}}[m
+[31m-        @media(max-width:768px){.item-card > .item-action{width:100%;flex-basis:100%;align-items:flex-start}.item-card .inventory-purchase-actions{justify-content:flex-start}}[m
+[32m+[m[32m        .item-card:has(> .self-operated-media) > .item-action{width:300px;flex-shrink:0;justify-content:center}[m
+[32m+[m[32m        .item-card:has(> .self-operated-media) .inventory-purchase-actions{width:100%;justify-content:flex-end}[m
+[32m+[m[32m        .item-card:has(> .self-operated-media) .inventory-purchase-actions > button{width:auto;height:36px;margin:0;flex:0 0 auto}[m
+[32m+[m[32m        .item-card:has(> .self-operated-media) .inventory-purchase-actions > button[data-chat-action]{height:36px}[m
+[32m+[m[32m        @media(max-width:1100px){.item-card:has(> .self-operated-media) > .item-action{width:290px}.item-card:has(> .self-operated-media) .inventory-purchase-actions{gap:6px}}[m
+[32m+[m[32m        @media(max-width:768px){.item-card:has(> .self-operated-media) > .item-action{width:100%;flex-basis:100%;align-items:flex-start}.item-card:has(> .self-operated-media) .inventory-purchase-actions{justify-content:flex-start}}[m
+         /* BEGIN SEARCH MASTER REFERENCE COMPACT STYLES — 仅资料行 */[m
+         .item-card[data-reference-material-id] > .item-action:empty{display:none}[m
+         .item-card[data-reference-material-id] > .item-qtycol{width:auto;flex-basis:auto;padding-right:0;border-right:0}[m
