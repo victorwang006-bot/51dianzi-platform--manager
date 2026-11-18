@@ -6,7 +6,7 @@ import { BUSINESS_INDUSTRY_CODES, businessIndustryCodeSchema, type BusinessIndus
 import { officialMaterialRecorderAdminAccountId } from "./channelInventoryOriginalActor";
 import { ChannelInventoryError, type ChannelInventoryScope, type SqlDatabase, type SqlResultRow } from "./channelInventory";
 import { resolveTeamInventoryVisibility as visible, TEAM_MATERIAL_FROM as FROM } from "./channelTeamInventoryAccess";
-import { teamMaterialSourceEligibility } from "./channelInventorySource";
+import { teamMaterialSourceReadEligibility, teamMaterialSourceReadProjection } from "./channelInventorySource";
 import { customerReadPolicy, linkedCompany, linkedCompanyReadGate, resolveCustomerSupplyReadPolicy } from "./customerSupplyCompany";
 import { assertCrmCustomerPolicy, crmCustomerPolicyWhere } from "./crmCustomers";
 import { channelInventoryManualReferenceValuesFrom, readChannelInventoryManualReferences } from "./channelInventoryManualReference";
@@ -117,7 +117,7 @@ export function createChannelTeamInventoryService({ getDb }: { getDb: () => Prom
       if (input.customerId !== undefined) {
         const policy = await resolveCustomerSupplyReadPolicy(tx, scope);
         await assertCrmCustomerPolicy({ execute: query => tx.execute(sql`${query.getSQL()} FOR UPDATE`) }, scope, input.customerId, policy);
-        predicates.push(customerTeamInventoryBindingPredicate(scope, input.customerId), teamMaterialSourceEligibility(scope, true), await linkedCompanyReadGate(tx, scope));
+        predicates.push(customerTeamInventoryBindingPredicate(scope, input.customerId), teamMaterialSourceReadEligibility(scope, true), await linkedCompanyReadGate(tx, scope));
         // Count readable confirmed channels before any search/paging filters. An
         // inaccessible source cannot disclose even the existence of its binding.
         bindingCount = Number(rows(await tx.execute(sql`SELECT COUNT(DISTINCT m.channel_id) AS bindingCount ${FROM} WHERE ${all(predicates)} FOR UPDATE`))[0]?.bindingCount ?? 0);
@@ -126,7 +126,7 @@ export function createChannelTeamInventoryService({ getDb }: { getDb: () => Prom
         if (!Number.isSafeInteger(input.channelId) || input.channelId < 1) fail("BAD_REQUEST", "渠道来源无效");
         predicates.push(sql`m.channel_id = ${input.channelId}`);
         if (input.customerId === undefined) {
-          predicates.push(teamMaterialSourceEligibility(scope, true, leader));
+          predicates.push(teamMaterialSourceReadEligibility(scope, true, leader));
           predicates.push(await linkedCompanyReadGate(tx, scope));
         }
         if (input.customerId === undefined && !leader) {
@@ -164,10 +164,10 @@ export function createChannelTeamInventoryService({ getDb }: { getDb: () => Prom
       const total = Number(rows(await tx.execute(sql`SELECT COUNT(*) AS total ${FROM} WHERE ${where} FOR UPDATE`))[0]?.total ?? 0);
       const items = rows(await tx.execute(sql`SELECT m.id, ${materialUploadBatchId} AS uploadBatchId, m.part_number AS partNumber, m.brand, m.qty, m.date_code AS dateCode,
         m.price, m.currency, m.tax_included AS taxIncluded, m.lead_time AS leadTime, m.revision, c.industryCode AS industryCode, c.id AS companyChannelId,
-        CASE WHEN ${teamMaterialSourceEligibility(scope, true)} THEN c.name ELSE NULL END AS authorizedChannelName,
+        CASE WHEN ${teamMaterialSourceReadEligibility(scope, true)} THEN c.name ELSE NULL END AS authorizedChannelName,
         (SELECT COUNT(*) FROM channel_inventory_collaboration_notes cn WHERE cn.enterpriseId = m.enterprise_id AND cn.materialId = m.id) AS noteCount,
         m.updated_at AS updatedAt, m.created_at AS createdAt, (m.responsible_user_id = ${scope.actorUserId}) AS isMine,
-        ${teamMaterialSourceEligibility(scope, true)} AS canViewSource,
+        ${teamMaterialSourceReadEligibility(scope, true)} AS canViewSource,
         ${teamMaterialManagementEligibility(scope, true)} AS canManageMaterial,
         ${scope.officialActor ? officialMaterialRecorderAdminAccountId(true) : sql`NULL`} AS recorderAdminAccountId
         ${FROM} WHERE ${where} ORDER BY ${order} LIMIT ${input.pageSize} OFFSET ${(input.page - 1) * input.pageSize} FOR UPDATE`))
@@ -179,12 +179,12 @@ export function createChannelTeamInventoryService({ getDb }: { getDb: () => Prom
         Object.assign(row, manualReferences.get(Number(row.id)));
         const company = await linkedCompany(tx, scope, Number(row.companyChannelId));
         const management = materialManagementProjection(row, access.write, company);
-        row.canViewSource = management.canEditMaterial;
-        if (company.linked) { row.industryCode = company.customer?.industryCode ?? null; row.canViewSource = bool(row.canViewSource) && company.customer !== null; }
-        row.authorizedChannelName = management.customerSource?.name ?? null;
-        if (input.customerId !== undefined && (!bool(row.canViewSource) || !company.customer || Number(company.customer.id) !== input.customerId)) fail("FORBIDDEN", "客户库存来源权限已变化，请刷新后重试");
-        projected.push({ ...teamMaterialFrom(row, access.write, leader), ...management,
-          company: bool(row.canViewSource) && company.customer ? { id: Number(company.customer.id), name: String(company.customer.name) } : null,
+        const source = teamMaterialSourceReadProjection(row, company);
+        if (company.linked) row.industryCode = company.customer?.industryCode ?? null;
+        row.canViewSource = source.canViewSource;
+        row.authorizedChannelName = source.channelSource?.name ?? null;
+        if (input.customerId !== undefined && (!source.canViewSource || !source.company || source.company.id !== input.customerId)) fail("FORBIDDEN", "客户库存来源权限已变化，请刷新后重试");
+        projected.push({ ...teamMaterialFrom(row, access.write, leader), ...management, ...source,
           ...(publications.get(Number(row.id)) ?? { canPublish: false, publicationStatus: "unpublished" as const }),
           canDelete: access.write && (bool(row.isMine) || leader) && (!company.linked || company.customer !== null), recorderAdminAccountId: row.recorderAdminAccountId == null ? null : Number(row.recorderAdminAccountId), canAddNote: scope.officialActor?.inventoryPermissions ? scope.officialActor.inventoryPermissions.note : true });
       }
@@ -198,14 +198,17 @@ export function createChannelTeamInventoryService({ getDb }: { getDb: () => Prom
       const db = await database();
       return db.transaction(async tx => {
         const { access, leader, predicates } = await visible(tx, scope, { lock: true });
-        if (!access.write || (!scope.officialActor && !leader)) return { canFilterSource: false, items: [] as { id: number; name: string }[] };
-        const selected = rows(await tx.execute(sql`SELECT DISTINCT c.id, ${teamMaterialManagementEligibility(scope, true)} AS canManageMaterial ${FROM}
-          WHERE ${all([...predicates, teamMaterialManagementEligibility(scope, true), await linkedCompanyReadGate(tx, scope)])} ORDER BY c.id ASC FOR UPDATE`));
+        if ((!scope.officialActor && (!access.write || !leader))) return { canFilterSource: false, items: [] as { id: number; name: string }[] };
+        const eligibility = teamMaterialSourceReadEligibility(scope, true);
+        const selected = rows(await tx.execute(sql`SELECT DISTINCT c.id, c.id AS companyChannelId,
+          CASE WHEN ${eligibility} THEN c.name ELSE NULL END AS authorizedChannelName, ${eligibility} AS canViewSource ${FROM}
+          WHERE ${all([...predicates, eligibility, await linkedCompanyReadGate(tx, scope)])} ORDER BY c.id ASC FOR UPDATE`));
         const items: { id: number; name: string }[] = [];
         for (const row of selected) {
           const company = await linkedCompany(tx, scope, Number(row.id));
-          const source = materialManagementProjection(row, access.write, company).customerSource;
-          if (source) items.push({ id: Number(row.id), name: source.name });
+          const projection = teamMaterialSourceReadProjection(row, company);
+          const source = projection.company ?? (projection.customerSourceState === "unlinked" ? projection.channelSource : null);
+          if (source) items.push({ id: Number(row.id), name: projection.customerSourceState === "unlinked" ? `历史渠道：${source.name}（未关联CRM客户）` : source.name });
         }
         items.sort((a, b) => a.name.localeCompare(b.name) || a.id - b.id);
         return { canFilterSource: true, items };

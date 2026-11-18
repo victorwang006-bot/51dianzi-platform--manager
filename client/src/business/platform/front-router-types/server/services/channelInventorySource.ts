@@ -1,12 +1,14 @@
-import { teamMaterialManagementEligibility, materialManagementProjection } from "./channelMaterialManagement";
+import { teamMaterialManagementEligibility } from "./channelMaterialManagement";
 import { sql, type SQL } from "drizzle-orm";
 import { businessFailureOf } from "../../../shared/businessFailure";
 import { officialMaterialCreator } from "./channelInventoryOriginalActor";
 import { TRPCError } from "@trpc/server";
-import { ChannelInventoryError, type ChannelInventoryScope, type SqlDatabase } from "./channelInventory";
+import { ChannelInventoryError, type ChannelInventoryScope, type SqlDatabase, type SqlResultRow } from "./channelInventory";
 import { resolveTeamInventoryVisibility, TEAM_MATERIAL_FROM, teamInventoryAll, teamInventoryRows } from "./channelTeamInventoryAccess";
 import { teamMaterialSourceSchema, type TeamMaterialSourceInput, type TeamMaterialSource } from "../../../shared/channelInventorySource";
 import { linkedCompany, linkedCompanyReadGate } from "./customerSupplyCompany";
+import { officialInventoryPermissionsSchema } from "../../../shared/internalBusinessOfficialInventory";
+import { channelSourceReadEligibility } from "./channelInventoryChannelAccess";
 
 export const SOURCE_FORBIDDEN_MESSAGE = "暂无权限查看";
 /** Correlated to m. Caller MUST first enforce existing row visibility and stocks
@@ -49,6 +51,45 @@ export function teamMaterialSourceEligibility(scope: ChannelInventoryScope, lock
   return teamMaterialManagementEligibility(scope, lock);
 }
 
+/** Read-only capability from the existing HMAC-verified official request context.
+ * Missing/malformed proof cannot widen the old management-based read. The
+ * actor-only business proof is NOT a peer map or creator/write proof: ERP must
+ * find the actual unique active leader of the current assignment's team.
+ * Caller still enforces current stocks read, row visibility and CRM policy.
+ */
+export function teamMaterialSourceReadEligibility(scope: ChannelInventoryScope, lock = false, leaderOnly = false): SQL {
+  const management = teamMaterialManagementEligibility(scope, lock);
+  const actor = scope.officialActor;
+  const proof = officialInventoryPermissionsSchema.shape.channelProfileTeamRead.safeParse(actor?.inventoryPermissions?.channelProfileTeamRead);
+  if (!actor || actor.inventoryPermissions?.read !== true || !Number.isSafeInteger(actor.adminAccountId) || actor.adminAccountId <= 0
+    || !proof.success || !proof.data || !proof.data.ownerUserIds.includes(scope.actorUserId)) return management;
+  const businessLeader = proof.data.businessTeamLeaderRead === true;
+  // Reuse the channel read fence: live assignment, owner/member/account, unique
+  // ERP reader membership and actual leader for the actor-only super proof.
+  return sql`(${management} OR (m.enterprise_id = ${scope.enterpriseId} AND m.data_owner_user_id = ${scope.dataOwnerUserId}
+    AND c.active = 1 AND ${channelSourceReadEligibility(scope, lock, "c", businessLeader || leaderOnly)}))`;
+}
+
+/** Read-side DTO only. Never used by an edit/write resolver. A confirmed link
+ * with denied/missing/invalid CRM data masks ALL sources, without channel fallback.
+ * An authorized historical channel is explicitly unlinked, not a CRM company.
+ */
+export function teamMaterialSourceReadProjection(row: SqlResultRow, company: { linked: boolean; customer: SqlResultRow | null }) {
+  const granted = row.canViewSource === true || row.canViewSource === 1 || row.canViewSource === "1";
+  const customer = company.customer;
+  const validCustomer = customer !== null && Number.isSafeInteger(Number(customer.id)) && Number(customer.id) > 0
+    && typeof customer.name === "string" && customer.name.trim().length > 0;
+  const validChannel = Number.isSafeInteger(Number(row.companyChannelId)) && Number(row.companyChannelId) > 0
+    && typeof row.authorizedChannelName === "string" && row.authorizedChannelName.trim().length > 0;
+  const canViewSource = granted && (company.linked ? validCustomer : validChannel);
+  const confirmed = canViewSource && company.linked ? { id: Number(customer!.id), name: String(customer!.name) } : null;
+  const channelId = Number(row.companyChannelId);
+  const channelSource = canViewSource && Number.isSafeInteger(channelId) && channelId > 0
+    ? { id: channelId, name: confirmed?.name ?? String(row.authorizedChannelName) } : null;
+  return { canViewSource, canViewCustomerSource: canViewSource, company: confirmed, customerSource: confirmed, channelSource,
+    customerSourceState: !canViewSource ? "restricted" as const : company.linked ? "matched" as const : "unlinked" as const };
+}
+
 export function createChannelInventorySourceService({ getDb }: { getDb: () => Promise<SqlDatabase | null> }) {
   return {
     async getTeamMaterialSource(scope: ChannelInventoryScope, raw: TeamMaterialSourceInput): Promise<TeamMaterialSource> {
@@ -65,15 +106,18 @@ export function createChannelInventorySourceService({ getDb }: { getDb: () => Pr
         // Logical read-only transaction. No audit DML or creator backfill.
         return await db.transaction(async tx => {
           const visibility = await resolveTeamInventoryVisibility(tx, scope, { lock: true, materialId: input.materialId });
-          if (!visibility.access.write) throw new ChannelInventoryError("FORBIDDEN", SOURCE_FORBIDDEN_MESSAGE);
-          const found = teamInventoryRows(await tx.execute(sql`SELECT c.id AS companyChannelId, ${teamMaterialManagementEligibility(scope, true)} AS canManageMaterial ${TEAM_MATERIAL_FROM}
-            WHERE ${teamInventoryAll([...visibility.predicates, teamMaterialSourceEligibility(scope, true), await linkedCompanyReadGate(tx, scope)])}
+          const eligibility = teamMaterialSourceReadEligibility(scope, true);
+          const found = teamInventoryRows(await tx.execute(sql`SELECT c.id AS companyChannelId,
+            CASE WHEN ${eligibility} THEN c.name ELSE NULL END AS authorizedChannelName, ${eligibility} AS canViewSource ${TEAM_MATERIAL_FROM}
+            WHERE ${teamInventoryAll([...visibility.predicates, eligibility, await linkedCompanyReadGate(tx, scope)])}
             LIMIT 1 FOR UPDATE`))[0];
           if (!found) throw new ChannelInventoryError("FORBIDDEN", SOURCE_FORBIDDEN_MESSAGE);
           const company = await linkedCompany(tx, scope, Number(found.companyChannelId));
-          const source = materialManagementProjection(found, visibility.access.write, company).customerSource;
-          if (!source) throw new ChannelInventoryError("FORBIDDEN", SOURCE_FORBIDDEN_MESSAGE);
-          return { name: source.name };
+          const source = teamMaterialSourceReadProjection(found, company);
+          if (!source.canViewSource) throw new ChannelInventoryError("FORBIDDEN", SOURCE_FORBIDDEN_MESSAGE);
+          if (source.customerSourceState === "matched" && source.company) return { name: source.company.name };
+          if (source.customerSourceState === "unlinked" && source.channelSource) return { name: `历史渠道：${source.channelSource.name}（未关联CRM客户）` };
+          throw new ChannelInventoryError("FORBIDDEN", SOURCE_FORBIDDEN_MESSAGE);
         });
       } catch (error) {
         if (businessFailureOf(error) && businessFailureOf(error) !== "BUSINESS_RESOURCE_FORBIDDEN") throw error;

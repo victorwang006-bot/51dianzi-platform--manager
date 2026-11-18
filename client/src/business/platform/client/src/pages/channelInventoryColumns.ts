@@ -23,6 +23,9 @@ export type ChannelInventoryMaterialGrant = {
   canEdit?: unknown;
   readOnly?: unknown;
   canViewSource?: unknown;
+  canViewCustomerSource?: unknown;
+  customerSourceState?: unknown;
+  channelSource?: unknown;
   company?: unknown;
 };
 
@@ -33,17 +36,33 @@ export function channelInventoryMaterialEditGranted(row: ChannelInventoryMateria
   return grant === true && row.readOnly === false;
 }
 
-/** The list uses one shared, fail-closed gate for edit and customer visibility.
+/** Existing edit gate stays unchanged. Source-read capability never grants editing.
  * Global/context checks may deny, never grant. The backend owns original actor/team scope. */
 export function channelInventoryMaterialAccess(row: ChannelInventoryMaterialGrant, contextVerified = true): boolean {
   return contextVerified && channelInventoryMaterialEditGranted(row) && row.canViewSource === true;
 }
 
-/** company is the confirmed CRM-customer projection. channelSource is a separate
- * legacy channel and must never substitute. An authorized null is explicitly unlinked. */
+/** New read DTOs have explicit source state; edit/readOnly do not authorize them.
+ * Old DTOs retain the narrower existing gate, never infer an unlinked historical
+ * channel from company=null or from a name alone. Malformed new states deny. */
+export function channelInventoryMaterialSourceAccess(row: ChannelInventoryMaterialGrant, contextVerified = true): boolean {
+  if (!contextVerified || row.canViewSource !== true) return false;
+  if (!Object.prototype.hasOwnProperty.call(row, "customerSourceState")) return channelInventoryMaterialAccess(row, contextVerified);
+  return row.customerSourceState === "unlinked" || (row.customerSourceState === "matched" && row.canViewCustomerSource === true);
+}
+
+/** company is confirmed CRM data. Only explicit authorized unlinked state may
+ * render a historical channel; a matched/restricted source NEVER falls back. */
 export function channelInventorySourceLabel(row: ChannelInventoryMaterialGrant, contextVerified = true): string {
-  if (!channelInventoryMaterialAccess(row, contextVerified)) return "客户不可查看";
-  if (row.company === null) return "未关联客户";
+  if (!channelInventoryMaterialSourceAccess(row, contextVerified)) return "客户不可查看";
+  if (row.customerSourceState === "unlinked") {
+    if (row.company !== null || !row.channelSource || typeof row.channelSource !== "object") return "客户不可查看";
+    const channel = row.channelSource as { id?: unknown; name?: unknown };
+    return typeof channel.id === "number" && Number.isSafeInteger(channel.id) && channel.id > 0
+      && typeof channel.name === "string" && channel.name.trim()
+      ? `历史渠道：${channel.name}（未关联CRM客户）` : "客户不可查看";
+  }
+  if (row.company === null) return Object.prototype.hasOwnProperty.call(row, "customerSourceState") ? "客户不可查看" : "未关联客户";
   if (!row.company || typeof row.company !== "object") return "客户不可查看";
   const customer = row.company as { id?: unknown; name?: unknown };
   return typeof customer.id === "number" && Number.isSafeInteger(customer.id) && customer.id > 0

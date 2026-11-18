@@ -134,8 +134,8 @@ export function ChannelInventorySourcePanel({ materialId, enterpriseId, actorUse
 }
 
 
-/** The list's confirmed CRM customer is distinct from public reference channels.
- * Never call the legacy channel-name API or retain names outside the current row.
+/** The list distinguishes confirmed CRM customers from authorized unlinked
+ * historical channels. Never query or retain names outside the current row.
  * Rendering only the authorized label keeps denied ids/names out of DOM/tooltips. */
 export function ChannelInventoryCustomerSource({ material, contextVerified }: {
   material: ChannelInventoryMaterialGrant;

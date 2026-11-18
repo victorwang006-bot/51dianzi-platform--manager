@@ -1913,7 +1913,7 @@ export default function ChannelInventoryHost() {
                   const updatedAt = channelInventoryUpdatedAt(material.updatedAt);
                   const materialAccess = channelInventoryMaterialAccess(material, columnsContextVerified && canWriteMaterials && sourceContextVerified);
                   const editDisabledReason = !channelInventoryMaterialAccess(material)
-                    ? "只读：仅服务端授权的原始录入员工或管理范围内有效组长可编辑并查看来源客户"
+                    ? "只读：仅服务端授权的原始录入员工或管理范围内有效组长可编辑"
                     : !materialAccess ? "权限上下文未核验或库存写权限不可用"
                     : busy !== null ? "正在处理操作，请稍候" : undefined;
                   return (
@@ -1923,7 +1923,7 @@ export default function ChannelInventoryHost() {
                     <td className="ci-material-part-col">{inventoryView === "flat" ? <ChannelInventoryCopyPartNumber key={presentationScopeKey} partNumber={material.partNumber} resetKey={presentationScopeKey} /> : <ChannelInventoryPartNumber partNumber={material.partNumber} resetKey={presentationScopeKey} />}<AdminNewInformationRowBadge isNew={newInformationRow?.isNew ?? false} /></td>
                     {columnVisible("brand") ? <td className="ci-material-brand-col" title={material.brand}>{material.brand || "—"}</td> : null}
                     {columnVisible("recorder") ? <td className="ci-material-recorder-col admin-cell-primary" title={(material as TeamMaterial & { originalRecorderName?: string | null }).originalRecorderName ?? "待核实"}>{(material as TeamMaterial & { originalRecorderName?: string | null }).originalRecorderName ?? "待核实"}</td> : null}
-                    {columnVisible("source") ? <td className="ci-material-source-col"><ChannelInventoryCustomerSource material={material} contextVerified={materialAccess} /></td> : null}
+                    {columnVisible("source") ? <td className="ci-material-source-col"><ChannelInventoryCustomerSource material={material} contextVerified={columnsContextVerified && sourceContextVerified} /></td> : null}
                     {columnVisible("industry") ? <td className="ci-material-industry-col admin-cell-primary">{getBusinessIndustryLabel(businessIndustryCodeSchema.safeParse(material.industryCode).success ? material.industryCode : null)}</td> : null}
                     {columnVisible("qty") ? <td className="ci-material-qty-col ci-number admin-cell-primary">{material.qty === null ? "待确认" : material.qty.toLocaleString("zh-CN")}</td> : null}
                     {columnVisible("price") ? <td className="ci-material-price-col ci-price admin-cell-primary">{material.price === null ? "面议" : `¥${material.price}`}{material.taxIncluded === true || material.taxIncluded === false ? <small className="ci-subtext admin-cell-secondary">{material.taxIncluded ? "含税" : "未税"}</small> : null}</td> : null}

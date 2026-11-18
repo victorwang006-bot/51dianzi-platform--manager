@@ -69,6 +69,7 @@ beforeEach(() => {
   runtime.scope.frontUser.id = 7; runtime.scope.staffPrincipal = { frontendUserId: 7, enterpriseId: 31 };
   runtime.scope.storageScope = "scope-7-31"; runtime.scope.contextVerification = { state: "verified", identity: "scope-7-31", authorizationVersion: "auth-v1", readVersion: "read-v1" };
   runtime.enterprise = { enterprise: { id: 31 }, currentUserId: 7, permissionKeys: ["inventory.manage"], isOwner: true };
+  runtime.scope.officialInventoryPermissions.write = true;
   runtime.loading = false; runtime.error = false; runtime.inputs = [];
   runtime.rows = [{ id: 1, uploadBatchId: null, revision: 4, partNumber: "LONG-PART-".repeat(20), brand: "TI", qty: 9, dateCode: "  ORIGINAL DC: English / 24+  ", price: "0", taxIncluded: false, leadTime: "现货", industryCode: null,
     updatedAt: "2026-11-10 12:34:56.123", canDelete: true, canEdit: true, readOnly: false, canViewSource: false, isMine: true, noteCount: 0, originalRecorderName: "原负责人" }];
@@ -235,9 +236,9 @@ describe("inventory column preference and geometry", () => {
 });
 
 
-// Customer visibility and edit consume the same backend grants. The confirmed
-// CRM company projection must never fall back to the old channelSource name.
-it("renders only authorized CRM customer names; readonly/absent grants never leak IDs, names or legacy channel guesses", () => {
+// Old DTOs retain their narrower fail-closed gate. New explicit source state is
+// read-only evidence independent of edit; matched CRM never uses channel fallback.
+it("legacy DTO keeps its narrower edit gate and never leaks IDs, names or channel guesses", () => {
   runtime.rows = [
     { ...runtime.rows[0], id: 1, canViewSource: true, company: { id: 71, name: " 服务端授权客户原名 " }, channelSource: { id: 901, name: "LEGACY-CHANNEL" }, channelName: "CHANNEL-GUESS" },
     { ...runtime.rows[0], id: 2, canEdit: false, canViewSource: true, company: { id: 98772, name: "DENIED-CUSTOMER" } },
@@ -254,6 +255,27 @@ it("renders only authorized CRM customer names; readonly/absent grants never lea
   expect(document.querySelector(".ci-source-link, .ci-source-dialog")).toBeNull();
   expect(runtime.inputs.at(-1)?.customerId).toBeUndefined();
   assertAligned();
+});
+
+it("Host renders source-only history and confirmed CRM without stock-write, while editing stays disabled", () => {
+  runtime.scope.officialInventoryPermissions.write = false;
+  const readonly = { ...runtime.rows[0], canEditMaterial: false, canEdit: false, readOnly: true, canDelete: false, canViewSource: true, canViewCustomerSource: true };
+  runtime.rows = [
+    { ...readonly, id: 1, customerSourceState: "unlinked", company: null, channelSource: { id: 901, name: "虚构历史渠道" } },
+    { ...readonly, id: 2, customerSourceState: "matched", company: { id: 701, name: "虚构已确认公司" }, channelSource: { id: 902, name: "PRIVATE-STALE-CHANNEL" } },
+    { ...readonly, id: 3, customerSourceState: "restricted", company: null, channelSource: { id: 903, name: "PRIVATE-DENIED-CHANNEL" } },
+    { ...readonly, id: 4, customerSourceState: "matched", company: null, channelSource: { id: 904, name: "PRIVATE-FALLBACK" } },
+  ];
+  renderHost();
+  expect([...document.querySelectorAll("tbody .ci-material-source-col")].map(cell => cell.textContent)).toEqual([
+    "历史渠道：虚构历史渠道（未关联CRM客户）", "虚构已确认公司", "客户不可查看", "客户不可查看",
+  ]);
+  expect([...document.querySelectorAll<HTMLButtonElement>(".ci-edit-entry")].every(button => button.disabled)).toBe(true);
+  expect(document.body.innerHTML).not.toMatch(/PRIVATE-|90[1234]|701/);
+  runtime.scope.contextVerification.state = "revalidating"; renderHost();
+  expect(document.body.innerHTML).not.toMatch(/虚构历史渠道|虚构已确认公司/);
+  runtime.scope.contextVerification.state = "verified"; runtime.scope.staffPrincipal.enterpriseId = 99; renderHost();
+  expect(document.body.innerHTML).not.toMatch(/虚构历史渠道|虚构已确认公司/);
 });
 
 it("hides/restores source in matching colgroup/header/body order without overwriting any other saved columns", () => {
