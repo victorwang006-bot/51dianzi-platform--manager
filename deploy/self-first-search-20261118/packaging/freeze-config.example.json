@@ -1,0 +1,44 @@
+{
+  "phase": "prepared-not-frozen",
+  "approvedSourceFreeze": false,
+  "parentVerifiedInputs": false,
+  "sourceHead": "8c3346153970e68e3c7fb1ad1e5114c118f491ce",
+  "resultEntry": "/home/ubuntu/work/sales-20261117/platform/client/src/components/OfficialMallSearchResults.tsx",
+  "sourceFiles": {
+    "/home/ubuntu/work/sales-20261117/platform/client/src/pages/SearchPage.tsx": "FROZEN_SHA256_REQUIRED",
+    "/home/ubuntu/work/sales-20261117/platform/client/src/components/OfficialMallPublicCatalog.tsx": "FROZEN_SHA256_REQUIRED",
+    "/home/ubuntu/work/sales-20261117/platform/client/src/components/OfficialMallSearchResults.tsx": "FROZEN_SHA256_REQUIRED"
+  },
+  "inputs": {
+    "html": {
+      "local": "/home/ubuntu/work/self-first-20261118/live/index.before.html",
+      "url": "/index.html",
+      "sha256": "0049007af40c68a899dafec774526c6acb6f8f0d19b1303551ded2e9d85ef4ff"
+    },
+    "search": {
+      "local": "/home/ubuntu/work/self-first-20261118/live/search.before.js",
+      "url": "/assets/SearchPage-official-directory-entry-8980f7b88d3a1baac60590bf789d04ff5c54ab9ed8a8454f0f69a48c66367cd6.js",
+      "sha256": "8980f7b88d3a1baac60590bf789d04ff5c54ab9ed8a8454f0f69a48c66367cd6"
+    },
+    "catalog": {
+      "local": "PARENT_FRESH_CAPTURE_CATALOG_ABSOLUTE_PATH",
+      "url": "/assets/OfficialMall-public-native-v10-0950ab04107ec94e.js",
+      "sha256": "0950ab04107ec94e76a59107032a5faa7072f0cbda33fb37911c4225171c99db"
+    },
+    "root": {
+      "local": "PARENT_FRESH_CAPTURE_ROOT_ABSOLUTE_PATH",
+      "url": "/assets/main-nav-without-self-1e7f3c8fd3e382b0.js",
+      "sha256": "1e7f3c8fd3e382b03a7210fef485d34e5eae5199f4a525c3a7fa1c7f921e20f8"
+    },
+    "ui": {
+      "local": "PARENT_FRESH_CAPTURE_UI_ABSOLUTE_PATH",
+      "url": "/assets/SelfOperatedMall-ui-v7-ef99355486670c45.js",
+      "sha256": "ef99355486670c458862b844dfecb3bd5158bbe33209e1bf364c7d935ba63183"
+    },
+    "merchantCSS": {
+      "local": "PARENT_FRESH_CAPTURE_MERCHANT_CSS_ABSOLUTE_PATH",
+      "url": "/assets/SearchPage-merchant-scope-0629f82af4c80583.css",
+      "sha256": "0629f82af4c805834baf68a9ce183dc20e42d9c96f88d3d913395d15efd8da47"
+    }
+  }
+}
