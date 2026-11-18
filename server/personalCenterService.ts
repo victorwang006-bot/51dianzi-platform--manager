@@ -11,7 +11,12 @@ import {
   getBusinessWorkbenchMerchantIds,
   requireBusinessAdminAccount,
 } from "./businessAccess";
-import { readBusinessPersonalPerformance } from "./businessRouter";
+import { readBusinessPersonalPerformance, readBusinessPersonalCommission, readPersonalBusinessCompanies } from "./businessRouter";
+import { PlatformBusinessPublicError, PlatformBusinessServiceError } from "./platformBusinessApi";
+import {
+  personalCommissionResultSchema, PERSONAL_COMMISSION_PAYOUT_REASON,
+  type PersonalCommissionResult, type PersonalReadErrorCategory,
+} from "../shared/personalCommission";
 import {
   personalPerformanceResultSchema,
   type PersonalPerformanceResult,
@@ -422,6 +427,30 @@ export function createPersonalCenterService(
 }
 export const personalCenterService = createPersonalCenterService();
 
+function personalReadCategory(error: unknown): PersonalReadErrorCategory {
+  if (error instanceof TRPCError || error instanceof PlatformBusinessPublicError) {
+    if (["UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND", "PRECONDITION_FAILED"].includes(error.code)) return "identity_scope";
+  }
+  if (error instanceof PlatformBusinessServiceError) {
+    return ["PARSE", "INVALID_RESPONSE"].includes(error.kind) ? "source_invalid" : "delegation_unavailable";
+  }
+  if (error instanceof PlatformBusinessPublicError) return "delegation_unavailable";
+  return "query_failed";
+}
+function personalReadFailure(method: string, category: PersonalReadErrorCategory, correlationId: string) {
+  // No exception message, stack, SQL, profile, merchant identifier, or transport secret.
+  console.warn("[personalRead] unavailable", { method, category, correlationId });
+}
+const personalReadReason: Record<PersonalReadErrorCategory, string> = {
+  identity_scope: "当前员工绑定、公司读取范围或登录状态不可用，请核对已有授权",
+  delegation_unavailable: "个人统计读取通道暂不可用，请稍后重试",
+  source_invalid: "个人统计来源或分页口径无法核实，暂不可用",
+  query_failed: "个人统计查询暂不可用，请稍后重试",
+};
+export async function getPersonalBusinessCompanies(ctx: TrpcContext) {
+  return readPersonalBusinessCompanies(ctx);
+}
+
 export async function getPersonalPerformance(
   ctx: TrpcContext,
   input: {
@@ -432,14 +461,12 @@ export async function getPersonalPerformance(
   }
 ): Promise<PersonalPerformanceResult> {
   const account = requireBusinessAdminAccount(ctx);
-  const unavailable = (reason: string): PersonalPerformanceResult => ({
-    status: "unavailable",
-    month: input.month,
-    currency: "CNY",
-    currencyLabel: "人民币（含税）",
-    timezone: "Asia/Shanghai",
-    reason,
-  });
+  const correlationId = randomUUID();
+  const unavailable = (reason: string, errorCategory: PersonalReadErrorCategory = "identity_scope"): PersonalPerformanceResult => {
+    personalReadFailure("personalPerformance.summary", errorCategory, correlationId);
+    return { status: "unavailable", month: input.month, currency: "CNY", currencyLabel: "人民币（按订单原税务口径）",
+      timezone: "Asia/Shanghai", reason, errorCategory, correlationId };
+  };
   try {
     if (!(await db.getActiveBusinessStaffBinding(account.id)))
       return unavailable("尚未绑定有效的业务员工主体，无法读取本人业绩");
@@ -464,7 +491,11 @@ export async function getPersonalPerformance(
     });
     const parsed = personalPerformanceResultSchema.safeParse(result);
     if (!parsed.success || parsed.data.month !== input.month)
-      return unavailable("业绩来源返回口径无法核实，暂不可用");
+      return unavailable("业绩来源返回口径无法核实，暂不可用", "source_invalid");
+    if (parsed.data.status === "unavailable") {
+      const category = parsed.data.errorCategory ?? "source_invalid";
+      return unavailable(personalReadReason[category], category);
+    }
     if (
       parsed.data.status === "available" &&
       (parsed.data.page !== (input.page ?? 1) ||
@@ -472,11 +503,42 @@ export async function getPersonalPerformance(
         parsed.data.total !== parsed.data.orderCount ||
         parsed.data.items.length > parsed.data.pageSize)
     )
-      return unavailable("业绩分页返回范围无法核实，暂不可用");
+      return unavailable("业绩分页返回范围无法核实，暂不可用", "source_invalid");
     return parsed.data;
-  } catch {
-    return unavailable(
-      "本人业务业绩暂不可用，请确认当前业务绑定、销售权限及服务配置"
-    );
+  } catch (error) {
+    const category = personalReadCategory(error);
+    return unavailable(personalReadReason[category], category);
+  }
+}
+
+export async function getPersonalCommission(ctx: TrpcContext,
+  input: { month: string; merchantId?: number; page?: number; pageSize?: number }): Promise<PersonalCommissionResult> {
+  const account = requireBusinessAdminAccount(ctx), correlationId = randomUUID();
+  const unavailable = (category: PersonalReadErrorCategory): PersonalCommissionResult => {
+    personalReadFailure("personalCommission.summary", category, correlationId);
+    return { status: "unavailable", month: input.month, currency: "CNY", currencyLabel: "人民币（按订单原税务口径）",
+      timezone: "Asia/Shanghai", amount: null, payoutStatus: "unavailable", payoutReason: PERSONAL_COMMISSION_PAYOUT_REASON,
+      refundAmount: null, refundStatus: "unavailable", reason: personalReadReason[category], errorCategory: category, correlationId };
+  };
+  try {
+    if (!(await db.getActiveBusinessStaffBinding(account.id))) return unavailable("identity_scope");
+    const allowed = getBusinessWorkbenchMerchantIds();
+    const scopes = (await db.listActiveBusinessMerchantScopes(account.id)).filter(scope => allowed.includes(scope.merchantId) &&
+      businessScopeAllows(scope, "orders", "read") && businessScopeAllows(scope, "customers", "read"));
+    const merchantId = input.merchantId ?? (scopes.length === 1 ? scopes[0].merchantId : undefined);
+    if (!merchantId || !scopes.some(scope => scope.merchantId === merchantId)) return unavailable("identity_scope");
+    const raw = await readBusinessPersonalCommission(ctx, merchantId, { month: input.month, page: input.page, pageSize: input.pageSize });
+    const checked = personalCommissionResultSchema.safeParse(raw);
+    if (!checked.success || checked.data.month !== input.month) return unavailable("source_invalid");
+    const value = checked.data;
+    if (value.status === "unavailable") return unavailable(value.errorCategory);
+    if (value.status === "available" && (value.page !== (input.page ?? 1) || value.pageSize !== (input.pageSize ?? 10) ||
+      value.total !== value.orderCount || value.readyCount + value.pendingCount !== value.orderCount || value.items.length > value.pageSize ||
+      (value.pendingCount > 0 && (value.estimatedAmount !== null || value.earnedAmount !== null)) ||
+      (value.pendingCount === 0 && (value.estimatedAmount !== value.verifiedEstimatedAmount || value.earnedAmount !== value.verifiedEarnedAmount))))
+      return unavailable("source_invalid");
+    return value;
+  } catch (error) {
+    return unavailable(personalReadCategory(error));
   }
 }

@@ -681,7 +681,7 @@ describe("personalCenter credential-only service (fictional DB and SMS)", () => 
     native.binding.mockResolvedValue(null);
     const ctx = { user: { role: "admin" }, adminAccount: session } as any;
     const value = await getPersonalPerformance(ctx, { month: "2026-11" });
-    expect(value.status).toBe("unavailable");
+    expect(value).toMatchObject({ status: "unavailable", currencyLabel: "人民币（按订单原税务口径）" });
     expect(value).not.toHaveProperty("orderCount");
     expect(native.forward).not.toHaveBeenCalled();
   });

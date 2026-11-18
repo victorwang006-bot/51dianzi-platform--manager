@@ -5,9 +5,12 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { requireBusinessAdminAccount } from "./businessAccess";
 import {
   getPersonalPerformance,
+  getPersonalCommission,
+  getPersonalBusinessCompanies,
   personalCenterService,
 } from "./personalCenterService";
 import { personalMonthSchema } from "../client/src/business/platform/shared/personalPerformance";
+import { personalCommissionCenterInputSchema } from "../shared/personalCommission";
 const password = z.string().min(1).max(128);
 const phone = z.string().trim().max(20);
 const personalProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -86,13 +89,8 @@ export const personalCenterRouter = router({
         .strict()
     )
     .query(({ ctx, input }) => getPersonalPerformance(ctx, input)),
+  businessCompanies: personalProcedure.query(({ ctx }) => getPersonalBusinessCompanies(ctx)),
   commission: personalProcedure
-    .input(z.object({ month: personalMonthSchema }).strict())
-    .query(({ input }) => ({
-      status: "unconfigured" as const,
-      month: input.month,
-      amount: null,
-      currency: "CNY" as const,
-      reason: "未配置可核实的提成规则与结算来源，暂不能计算真实提成",
-    })),
+    .input(personalCommissionCenterInputSchema)
+    .query(({ ctx, input }) => getPersonalCommission(ctx, input)),
 });

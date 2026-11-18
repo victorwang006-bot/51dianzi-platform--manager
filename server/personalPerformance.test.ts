@@ -18,7 +18,8 @@ import {
   personalPerformanceDecimal,
   summarizePersonalPerformance,
 } from "../client/src/business/platform/front-router-types/server/services/personalPerformance";
-import { personalPerformanceInputSchema } from "../client/src/business/platform/shared/personalPerformance";
+import { personalPerformanceInputSchema, personalPerformanceResultSchema } from "../client/src/business/platform/shared/personalPerformance";
+import { personalPerformanceResultSchema as centerPerformanceResultSchema } from "../shared/personalPerformance";
 const dialect = new MySqlDialect();
 let owner: boolean, permitted: boolean;
 let summary: Record<string, unknown>;
@@ -98,6 +99,7 @@ describe("real source personalPerformance, no DB connection", () => {
     );
     expect(result).toMatchObject({
       status: "available",
+      currencyLabel: "人民币（按订单原税务口径）",
       orderCount: 1208,
       total: 1208,
       page: 2,
@@ -111,6 +113,10 @@ describe("real source personalPerformance, no DB connection", () => {
     if (result.status !== "available")
       throw new Error("unexpected unavailable");
     expect(result.items).toHaveLength(1);
+    expect(result.items[0].currencyLabel).toBe("人民币（按订单原税务口径）");
+    expect(centerPerformanceResultSchema).toBe(personalPerformanceResultSchema);
+    expect(centerPerformanceResultSchema.safeParse(result).success).toBe(true);
+    expect(centerPerformanceResultSchema.safeParse({ ...result, currencyLabel: "人民币（含税）" }).success).toBe(false);
     expect(result.items[0].totalAmount).toBe("9007199254740993.1234");
     expect(result.items[0].createdAt).toBe("2026-11-14T01:30:00.000Z");
     const aggregate = calls.find(c => c.sql.includes("AS orderCount"))!;

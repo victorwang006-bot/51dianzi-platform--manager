@@ -13,9 +13,8 @@ import { BadgeCheck, KeyRound, Loader2, Phone, RefreshCw, Save } from "lucide-re
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import ProfileBusinessPanel from "./ProfileBusinessPanel";
 import {
-  currentShanghaiMonth,
-  decimalAmount,
   messageOf,
   normalizeMainlandPhone,
   passwordError,
@@ -24,7 +23,6 @@ import {
   personalCenterQueryPrefix,
   presentValue,
   roleLabel,
-  validMonth,
 } from "./profileModel";
 import "./Profile.css";
 
@@ -123,8 +121,6 @@ function ProfileSession({ identity, epoch, refresh, logout, loginMethod, isCurre
   const prefix = useMemo(() => personalCenterQueryPrefix(identity, epoch), [identity, epoch]);
   const live = useRef(true);
   const [tab, setTab] = useState<Tab>("profile");
-  const [month, setMonth] = useState(currentShanghaiMonth);
-  const [page, setPage] = useState(1);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({ displayName: "", email: "" });
   const [password, setPassword] = useState(EMPTY_PASSWORD);
@@ -190,26 +186,6 @@ function ProfileSession({ identity, epoch, refresh, logout, loginMethod, isCurre
       assertCurrentSession();
       return rpc.profile.query(undefined, { signal });
     },
-    retry: false, gcTime: 0, staleTime: 0, placeholderData: undefined,
-    refetchOnWindowFocus: false,
-  });
-  const performanceQuery = useQuery({
-    queryKey: [...prefix, "performance", month, page],
-    queryFn: ({ signal }) => {
-      assertCurrentSession();
-      return rpc.performance.query({ month, page, pageSize: 10 }, { signal });
-    },
-    enabled: tab === "performance" && validMonth(month),
-    retry: false, gcTime: 0, staleTime: 0, placeholderData: undefined,
-    refetchOnWindowFocus: false,
-  });
-  const commissionQuery = useQuery({
-    queryKey: [...prefix, "commission", month],
-    queryFn: ({ signal }) => {
-      assertCurrentSession();
-      return rpc.commission.query({ month }, { signal });
-    },
-    enabled: tab === "performance" && validMonth(month),
     retry: false, gcTime: 0, staleTime: 0, placeholderData: undefined,
     refetchOnWindowFocus: false,
   });
@@ -292,8 +268,6 @@ function ProfileSession({ identity, epoch, refresh, logout, loginMethod, isCurre
   });
   const securityPending = securityInFlight || changePassword.isPending || requestCode.isPending || bindPhone.isPending || relogin;
   const profile = profileQuery.data;
-  const performance = performanceQuery.data;
-  const commission = commissionQuery.data;
 
   function clearSecurityForm() {
     setPassword(EMPTY_PASSWORD);
@@ -457,58 +431,7 @@ function ProfileSession({ identity, epoch, refresh, logout, loginMethod, isCurre
 
       {relogin && <p className="pc-state" role="status">安全设置已更新，正在退出并前往登录页…</p>}
 
-      {tab === "performance" && <div className="pc-filter">
-        <Label htmlFor="pc-month">月份</Label><Input id="pc-month" type="month" value={month}
-          onChange={event => {
-            if (validMonth(event.target.value)) { setMonth(event.target.value); setPage(1); }
-          }} />
-        <span className="pc-muted">北京时间</span>
-      </div>}
-      {tab === "performance" && <section className="pc-results" aria-label="我的业绩">
-        <h2 className="pc-section-title">我的业绩</h2>
-        {performanceQuery.isPending ? <LoadingPanel /> : performanceQuery.isError ?
-        <Failure error={performanceQuery.error} retry={() => { void performanceQuery.refetch(); }} pending={performanceQuery.isFetching} /> :
-        performance?.status === "unavailable" ? <div className="pc-state">{performance.reason || "当前暂无可核实的本人业绩来源。"}</div> :
-        performance?.status === "available" ? <>
-          <div className="pc-stat-grid">
-            <div className="pc-stat"><span>本人订单数</span><strong>{performance.orderCount}</strong><small>笔</small></div>
-            <div className="pc-stat"><span>销售额</span><strong>{decimalAmount(performance.orderAmount)}</strong><small>{performance.currencyLabel}（{performance.currency}）</small></div>
-            <div className="pc-stat"><span>已回款</span><strong>{decimalAmount(performance.collectedAmount)}</strong><small>{performance.currencyLabel}（{performance.currency}）</small></div>
-          </div>
-          <Card className="pc-card"><CardHeader className="pc-card-header"><CardTitle>本人订单明细</CardTitle>
-            <span className="pc-muted">{performance.currencyLabel}（{performance.currency}）</span>
-          </CardHeader>
-            <div className="pc-table-scroll"><table className="pc-table">
-              <thead><tr><th>订单编号</th><th>下单时间</th><th className="pc-center">状态</th><th className="pc-numeric">销售金额</th></tr></thead>
-              <tbody>{performance.items.length ? performance.items.map(order => <tr key={order.id}>
-                <td>{order.orderNumber}</td>
-                <td>{new Intl.DateTimeFormat("zh-CN", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(order.createdAt))}</td>
-                <td className="pc-center">已确认</td><td className="pc-numeric">{decimalAmount(order.totalAmount)}</td>
-              </tr>) : <tr><td colSpan={4} className="pc-center">该月暂无本人已确认订单。</td></tr>}</tbody>
-            </table></div>
-            <div className="pc-pagination">
-              <span>共 {performance.total} 笔 · 第 {performance.page} / {Math.max(1, Math.ceil(performance.total / performance.pageSize))} 页</span>
-              <Button size="sm" variant="outline" disabled={performance.page <= 1 || performanceQuery.isFetching}
-                onClick={() => setPage(value => Math.max(1, value - 1))}>上一页</Button>
-              <Button size="sm" variant="outline" disabled={performance.page * performance.pageSize >= performance.total || performanceQuery.isFetching}
-                onClick={() => setPage(value => value + 1)}>下一页</Button>
-            </div>
-          </Card>
-          <details className="pc-basis"><summary>统计口径与不可用数据</summary>
-            <p>{performance.basis}</p>
-            <p>账期登记：{decimalAmount(performance.monthlyBookedAmount)} {performance.currency}（不计入现金回款）</p>
-            <p>退款：暂无可核实账本，不以0代替。</p>
-          </details>
-        </> : <div className="pc-state">暂无可核实的业绩数据。</div>}
-      </section>}
-      {tab === "performance" && <section className="pc-results" aria-label="我的提成">
-        <h2 className="pc-section-title">我的提成</h2>
-        {commissionQuery.isPending ? <LoadingPanel /> : commissionQuery.isError ?
-        <Failure error={commissionQuery.error} retry={() => { void commissionQuery.refetch(); }} pending={commissionQuery.isFetching} /> :
-        <Card className="pc-card"><CardHeader className="pc-card-header"><CardTitle>尚未配置</CardTitle></CardHeader>
-          <CardContent className="pc-card-content"><p className="pc-muted">{commission?.reason || "尚未配置可核实的个人提成规则与结算来源。"}</p></CardContent>
-        </Card>}
-      </section>}
+      {tab === "performance" && <ProfileBusinessPanel prefix={prefix} isCurrent={currentSession} />}
     </div>
 
     <Dialog open={dialog !== null} onOpenChange={open => { if (!open) closeSecurity(); }}>

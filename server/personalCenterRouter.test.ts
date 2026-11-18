@@ -7,10 +7,14 @@ const service = vi.hoisted(() => ({
   requestPhoneCode: vi.fn(),
   bindPhone: vi.fn(),
   performance: vi.fn(),
+  commission: vi.fn(),
+  businessCompanies: vi.fn(),
 }));
 vi.mock("./personalCenterService", () => ({
   personalCenterService: service,
   getPersonalPerformance: service.performance,
+  getPersonalCommission: service.commission,
+  getPersonalBusinessCompanies: service.businessCompanies,
 }));
 import { personalCenterRouter } from "./personalCenterRouter";
 const ctx = (role = "operation") =>
@@ -78,6 +82,7 @@ describe("personalCenter own-account router", () => {
         }),
       () => caller.performance({ month: "2026-11" }),
       () => caller.commission({ month: "2026-11" }),
+      () => caller.businessCompanies(),
     ];
     for (const kind of ["anonymous", "oauth", "disabled"]) {
       const context = ctx();
@@ -151,15 +156,20 @@ describe("personalCenter own-account router", () => {
     ).rejects.toThrow();
     expect(context.res.clearCookie).not.toHaveBeenCalled();
   });
-  it("commission is explicitly unconfigured with null amount, never inferred percentage", async () => {
+  it("commission uses fixed summary with defaults and no payout claim", async () => {
+    service.commission.mockResolvedValueOnce({ status: "available", month: "2026-11", amount: null, payoutStatus: "unavailable" });
     const result = await personalCenterRouter
       .createCaller(ctx())
       .commission({ month: "2026-11" });
-    expect(result).toMatchObject({
-      status: "unconfigured",
-      month: "2026-11",
-      amount: null,
-      currency: "CNY",
-    });
+    expect(result).toMatchObject({ status: "available", month: "2026-11", amount: null, payoutStatus: "unavailable" });
+    expect(service.commission).toHaveBeenCalledWith(expect.anything(), { month: "2026-11", page: 1, pageSize: 10 });
+    for (const extra of [{ actorUserId: 999999 }, { ownerUserId: 999999 }, { policyVersion: "new" }, { amount: "12" }, { page: 0 }, { pageSize: 51 }])
+      await expect(personalCenterRouter.createCaller(ctx()).commission({ month: "2026-11", ...extra } as any)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+  it("businessCompanies is a query for existing choices, never a grant mutation", async () => {
+    service.businessCompanies.mockResolvedValueOnce([{ merchantId: 990822, label: "虚构公司" }]);
+    expect(await personalCenterRouter.createCaller(ctx()).businessCompanies()).toEqual([{ merchantId: 990822, label: "虚构公司" }]);
+    expect(personalCenterRouter._def.procedures.businessCompanies._def.type).toBe("query");
+    expect(personalCenterRouter._def.procedures.commission._def.type).toBe("query");
   });
 });

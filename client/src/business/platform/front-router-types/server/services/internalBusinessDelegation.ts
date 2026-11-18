@@ -13,6 +13,9 @@ import { inboundRouter } from "../routers/inbound";
 import { customerRouter } from "../routers/customer";
 import { customerDemandRouter } from "../routers/customerDemand";
 import { crmSalesOrderRouter } from "../routers/crmSalesOrder";
+import { personalPerformanceRouter } from "../routers/personalPerformance";
+import { personalCommissionRouter } from "../routers/personalCommission";
+import { requireInternalPersonalSalesReadPrincipal } from "./personalSalesRead";
 import { purchaseOrderRouter } from "../routers/purchaseOrder";
 import { enterpriseRouter } from "../routers/enterprise";
 import { companyRouter } from "../routers/company";
@@ -96,6 +99,7 @@ export const BUSINESS_METHOD_IDS = [
   "crmSalesOrder.companyStockCandidates", "crmSalesOrder.previewCompanyStock",
   "crmSalesOrder.createCompanyStock", "crmSalesOrder.allocateCompanyStock",
   "crmSalesOrder.shipCompanyStock", "crmSalesOrder.updateSalesExpenses",
+  "personalPerformance.summary", "personalCommission.summary",
   "purchaseOrder.list", "purchaseOrder.get", "purchaseOrder.acceptedQuoteOptions", "purchaseOrder.inboundCandidates",
   "purchaseOrder.create", "purchaseOrder.updatePayment", "purchaseOrder.updateShipping", "purchaseOrder.linkInbound",
   "purchaseOrder.recordInvoice", "purchaseOrder.voidInvoice", "purchaseOrder.cancel",
@@ -151,6 +155,8 @@ const INQUIRY_RECEIVE: BusinessMethodCapability = { mode: "write", permission: "
 export const BUSINESS_METHOD_CAPABILITIES: Record<BusinessMethodId, BusinessMethodCapability> = Object.fromEntries(
   BUSINESS_METHOD_IDS.map(method => [method, READ]),
 ) as Record<BusinessMethodId, BusinessMethodCapability>;
+BUSINESS_METHOD_CAPABILITIES["personalPerformance.summary"] = SALES_ORDER_READ;
+BUSINESS_METHOD_CAPABILITIES["personalCommission.summary"] = SALES_ORDER_READ;
 
 // Fixed facts readers retain their original module gates and bound staff actor.
 BUSINESS_METHOD_CAPABILITIES["customer.newInformationFacts"] = CUSTOMER_READ;
@@ -288,6 +294,8 @@ type DelegatedBusinessCallers = {
   customer: Record<string, RawBusinessProcedure>;
   customerDemand: Record<string, RawBusinessProcedure>;
   crmSalesOrder: Record<string, RawBusinessProcedure>;
+  personalPerformance: Record<string, RawBusinessProcedure>;
+  personalCommission: Record<string, RawBusinessProcedure>;
   purchaseOrder: Record<string, RawBusinessProcedure>;
   enterprise: Record<string, RawBusinessProcedure>;
   company: Record<string, RawBusinessProcedure>;
@@ -315,6 +323,8 @@ function buildCallers(context: TrpcContext): DelegatedBusinessCallers {
     customer: asFixedCaller(customerRouter.createCaller(context)),
     customerDemand: asFixedCaller(customerDemandRouter.createCaller(context)),
     crmSalesOrder: asFixedCaller(crmSalesOrderRouter.createCaller(context)),
+    personalPerformance: asFixedCaller(personalPerformanceRouter.createCaller(context)),
+    personalCommission: asFixedCaller(personalCommissionRouter.createCaller(context)),
     purchaseOrder: asFixedCaller(purchaseOrderRouter.createCaller(context)),
     enterprise: asFixedCaller(enterpriseRouter.createCaller(context)),
     company: asFixedCaller(companyRouter.createCaller(context)),
@@ -410,7 +420,10 @@ export async function executeInternalBusinessMethod(input: {
   if (grant && !officialInventoryErpEntitled(input.method, grant, capability.permission)) {
     throw new TRPCError({ code: "FORBIDDEN", message: "未获渠道库存对应官方管理资格" });
   }
-  const principal = await requireInternalBusinessStaffPrincipal({
+  const personalSummary = input.method === "personalPerformance.summary" || input.method === "personalCommission.summary";
+  const principal = personalSummary ? await requireInternalPersonalSalesReadPrincipal({
+    binding: input.binding, staffUserId: input.staffUserId,
+  }) : await requireInternalBusinessStaffPrincipal({
     binding: input.binding,
     staffUserId: input.staffUserId,
     // Only this verified, exact official action replaces its matching ERP entitlement.

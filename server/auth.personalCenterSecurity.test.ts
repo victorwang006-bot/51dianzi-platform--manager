@@ -9,6 +9,7 @@ const native = vi.hoisted(() => ({
   changePassword: vi.fn(),
 }));
 vi.mock("./db", () => ({
+  getDb: vi.fn(async () => null),
   getAdminUserById: native.getAdminUserById,
   updateAdminUser: native.updateAdminUser,
 }));
@@ -18,6 +19,8 @@ vi.mock("./personalCenterService", () => ({
     changePassword: native.changePassword,
   },
   getPersonalPerformance: vi.fn(),
+  getPersonalCommission: vi.fn(),
+  getPersonalBusinessCompanies: vi.fn(),
 }));
 import { appRouter } from "./routers";
 const account = {

@@ -221,6 +221,7 @@ export const BUSINESS_METHOD_CAPABILITIES = [
   { method: "crmSalesOrder.orderDraftDelete", module: "orders", mode: "write" },
   { method: "crmSalesOrder.*", module: "orders", mode: "write" },
   { method: "personalPerformance.summary", module: "orders", mode: "read" },
+  { method: "personalCommission.summary", module: "orders", mode: "read" },
   { method: "enterprise.me", module: "context", mode: "read" },
   { method: "enterprise.inquiryInbox", module: "inquiries", mode: "read" },
   { method: "enterprise.*", module: "users", mode: "write" },
@@ -330,25 +331,65 @@ type CurrentBusinessAuthorization = {
 
 /** Only this fixed SELECT aggregate can be called by personalCenter; no browser method/actor selector. */
 export async function readBusinessPersonalPerformance(ctx: TrpcContext, merchantId: number, input: { month: string; page?: number; pageSize?: number }) {
-  return withCurrentBusinessAuthorization(ctx, merchantId, { module: "orders", mode: "read", method: "personalPerformance.summary" },
+  return readBusinessPersonalSummary(ctx, merchantId, "personalPerformance.summary", input);
+}
+export async function readBusinessPersonalCommission(ctx: TrpcContext, merchantId: number, input: { month: string; page?: number; pageSize?: number }) {
+  return readBusinessPersonalSummary(ctx, merchantId, "personalCommission.summary", input);
+}
+async function assertFreshPersonalAccount(account: ReturnType<typeof requireBusinessAdminAccount>) {
+  const database = await db.getDb();
+  if (!database) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "账户安全存储暂不可用" });
+  // Called inside the binding/scope authorization fence after any credential-revocation wait.
+  const [freshAccounts] = await database.execute(sql`SELECT a.id FROM admin_users a
+    WHERE a.id = ${account.id} AND a.status = 'active' AND a.sessionVersion = ${account.sessionVersion}
+    AND NOT EXISTS (SELECT 1 FROM admin_staff_archives s WHERE s.adminUserId = a.id) LIMIT 1`);
+  if (!(freshAccounts as unknown as { id: number }[]).length)
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "登录状态已失效，请重新登录" });
+}
+async function readBusinessPersonalSummary(ctx: TrpcContext, merchantId: number,
+  method: "personalPerformance.summary" | "personalCommission.summary", input: { month: string; page?: number; pageSize?: number }) {
+  return withCurrentBusinessAuthorization(ctx, merchantId, { module: "orders", mode: "read", method },
     async ({ account, staffBinding, scope, merchant }) => {
-      const database = await db.getDb();
-      if (!database) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "账户安全存储暂不可用" });
-      // The binding/scope fence may have waited behind a credential revocation.
-      // Check native session/status/archive again at this callback, never broaden shared business authorization.
-      const [freshAccounts] = await database.execute(sql`SELECT a.id FROM admin_users a
-        WHERE a.id = ${account.id} AND a.status = 'active' AND a.sessionVersion = ${account.sessionVersion}
-        AND NOT EXISTS (SELECT 1 FROM admin_staff_archives s WHERE s.adminUserId = a.id) LIMIT 1`);
-      if (!(freshAccounts as unknown as { id: number }[]).length)
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "登录状态已失效，请重新登录" });
+      await assertFreshPersonalAccount(account);
       if (!businessScopeAllows(scope, "customers", "read")) throw new TRPCError({ code: "FORBIDDEN", message: "未获本人客户业绩读取范围" });
       return callPlatformBusinessCommand({
         binding: businessEnterpriseBindingFromMerchant(merchant), staffUserId: staffBinding.frontUserId,
         bindingVersion: staffBinding.bindingVersion,
         adminActor: { id: account.id, name: account.displayName || account.username, role: account.adminRole },
-        requestId: randomUUID(), method: "personalPerformance.summary", params: { month: input.month, page: input.page ?? 1, pageSize: input.pageSize ?? 10 },
+        requestId: randomUUID(), method, params: { month: input.month, page: input.page ?? 1, pageSize: input.pageSize ?? 10 },
       });
     });
+}
+
+/** Read existing choices only; no grant/binding mutation or remote audit write. */
+export async function readPersonalBusinessCompanies(ctx: TrpcContext): Promise<{ merchantId: number; label: string }[]> {
+  const account = requireBusinessAdminAccount(ctx);
+  const binding = await db.withBusinessAuthorizationFence({ adminUserId: account.id }, async () => {
+    await assertFreshPersonalAccount(account);
+    return db.getActiveBusinessStaffBinding(account.id);
+  });
+  if (!binding) return [];
+  const scopes = await db.listActiveBusinessMerchantScopes(account.id);
+  const allowed = getBusinessWorkbenchMerchantIds();
+  const ids = Array.from(new Set(scopes.filter(s => allowed.includes(s.merchantId) &&
+    businessScopeAllows(s, "orders", "read") && businessScopeAllows(s, "customers", "read")).map(s => s.merchantId)));
+  const choices: { merchantId: number; label: string }[] = [];
+  for (const merchantId of ids) {
+    try {
+      const choice = await withCurrentBusinessAuthorization(ctx, merchantId, { module: "orders", mode: "read" },
+        async ({ account: fresh, scope, merchant }) => {
+          await assertFreshPersonalAccount(fresh);
+          if (!businessScopeAllows(scope, "customers", "read")) return null;
+          businessEnterpriseBindingFromMerchant(merchant); // Valid existing mapping, never new authorization.
+          return { merchantId: merchant.id, label: (merchant.companyName || merchant.merchantNo || "已授权公司").slice(0, 128) };
+        });
+      if (choice) choices.push(choice);
+    } catch (error) {
+      if (error instanceof TRPCError && ["FORBIDDEN", "NOT_FOUND", "PRECONDITION_FAILED"].includes(error.code)) continue;
+      throw error;
+    }
+  }
+  return choices;
 }
 
 /**
