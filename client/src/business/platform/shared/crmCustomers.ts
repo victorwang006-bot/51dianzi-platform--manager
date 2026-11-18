@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { businessIndustryCodeSchema } from "./businessIndustry";
+import type { ContactSummary } from "./customerContacts";
 
 export const CUSTOMER_GRADES = ["A", "B", "C", "D"] as const;
 export const CUSTOMER_STAGES = ["new", "following", "quoted", "won", "paused", "invalid"] as const;
@@ -26,9 +27,46 @@ export function isCustomerPhone(value: string): boolean {
   }
   return balance === 0;
 }
-/** Read compatibility: old incomplete records remain accessible and transferable. */
-export function customerNeedsCompletion(record: { name?: string | null; contactName?: string | null; phone?: string | null }): boolean {
-  return !record.name?.trim() || !record.contactName?.trim() || !record.phone?.trim();
+type CustomerCompletionRecord = { name?: string | null; contactName?: string | null; phone?: string | null };
+/** Omitted summary keeps old read compatibility; explicit undefined means unverified,
+ * not complete/incomplete. A verified summary contains only active contacts/methods. */
+export function customerNeedsCompletion(record: CustomerCompletionRecord): boolean;
+export function customerNeedsCompletion(record: CustomerCompletionRecord, summary: ContactSummary | null | undefined): boolean | undefined;
+export function customerNeedsCompletion(record: CustomerCompletionRecord, summary?: ContactSummary | null): boolean | undefined {
+  if (!record.name?.trim()) return true;
+  if (arguments.length < 2) return !record.contactName?.trim() || !record.phone?.trim();
+  if (summary === undefined) return undefined;
+  const primary = summary?.primaryContact;
+  if (!primary?.name?.trim()) return true;
+  return !primary.methods.some(method => {
+    const value = method.value.trim();
+    if (!value || value.length > 254) return false;
+    // Match contactMethodSchema without a runtime import cycle: it imports this
+    // module. Historical phone text is intentionally represented as `other`.
+    switch (method.type) {
+      case "mobile":
+      case "landline": return isCustomerPhone(value);
+      case "email": return z.string().email().safeParse(value).success;
+      case "wechat":
+      case "qq":
+      case "other": return true;
+      default: return false;
+    }
+  });
+}
+
+/** Query status alone is insufficient: caller must prove current scope/customer.
+ * A cached success is never verification for this mount. No UI/data side effects. */
+export function customerContactSummaryQueryVerified(query: {
+  isSuccess?: boolean;
+  isError?: boolean;
+  isPending?: boolean;
+  isFetching?: boolean;
+  isPlaceholderData?: boolean;
+  isFetchedAfterMount?: boolean;
+}, scopeReady: boolean): boolean {
+  return scopeReady && query.isSuccess === true && query.isFetchedAfterMount === true
+    && !query.isError && !query.isPending && !query.isFetching && !query.isPlaceholderData;
 }
 
 export const customerDataSchema = z.object({

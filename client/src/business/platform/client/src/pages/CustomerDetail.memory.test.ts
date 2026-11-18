@@ -8,6 +8,7 @@ import { parse as parseCss } from "postcss";
 const runtime = vi.hoisted(() => ({
   identity: "", ready: true, contextError: false, detailError: false,
   enterpriseId: 31, detail: null as any, getOptions: [] as any[],
+  contactSummaryResult: null as any, contactSummaryRequests: [] as any[],
   authorizationVersion: "auth-A", contextFetched: true, detailFetched: true, contextFetching: false, detailFetching: false,
   contextPlaceholder: false, detailPlaceholder: false, contactsDirty: false, contactsBusy: false, contactsProps: null as any,
   canManageAll: false,
@@ -64,13 +65,20 @@ vi.mock("../components/customers/customerContacts", () => ({
   useCustomerContactScope: () => ({ ready: runtime.ready, scope: runtime.ready ? { actorUserId: 7, enterpriseId: runtime.enterpriseId, canManageAll: false } : null,
     identityKey: `${runtime.identity}:${runtime.enterpriseId}:${runtime.ready}` }),
   contactErrorMessage: runtime.contactError, customerContactBaseData: () => ({}),
-  isDuplicateContactConflict: () => false, validateCustomerContactBase: () => ({}), withCustomerContactScope: (_scope: unknown, input: unknown) => input,
+  isDuplicateContactConflict: () => false, validateCustomerContactBase: () => ({}),
+  withCustomerContactScope: (scope: any, input: any) => ({ ...input, expectedActorUserId: scope.actorUserId, expectedEnterpriseId: scope.enterpriseId }),
 }));
 vi.mock("../../../../api/business-trpc", () => ({ trpc: {
   useUtils: () => ({ customer: { get: { invalidate: runtime.getInvalidate }, list: { invalidate: runtime.listInvalidate } }, crmSalesOrder: { customerSummary: { invalidate: runtime.orderSummaryInvalidate }, customerMaterials: { invalidate: runtime.orderMaterialsInvalidate } } }),
   customer: {
     context: { useQuery: () => ({ data: { actorUserId: 7, canManageAll: runtime.canManageAll, members: [{ userId: 7, name: "synthetic seller" }] }, isPending: false, isError: runtime.contextError, isFetchedAfterMount: runtime.contextFetched, isFetching: runtime.contextFetching, isPlaceholderData: runtime.contextPlaceholder, error: new Error("授权已撤销"), refetch: vi.fn() }) },
     get: { useQuery: (_input: unknown, options: any) => { runtime.getOptions.push(options); return { data: runtime.detail, isPending: false, isError: runtime.detailError, isFetchedAfterMount: runtime.detailFetched, isFetching: runtime.detailFetching, isPlaceholderData: runtime.detailPlaceholder, error: new Error("客户访问已撤销"), refetch: vi.fn() }; } },
+    contactsSummary: { useQuery: (input: any, options: any) => {
+      runtime.contactSummaryRequests.push({ input, options });
+      return runtime.contactSummaryResult ?? { isSuccess: true, isFetchedAfterMount: true, isPending: false, isFetching: false, isError: false, isPlaceholderData: false,
+        data: { items: [{ customerId: runtime.detail?.customer.id, contactCount: 1,
+          primaryContact: { id: "synthetic-primary", name: "合成主联系人", methods: [{ type: "wechat", value: "synthetic_wechat" }], legacy: false } }] } };
+    } },
     updateBasic: { useMutation: () => runtime.mutations.updateBasic }, addFollowUp: { useMutation: () => runtime.mutations.addFollowUp },
     transfer: { useMutation: () => runtime.mutations.transfer }, archive: { useMutation: () => runtime.mutations.archive }, restore: { useMutation: () => runtime.mutations.restore },
   },
@@ -112,6 +120,7 @@ beforeEach(() => {
   Object.values(runtime.mutations).forEach(mutation => { mutation.isPending = false; mutation.mutateAsync.mockReset(); mutation.mutateAsync.mockResolvedValue({ replayed: false }); });
   runtime.getInvalidate.mockReset(); runtime.listInvalidate.mockReset();
   runtime.ready = true; runtime.enterpriseId = 31; runtime.contextError = false; runtime.detailError = false; runtime.getOptions = [];
+  runtime.contactSummaryResult = null; runtime.contactSummaryRequests = [];
   runtime.detail = { customer: record(), followUps: [] };
   runtime.canReadOrders = false; runtime.ordersDirty = false; runtime.demandsDirty = false; runtime.demandProps = null; runtime.orderProps = null;
   runtime.supplyProps = null;
@@ -798,5 +807,55 @@ describe.sequential("CustomerDetail consolidated customer profile", () => {
     expect([...host.querySelectorAll('button')].some(item => item.textContent === "新增跟进")).toBe(false);
     expect([...host.querySelectorAll('button')].some(item => item.textContent === "更正此记录")).toBe(false);
     expect(runtime.mutations.addFollowUp.mutateAsync).not.toHaveBeenCalled();
+  });
+});
+
+
+describe.sequential("CustomerDetail contact completeness", () => {
+  const primary = { id: "synthetic-primary", name: "合成主联系人", methods: [{ type: "wechat", value: "synthetic_wechat_only" }], legacy: false };
+  function result(primaryContact: any, overrides: any = {}, customerId = 801) {
+    return { isSuccess: true, isFetchedAfterMount: true, isPending: false, isFetching: false, isError: false, isPlaceholderData: false,
+      data: { items: [{ customerId, contactCount: primaryContact ? 1 : 0, primaryContact }] }, ...overrides };
+  }
+  it("adds exactly one scoped current-customer query and accepts WeChat-only without a phone", async () => {
+    runtime.detail = { customer: record({ contactName: "", phone: "" }), followUps: [] }; runtime.contactSummaryResult = result(primary);
+    await render();
+    expect(host.textContent).not.toContain("待补全"); expect(runtime.detail.customer.phone).toBe("");
+    expect(new Map(runtime.contactSummaryRequests.filter(call => call.options.enabled).map(call => [JSON.stringify(call.input), call.input])).size).toBe(1);
+    expect(runtime.contactSummaryRequests.at(-1)).toMatchObject({ input: { customerIds: [801], expectedActorUserId: 7, expectedEnterpriseId: 31 },
+      options: { enabled: true, retry: false, placeholderData: undefined, staleTime: 0, refetchOnMount: "always" } });
+  });
+  it.each([null, { ...primary, name: " " }, { ...primary, methods: [] }])("shows the new guidance only for a verified incomplete primary", async primaryContact => {
+    runtime.contactSummaryResult = result(primaryContact); await render();
+    expect(host.textContent).toContain("待补全：请补齐客户名称"); expect(host.textContent).toContain("主联系人姓名及至少一种有效联系方式");
+    expect(host.textContent).not.toContain("补齐基本资料后保存");
+  });
+  it.each([{ isFetchedAfterMount: false }, { isPlaceholderData: true }, { isError: true }, { isPending: true }, { isFetching: true }, { isSuccess: false }])("ignores incomplete retained data for unknown query state %j", async overrides => {
+    runtime.detail = { customer: record({ contactName: "", phone: "" }), followUps: [] }; runtime.contactSummaryResult = result(null, overrides);
+    await render(); expect(host.textContent).not.toContain("待补全"); expect(host.textContent).not.toContain("已完整");
+    expect(host.textContent).toContain(runtime.detail.customer.name);
+  });
+  it("does not trust a wrong-customer summary or a missing row", async () => {
+    runtime.contactSummaryResult = result(null, {}, 999); await render(); expect(host.textContent).not.toContain("待补全");
+    runtime.contactSummaryResult = result(null, { data: { items: [] } }); await render(); expect(host.textContent).not.toContain("待补全");
+  });
+  it.each(["unready", "context-cache", "context-error", "detail-cache", "detail-placeholder", "wrong-tenant"])("disables the summary read before existing authority/detail guards (%s)", async target => {
+    if (target === "unready") runtime.ready = false;
+    if (target === "context-cache") runtime.contextFetched = false;
+    if (target === "context-error") runtime.contextError = true;
+    if (target === "detail-cache") runtime.detailFetched = false;
+    if (target === "detail-placeholder") runtime.detailPlaceholder = true;
+    if (target === "wrong-tenant") runtime.enterpriseId = 32;
+    await render(); expect(runtime.contactSummaryRequests.at(-1).options.enabled).toBe(false); expect(host.textContent).not.toContain("待补全");
+  });
+  it("can flag a missing company name without claiming contacts readiness", async () => {
+    runtime.detail = { customer: record({ name: " " }), followUps: [] }; runtime.contactSummaryResult = result(null, { isPending: true });
+    await render(); expect(host.textContent).toContain("待补全");
+  });
+  it("does not trust same-ID retained summary after authorization identity changes", async () => {
+    runtime.contactSummaryResult = result(null); await render(); expect(host.textContent).toContain("待补全");
+    runtime.authorizationVersion = "auth-new"; runtime.contactSummaryResult = result(null, { isFetchedAfterMount: false });
+    await render(); expect(host.textContent).not.toContain("待补全");
+    runtime.contactSummaryResult = result(primary); await render(); expect(host.textContent).not.toContain("待补全");
   });
 });

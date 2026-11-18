@@ -9,6 +9,7 @@ import {
   CUSTOMER_STAGE_LABELS,
   CUSTOMER_STAGES,
   customerNeedsCompletion,
+  customerContactSummaryQueryVerified,
   customerFollowUpSchema,
   type CustomerFollowUp,
   type CustomerRecord,
@@ -109,6 +110,20 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
   else if (detailQuery.isFetchedAfterMount === true && !detailQuery.isFetching && !detailQuery.isPending) detailVerified.current = true;
   const detail = detailValid && detailVerified.current ? detailQuery.data : undefined;
   const customer: CustomerRecord | undefined = detail?.customer;
+  const summaryInput = contactScope.scope
+    ? withCustomerContactScope(contactScope.scope, { customerIds: [id] })
+    : { customerIds: [id], expectedActorUserId: 0, expectedEnterpriseId: 0 };
+  const contactsSummaryQuery = trpc.customer.contactsSummary.useQuery(summaryInput, freshListOptions({
+    enabled: validId && authorityReady && Boolean(customer) && contactScope.ready && Boolean(contactScope.scope),
+    retry: false,
+    placeholderData: undefined,
+  }, d51Ready));
+  // The scoped query must finish on this mount, for this customer. A retained
+  // success, loading/refetch, placeholder or refusal is unknown, not incomplete.
+  const contactSummaryReady = customerContactSummaryQueryVerified(contactsSummaryQuery, authorityReady && Boolean(customer))
+    && contactsSummaryQuery.data?.items.length === 1 && contactsSummaryQuery.data.items[0]?.customerId === id;
+  const contactSummary = contactSummaryReady ? contactsSummaryQuery.data?.items[0] : undefined;
+  const incomplete = customer ? customerNeedsCompletion(customer, contactSummary) === true : false;
   const isArchived = Boolean(customer?.archivedAt);
   const canManageAll = authorityReady && Boolean(contextQuery.data?.canManageAll);
   const orderAuthority = useCustomerWorkbenchOrders(contactScope.scope, authorityReady && Boolean(customer));
@@ -551,7 +566,7 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
         </div>
       </div>
 
-      {customerNeedsCompletion(customer) && <p className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">待补全：请补齐基本资料后保存；历史查看和追加跟进不受影响。</p>}
+      {incomplete === true && <p className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">待补全：请补齐客户名称，并在“管理联系人”中补齐主联系人姓名及至少一种有效联系方式（手机、座机、微信、QQ、邮箱或其他）；历史查看和追加跟进不受影响。</p>}
       {isArchived && <section className="mb-3 rounded-lg border border-[#F1D3A6] bg-[#FFF9ED] px-4 py-3 text-sm text-[#8A5A16]"><b>该客户已归档，当前为只读状态。</b> {customer.archiveReason ? `归档原因：${customer.archiveReason}` : ""} 仅管理员可恢复。</section>}
       {editError && <section className="mb-3 rounded-lg border border-[#F5C2C2] bg-[#FFF4F4] px-4 py-3 text-sm text-[#A32D2D]" role="alert">{editError}</section>}
 

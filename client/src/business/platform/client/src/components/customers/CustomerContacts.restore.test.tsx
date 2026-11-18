@@ -194,6 +194,7 @@ function query<T>(data: T, overrides: Record<string, unknown> = {}) {
     isLoading: false,
     isFetching: false,
     isError: false,
+    isSuccess: true,
     isFetchedAfterMount: true,
     isPlaceholderData: false,
     error: new Error("fixture query error"),

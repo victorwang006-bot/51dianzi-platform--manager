@@ -15,6 +15,7 @@ const runtime = vi.hoisted(() => ({
   listInputs: [] as any[], listPending: false, listFetching: false, customerContextError: false,
   listError: false, listRefetch: vi.fn(), createFormProps: null as any,
   listOptions: [] as any[],
+  contactSummaryResult: null as any, contactSummaryRequests: [] as any[],
   remembered: {} as Record<string, unknown>,
   canManageAll: false, canReadAll: false, members: [] as { userId: number; name: string }[],
   canReadEnterprise: undefined as boolean | undefined, canReadTeam: undefined as boolean | undefined,
@@ -38,6 +39,10 @@ vi.mock("../hooks/useCustomerCreateDraft", () => ({
 }));
 vi.mock("../components/customers/CustomerCreateForm", () => ({ CustomerCreateForm: (props: any) => { runtime.createFormProps = props; return null; } }));
 vi.mock("../components/customerDemands/CustomerDemandDialog", () => ({ CustomerDemandDialog: ({ customer }: any) => React.createElement("div", { "data-testid": "synthetic-demand-open" }, customer.name) }));
+vi.mock("../../../../../lib/adminNewInformation", () => ({
+  useAdminNewInformationContextRows: () => ({ getRow: () => ({ isNew: false, ref: () => undefined }) }),
+  useAdminNewInformationRowContext: () => undefined,
+}));
 vi.mock("../../../../api/business-auth", () => ({ useAuth: () => ({ user: { id: runtime.actorId }, loading: false, isAuthenticated: true }) }));
 vi.mock("../../../../api/business-enterprise-session", () => ({ useOptionalEnterpriseSession: () => ({ activeEnterprise: { enterpriseId: runtime.enterpriseId, memberStatus: "active", accessStatus: "enabled" } }) }));
 vi.mock("../../../../BusinessScope", () => ({ useBusinessScope: () => ({
@@ -58,7 +63,11 @@ vi.mock("../../../../api/business-trpc", () => ({ trpc: {
       return { data, isPending: false, isLoading: false, isError: runtime.customerContextError, refetch: vi.fn().mockResolvedValue({ data, isError: runtime.customerContextError }) };
     } },
     list: { useQuery: (input: any, options: any) => { runtime.listInputs.push(input); runtime.listOptions.push(options); return { data: { items: input.page === 1 ? runtime.rows : [{ ...runtime.rows[0], id: 804 }], total: 40 }, isPending: runtime.listPending, isFetching: runtime.listFetching, isError: runtime.listError, error: new Error("synthetic list error"), refetch: runtime.listRefetch }; } },
-    contactsSummary: { useQuery: () => ({ data: { items: runtime.rows.map(row => ({ customerId: row.id, contactCount: row.id === 801 ? 8 : 1, primaryContact: { name: row.contactName, methods: [{ type: "landline", value: row.phone }] } })) } }) },
+    contactsSummary: { useQuery: (input: any, options: any) => {
+      runtime.contactSummaryRequests.push({ input, options });
+      return runtime.contactSummaryResult ?? { isSuccess: true, isFetchedAfterMount: true, isPending: false, isFetching: false, isError: false, isPlaceholderData: false,
+        data: { items: runtime.rows.map(row => ({ customerId: row.id, contactCount: row.id === 801 ? 8 : 1, primaryContact: { id: `synthetic-${row.id}`, legacy: false, name: row.contactName, methods: [{ type: "landline", value: row.phone }] } })) } };
+    } },
     contactsList: { useQuery: () => ({ data: { contacts: [] }, isPending: false, isError: false, refetch: vi.fn() }) },
   },
 } }));
@@ -100,6 +109,7 @@ beforeEach(() => {
   runtime.targets = [{ userId: 7, name: "合成员工" }]; runtime.listInputs = []; runtime.listPending = false; runtime.listFetching = false; runtime.customerContextError = false;
   runtime.listError = false; runtime.listRefetch.mockReset(); runtime.createFormProps = null;
   runtime.listOptions = [];
+  runtime.contactSummaryResult = null; runtime.contactSummaryRequests = [];
   runtime.remembered = {};
   runtime.canManageAll = false; runtime.canReadAll = false; runtime.members = [];
   runtime.canReadEnterprise = undefined; runtime.canReadTeam = undefined; runtime.teams = null; runtime.defaultTeamId = null;
@@ -841,5 +851,42 @@ describe("actual CustomerList updated-date filters", () => {
     expect(declarations(".customer-list-page .customer-list-updated-dates")).toEqual({ display: "flex", "align-items": "center", "flex-wrap": "wrap", "min-width": "0", "max-width": "100%", gap: "6px" });
     expect(declarations(".customer-list-page .customer-list-date-input")).toEqual({ flex: "0 0 136px", width: "136px", "min-width": "0", "max-width": "100%", "padding-inline": "8px" });
     expect(declarations(".customer-list-page .customer-list-control")).toMatchObject({ height: "var(--admin-content-control-height, 32px)", "font-size": "var(--admin-content-font-body, 12px)", "border-radius": "6px" });
+  });
+});
+
+
+describe("CustomerList contact completeness badges", () => {
+  const primary = { id: "synthetic-primary", name: "合成微信主联系人", legacy: false, methods: [{ type: "wechat", value: "synthetic_wechat_only" }] };
+  function result(primaryContact: any, overrides: any = {}, customerId = 801) {
+    return { isSuccess: true, isFetchedAfterMount: true, isPending: false, isFetching: false, isError: false, isPlaceholderData: false,
+      data: { items: [{ customerId, contactCount: primaryContact ? 1 : 0, primaryContact }] }, ...overrides };
+  }
+  it("does not mark a verified WeChat-only customer with empty old phone/name incomplete", async () => {
+    runtime.rows = [row(801, { phone: "", contactName: "" })]; runtime.contactSummaryResult = result(primary);
+    await render();
+    expect(tableRows()[0].textContent).not.toContain("待补全");
+    expect(tableRows()[0].textContent).toContain("微信：synthetic_wechat_only");
+    expect(runtime.rows[0].phone).toBe("");
+    expect(runtime.contactSummaryRequests.at(-1).input).toEqual({ customerIds: [801], expectedActorUserId: 7, expectedEnterpriseId: 31 });
+    expect(runtime.contactSummaryRequests.at(-1).options).toMatchObject({ enabled: true, placeholderData: undefined, retry: false });
+  });
+  it.each([null, { ...primary, name: " " }, { ...primary, methods: [] }])("marks confirmed missing primary/name/methods incomplete, regardless of old valid phone", async primaryContact => {
+    runtime.rows = [row(801)]; runtime.contactSummaryResult = result(primaryContact);
+    await render(); expect(tableRows()[0].textContent).toContain("待补全");
+  });
+  it.each([{ isFetchedAfterMount: false }, { isPlaceholderData: true }, { isError: true }, { isPending: true }, { isFetching: true }, { isSuccess: false }])("does not derive a completion badge from an unverified query %j", async overrides => {
+    runtime.rows = [row(801, { phone: "", contactName: "" })]; runtime.contactSummaryResult = result(null, overrides);
+    await render(); expect(tableRows()[0].textContent).not.toContain("待补全");
+    expect(tableRows()[0].textContent).not.toContain("已完整");
+  });
+  it("ignores old-page/missing summary rows rather than treating them as null or falling back", async () => {
+    runtime.rows = [row(801, { phone: "", contactName: "" })]; runtime.contactSummaryResult = result(null, {}, 999);
+    await render(); expect(tableRows()[0].textContent).not.toContain("待补全");
+    runtime.contactSummaryResult = result(null, { data: { items: [] } });
+    await render(); expect(tableRows()[0].textContent).not.toContain("待补全");
+  });
+  it("can establish missing customer name without a ready contacts summary", async () => {
+    runtime.rows = [row(801, { name: " " })]; runtime.contactSummaryResult = result(null, { isPending: true });
+    await render(); expect(tableRows()[0].textContent).toContain("待补全");
   });
 });

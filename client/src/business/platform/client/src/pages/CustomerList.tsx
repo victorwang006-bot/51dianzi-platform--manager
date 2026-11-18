@@ -11,6 +11,7 @@ import {
   CUSTOMER_STAGES,
   type CustomerData,
   customerNeedsCompletion,
+  customerContactSummaryQueryVerified,
 } from "../../../shared/crmCustomers";
 import PlatformLayout from "../../../../BusinessContentFrame";
 import { CustomerCreateForm, type CustomerCreateSaveMode, type CustomerCreateState } from "../components/customers/CustomerCreateForm";
@@ -362,14 +363,20 @@ export default function CustomerList() {
     : { customerIds: pageCustomerIds, expectedActorUserId: 0, expectedEnterpriseId: 0 };
   // One bounded query for the already-authorized current page; never fetch a full
   // contacts list per table row.
-  const contactsSummaryQuery = trpc.customer.contactsSummary.useQuery(summaryInput, {
-    enabled: contactScope.ready && Boolean(contactScope.scope) && pageCustomerIds.length > 0,
+  const contactsSummaryQuery = trpc.customer.contactsSummary.useQuery(summaryInput, freshListOptions({
+    enabled: contactScope.ready && Boolean(contactScope.scope) && pageCustomerIds.length > 0 && canQueryList && Boolean(result),
     retry: false,
-    staleTime: 0,
-  });
+    placeholderData: undefined,
+  }, d51Ready));
+  // Retained cache, placeholder/error data and an old identity/page cannot prove
+  // completeness. Missing summary rows remain unknown, never legacy fallbacks.
+  const contactSummariesReady = customerContactSummaryQueryVerified(contactsSummaryQuery,
+    canQueryList && Boolean(result) && contactIdentityRef.current === contactScope.identityKey && !contextQuery.isPlaceholderData)
+    && contactsSummaryQuery.data?.items.every(summary => pageCustomerIds.includes(summary.customerId))
+    && new Set(contactsSummaryQuery.data.items.map(summary => summary.customerId)).size === contactsSummaryQuery.data.items.length;
   const contactSummaries = useMemo(() => new Map(
-    (contactsSummaryQuery.data?.items ?? []).map(summary => [summary.customerId, summary]),
-  ), [contactsSummaryQuery.data]);
+    (contactSummariesReady ? contactsSummaryQuery.data?.items ?? [] : []).map(summary => [summary.customerId, summary]),
+  ), [contactsSummaryQuery.data, contactSummariesReady]);
   const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / PAGE_SIZE));
   const safePage = result ? Math.min(page, totalPages) : page;
   const currentListInputRef = useRef(listInput);
@@ -902,7 +909,7 @@ export default function CustomerList() {
               </TableHeader>
               <TableBody>
                 {displayedCustomerRows.map(customer => {
-                  const incomplete = customerNeedsCompletion(customer);
+                  const incomplete = customerNeedsCompletion(customer, contactSummaries.get(customer.id)) === true;
                   const rowStarred = customer.starUserId === customer.assignedUserId && customer.isStarred === true;
                   const newInformationRow = newInformationRows.getRow(`customer:${customer.id}`);
                   return (
