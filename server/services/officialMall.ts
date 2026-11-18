@@ -159,7 +159,8 @@ function exactPrice(value: string): bigint {
 }
 /** Server final gate; do not coerce prices or guess stock, tax, MOQ, SPQ or date code. */
 export function validateOfficialMallMaterial(
-  value: unknown
+  value: unknown,
+  allowExistingStockState: boolean = false
 ): OfficialMallMaterialInput {
   const result = officialMallMaterialInputSchema.safeParse(value);
   if (!result.success)
@@ -179,7 +180,10 @@ export function validateOfficialMallMaterial(
       fail("梯度单价不能随数量增加而上升");
     previousPrice = current;
   }
+  // Existing stock can be depleted without rewriting its original lead time.
+  // Only an explicit internal true skips this new-claim gate, never a transform context.
   if (
+    allowExistingStockState !== true &&
     /(现货|立[即刻]?发|即发|秒发|当天[发出]|当日[发出]|24\s*[hH小时]|当天到)/.test(
       data.leadTime
     ) &&
@@ -196,7 +200,15 @@ export function validateOfficialMallMaterial(
 }
 /** Publish-only final gate; drafts may still contain unknown quantities or pending lead time. */
 function assertPublishable(data: OfficialMallMaterialInput) {
-  if (!(data.qtyOnSale !== null && data.qtyOnSale > 0) && !(data.qtyOrder !== null && data.qtyOrder > 0))
+  validateOfficialMallMaterial(data);
+  // Confirmed quote catalogs may include genuine zero stock without inventing a lead time.
+  // Quantity bounds/relationship and positive prices are enforced by the original validator.
+  if (
+    data.qtyOnSale !== null && data.qtyOnSale >= 0 &&
+    data.qtyStock !== null && data.qtyStock >= 0 &&
+    (data.priceEx !== null || data.ladderPrices.length > 0)
+  ) return;
+  if (!(data.qtyOrder !== null && data.qtyOrder > 0))
     fail("上架须明确填写大于0的可售数量或订货数量");
   if (!data.leadTime.trim()) fail("上架须填写明确货期");
 }
@@ -220,7 +232,7 @@ function inputFromRow(row: OfficialMallMaterialRow): OfficialMallMaterialInput {
     spq: row.spq,
     ladderPrices: row.ladderPrices,
     note: row.note,
-  });
+  }, true);
 }
 function privateMaterial(row: OfficialMallMaterialRow): OfficialMallMaterial {
   // Explicit private output shape too: do not expose internal public IDs / receipt data.
@@ -259,7 +271,7 @@ export function publicProjection(
     spq: row.spq,
     ladderPrices: row.ladderPrices,
     note: "",
-  });
+  }, true);
   // Inquiry-only catalog: preserve real quotes and tax state, without a purchase flag.
   return {
     sourceType: "official_mall",

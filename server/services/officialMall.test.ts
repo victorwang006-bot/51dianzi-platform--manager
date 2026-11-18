@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { getTableName } from "drizzle-orm";
 import { MySqlDialect } from "drizzle-orm/mysql-core";
 import { describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 vi.mock("../db", () => ({
   getDb: vi.fn(() => {
     throw new Error("NO_SQL_ALLOWED");
@@ -1312,22 +1313,92 @@ describe("officialMall native transaction flow (in-memory executor, no SQL)", ()
 
 
 describe("official mall publish-only final gate", () => {
-  it("allows unknown draft but rejects unknown/zero supply on direct publish before any snapshot", async () => {
+  it("allows unknown draft but rejects unknown supply on direct publish before any snapshot", async () => {
     const memory = memoryDb(); const id = seed(memory, base());
     await expect(memory.service.publish(actor, {id,expectedRevision:1,requestId:"publish-unknown-qty-final"})).rejects.toThrow("大于0");
     expect(memory.rows("official_mall_publications")).toHaveLength(0);
     expect(memory.rows("official_mall_materials")[0].status).toBe("draft");
   });
-  it("rejects missing lead time on direct publish with known supply", async () => {
-    const memory = memoryDb(); const id = seed(memory, {...full(),leadTime:""});
-    await expect(memory.service.publish(actor, {id,expectedRevision:1,requestId:"publish-no-lead-final"})).rejects.toThrow("明确货期");
+  it.each([0, 100])("publishes confirmed stock %i with blank lead time, preserving quotes and native audit", async quantity => {
+    const memory = memoryDb();
+    const data = { ...full(), qtyOnSale: quantity, qtyStock: quantity, qtyOrder: null, leadTime: "", note: "" };
+    const id = seed(memory, data);
+    const input = { id, expectedRevision: 1, requestId: `publish-confirmed-${quantity}` };
+    expect(await memory.service.publish(actor, input)).toMatchObject({ status: "published", revision: 2 });
+    const snapshot = memory.rows("official_mall_publications")[0].snapshot;
+    expect(snapshot).toMatchObject({ qtyOnSale: quantity, qtyStock: quantity, qtyOrder: null, leadTime: "", priceEx: data.priceEx, ladderPrices: data.ladderPrices });
+    expect(snapshot).not.toHaveProperty("note");
+    expect(memory.rows("official_mall_requests")[0]).toMatchObject({ state: "completed", before: [{ qtyStock: quantity, revision: 1 }], after: [{ qtyStock: quantity, revision: 2 }] });
+    expect(await memory.service.publish(actor, input)).toMatchObject({ idempotent: true });
+    expect(memory.rows("official_mall_publications")).toHaveLength(1);
+  });
+  it.each([
+    { priceEx: "0.01", ladderPrices: [] },
+    { priceEx: null, ladderPrices: [{ minQty: 1, price: "0.01" }] },
+  ])("allows either a positive base quote or a nonempty real ladder at confirmed zero stock", async quote => {
+    const memory = memoryDb();
+    const id = seed(memory, { ...base(), ...quote, qtyOnSale: 0, qtyStock: 0 });
+    expect(await memory.service.publish(actor, { id, expectedRevision: 1, requestId: `publish-quote-${quote.priceEx === null ? "ladder" : "base"}` })).toMatchObject({ status: "published" });
+  });
+  it.each([
+    { qtyOnSale: null, qtyStock: null },
+    { qtyOnSale: 0, qtyStock: null },
+    { qtyOnSale: 1, qtyStock: null },
+    { qtyOnSale: null, qtyStock: 10 },
+  ])("does not turn partly or wholly unknown stock into confirmed catalog stock", async quantities => {
+    const memory = memoryDb();
+    const id = seed(memory, { ...full(), ...quantities, qtyOrder: null });
+    await expect(memory.service.publish(actor, { id, expectedRevision: 1, requestId: "publish-partly-unknown" })).rejects.toThrow("大于0");
     expect(memory.rows("official_mall_publications")).toHaveLength(0);
+    expect(memory.rows("official_mall_requests")).toHaveLength(0);
+  });
+  it("does not publish a confirmed-stock catalog without any real quote", async () => {
+    const memory = memoryDb();
+    const id = seed(memory, { ...base(), qtyOnSale: 0, qtyStock: 0 });
+    await expect(memory.service.publish(actor, { id, expectedRevision: 1, requestId: "publish-no-real-quote" })).rejects.toThrow("大于0");
+  });
+  it("retains genuine positive-order supply with real lead time, but rejects blank lead time or zero orders", async () => {
+    const memory = memoryDb();
+    const id = seed(memory, { ...base(), qtyOrder: 100, leadTime: "6-8周" });
+    expect(await memory.service.publish(actor, { id, expectedRevision: 1, requestId: "publish-real-order" })).toMatchObject({ status: "published" });
+    expect(memory.rows("official_mall_publications")[0].snapshot).toMatchObject({ qtyOnSale: null, qtyStock: null, qtyOrder: 100, leadTime: "6-8周" });
+    for (const changes of [{ qtyOrder: 100, leadTime: "" }, { qtyOrder: 0, leadTime: "6-8周" }]) {
+      const m = memoryDb(); const other = seed(m, { ...base(), ...changes });
+      await expect(m.service.publish(actor, { id: other, expectedRevision: 1, requestId: "publish-invalid-order" })).rejects.toThrow();
+      expect(m.rows("official_mall_publications")).toHaveLength(0);
+    }
+  });
+  it("offshelf/edit/republish records a genuine inventory change to zero without fabricating availability", async () => {
+    const memory = memoryDb(); const id = seed(memory, full());
+    await memory.service.publish(actor, { id, expectedRevision: 1, requestId: "stock-change-first-publish" });
+    await memory.service.offshelf(actor, { id, expectedRevision: 2, requestId: "stock-change-offshelf" });
+    const data = { ...full(), qtyOnSale: 0, qtyStock: 0, qtyOrder: null, leadTime: "" };
+    await memory.service.update(actor, { id, expectedRevision: 3, requestId: "stock-change-real-zero", data });
+    await memory.service.publish(actor, { id, expectedRevision: 4, requestId: "stock-change-republish" });
+    expect(memory.rows("official_mall_publications")[0].snapshot).toMatchObject({ qtyOnSale: 0, qtyStock: 0, qtyOrder: null, leadTime: "", revision: 5 });
+    const update = memory.rows("official_mall_requests").find(r => r.requestId === "stock-change-real-zero");
+    expect(update.before[0].qtyStock).toBe(100);
+    expect(update.after[0].qtyStock).toBe(0);
+    await expect(memory.service.update(actor, { id, expectedRevision: 5, requestId: "stock-change-no-hidden-edit", data })).rejects.toThrow("先显式下架");
+    expect(() => validateOfficialMallMaterial({ ...data, leadTime: "现货立发" })).toThrow("零库存");
   });
   it("bulk publish applies the same final gate and reports authoritative row errors", async () => {
     const memory = memoryDb(); const id = seed(memory, base());
     const result = await memory.service.bulkAction(actor, {action:"publish",requestId:"bulk-unknown-supply-final",items:[{id,expectedRevision:1}]});
     expect(result).toMatchObject({success:false,successful:0,errors:[{id,message:expect.stringContaining("大于0")}]});
     expect(memory.rows("official_mall_publications")).toHaveLength(0);
+  });
+  it("bulk publishes confirmed zero and positive stock identically while leaving unknown stock untouched", async () => {
+    const memory = memoryDb();
+    const zero = seed(memory, { ...full(), qtyOnSale: 0, qtyStock: 0, leadTime: "" });
+    const positive = seed(memory, { ...full(), leadTime: "" });
+    const unknown = seed(memory, { ...full(), qtyOnSale: null, qtyStock: null });
+    const input = { action: "publish" as const, requestId: "bulk-confirmed-catalog-stock", items: [zero, positive, unknown].map(id => ({ id, expectedRevision: 1 })) };
+    const result = await memory.service.bulkAction(actor, input);
+    expect(result).toMatchObject({ success: false, successful: 2, errors: [{ id: unknown }] });
+    expect(memory.rows("official_mall_publications").map(row => row.snapshot.qtyStock)).toEqual([0, 100]);
+    expect(memory.rows("official_mall_materials")[2]).toMatchObject({ status: "draft", qtyStock: null });
+    expect(await memory.service.bulkAction(actor, input)).toMatchObject({ ...result, idempotent: true });
   });
 });
 
@@ -1397,5 +1468,123 @@ describe("mall repair bounded suggestions + short native fences", () => {
     m.rows("official_channel_teams")[0].status="active";m.rows("official_channel_teams").push({id:12,name:"OTHER",status:"active"});
     expect(await m.service.create(actor,{requestId:"explicit-active-team",teamId:12,data:base()})).toMatchObject({status:"draft"});
     expect(m.rows("official_mall_publications")).toHaveLength(0);
+  });
+});
+
+describe("official mall existing depleted stock read mode (offline only)", () => {
+  it("only exact true bypasses the new stock claim gate, never Zod transform context", () => {
+    const data = { ...full(), qtyOnSale: 0, qtyStock: 0, leadTime: "现货" };
+    expect(validateOfficialMallMaterial(data, true)).toEqual(data);
+    for (const allow of [undefined, false, 1, "true", {}, { allowExistingStockState: true }]) {
+      expect(() => validateOfficialMallMaterial(data, allow as any)).toThrow("零库存");
+    }
+    expect(() => z.unknown().transform(validateOfficialMallMaterial as any).parse(data)).toThrow("零库存");
+    expect(() => validateOfficialMallMaterial({ ...data, qtyOnSale: null, qtyStock: null })).toThrow("数量未确认");
+  });
+
+  it("read mode retains structural, nonnegative, stock relationship and exact price validation", () => {
+    const data = { ...full(), qtyOnSale: 0, qtyStock: 0, leadTime: "现货" };
+    for (const patch of [
+      { partNumber: "" },
+      { qtyOnSale: -1 },
+      { qtyStock: 1.5 },
+      { qtyStock: 2147483648 },
+      { qtyOnSale: 1, qtyStock: 0 },
+      { priceEx: "0" },
+      { priceEx: "1e2" },
+      { priceEx: "1.1234567" },
+      { ladderPrices: [{ minQty: 1, price: "11" }] },
+      { moq: 0 },
+      { spq: 0 },
+    ]) {
+      expect(() => validateOfficialMallMaterial({ ...data, ...patch }, true)).toThrow();
+      expect(() => publicProjection({ ...data, ...patch, publicId: "OM_00000000-0000-4000-8000-000000000001", revision: 3 }, new Date().toISOString())).toThrow();
+    }
+  });
+
+  it.each(["single", "bulk"])("depleted genuine stock stays readable and can be explicitly taken off shelf via %s without restoring itself", async mode => {
+    const memory = memoryDb();
+    const data = validateOfficialMallMaterial({ ...full(), qtyOnSale: 1, qtyStock: 1, leadTime: "现货" });
+    const id = seed(memory, data);
+    await memory.service.publish(actor, { id, expectedRevision: 1, requestId: `depleted-${mode}-publish` });
+
+    // Simulate an external stock/snapshot delta, not a service edit or real DB hook.
+    const row = memory.rows("official_mall_materials")[0];
+    const publication = memory.rows("official_mall_publications")[0];
+    Object.assign(row, { qtyOnSale: 0, qtyStock: 0, revision: 3 });
+    publication.revision = 3;
+    Object.assign(publication.snapshot, { qtyOnSale: 0, qtyStock: 0, revision: 3 });
+    const depleted = structuredClone(row);
+    const expected = { qtyOnSale: 0, qtyStock: 0, leadTime: "现货", priceEx: data.priceEx, ladderPrices: data.ladderPrices, revision: 3 };
+    expect((await memory.service.publicList({})).items).toEqual([expect.objectContaining(expected)]);
+    expect((await memory.service.publicDetail({ publicId: row.publicId })).item).toMatchObject(expected);
+    expect((await memory.service.list(actor, {})).items).toEqual([expect.objectContaining({ ...expected, status: "published" })]);
+    expect(memory.rows("official_mall_materials")[0]).toEqual(depleted);
+
+    const input = { id, expectedRevision: 3, requestId: `depleted-${mode}-offshelf` };
+    if (mode === "single") {
+      expect(await memory.service.offshelf(actor, input)).toMatchObject({ status: "offshelf", revision: 4 });
+    } else {
+      expect(await memory.service.bulkAction(actor, { action: "offshelf", requestId: input.requestId, items: [{ id, expectedRevision: 3 }] })).toMatchObject({ success: true, successful: 1, errors: [] });
+    }
+    const after = memory.rows("official_mall_materials")[0];
+    expect(after).toMatchObject({ ...expected, status: "offshelf", revision: 4 });
+    expect(memory.rows("official_mall_publications")).toHaveLength(0);
+    const audit = memory.rows("official_mall_requests").find(r => r.requestId === input.requestId);
+    expect(audit.before[0]).toEqual(depleted);
+    expect(audit.after[0]).toMatchObject({ ...expected, status: "offshelf", revision: 4 });
+    expect((await memory.service.publicList({})).items).toHaveLength(0);
+    expect((await memory.service.publicDetail({ publicId: after.publicId })).item).toBeNull();
+    expect((await memory.service.list(actor, {})).items[0]).toMatchObject({ ...expected, status: "offshelf", revision: 4 });
+    await expect(memory.service.publish(actor, { id, expectedRevision: 4, requestId: `depleted-${mode}-reject-republish` })).rejects.toThrow("零库存");
+    expect(memory.rows("official_mall_materials")[0]).toMatchObject({ status: "offshelf", leadTime: "现货", qtyOnSale: 0, qtyStock: 0, revision: 4 });
+
+    // Explicit replenishment is still a strict write to draft, never an automatic publish.
+    expect(await memory.service.update(actor, { id, expectedRevision: 4, requestId: `depleted-${mode}-replenish`, data })).toMatchObject({ status: "draft", revision: 5 });
+    expect(memory.rows("official_mall_materials")[0]).toMatchObject({ status: "draft", leadTime: "现货", qtyOnSale: 1, qtyStock: 1, revision: 5 });
+    expect((await memory.service.publicList({})).items).toHaveLength(0);
+    expect(memory.rows("official_mall_publications")).toHaveLength(0);
+  });
+
+  it.each([
+    { qtyOnSale: 0, qtyStock: 0 },
+    { qtyOnSale: null, qtyStock: null },
+    { qtyOnSale: 0, qtyStock: null },
+  ])("single and bulk publish still reject new immediate-stock claims for $qtyOnSale/$qtyStock", async quantities => {
+    const memory = memoryDb();
+    const data = { ...full(), ...quantities, qtyOrder: 100, leadTime: "现货" };
+    const id = seed(memory, data);
+    const original = structuredClone(memory.rows("official_mall_materials")[0]);
+    await expect(memory.service.publish(actor, { id, expectedRevision: 1, requestId: "new-claim-single-reject" })).rejects.toThrow("零库存或数量未确认");
+    expect(memory.rows("official_mall_requests")).toHaveLength(0);
+    expect(await memory.service.bulkAction(actor, { action: "publish", requestId: "new-claim-bulk-reject", items: [{ id, expectedRevision: 1 }] })).toMatchObject({ success: false, successful: 0, errors: [{ id, message: expect.stringContaining("零库存或数量未确认") }] });
+    expect(memory.rows("official_mall_publications")).toHaveLength(0);
+    expect(memory.rows("official_mall_materials")[0]).toEqual(original);
+  });
+
+  it("create, update, preview and both import write policies remain strict for zero immediate-stock claims", async () => {
+    const memory = memoryDb();
+    const data = { ...full(), qtyOnSale: 0, qtyStock: 0, leadTime: "现货" };
+    const id = seed(memory, full());
+    const original = structuredClone(memory.rows("official_mall_materials")[0]);
+    await expect(memory.service.create(actor, { requestId: "new-zero-stock-create", data })).rejects.toThrow("零库存");
+    await expect(memory.service.update(actor, { id, expectedRevision: 1, requestId: "new-zero-stock-update", data })).rejects.toThrow("零库存");
+    expect(memory.rows("official_mall_requests")).toHaveLength(0);
+    const preview = await memory.service.importPreview(actor, { rows: [{ rowNumber: 1, data }] });
+    expect(preview.rows[0].errors).toEqual([expect.stringContaining("零库存")]);
+    expect(preview.rows[0].data).toBeUndefined();
+    const imported = await memory.service.importRows(actor, {
+      requestId: "new-zero-stock-import",
+      rows: [
+        { rowNumber: 1, data, duplicatePolicy: "new" },
+        { rowNumber: 2, data, duplicatePolicy: "update", duplicateId: id, expectedRevision: 1 },
+      ],
+    });
+    expect(imported).toMatchObject({ success: false, imported: 0, updated: 0, ids: [], errors: [
+      { rowNumber: 1, message: expect.stringContaining("零库存") },
+      { rowNumber: 2, message: expect.stringContaining("零库存") },
+    ] });
+    expect(memory.rows("official_mall_materials")).toEqual([original]);
+    expect(memory.rows("official_mall_publications")).toHaveLength(0);
   });
 });
