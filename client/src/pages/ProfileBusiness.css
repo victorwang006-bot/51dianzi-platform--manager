@@ -28,9 +28,61 @@
 .personal-center .pc-business-table td { vertical-align: top; }
 .personal-center .pc-business-table small { display: block; margin-top: 4px; }
 .personal-center .pc-business-summaries { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.personal-center .pc-business-commission-summaries { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.personal-center .pc-business-commission-title { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.personal-center .pc-business-stat-heading { display: flex; align-items: center; gap: 6px; color: #64748b; font-size: 12px; }
+.personal-center .pc-business-commission-help {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; padding: 0; border: 1px solid #cbd5e1; border-radius: 50%;
+  color: #64748b; background: #fff; font: inherit; cursor: pointer;
+}
+.personal-center .pc-business-commission-help-text { margin: 0; }
+.personal-center .pc-business-commission-table { min-width: 760px; }
+.personal-center .pc-business-commission-order {
+  max-width: 100%; padding: 0; border: 0; background: transparent; color: #185fa5;
+  font: inherit; text-align: left; overflow-wrap: anywhere; cursor: pointer;
+}
+.personal-center .pc-business-commission-order:hover { text-decoration: underline; }
+.personal-center .pc-business-commission-order:disabled { cursor: default; opacity: .6; }
+.personal-center .pc-business-commission-order:focus-visible,
+.personal-center .pc-business-commission-help:focus-visible { outline: 2px solid #185fa5; outline-offset: 3px; }
+.personal-center .pc-business-commission-pending { color: #92400e; }
+
+/* Dialog portals live outside the page. Scope every override to this own content class. */
+.personal-center.pc-business-commission-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; left: auto;
+  width: min(100vw, 480px); max-width: 480px; height: 100dvh; max-height: 100dvh;
+  transform: none; translate: none; animation: none; transition: none;
+  display: flex; flex-direction: column; gap: 0; padding: 0; overflow: hidden;
+  border: 0; border-left: 1px solid #e2e8f0; border-radius: 0;
+  background: #fff; color: #334155; box-shadow: -8px 0 24px rgb(15 23 42 / 10%); font-size: 13px;
+}
+.personal-center.pc-business-commission-drawer .pc-business-drawer-header {
+  flex-shrink: 0; padding: 16px 20px; border-bottom: 1px solid #e2e8f0; text-align: left;
+}
+.personal-center.pc-business-commission-drawer .pc-business-drawer-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.personal-center.pc-business-commission-drawer [data-slot="dialog-title"] { margin: 0; font-size: 18px; line-height: 1.5; }
+.personal-center.pc-business-commission-drawer [data-slot="dialog-description"] { color: #64748b; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.personal-center.pc-business-commission-drawer .pc-business-drawer-body { min-height: 0; padding: 20px; overflow-y: auto; overscroll-behavior: contain; }
+.personal-center.pc-business-commission-drawer .pc-business-drawer-values { display: flex; flex-direction: column; gap: 12px; margin: 0; }
+.personal-center.pc-business-commission-drawer .pc-business-drawer-values > div { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; }
+.personal-center.pc-business-commission-drawer .pc-business-drawer-values dt { flex-shrink: 0; color: #64748b; }
+.personal-center.pc-business-commission-drawer .pc-business-drawer-values dd { min-width: 0; margin: 0; text-align: right; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.personal-center.pc-business-commission-drawer .pc-business-drawer-pending { margin: 0 0 16px; color: #92400e; }
+.personal-center.pc-business-commission-drawer .pc-business-drawer-formula { margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0; }
+.personal-center.pc-business-commission-drawer .pc-business-drawer-formula h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; }
+.personal-center.pc-business-commission-drawer .pc-business-drawer-formula p,
+.personal-center.pc-business-commission-drawer .pc-business-drawer-audit p { margin: 8px 0 0; color: #64748b; font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
+.personal-center.pc-business-commission-drawer .pc-business-drawer-audit { margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 12px; }
+.personal-center.pc-business-commission-drawer .pc-business-drawer-audit summary { color: #185fa5; cursor: pointer; }
+.personal-center.pc-business-commission-drawer .pc-business-drawer-audit summary:focus-visible { outline: 2px solid #185fa5; outline-offset: 3px; }
+.personal-center.pc-business-commission-drawer .pc-business-drawer-audit .pc-business-drawer-values { margin-top: 16px; }
+.personal-center.pc-business-commission-drawer .pc-business-drawer-audit h4 { margin: 16px 0 0; font-weight: 500; }
 @media (max-width: 1023px) {
   .personal-center .pc-business-summaries { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 767px) {
   .personal-center .pc-business-summaries { grid-template-columns: minmax(0, 1fr); }
+  .personal-center.pc-business-commission-drawer .pc-business-drawer-header { padding: 14px 16px; }
+  .personal-center.pc-business-commission-drawer .pc-business-drawer-body { padding: 16px; }
 }

@@ -141,11 +141,14 @@ export default function ProfileBusinessPanel({ prefix, isCurrent }: {
             performance?.status === "available" ? <ProfilePerformanceResults result={performance} fetching={performanceQuery.isFetching} onPage={page => changePage("performance", page)} /> :
             <div className="pc-state">暂无可核实的业绩数据。</div>}
         </section>
-        <section className="pc-results" aria-label="我的提成"><h2 className="pc-section-title">我的提成</h2>
+        <section className="pc-results" aria-label="我的提成"><h2 className="pc-section-title pc-business-commission-title">我的提成
+          {!commissionQuery.isFetching && !commissionQuery.isPending && !commissionQuery.isError && commission?.status === "available" && commission.pendingCount > 0 &&
+            <span className="pc-business-status pc-business-status--pending">待核 {commission.pendingCount} 笔</span>}
+        </h2>
           {commissionQuery.isFetching || commissionQuery.isPending ? <BusinessLoading label="本人提成" /> : commissionQuery.isError ?
             <BusinessFailure label="提成" retry={() => { void commissionQuery.refetch(); }} fetching={commissionQuery.isFetching} /> :
             commission?.status === "unavailable" ? <BusinessFailure label="提成" unavailable={commission} retry={() => { void commissionQuery.refetch(); }} fetching={commissionQuery.isFetching} /> :
-            commission?.status === "available" ? <ProfileCommissionResults result={commission} fetching={commissionQuery.isFetching} onPage={page => changePage("commission", page)} /> :
+            commission?.status === "available" ? <ProfileCommissionResults key={JSON.stringify([businessPrefix, merchantId, commissionToken])} result={commission} fetching={commissionQuery.isFetching} onPage={page => changePage("commission", page)} /> :
             <div className="pc-state">暂无可核实的提成数据，发放来源未接通。</div>}
         </section>
       </>}

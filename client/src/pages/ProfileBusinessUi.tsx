@@ -2,14 +2,19 @@ import { Button } from "@/components/ui/button";
 import { decimalAmount } from "./profileModel";
 import "./ProfileBusiness.css";
 
-export function BusinessAmount({ label, amount, note, unavailableLabel = "暂无数据" }: {
+export function BusinessAmount({ label, amount, note, help, children, unavailableLabel = "暂无数据", formatAmount = decimalAmount }: {
   label: string;
   amount: string | null;
-  note: string;
+  note?: string;
+  help?: React.ReactNode;
+  children?: React.ReactNode;
   unavailableLabel?: string;
+  formatAmount?(value: string): string;
 }) {
-  return <div className="pc-stat"><span>{label}</span>
-    <strong>{amount === null ? unavailableLabel : decimalAmount(amount)}</strong><small>{note}</small>
+  return <div className="pc-stat">
+    {help ? <div className="pc-business-stat-heading"><span>{label}</span>{help}</div> : <span>{label}</span>}
+    <strong>{amount === null ? unavailableLabel : formatAmount(amount)}</strong>
+    {note && <small>{note}</small>}{children}
   </div>;
 }
 
