@@ -43,6 +43,7 @@ test_non_regular_read_cannot_block_on_fifo (test_release.OfflineRelease.test_non
 test_old_front_public_alias_cannot_be_baseline_front_public (test_release.OfflineRelease.test_old_front_public_alias_cannot_be_baseline_front_public) ... ok
 test_one_apply_no_replay_even_new_baseline (test_release.OfflineRelease.test_one_apply_no_replay_even_new_baseline) ... ok
 test_ownership_loss_never_rolls_back_or_closes_foreign_window (test_release.OfflineRelease.test_ownership_loss_never_rolls_back_or_closes_foreign_window) ... ok
+test_persistent_coord_directory_fsync_failure_restores_visible_recovery_hold (test_release.OfflineRelease.test_persistent_coord_directory_fsync_failure_restores_visible_recovery_hold) ... ok
 test_pinned_manifest_cannot_be_rewritten (test_release.OfflineRelease.test_pinned_manifest_cannot_be_rewritten) ... ok
 test_pm2_daemon_read_guard_contains_no_start_operation (test_release.OfflineRelease.test_pm2_daemon_read_guard_contains_no_start_operation) ... ok
 test_process_capture_only_hashes_environment (test_release.OfflineRelease.test_process_capture_only_hashes_environment) ... ok
@@ -64,11 +65,13 @@ test_success_receipt_write_failure_holds_window (test_release.OfflineRelease.tes
 test_two_new_assets_require_distinct_content_hashes (test_release.OfflineRelease.test_two_new_assets_require_distinct_content_hashes) ... ok
 test_unlisted_asset_rejected (test_release.OfflineRelease.test_unlisted_asset_rejected) ... ok
 test_unrelated_process_drift_cannot_be_hidden_by_front_reload (test_release.OfflineRelease.test_unrelated_process_drift_cannot_be_hidden_by_front_reload) ... ok
+test_visible_compensation_keeps_file_metadata (test_release.OfflineRelease.test_visible_compensation_keeps_file_metadata) ... ok
+test_visible_compensation_never_overwrites_foreign_bytes (test_release.OfflineRelease.test_visible_compensation_never_overwrites_foreign_bytes) ... ok
 
 ----------------------------------------------------------------------
-Ran 66 tests in 2.542s
+Ran 69 tests in 2.838s
 
 OK
 
 py_compile exit 0
-driver SHA256 ee6243502e19d5464ddfd26d30e1a4d22c5f26a760ec53315809f0bcaa84fe68
+driver SHA256 077a34a01ad0cb349bde935ac70320710f935da321702beefccddac91481e8cb

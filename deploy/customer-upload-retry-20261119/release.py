@@ -53,6 +53,23 @@ def cas(p, before, after):
     finally:
         if tmp.exists(): tmp.unlink()
 
+def reopen_visible(p, before, owned):
+    # Exceptional compensation only: directory fsync may remain unavailable.
+    # Do not fsync the temporary directory before replacing the closed window,
+    # otherwise the same failure prevents restoring the visible recovery hold.
+    p = safe(p); need(read(p) == before, 'REOPEN_FULL_BYTES_CAS_DRIFT'); info = p.stat()
+    tmp = p.parent / ('.upload-recovery-' + uuid.uuid4().hex)
+    try:
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, stat.S_IMODE(info.st_mode))
+        with os.fdopen(fd, 'wb') as f:
+            os.fchown(f.fileno(), info.st_uid, info.st_gid); f.write(owned); f.flush(); os.fsync(f.fileno())
+        need(read(p) == before, 'REOPEN_LAST_MOMENT_CAS_DRIFT'); os.replace(tmp, p)
+        need(read(p) == owned, 'REOPEN_VISIBLE_HOLD_DRIFT')
+        try: syncdir(p.parent); return False
+        except OSError: return True  # Visible hold restored; durability needs an operator.
+    finally:
+        if tmp.exists(): tmp.unlink()
+
 def pm2_existing():
     need(os.environ.get('PM2_HOME', '/root/.pm2') == '/root/.pm2', 'PM2_HOME_DRIFT')
     pid = int(read(Path('/root/.pm2/pm2.pid')).strip()); need(pid > 1, 'PM2_DAEMON_REQUIRED'); os.kill(pid, 0)
@@ -106,6 +123,7 @@ class Release:
         self.b = loads(self.bb); self.proof = self.staged(self.m['backend2Verified'])
         self.mutations = []; self.assets = []; self.owned = None; self.reloaded = False
         self.receipt_bytes = None
+        self.coord_reopen_durability_unconfirmed = False
     def staged(self, row):
         rel = Path(row['source']); need(not rel.is_absolute() and '..' not in rel.parts, 'STAGED_PATH_SCOPE')
         data = read(self.root / rel); need(sha(data) == row['sha256'], 'STAGED_HASH_DRIFT'); return data
@@ -242,7 +260,8 @@ class Release:
         c['window_history'].append(dict(c['window'])); c['updated_at'] = stamp(); closed = encode(c)
         try: cas(COORD, self.owned, closed)
         except BaseException:
-            if read(COORD) == closed: cas(COORD, closed, self.owned)
+            if read(COORD) == closed:
+                self.coord_reopen_durability_unconfirmed = reopen_visible(COORD, closed, self.owned)
             raise
     def apply(self, authorized):
         need(authorized, 'PARENT_EXPLICIT_REVIEWED_APPLY_REQUIRED'); need(not OPS.exists(), 'ONE_APPLY_NO_REPLAY'); self.validate()
@@ -296,10 +315,20 @@ class Release:
                     try:
                         self.owned_check(); c = loads(self.owned)
                         c['window'].update(status='recovery-required', receipt=str(OPS / 'receipt.json')); c['updated_at'] = stamp()
-                        updated = encode(c); cas(COORD, self.owned, updated); self.owned = updated
+                        updated = encode(c)
+                        try: cas(COORD, self.owned, updated)
+                        except OSError:
+                            current = read(COORD)
+                            if current == self.owned:
+                                warning = reopen_visible(COORD, self.owned, updated)
+                                self.coord_reopen_durability_unconfirmed |= warning
+                            elif current == updated: self.coord_reopen_durability_unconfirmed = True
+                            else: raise
+                        self.owned = updated
                     except BaseException: result['ownershipUnconfirmed'] = True  # never overwrite foreign coordination
             if receipt_failed: result['receiptPersistenceUnconfirmed'] = True
-            elif result['status'] == 'recovery-required': self.persist_receipt(result)
+            if self.coord_reopen_durability_unconfirmed: result['coordReopenDurabilityUnconfirmed'] = True
+            if not receipt_failed and result['status'] == 'recovery-required': self.persist_receipt(result)
             return result
 
 def main():

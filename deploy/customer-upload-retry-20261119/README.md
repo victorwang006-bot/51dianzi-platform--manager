@@ -208,3 +208,5 @@ python3 deploy/customer-upload-retry-20261119/release.py --help
 完整输出见 `tests-result.txt`；测试中的 `verified`、`rolled-back` 等均为 **mock 结果，不是生产 receipt**。
 
 收据保护：成功或精确回滚后必须先保存、fsync、回读收据，再关闭共享窗口。收据写入、文件/目录同步或回读失败时，即使原代码已健康恢复，也保留 shared_release_active=true/recovery-required，禁止自动重放。当前纯内存发布测试66项全部通过。
+
+协调目录持续fsync失败的补偿：在文件写入/文件fsync/原子rename仍可用时，先以完整自有字节CAS恢复可见shared=true，再报告coordReopenDurabilityUnconfirmed并保留recovery-required。绝不覆盖外来协调字节；不声称故障文件系统下的断电持久化保证，需人工恢复存储。当前69项离线测试通过。

@@ -289,6 +289,32 @@ class OfflineRelease(unittest.TestCase):
     def test_rollback_receipt_fsync_failure_holds_window(self): self.receipt_failure('fsync', True)
     def test_rollback_receipt_directory_fsync_failure_holds_window(self): self.receipt_failure('dirsync', True)
     def test_rollback_receipt_readback_failure_holds_window(self): self.receipt_failure('readback', True)
+    def test_persistent_coord_directory_fsync_failure_restores_visible_recovery_hold(self):
+        original = r.syncdir; failing = False
+        def syncdir(path):
+            nonlocal failing
+            state = self.state()
+            if Path(path) == self.coord.parent and (failing or state.get('window', {}).get('owner_task') == r.OWNER and state['window']['status'] == 'closed'):
+                failing = True; raise OSError('persistent coordination directory fsync failure')
+            return original(path)
+        with patch.object(r, 'syncdir', side_effect=syncdir): result = self.apply()
+        self.assertTrue(failing); self.assert_recovery(result)
+        self.assertEqual(self.state()['window']['status'], 'recovery-required')
+        self.assertIs(result['coordReopenDurabilityUnconfirmed'], True)
+        self.assertEqual(r.read(self.front), self.old_front); self.assertEqual(r.read(self.public / 'index.html'), self.old_html)
+        self.assertEqual(len(self.reloads()), 8)
+    def test_visible_compensation_never_overwrites_foreign_bytes(self):
+        target = self.root / 'compensation'; self.put(target, b'closed'); original = r.os.fsync
+        def race(fd):
+            original(fd)
+            if '.upload-recovery-' in os.readlink('/proc/self/fd/' + str(fd)): self.put(target, b'foreign')
+        with patch.object(r.os, 'fsync', side_effect=race):
+            with self.assertRaisesRegex(RuntimeError, 'REOPEN_LAST_MOMENT_CAS'): r.reopen_visible(target, b'closed', b'owned')
+        self.assertEqual(r.read(target), b'foreign')
+    def test_visible_compensation_keeps_file_metadata(self):
+        target = self.root / 'compensation'; self.put(target, b'closed'); target.chmod(0o640)
+        self.assertIs(r.reopen_visible(target, b'closed', b'owned'), False)
+        self.assertEqual(r.read(target), b'owned'); self.assertEqual(target.stat().st_mode & 0o777, 0o640)
     def test_foreign_front_bytes_are_never_overwritten(self):
         def fail(args):
             self.put(self.front, b'foreign-owner-code'); return 1
