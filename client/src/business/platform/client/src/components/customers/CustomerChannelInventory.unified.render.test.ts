@@ -7,15 +7,15 @@ import type { ChannelReferenceQuote, ChannelReferenceSource } from "@shared/chan
 import { channelInventoryListBusinessInputSchema } from "../../../../../../../../server/channelInventoryListBusinessInput";
 
 const runtime = vi.hoisted(() => {
-  const list = vi.fn(), detail = vi.fn(), update = vi.fn(), remove = vi.fn(), lookup = vi.fn(), invalidate = vi.fn(), authError = vi.fn();
+  const list = vi.fn(), batches = vi.fn(), detail = vi.fn(), update = vi.fn(), remove = vi.fn(), lookup = vi.fn(), invalidate = vi.fn(), authError = vi.fn();
   return {
-    list, detail, update, remove, lookup, invalidate, authError,
+    list, batches, detail, update, remove, lookup, invalidate, authError,
     rows: [] as Record<string, any>[], canWrite: true, bindingCount: 2, panel: null as any, publish: null as any,
     scope: { merchantId: 55, storageScope: "scope-7-31", frontUser: { id: 7, role: "user" },
       staffPrincipal: { frontendUserId: 7, enterpriseId: 31 },
       contextVerification: { identity: "scope-7-31", state: "verified", authorizationVersion: "auth-v1", readVersion: "read-v1" },
       officialInventoryPermissions: { read: true, write: true, note: true, publish: true, authorizationVersion: "native-v1" } },
-    utils: { client: { channelInventory: { listTeamMaterials: { query: list }, getTeamMaterialForEdit: { query: detail } } },
+    utils: { client: { channelInventory: { listUploadBatches: { query: batches }, listTeamMaterials: { query: list }, getTeamMaterialForEdit: { query: detail } } },
       channelInventory: { listTeamMaterials: { invalidate } } },
   };
 });
@@ -96,6 +96,7 @@ beforeEach(() => {
     officialInventoryPermissions: { read: true, write: true, note: true, publish: true, authorizationVersion: "native-v1" } };
   runtime.rows = [stock()]; runtime.canWrite = true; runtime.bindingCount = 2; runtime.panel = null; runtime.publish = null;
   runtime.list.mockReset().mockImplementation(input => Promise.resolve(page(input)));
+  runtime.batches.mockReset().mockImplementation(input => Promise.resolve({ items: [], total: 0, page: input.page, pageSize: input.pageSize, pageCount: 0 }));
   runtime.detail.mockReset().mockImplementation(({ id }) => Promise.resolve({ ...stock({ id }), channelId: 11, revision: 12, manualReferenceLcsc: "0", manualReferenceIckey: "2.340000000001",
     channelName: "PRIVATE-CHANNEL-NEVER-RENDER", note: "PRIVATE-NOTE-NEVER-RENDER", responsibleUserId: 999 }));
   runtime.update.mockReset().mockResolvedValue({}); runtime.invalidate.mockReset().mockResolvedValue(undefined);

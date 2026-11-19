@@ -108,12 +108,12 @@ function history(n = 1, changes: Partial<History> = {}): History {
       failedCount: 0,
       remainingMaterialCount: 0,
     },
-    // Even a fully privileged server response must not expose management writes.
+    // Download-only fixture: management hints cannot manufacture canConfirm.
     capabilities: {
       canDownload: true,
       canManage: true,
       canUploadResult: true,
-      canConfirm: true,
+      canConfirm: false,
       canCancel: true,
     },
     ...changes,
@@ -398,7 +398,7 @@ afterEach(async () => {
 });
 
 describe("上传历史：真正 portal 与只读列表", () => {
-  it("uses one real portal, compact title/columns, and no redundant or management UI even with all capabilities", async () => {
+  it("uses one real portal, compact columns, and no writes without canConfirm despite management hints", async () => {
     render();
     await settle();
     expect(host.querySelector('[role="dialog"]')).toBeNull();
@@ -408,11 +408,11 @@ describe("上传历史：真正 portal 与只读列表", () => {
       Array.from(document.querySelectorAll(".history-list thead th")).map(
         th => th.textContent
       )
-    ).toEqual(["", "文件名称", "上传时间", "上传人", "大小", "操作"]);
+    ).toEqual(["", "文件名称", "上传时间", "上传人", "成功 / 失败", "操作"]);
     expect(
       Array.from(row().querySelectorAll("button")).map(b => b.textContent)
-    ).toEqual(["原表-1.csv", "查看", "下载"]);
-    expect(row().textContent).toContain("3 B");
+    ).toEqual(["原表-1.csv", "查看物料"]);
+    expect(row().querySelector(".history-size")?.textContent).toBe("—");
     expect(document.body.textContent).not.toMatch(
       /禁止冗余客户名称|解析管理|独立历史|任务UUID|待解析|v0|成功0|待确认0|标记解析|回传|继续导入|继续处理|筛选/
     );
@@ -518,7 +518,7 @@ describe("上传历史：真正 portal 与只读列表", () => {
       .mockResolvedValueOnce({ items: [history()], nextCursor: "date-page-2" })
       .mockResolvedValueOnce({ items: [history(2)], nextCursor: null });
     select();
-    click(button("查看"));
+    click(button("原表-1.csv"));
     await settle();
     change(
       element<HTMLInputElement>('[aria-label="上传起始日期"]'),
@@ -596,7 +596,7 @@ describe("上传历史：原表与整理内容只读预览", () => {
     rt.get.mockResolvedValue(d);
     render();
     await settle();
-    click(button("查看"));
+    click(button("原表-1.csv"));
     await settle();
     expect(rt.get.mock.calls[0][0]).toEqual({ ...expected, historyId: id });
     expect(rt.get.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
@@ -671,7 +671,7 @@ describe("上传历史：原表与整理内容只读预览", () => {
     rt.get.mockResolvedValue(d);
     render();
     await settle();
-    click(button("查看"));
+    click(button("原表-1.csv"));
     await settle();
     const rows = Array.from(
       document.querySelectorAll(".history-sheet tbody tr")
@@ -730,7 +730,7 @@ describe("上传历史：原表与整理内容只读预览", () => {
     rt.get.mockResolvedValue(d);
     render();
     await settle();
-    click(button("查看"));
+    click(button("原表-1.csv"));
     await settle();
     expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
     expect(button("原文件").getAttribute("aria-selected")).toBe("true");
@@ -770,7 +770,9 @@ describe("上传历史：私有原件与客户端纯文件 ZIP", () => {
     });
     render();
     await settle();
-    click(button("下载", row()));
+    click(button("原表-1.csv", row()));
+    await settle();
+    click(button("下载", preview()));
     await settle();
     expect(rt.download).toHaveBeenCalledTimes(1);
     expect(rt.download.mock.calls[0][0]).toEqual({
@@ -779,7 +781,8 @@ describe("上传历史：私有原件与客户端纯文件 ZIP", () => {
       includeManifest: false,
     });
     expect(rt.download.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
-    expect(rt.get).not.toHaveBeenCalled();
+    expect(rt.get).toHaveBeenCalledTimes(1);
+    expect(rt.get.mock.calls[0][0]).toEqual({ ...expected, historyId: id });
     expect(savedFiles).toHaveLength(1);
     expect(savedFiles[0]).toBeInstanceOf(File);
     expect(savedFiles[0].name).toBe("私有原件.csv");
@@ -803,12 +806,11 @@ describe("上传历史：私有原件与客户端纯文件 ZIP", () => {
     rt.get.mockResolvedValue(detail(h));
     render();
     await settle();
-    expect(button("下载", row()).disabled).toBe(true);
+    expect(element<HTMLInputElement>(`[aria-label="选择文件${id}"]`).disabled).toBe(true);
     expect(
       element<HTMLInputElement>(`[aria-label="选择文件${id}"]`).disabled
     ).toBe(true);
-    click(button("下载", row()));
-    click(button("查看"));
+    click(button("原表-1.csv"));
     await settle();
     expect(button("下载", preview()).disabled).toBe(true);
     click(button("下载", preview()));
@@ -820,10 +822,10 @@ describe("上传历史：私有原件与客户端纯文件 ZIP", () => {
     render();
     await settle();
     select();
-    click(button("查看"));
+    click(button("原表-1.csv"));
     await settle();
     expect(preview().textContent).toContain("原文件不可用");
-    expect(button("下载", row()).disabled).toBe(true);
+    expect(element<HTMLInputElement>(`[aria-label="选择文件${id}"]`).disabled).toBe(true);
     expect(button("下载", preview()).disabled).toBe(true);
     expect(document.body.textContent).not.toContain("已选");
     expect(rt.download).not.toHaveBeenCalled();
@@ -971,7 +973,7 @@ describe("上传历史：取消、旧响应与授权 scope", () => {
     rt.get.mockImplementationOnce(() => read.promise);
     render();
     await settle();
-    click(button("查看"));
+    click(button("原表-1.csv"));
     expect(preview()).toBeTruthy();
     const signal = rt.get.mock.calls[0][1].signal;
     click(element('[aria-label="关闭预览"]'));
@@ -990,7 +992,7 @@ describe("上传历史：取消、旧响应与授权 scope", () => {
     rt.get.mockImplementationOnce(() => read.promise);
     render();
     await settle();
-    click(button("查看"));
+    click(button("原表-1.csv"));
     await settle();
     escape();
     expect(rt.get.mock.calls[0][1].signal.aborted).toBe(true);
@@ -1017,8 +1019,8 @@ describe("上传历史：取消、旧响应与授权 scope", () => {
       rt.get.mockImplementationOnce(() => old.promise).mockResolvedValueOnce(d);
       render();
       await settle();
-      click(button("查看", row(1)));
-      click(button("查看", row(2)));
+      click(button("原表-1.csv", row(1)));
+      click(button("原表-2.csv", row(2)));
       await settle();
       expect(rt.get.mock.calls[0][1].signal.aborted).toBe(true);
       expect(preview().textContent).toContain("FRESH-PREVIEW");
@@ -1093,7 +1095,7 @@ describe("上传历史：取消、旧响应与授权 scope", () => {
     await settle();
     click(element('[aria-label="选择本页文件"]'));
     click(button("下载所选"));
-    click(button("查看", row(1)));
+    click(button("原表-1.csv", row(1)));
     click(button("Close"));
     expect(rt.get.mock.calls[0][1].signal.aborted).toBe(true);
     expect(rt.download.mock.calls[0][1].signal.aborted).toBe(true);
@@ -1113,7 +1115,7 @@ describe("上传历史：取消、旧响应与授权 scope", () => {
     rt.get.mockImplementationOnce(() => read.promise);
     render();
     await settle();
-    click(button("查看"));
+    click(button("原表-1.csv"));
     await act(async () => root!.unmount());
     root = undefined;
     expect(rt.get.mock.calls[0][1].signal.aborted).toBe(true);
@@ -1129,7 +1131,7 @@ describe("上传历史：取消、旧响应与授权 scope", () => {
     rt.get.mockImplementationOnce(() => read.promise);
     render();
     await settle();
-    click(button("查看"));
+    click(button("原表-1.csv"));
     rt.current = false;
     await act(async () => {
       read.resolve(detail());
@@ -1176,7 +1178,7 @@ describe("上传历史：取消、旧响应与授权 scope", () => {
       rt.get.mockResolvedValue(d);
       render();
       await settle();
-      click(button("查看"));
+      click(button("原表-1.csv"));
       await settle();
       expect(preview().textContent).toContain("归属不匹配");
       expect(document.body.textContent).not.toContain("FOREIGN-SECRET");
@@ -1192,7 +1194,7 @@ describe("上传历史：取消、旧响应与授权 scope", () => {
     rt.get.mockImplementationOnce(() => old.promise);
     render();
     await settle();
-    click(button("查看"));
+    click(button("原表-1.csv"));
     const nextIdentity = {
       enterpriseId: 32,
       actorUserId: 9,
@@ -1242,11 +1244,10 @@ describe("上传历史：取消、旧响应与授权 scope", () => {
       storageBefore = storageSnapshot();
       render();
       await settle();
-      click(button("查看"));
+      click(button("原表-1.csv"));
       await settle();
       click(element('[aria-label="关闭预览"]'));
-      click(button("下载", row()));
-      await settle();
+        await settle();
       click(button("Close"));
       expect(storageSnapshot()).toEqual(storageBefore);
       storageGuards.forEach(guard => expect(guard).not.toHaveBeenCalled());

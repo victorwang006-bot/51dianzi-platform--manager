@@ -42,6 +42,7 @@ export function CustomerWorkbenchSupply(props: CustomerWorkbenchSupplyProps) {
   const context = contextEnabled && contextMatches && !contextQuery.isError && !contextQuery.isFetching
     && !contextQuery.isPlaceholderData && contextQuery.isFetchedAfterMount !== false ? contextQuery.data : undefined;
   const [inventoryRefreshVersion, setInventoryRefreshVersion] = useState(0);
+  const [selectedBatch, setSelectedBatch] = useState<{ key: string; id?: number } | null>(null);
   const missingIndustry = Boolean(context && !businessIndustryCodeSchema.safeParse(context.customer.industryCode).success);
   const uploadReason = authority.failed ? "库存权限核验失败，请重试。"
     : props.archived || context?.customer.archivedAt ? "该客户已归档，不能上传库存表。"
@@ -130,12 +131,14 @@ export function CustomerWorkbenchSupply(props: CustomerWorkbenchSupplyProps) {
       : !context ? <p className="customer-workbench-empty">正在核验客户供应渠道…</p> : null}
     {identity && readEnabled ? <CustomerChannelInventory key={sessionKey} customerId={customerId} customerVersion={props.customerVersion ?? context?.customer.version}
       identity={identity} enabled={Boolean(context)} refreshVersion={inventoryRefreshVersion}
+      selectedBatchId={selectedBatch?.key === sessionKey ? selectedBatch.id : undefined} onBatchChange={id => setSelectedBatch({ key: sessionKey, id })}
       isCurrent={() => lifecycle.current.mounted && live.current.identityKey === identity.key && live.current.readEnabled && (latest.current.isCurrent?.() ?? true)}
       onAction={props.onAction} onOpenChange={open => {
         inventoryOpenRef.current = open;
         latest.current.onOpenChange?.(open || openRef.current || historyOpenRef.current);
       }} onAuthorizationError={authority.onAuthorizationError} /> : null}
     {identity && historyCurrent() ? <CustomerUploadHistoryDialog customerId={customerId} identity={identity} isCurrent={historyCurrent} onClose={closeHistory}
+      onViewBatch={id => { if (!historyCurrent()) return; setSelectedBatch({ key: sessionKey, id }); setInventoryRefreshVersion(value => value + 1); closeHistory(); }}
       onComplete={() => { if (historyCurrent()) { setInventoryRefreshVersion(value => value + 1); void utils.channelInventory.customerSupplySummary.invalidate(); void utils.channelInventory.customerSupplyContext.invalidate(); } }} onAuthorizationError={authority.onAuthorizationError} /> : null}
     {active && identity && session ? <CustomerSupplyUploadDialog customerId={customerId} identity={identity} isCurrent={isSessionCurrent}
       onClose={() => { if (isSessionCurrent()) close(); }} onComplete={() => {

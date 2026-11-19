@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 const runtime = vi.hoisted(() => ({
-  query: vi.fn(), detail: vi.fn(), update: vi.fn(), remove: vi.fn(), lookup: vi.fn(), invalidate: vi.fn(),
+  query: vi.fn(), batches: vi.fn(), detail: vi.fn(), update: vi.fn(), remove: vi.fn(), lookup: vi.fn(), invalidate: vi.fn(),
   authError: vi.fn(), panel: null as any, publish: null as any,
   native: { read: true, write: true, note: true, publish: true, authorizationVersion: "native-v1" }, role: "user",
   scope: { merchantId: 55, storageScope: "scope-7-31", staffPrincipal: { frontendUserId: 7, enterpriseId: 31 },
@@ -12,7 +12,7 @@ const runtime = vi.hoisted(() => ({
 }));
 vi.mock("../../../../../BusinessScope", () => ({ useBusinessScope: () => ({ ...runtime.scope, frontUser: { id: 7, role: runtime.role }, officialInventoryPermissions: runtime.native }) }));
 vi.mock("../../../../../api/business-trpc", () => {
-  const utils = { client: { channelInventory: { listTeamMaterials: { query: runtime.query }, getTeamMaterialForEdit: { query: runtime.detail } } },
+  const utils = { client: { channelInventory: { listUploadBatches: { query: runtime.batches }, listTeamMaterials: { query: runtime.query }, getTeamMaterialForEdit: { query: runtime.detail } } },
     channelInventory: { listTeamMaterials: { invalidate: runtime.invalidate } } };
   return {
     createBusinessScopeTrpcClient: (merchantId: number) => {
@@ -71,6 +71,7 @@ function edit(label: string, value: string) {
 }
 beforeEach(() => {
   runtime.query.mockReset().mockImplementation(input => Promise.resolve(result(input)));
+  runtime.batches.mockReset().mockImplementation(input => Promise.resolve({ items: [], total: 0, page: input.page, pageSize: input.pageSize, pageCount: 0 }));
   runtime.detail.mockReset().mockImplementation(() => { throw new Error("Old lifecycle tests must not read edit details"); });
   runtime.update.mockReset().mockImplementation(() => { throw new Error("Old lifecycle tests must not write inventory"); });
   runtime.invalidate.mockReset().mockResolvedValue(undefined);

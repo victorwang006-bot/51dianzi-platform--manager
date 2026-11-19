@@ -208,12 +208,19 @@ export function createChannelInventoryManagementService({ getDb }: { getDb: () =
         const predicates: SQL[] = [sql`b.enterprise_id = ${scope.enterpriseId}`, sql`b.data_owner_user_id = ${scope.dataOwnerUserId}`,
           sql`b.uploaded_by_user_id = ${scope.actorUserId}`, scope.officialActor ? sql`b.uploaded_by_admin_account_id = ${scope.officialActor.adminAccountId}` : sql`TRUE`, sql`c.responsible_user_id = ${scope.actorUserId}`, batchCurrentMembership(scope), await linkedCompanyReadGate(tx, scope)];
         if (input.channelId !== undefined) predicates.push(sql`b.channel_id = ${input.channelId}`);
+        // Real CRM association, shared by count and page queries. The existing
+        // linkedCompanyReadGate still requires current CRM visibility.
+        if (input.customerId !== undefined) predicates.push(sql`EXISTS (SELECT 1 FROM crm_customer_supply_channels batch_customer_link
+          INNER JOIN crm_customers batch_customer ON batch_customer.enterpriseId = batch_customer_link.enterpriseId AND batch_customer.id = batch_customer_link.customerId
+          WHERE batch_customer_link.enterpriseId = b.enterprise_id AND batch_customer_link.dataOwnerUserId = b.data_owner_user_id
+            AND batch_customer_link.channelId = b.channel_id AND batch_customer_link.inventoryResponsibleUserId = c.responsible_user_id
+            AND batch_customer_link.customerId = ${input.customerId} FOR UPDATE)`);
         if (input.archived !== undefined) predicates.push(sql`b.archived = ${input.archived}`);
         const where = all(predicates);
         const total = Number(rows(await tx.execute(sql`SELECT COUNT(*) AS total ${BATCH_FROM} WHERE ${where} FOR UPDATE`))[0]?.total ?? 0);
         const found = rows(await tx.execute(sql`SELECT b.id, b.batch_code AS batchCode, b.name, b.file_name AS fileName, b.channel_id AS channelId, c.name AS channelName,
           COALESCE(NULLIF(u.name, ''), CONCAT('用户#', b.uploaded_by_user_id)) AS uploadedByName,
-          b.created_at AS createdAt, b.total_rows AS totalRows, b.revision, b.archived,
+          b.created_at AS createdAt, b.total_rows AS totalRows, b.revision, b.archived, b.closed,
           (SELECT COUNT(*) FROM channel_inventory_upload_batch_materials bm WHERE bm.enterprise_id = b.enterprise_id AND bm.batch_id = b.id) AS successCount,
           (SELECT COUNT(*) FROM channel_inventory_upload_batch_materials bm INNER JOIN channel_inventory_materials m ON m.id = bm.material_id AND m.enterprise_id = bm.enterprise_id
             WHERE bm.enterprise_id = b.enterprise_id AND bm.batch_id = b.id AND ${activeChannelMaterial}) AS remainingCount
@@ -223,7 +230,7 @@ export function createChannelInventoryManagementService({ getDb }: { getDb: () =
         for (const row of found) {
           const company = await linkedCompany(tx, scope, Number(row.channelId));
           if (company.linked && !company.customer) unavailable();
-          items.push({ id: Number(row.id), batchCode: String(row.batchCode), name: row.name == null ? null : String(row.name), fileName: String(row.fileName), channelId: Number(row.channelId), channelName: company.linked ? String(company.customer!.name) : String(row.channelName), uploadedByName: String(row.uploadedByName), createdAt: row.createdAt as Date | string, totalRows: Number(row.totalRows), successCount: Number(row.successCount), remainingCount: Number(row.remainingCount), revision: Number(row.revision), archived: bool(row.archived) });
+          items.push({ id: Number(row.id), batchCode: String(row.batchCode), name: row.name == null ? null : String(row.name), fileName: String(row.fileName), channelId: Number(row.channelId), channelName: company.linked ? String(company.customer!.name) : String(row.channelName), uploadedByName: String(row.uploadedByName), createdAt: row.createdAt as Date | string, totalRows: Number(row.totalRows), successCount: Number(row.successCount), remainingCount: Number(row.remainingCount), revision: Number(row.revision), archived: bool(row.archived), closed: bool(row.closed) });
         }
         return { items, total, page: input.page, pageSize: input.pageSize, pageCount: Math.ceil(total / input.pageSize) };
       });

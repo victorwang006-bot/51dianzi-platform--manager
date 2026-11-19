@@ -1,4 +1,5 @@
 import { activeChannelMaterial, activeUnaliasedChannelMaterial, materialUploadBatchId, lockMaterialUploadBatch, recordMaterialUploadBatch } from "./channelInventoryManagementPersistence";
+import { lockCustomerUploadFormalCreate } from "./customerUploadHistoryValidation";
 import { factoryMaterialPublicationMetadata } from "./channelFactoryPublication";
 import { createHash } from "node:crypto";
 import { sql, type SQL } from "drizzle-orm";
@@ -563,6 +564,7 @@ async function reconcileChannelCreate(db: SqlExecutor, scope: ChannelInventorySc
 async function reconcileMaterialCreate(db: SqlDatabase, scope: ChannelInventoryScope, requestId: string, payloadHash: string, input: MaterialCreateInput) {
   return db.transaction(async tx => {
   await resolveChannelInventoryAuthority(tx, scope, "stocks", true, true);
+  await lockCustomerUploadFormalCreate(tx, scope, input, payloadHash);
   await lockMaterialUploadBatch(tx, scope, input.uploadBatchId, input.channelId);
   const row = rows(await tx.execute(sql`
     SELECT ${MATERIAL_COLUMNS}, ${teamMaterialSourceEligibility(scope, true)} AS canViewSource, m.create_payload_hash AS createPayloadHash,
@@ -825,6 +827,7 @@ export function createChannelInventoryService(dependencies: ChannelInventoryServ
       try {
         return await db.transaction(async tx => {
           await lockAndRevalidateMutationScope(tx, scope, "stocks");
+          await lockCustomerUploadFormalCreate(tx, scope, input, payloadHash);
           await lockMaterialUploadBatch(tx, scope, input.uploadBatchId, input.channelId);
           const existing = rows(await tx.execute(sql`
             SELECT ${MATERIAL_COLUMNS}, ${teamMaterialSourceEligibility(scope, true)} AS canViewSource, m.create_payload_hash AS createPayloadHash,

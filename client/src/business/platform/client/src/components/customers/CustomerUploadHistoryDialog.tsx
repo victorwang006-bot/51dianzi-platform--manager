@@ -6,9 +6,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../channelInve
 import { batchUploadDialogStyle } from "../channelInventory/BatchUpload";
 import type { SupplyIdentity } from "./customerSupply";
 import { downloadedFile, savePrivateFile, type History, type HistoryDetail } from "./customerUploadHistory";
+import { CustomerSupplyUploadDialog } from "./CustomerSupplyUploadDialog";
+import { CustomerUploadFailuresDialog } from "./CustomerUploadFailuresDialog";
+import { inventoryRequestId } from "../channelInventory/management";
+import { definitiveWriteFailure } from "../../pages/ChannelInventoryHost";
 import "./CustomerUploadHistory.css";
 
-type Props = { customerId: number; identity: SupplyIdentity; isCurrent: () => boolean; onClose: () => void; onComplete: () => void; onAuthorizationError: (error: unknown) => void };
+type Props = { customerId: number; identity: SupplyIdentity; isCurrent: () => boolean; onClose: () => void; onComplete: () => void; onViewBatch?: (id: number) => void; onAuthorizationError: (error: unknown) => void };
 export function CustomerUploadHistoryDialog(props: Props) {
   return <HistorySession key={`${props.identity.key}:${props.customerId}`} {...props} />;
 }
@@ -21,6 +25,7 @@ function HistorySession(props: Props) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [feedback, setFeedback] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [page, setPage] = useState(0);
   const [refresh, setRefresh] = useState(0);
@@ -32,6 +37,11 @@ function HistorySession(props: Props) {
   const [sheetIndex, setSheetIndex] = useState(0);
   const [previewPage, setPreviewPage] = useState(0);
   const [unavailable, setUnavailable] = useState<string[]>([]);
+  const [continuing, setContinuing] = useState<{ detail: HistoryDetail; file?: File } | null>(null);
+  const [failureDetail, setFailureDetail] = useState<HistoryDetail | null>(null);
+  const [deleteReview, setDeleteReview] = useState<{ historyId: string; batchId: number; revision: number; eligible: number; conflicts: number; failed: number; requestId: string; locked: boolean } | null>(null);
+  const deleteFrozen = useRef<typeof deleteReview>(null);
+  const actionRunning = useRef(false);
   const mounted = useRef(true);
   const requests = useRef(new Set<AbortController>());
   const listSerial = useRef(0);
@@ -50,6 +60,7 @@ function HistorySession(props: Props) {
     setPreviewId(null); setDetail(null); setPreviewLoading(false); setPreviewError("");
   };
   const close = () => {
+    if (actionRunning.current || deleteFrozen.current?.locked) return;
     listSerial.current++; previewSerial.current++; requests.current.forEach(c => c.abort());
     latest.current.onClose();
   };
@@ -103,6 +114,78 @@ function HistorySession(props: Props) {
         if (isMissing(e)) setUnavailable(previous => Array.from(new Set([...previous, historyId])));
       }
     } finally { requests.current.delete(c); if (current() && token === previewSerial.current) setPreviewLoading(false); }
+  };
+  const readDetail = async (item: History) => {
+    const value = await utils.client.channelInventory.customerUploadHistoryGet.query({ ...expected, historyId: item.historyId });
+    if (!current()) throw new Error("当前会话已变化");
+    if (value.history.historyId !== item.historyId || value.history.customerId !== props.customerId
+      || (value.confirmation && value.confirmation.batch.customerId !== props.customerId)) throw new Error("上传记录归属不匹配");
+    return value;
+  };
+  const viewBatch = async (item: History) => {
+    if (!current() || actionRunning.current || deleteFrozen.current) return;
+    actionRunning.current = true; setBusy(true); setError("");
+    try { const value = await readDetail(item); if (value.confirmation) latest.current.onViewBatch?.(value.confirmation.batch.id); else setError("尚未导入物料"); }
+    catch (e) { if (current()) report(e); }
+    finally { actionRunning.current = false; if (current()) setBusy(false); }
+  };
+  const continueUpload = async (item: History) => {
+    if (!current() || actionRunning.current || deleteFrozen.current || !item.capabilities.canConfirm) return;
+    actionRunning.current = true; setBusy(true); setError("");
+    try {
+      const value = await readDetail(item);
+      if (!value.history.capabilities.canConfirm) throw new Error("当前账号不能继续该批次");
+      if (value.confirmation && (value.history.stats.repairableCount ?? 0) > 0) { setFailureDetail(value); return; }
+      let file: File | undefined;
+      if (!value.confirmation && !value.selectedVersion) {
+        const downloaded = await utils.client.channelInventory.customerUploadDownload.mutate({ ...expected,
+          files: [{ historyId: item.historyId, fileId: value.history.originalFile.fileId }], includeManifest: false });
+        if (!current()) return;
+        file = downloadedFile(downloaded);
+      }
+      if (current()) setContinuing({ detail: value, file });
+    } catch (e) { if (current()) report(e); }
+    finally { actionRunning.current = false; if (current()) setBusy(false); }
+  };
+  const prepareDelete = async (item: History) => {
+    if (!current() || actionRunning.current || deleteFrozen.current) return;
+    actionRunning.current = true; setBusy(true); setError(""); setFeedback("");
+    try {
+      const value = await readDetail(item);
+      if (value.history.capabilities.canConfirm !== true || value.history.batchClosed === true) throw new Error("当前账号不能删除该批次");
+      if (!value.confirmation) throw new Error("尚无已确认批次");
+      const preview = await utils.client.channelInventory.previewDeleteUploadBatch.query({ ...expected, id: value.confirmation.batch.id });
+      if (!current()) return;
+      if (![preview.total, preview.eligibleCount, preview.conflictCount, preview.revision].every(Number.isSafeInteger)
+        || preview.total < 0 || preview.eligibleCount < 0 || preview.conflictCount < 0 || preview.revision <= 0
+        || preview.eligibleCount + preview.conflictCount !== preview.total) throw new Error("删除范围未能确认");
+      const review = { historyId: item.historyId, batchId: value.confirmation.batch.id, revision: preview.revision,
+        eligible: preview.eligibleCount, conflicts: preview.conflictCount,
+        failed: (value.history.stats.repairableCount ?? value.history.stats.failedCount) + value.history.stats.pendingCount + value.history.stats.unknownCount,
+        requestId: inventoryRequestId(), locked: false };
+      deleteFrozen.current = review; setDeleteReview(review);
+    } catch (e) { if (current()) report(e); }
+    finally { actionRunning.current = false; if (current()) setBusy(false); }
+  };
+  const deleteBatch = async () => {
+    const frozen = deleteFrozen.current;
+    if (!frozen || !current() || actionRunning.current) return;
+    actionRunning.current = true; setBusy(true); setError("");
+    try {
+      const receipt = await utils.client.channelInventory.deleteUploadBatch.mutate({ ...expected, id: frozen.batchId,
+        expectedRevision: frozen.revision, requestId: frozen.requestId });
+      if (!current() || deleteFrozen.current !== frozen) return;
+      if (!Number.isSafeInteger(receipt.deletedCount) || !Number.isSafeInteger(receipt.skippedCount)
+        || receipt.deletedCount < 0 || receipt.skippedCount < 0 || receipt.deletedCount + receipt.skippedCount !== frozen.eligible + frozen.conflicts) throw new Error("删除回执未能确认");
+      deleteFrozen.current = null; setDeleteReview(null);
+      setFeedback(receipt.skippedCount ? `已删除 ${receipt.deletedCount} 条，${receipt.skippedCount} 条已变更，未删除` : "已删除");
+      latest.current.onComplete(); setRefresh(value => value + 1);
+    } catch (e) {
+      if (!current() || deleteFrozen.current !== frozen) return;
+      latest.current.onAuthorizationError(e);
+      if (definitiveWriteFailure(e)) { deleteFrozen.current = null; setDeleteReview(null); setError(message(e)); }
+      else { const locked = { ...frozen, locked: true }; deleteFrozen.current = locked; setDeleteReview(locked); setError("删除结果待确认，请按原请求重试"); }
+    } finally { actionRunning.current = false; if (current()) setBusy(false); }
   };
   const canDownload = (item: History) => item.capabilities.canDownload && !unavailable.includes(item.historyId);
   const download = async (files: History[]) => {
@@ -169,6 +252,13 @@ function HistorySession(props: Props) {
   const size = (bytes: number) => bytes < 1024 ? `${bytes} B` : bytes < 1048576 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1048576).toFixed(1)} MB`;
   const date = (value: string) => new Date(value).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
   const toggleVisible = (checked: boolean) => setSelected(previous => checked ? Array.from(new Set([...previous, ...selectable.map(item => item.historyId)])) : previous.filter(id => !selectable.some(item => item.historyId === id)));
+  if (failureDetail && current()) return <CustomerUploadFailuresDialog customerId={props.customerId} identity={props.identity} detail={failureDetail} isCurrent={current}
+    onClose={() => { if (current()) { setFailureDetail(null); setRefresh(value => value + 1); } }}
+    onComplete={() => { if (current()) latest.current.onComplete(); }} onAuthorizationError={props.onAuthorizationError} />;
+  if (continuing && current()) return <CustomerSupplyUploadDialog customerId={props.customerId} identity={props.identity}
+    initialFile={continuing.file} initialHistory={continuing.detail} isCurrent={current}
+    onClose={() => { if (current()) { setContinuing(null); setRefresh(value => value + 1); } }}
+    onComplete={() => { if (current()) latest.current.onComplete(); }} onAuthorizationError={props.onAuthorizationError} />;
   return <Dialog open onOpenChange={open => { if (!open) close(); }}><DialogContent className="ci-dialog customer-upload-history" style={{ ...batchUploadDialogStyle, width: "min(1180px, calc(100vw - 24px))", maxWidth: "1180px" }} aria-describedby={undefined} onPointerDownOutside={event => event.preventDefault()} onEscapeKeyDown={event => { if (previewId) { event.preventDefault(); cancelPreview(); } }}>
     <DialogHeader><DialogTitle>上传历史</DialogTitle></DialogHeader>
     <div className="history-toolbar">
@@ -176,13 +266,15 @@ function HistorySession(props: Props) {
       <div className="history-date-range"><input aria-label="上传起始日期" title="上传起始日期（北京时间）" type="date" value={dateFrom} max={dateTo || undefined} onChange={e => setDateFrom(e.target.value)} /><span>至</span><input aria-label="上传结束日期" title="上传结束日期（北京时间）" type="date" value={dateTo} min={dateFrom || undefined} onChange={e => setDateTo(e.target.value)} /></div>
       <button type="button" className="history-secondary" disabled={busy} onClick={() => setRefresh(value => value + 1)}>刷新</button>
     </div>
+    {deleteReview ? <section className="history-delete-review" role="alertdialog" aria-label="删除该批次？"><strong>删除该批次？</strong><p>将删除 {deleteReview.eligible} 条物料，关闭 {deleteReview.failed} 条待处理记录。</p>{deleteReview.conflicts ? <p>{deleteReview.conflicts} 条已变更，不会删除。</p> : null}<div className="history-row-actions"><button type="button" className="history-secondary" disabled={busy || deleteReview.locked} onClick={() => { if (!current() || actionRunning.current || deleteFrozen.current?.locked || deleteFrozen.current !== deleteReview) return; deleteFrozen.current = null; setDeleteReview(null); }}>取消</button><button type="button" className="history-secondary history-danger" disabled={busy} onClick={() => void deleteBatch()}>{busy ? "删除中…" : deleteReview.locked ? "按原请求重试" : "删除"}</button></div></section> : null}
+    {feedback ? <p role="status">{feedback}</p> : null}
     <div className="history-body">
       <div className="history-list-panel"><div className="history-scroll">
-        <table className="history-list"><thead><tr><th className="history-check"><input type="checkbox" aria-label="选择本页文件" checked={selectable.length > 0 && selectable.every(item => selected.includes(item.historyId))} disabled={loading || busy || !selectable.length} onChange={e => toggleVisible(e.target.checked)} /></th><th>文件名称</th><th>上传时间</th><th>上传人</th><th>大小</th><th>操作</th></tr></thead><tbody>{visible.map(item => <tr key={item.historyId} className={previewId === item.historyId ? "is-previewing" : undefined}>
+        <table className="history-list"><thead><tr><th className="history-check"><input type="checkbox" aria-label="选择本页文件" checked={selectable.length > 0 && selectable.every(item => selected.includes(item.historyId))} disabled={loading || busy || !selectable.length} onChange={e => toggleVisible(e.target.checked)} /></th><th>文件名称</th><th>上传时间</th><th>上传人</th><th>成功 / 失败</th><th>操作</th></tr></thead><tbody>{visible.map(item => <tr key={item.historyId} className={previewId === item.historyId ? "is-previewing" : undefined}>
           <td><input type="checkbox" aria-label={`选择文件${item.historyId}`} checked={selected.includes(item.historyId) && canDownload(item)} disabled={loading || busy || !canDownload(item)} onChange={e => setSelected(previous => e.target.checked ? Array.from(new Set([...previous, item.historyId])) : previous.filter(id => id !== item.historyId))} /></td>
           <td className="history-filename"><button type="button" className="history-link history-name" title={item.originalFile.fileName} disabled={loading} onClick={() => void openPreview(item.historyId)}>{item.originalFile.fileName}</button>{unavailable.includes(item.historyId) ? <span className="history-unavailable">原文件不可用</span> : null}</td>
-          <td className="history-date">{date(item.createdAt)}</td><td className="history-uploader" title={item.uploadedBy.displayName}>{item.uploadedBy.displayName}</td><td className="history-size">{size(item.originalFile.byteSize)}</td>
-          <td><div className="history-row-actions"><button type="button" className="history-link" disabled={loading} onClick={() => void openPreview(item.historyId)}>查看</button><button type="button" className="history-link" disabled={loading || busy || !canDownload(item)} title={!item.capabilities.canDownload ? "无下载权限" : unavailable.includes(item.historyId) ? "原文件不可用" : "下载原文件"} onClick={() => void download([item])}>下载</button></div></td>
+          <td className="history-date">{date(item.createdAt)}</td><td className="history-uploader" title={item.uploadedBy.displayName}>{item.uploadedBy.displayName}</td><td className="history-size">{item.stats.successCount || item.stats.repairableCount || item.stats.failedCount ? `${item.stats.successCount} / ${item.stats.repairableCount ?? item.stats.failedCount}` : "—"}{item.stats.unknownCount ? <small>待确认 {item.stats.unknownCount}</small> : null}</td>
+          <td><div className="history-row-actions"><button type="button" className="history-link" disabled={loading || busy || Boolean(deleteReview)} onClick={() => void viewBatch(item)}>查看物料</button>{item.capabilities.canConfirm && item.state !== "cancelled" && ((item.stats.repairableCount ?? 0) > 0 || item.stats.pendingCount > 0 || item.stats.unknownCount > 0 || !item.uploadBatch) ? <button type="button" className="history-link" disabled={loading || busy || Boolean(deleteReview)} onClick={() => void continueUpload(item)}>{(item.stats.repairableCount ?? 0) > 0 ? "处理失败" : "继续导入"}</button> : null}{item.uploadBatch && item.batchClosed === false && item.capabilities.canConfirm ? <button type="button" className="history-link history-danger" disabled={loading || busy || Boolean(deleteReview)} onClick={() => void prepareDelete(item)}>删除整批</button> : null}</div></td>
         </tr>)}</tbody></table>
         {loading ? <p className="history-empty" role="status">加载中…</p> : !visible.length && !error ? <p className="history-empty">{search || dateFrom || dateTo ? "无匹配文件" : "暂无上传记录"}</p> : null}
       </div>

@@ -173,7 +173,9 @@ export const BUSINESS_METHOD_CAPABILITIES = [
   { method: "channelInventory.customerUploadManageMark", module: "inventory", mode: "write" },
   { method: "channelInventory.customerUploadResult", module: "inventory", mode: "write" },
   { method: "channelInventory.customerUploadDownload", module: "inventory", mode: "read" },
+  { method: "channelInventory.customerUploadProblemsExport", module: "inventory", mode: "read" },
   { method: "channelInventory.customerUploadPrepareConfirmation", module: "inventory", mode: "write" },
+  { method: "channelInventory.customerUploadRepairPrepareConfirmation", module: "inventory", mode: "write" },
   { method: "channelInventory.customerUploadReconcileBatch", module: "inventory", mode: "write" },
   { method: "channelInventory.updateMaterial", module: "inventory", mode: "write" },
   { method: "channelInventory.listSharedMaterials", module: "inventory", mode: "read" },
@@ -822,6 +824,12 @@ function customerUploadDownloadMutation() {
     forwardBusinessMethod(ctx, input, { method, module: "inventory", mode: "read" }));
 }
 
+function customerUploadProblemsExportMutation() {
+  const method = "channelInventory.customerUploadProblemsExport";
+  return publicProcedure.input(businessInputSchema(method)).mutation(({ ctx, input }) =>
+    forwardBusinessMethod(ctx, input, { method, module: "inventory", mode: "read" }));
+}
+
 /** Local metadata cannot grant order visibility. The original get must succeed on
  * every call, inside the unchanged authorization fence, before native metadata IO. */
 async function withBusinessSalesOrderMetadata<T>(
@@ -950,7 +958,9 @@ const channelInventoryBusinessRouter = router({
   customerUploadManageMark: businessMutation("channelInventory.customerUploadManageMark", "inventory"),
   customerUploadResult: businessMutation("channelInventory.customerUploadResult", "inventory"),
   customerUploadDownload: customerUploadDownloadMutation(),
+  customerUploadProblemsExport: customerUploadProblemsExportMutation(),
   customerUploadPrepareConfirmation: businessMutation("channelInventory.customerUploadPrepareConfirmation", "inventory"),
+  customerUploadRepairPrepareConfirmation: businessMutation("channelInventory.customerUploadRepairPrepareConfirmation", "inventory"),
   customerUploadReconcileBatch: businessMutation("channelInventory.customerUploadReconcileBatch", "inventory"),
   updateMaterial: businessMutation("channelInventory.updateMaterial", "inventory"),
   listSharedMaterials: businessQuery("channelInventory.listSharedMaterials", "inventory"),

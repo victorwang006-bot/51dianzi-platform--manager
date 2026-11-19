@@ -15,7 +15,7 @@
 .customer-upload-history .history-list th:nth-child(3) { width:166px; }
 .customer-upload-history .history-list th:nth-child(4) { width:120px; }
 .customer-upload-history .history-list th:nth-child(5) { width:80px; }
-.customer-upload-history .history-list th:nth-child(6) { width:100px; }
+.customer-upload-history .history-list th:nth-child(6) { width:250px; }
 .customer-upload-history .history-list tbody tr:hover { background:#fafcff; }
 .customer-upload-history .history-list tbody tr.is-previewing { background:#f0f7fc; }
 .customer-upload-history .history-row-actions { display:flex; gap:14px; align-items:center; flex-wrap:nowrap; }
@@ -23,6 +23,10 @@
 .customer-upload-history .history-name { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; text-align:left; color:#334155; }
 .customer-upload-history .history-link:hover:not(:disabled) { color:#003f73; text-decoration:underline; }
 .customer-upload-history .history-secondary { border:1px solid #dbe3ed; border-radius:6px; padding:6px 12px; min-height:34px; color:#334155; background:#fff; font-size:13px; cursor:pointer; white-space:nowrap; }
+.customer-upload-history .history-danger { color:#b42318; }
+.customer-upload-history .history-delete-review { padding:12px; border:1px solid #fecaca; border-radius:6px; background:#fffafa; flex:none; }
+.customer-upload-history .history-delete-review p { margin:6px 0; }
+.customer-upload-history .history-size small { display:block; font-size:12px; color:#92400e; }
 .customer-upload-history .history-secondary:hover:not(:disabled) { border-color:#94a3b8; background:#f8fafc; }
 .customer-upload-history .history-icon { display:inline-flex; align-items:center; justify-content:center; border:0; border-radius:5px; width:28px; height:28px; padding:0; background:transparent; color:#64748b; font-size:20px; cursor:pointer; }
 .customer-upload-history .history-icon:hover:not(:disabled) { background:#f1f5f9; }

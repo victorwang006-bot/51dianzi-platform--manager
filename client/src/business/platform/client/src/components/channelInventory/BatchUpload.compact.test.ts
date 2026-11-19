@@ -57,9 +57,10 @@ beforeEach(() => {
   createCustomer.mockReset().mockResolvedValue({ id: 81, channelId: 11, batchCode: "COMPACT-81", revision: 1 });
   persistOriginal.mockReset().mockResolvedValue({ sessionData: { history: { historyId: 91 }, sourceConfirmed: true }, rows: Array.from({ length: 5 }, (_, i) => ({ row: i + 2, metadata: metadata(i + 2) })) });
   close.mockReset(); parse.mockReset().mockReturnValue(React.createElement("div", null, "人工整理入口")); sessionStorage.clear(); vi.stubGlobal("confirm", vi.fn(() => true));
+  vi.stubGlobal("fetch", vi.fn(() => { throw new Error("REAL_NETWORK_FORBIDDEN"); }));
   container = document.createElement("div"); document.body.append(container); root = createRoot(container);
 });
-afterEach(() => { act(() => root.unmount()); container.remove(); document.body.replaceChildren(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+afterEach(() => { act(() => root.unmount()); container.remove(); document.body.replaceChildren(); expect(fetch).not.toHaveBeenCalled(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("customer compact upload", () => {
   it("defaults to spreadsheet/manual entry, recognizes the standard sheet directly into preview and never invokes parsing", async () => {
@@ -75,10 +76,17 @@ describe("customer compact upload", () => {
     expect(Array.from(document.querySelectorAll("summary")).some(item => item.textContent === "调整列匹配")).toBe(true);
     expect(document.querySelector('[aria-label="明确确认本次核对币种为CNY"]')).toBeNull();
     expect(button("导入1条").disabled).toBe(false);
-    expect(isCollapsed(required(document.querySelector('[aria-label="核对第2行型号"]')))).toBe(true);
+    for (const label of ["型号", "品牌", "可供数量", "报价（CNY）", "币种", "税务口径", "Date Code", "交期", "备注"]) {
+      const control = required(document.querySelector(`[aria-label="核对第2行${label}"]`));
+      expect(isCollapsed(control), label).toBe(false);
+      expect(control.closest("td"), label).not.toBeNull();
+    }
+    input("核对第2行型号", "EDITED-ONE");
+    input("核对第2行可供数量", "4500");
+    input("核对第2行报价（CNY）", "0.250");
     click(button("导入1条")); await settle();
-    expect(confirmation().confirmedDrafts[0]).toMatchObject({ row: 2, draft: { partNumber: "ONE", brand: "TI", qty: "4000", price: "0.125", currency: "CNY" }, metadata: metadata(2) });
-    expect(create.mock.calls[0][0]).toMatchObject({ channelId: 11, currency: "CNY", price: "0.125", qty: 4000 });
+    expect(confirmation().confirmedDrafts[0]).toMatchObject({ row: 2, draft: { partNumber: "EDITED-ONE", brand: "TI", qty: "4500", price: "0.250", currency: "CNY" }, metadata: metadata(2) });
+    expect(create.mock.calls[0][0]).toMatchObject({ channelId: 11, partNumber: "EDITED-ONE", currency: "CNY", price: "0.250", qty: 4500 });
     expect(create.mock.calls[0][1]).toBe(confirmation().confirmedDrafts[0].rowRequestId);
     expect(create.mock.calls[0][2]).toBe(81); expect(parse).not.toHaveBeenCalled();
   });
@@ -102,10 +110,11 @@ describe("customer compact upload", () => {
     render(); await upload([["型号", "品牌", "币种"], ["ONE", "", "CNY"], ["TWO", "ADI", "CNY"], ["THREE", "   ", "CNY"]]);
     expect(button("导入1条").disabled).toBe(false);
     expect(isCollapsed(required(document.querySelector('[aria-label="核对第2行品牌"]')))).toBe(false);
-    expect(isCollapsed(required(document.querySelector('[aria-label="核对第3行品牌"]')))).toBe(true);
+    expect(isCollapsed(required(document.querySelector('[aria-label="核对第3行品牌"]')))).toBe(false);
+    input("核对第3行品牌", "NXP");
     input("空白行品牌", "TI"); click(button("仅填空白品牌"));
     expect(button("导入3条").disabled).toBe(false); click(button("导入3条")); await settle();
-    expect(confirmation().confirmedDrafts.map(row => row.draft.brand)).toEqual(["TI", "ADI", "TI"]);
+    expect(confirmation().confirmedDrafts.map(row => row.draft.brand)).toEqual(["TI", "NXP", "TI"]);
     expect(confirmation().confirmedDrafts.map(row => row.metadata)).toEqual([metadata(2), metadata(3), metadata(4)]);
   });
 

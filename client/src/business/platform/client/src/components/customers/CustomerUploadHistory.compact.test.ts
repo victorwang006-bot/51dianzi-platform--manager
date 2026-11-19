@@ -128,7 +128,7 @@ function history(changes: Partial<History> = {}): History {
       canDownload: true,
       canManage: true,
       canUploadResult: true,
-      canConfirm: true,
+      canConfirm: false,
       canCancel: true,
     },
     ...changes,
@@ -252,7 +252,7 @@ afterEach(async () => {
 });
 
 describe("compact read-only upload history", () => {
-  it("has the compact title and exactly filename/time/uploader/size/actions columns without technical or duplicate metadata", async () => {
+  it("has the compact title and exactly filename/time/uploader/success-failure/actions columns without technical or duplicate metadata", async () => {
     render();
     await settle();
     expect(document.querySelector("h2")?.textContent).toBe("上传历史");
@@ -260,18 +260,18 @@ describe("compact read-only upload history", () => {
       Array.from(document.querySelectorAll(".history-list thead th")).map(
         th => th.textContent
       )
-    ).toEqual(["", "文件名称", "上传时间", "上传人", "大小", "操作"]);
+    ).toEqual(["", "文件名称", "上传时间", "上传人", "成功 / 失败", "操作"]);
     const row = document.querySelector(".history-list tbody tr")!;
     expect(row.children[1].textContent).toBe("原库存.csv");
     expect(row.children[3].textContent).toBe("真实上传人");
-    expect(row.children[4].textContent).toBe("3 B");
+    expect(row.children[4].textContent).toBe("—");
     expect(row.textContent).not.toMatch(
       /当前客户|#7|#801|成功0|待确认0|v0|独立历史|待核对/
     );
     expect(row.textContent).not.toContain(id);
     expect(document.querySelector(".history-technical")).toBeNull();
   });
-  it("never reinstates parse management, resume, mark or result-upload actions even for server managers", async () => {
+  it("management hints never grant continuation when canConfirm is denied", async () => {
     render();
     await settle();
     expect(rt.list.mock.calls[0][0]).toEqual({
@@ -283,7 +283,7 @@ describe("compact read-only upload history", () => {
     expect(document.body.textContent).not.toMatch(
       /解析管理|继续导入|继续处理|标记解析|回传|恢复原批次|筛选/
     );
-    click(button("查看"));
+    click(button("原库存.csv"));
     await settle();
     expect(document.querySelector("input[type=file], textarea")).toBeNull();
     expect(rt.upload).not.toHaveBeenCalled();
@@ -308,14 +308,15 @@ describe("compact read-only upload history", () => {
         Array.from(
           document.querySelectorAll(".history-list tbody tr button")
         ).map(b => b.textContent)
-      ).toEqual(["原库存.csv", "查看", "下载"]);
+      ).toEqual(["原库存.csv", "查看物料"]);
+      click(button("原库存.csv")); await settle();
       expect(button("下载").disabled).toBe(false);
       expect(document.body.textContent).not.toMatch(
         /解析失败|已取消|待解析|待核实|继续导入|继续处理/
       );
     }
   );
-  it("opens filename and 查看 in the same side preview, never another portal or technical details", async () => {
+  it("reopens filename in the same side preview, never another portal or technical details", async () => {
     render();
     await settle();
     click(button("原库存.csv"));
@@ -328,7 +329,7 @@ describe("compact read-only upload history", () => {
     expect(document.querySelector('[role="tablist"]')).toBeNull();
     click(document.querySelector('[aria-label="关闭预览"]')!);
     expect(document.querySelector(".history-preview")).toBeNull();
-    click(button("查看"));
+    click(button("原库存.csv"));
     await settle();
     expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
     expect(rt.get).toHaveBeenCalledTimes(2);
@@ -346,22 +347,22 @@ describe("compact read-only upload history", () => {
     expect(buttons("下载所选")).toHaveLength(0);
     expect(rt.download).not.toHaveBeenCalled();
   });
-  it("leaves 查看 enabled but disables selection/download when original-file capability is denied", async () => {
+  it("leaves preview enabled but disables selection/download when original-file capability is denied", async () => {
     const h = history();
     h.capabilities.canDownload = false;
     rt.list.mockResolvedValue({ items: [h], nextCursor: null });
     rt.get.mockResolvedValue(detail(h));
     render();
     await settle();
-    expect(button("查看").disabled).toBe(false);
-    expect(button("下载").disabled).toBe(true);
+    expect(button("原库存.csv").disabled).toBe(false);
+    expect(buttons("下载")).toHaveLength(0);
     expect(
       document.querySelector<HTMLInputElement>(`[aria-label="选择文件${id}"]`)!
         .disabled
     ).toBe(true);
-    click(button("查看"));
+    click(button("原库存.csv"));
     await settle();
-    expect(buttons("下载")).toHaveLength(2);
+    expect(buttons("下载")).toHaveLength(1);
     buttons("下载").forEach(b => expect(b.disabled).toBe(true));
     expect(rt.download).not.toHaveBeenCalled();
   });
@@ -374,7 +375,7 @@ describe("compact read-only upload history", () => {
     render();
     await settle();
     expect(document.body.textContent).not.toContain("解析管理");
-    expect(button("查看")).toBeTruthy();
+    expect(button("原库存.csv")).toBeTruthy();
     expect(rt.list.mock.calls[0][0]).toMatchObject({
       ...expected,
       customerId: 801,

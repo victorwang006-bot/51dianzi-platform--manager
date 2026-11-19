@@ -43,7 +43,7 @@ export function officialInventoryMethodRequirement(method: string): "read" | "wr
   if (["channelInventory.notesList", "channelInventory.notesAdd", "channelInventory.notesEdit",
     "channelInventory.collaborationNotesList", "channelInventory.collaborationNotesAdd", "channelInventory.collaborationNotesEdit"].includes(method)) return "note";
   if (["channelInventory.customerUploadOriginal", "channelInventory.customerUploadManageMark", "channelInventory.customerUploadResult",
-    "channelInventory.customerUploadPrepareConfirmation", "channelInventory.customerUploadReconcileBatch"].includes(method)) return "write";
+    "channelInventory.customerUploadPrepareConfirmation", "channelInventory.customerUploadRepairPrepareConfirmation", "channelInventory.customerUploadReconcileBatch"].includes(method)) return "write";
   if (["channelInventory.deleteMaterials", "channelInventory.restoreMaterial", "channelInventory.createUploadBatch", "channelInventory.updateUploadBatch", "channelInventory.previewDeleteUploadBatch", "channelInventory.deleteUploadBatch", "channelInventory.createChannel", "channelInventory.updateChannel", "channelInventory.setChannelActive", "channelInventory.getTeamMaterialForEdit",
     "channelInventory.createCustomerUploadBatch", "channelInventory.createCustomerMaterial", "channelInventory.updateTeamMaterial", "channelInventory.createMaterial", "channelInventory.updateMaterial", "channelInventory.setMaterialShare"].includes(method)) return "write";
   return "read";
