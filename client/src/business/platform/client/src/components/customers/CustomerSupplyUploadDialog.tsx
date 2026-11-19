@@ -184,40 +184,96 @@ function CustomerSupplyUploadSession(props: Props) {
     frozen.current = data; setSessionData(data); setConfirmedExisting(false); setMessage("");
   };
   const standardAttachment = useRef<{ history: History; sessionData: SessionData; file: File; rows?: { row: number; metadata: ReviewRow }[] } | null>(null);
-  const originalOperation = useRef<{ requestId: string; mode: "standard" | "parse"; file: Awaited<ReturnType<typeof fileInput>> } | null>(null);
+  type OriginalLock = { requestId: string; hash: string; mode: "standard" | "parse"; fileName: string; customerVersion: SessionData["customerVersion"] };
+  type OriginalSnapshot = { raw: string; lock: OriginalLock };
+  const originalOperation = useRef<{ requestId: string; mode: "standard" | "parse"; file: Awaited<ReturnType<typeof fileInput>>; snapshot: OriginalSnapshot } | null>(null);
+  const originalInFlight = useRef<{ file: File; mode: "standard" | "parse"; promise: Promise<History> } | null>(null);
   const prepared = useRef<ManagedBatchEntry[] | undefined>(undefined);
   const canonicalEntries = useRef(new Map<string, ConfirmationEntry>(props.initialHistory?.confirmation?.entries.map(entry => [entry.rowRequestId, entry]) ?? []));
-  const persistOriginal = async (file: File, mode: "standard" | "parse"): Promise<History> => {
-    const data = frozen.current;
-    if (!current() || !data) throw new Error("客户上传会话已失效。");
-    const encoded = await fileInput(file);
-    if (!current()) throw new Error("当前身份已变化。");
-    const operationKey = `customer-upload-original:${customerSupplySessionSuffix(props.identity, props.customerId)}`;
-    const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(encoded.base64)))).map(b => b.toString(16).padStart(2, "0")).join("");
-    if (!current()) throw new Error("当前身份已变化。");
-    let requestId: string;
-    const stored = sessionStorage.getItem(operationKey);
-    if (stored) {
-      const pending = JSON.parse(stored);
-      if (!isUUID(pending.requestId) || pending.hash !== hash || pending.mode !== mode || pending.fileName !== encoded.fileName || pending.customerVersion !== data.customerVersion) throw new Error("另一个原文件提交结果待确认，请恢复原文件/UUID或先核实服务端历史，不能重建上传。");
-      requestId = pending.requestId;
-    } else {
-      requestId = uuid(); sessionStorage.setItem(operationKey, JSON.stringify({ requestId, hash, mode, fileName: encoded.fileName, customerVersion: data.customerVersion }));
-    }
-    if (originalOperation.current && (originalOperation.current.requestId !== requestId || originalOperation.current.file.base64 !== encoded.base64)) throw new Error("原文件未知请求不能更换字节或UUID。");
-    originalOperation.current = { requestId, mode, file: encoded };
-    const fresh = await readContext();
-    if (!current() || !contextAllowed(fresh)) throw new Error("客户版本、渠道或上传权限已变化。");
-    const abort = controller();
-    try {
-      const result = await utils.client.channelInventory.customerUploadOriginal.mutate({ ...expected, customerId: props.customerId, expectedCustomerVersion: data.customerVersion, mode, file: encoded, requestId }, { signal: abort.signal });
-      if (!current()) throw new Error("提交结果待原身份核实，请保留原请求。");
-      if (result.history.customerId !== props.customerId || result.history.mode !== mode || !isUUID(result.history.historyId)) throw new Error("原文件任务回执身份不匹配。");
-      sessionStorage.removeItem(operationKey); originalOperation.current = null;
-      if (mode === "standard") { const next = { ...data, history: historySession(result.history) }; frozen.current = next; setSessionData(next); }
-      return result.history;
-    } catch (error) { if (current()) props.onAuthorizationError(error); throw error; }
-    finally { requests.current.delete(abort); }
+  const persistOriginal = (file: File, mode: "standard" | "parse"): Promise<History> => {
+    const pending = originalInFlight.current;
+    if (pending) return pending.file === file && pending.mode === mode ? pending.promise : Promise.reject(new Error("原文件提交尚在进行，请保留原文件和UUID，不能并发更换上传。"));
+    const send = async (): Promise<History> => {
+      const data = frozen.current;
+      if (!current() || !data) throw new Error("客户上传会话已失效。");
+      const encoded = await fileInput(file);
+      if (!current()) throw new Error("当前身份已变化。");
+      const operationKey = `customer-upload-original:${customerSupplySessionSuffix(props.identity, props.customerId)}`;
+      const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(encoded.base64)))).map(b => b.toString(16).padStart(2, "0")).join("");
+      if (!current()) throw new Error("当前身份已变化。");
+      const sameLock = (a: OriginalLock, b: OriginalLock) => a.requestId === b.requestId && a.hash === b.hash && a.mode === b.mode && a.fileName === b.fileName && a.customerVersion === b.customerVersion;
+      const readLock = (): OriginalSnapshot | null => {
+        const raw = sessionStorage.getItem(operationKey);
+        if (raw === null) return null;
+        const lock: OriginalLock = JSON.parse(raw);
+        if (!lock || typeof lock !== "object" || !isUUID(lock.requestId) || typeof lock.hash !== "string" || !/^[0-9a-f]{64}$/.test(lock.hash)
+          || !["standard", "parse"].includes(lock.mode) || typeof lock.fileName !== "string" || !lock.fileName.trim()
+          || !Number.isSafeInteger(lock.customerVersion) || lock.customerVersion < 0) throw new Error("原文件恢复记录无效，不能重建上传；请核实原请求。");
+        return { raw, lock };
+      };
+      const previous = originalOperation.current;
+      if (previous && (previous.file.base64 !== encoded.base64 || previous.file.fileName !== encoded.fileName || previous.mode !== mode || previous.snapshot.lock.customerVersion !== data.customerVersion)) throw new Error("原文件未知请求不能更换字节或UUID。");
+      let snapshot: OriginalSnapshot;
+      const stored = readLock();
+      if (stored) {
+        const lock = stored.lock;
+        if (lock.hash !== hash || lock.mode !== mode || lock.fileName !== encoded.fileName || lock.customerVersion !== data.customerVersion) throw new Error("另一个原文件提交结果待确认，请恢复原文件/UUID或先核实服务端历史，不能重建上传。");
+        if (previous && (previous.requestId !== lock.requestId || previous.snapshot.raw !== stored.raw || !sameLock(previous.snapshot.lock, lock))) throw new Error("原文件恢复锁已变化，不能重建上传。");
+        snapshot = stored;
+      } else {
+        if (previous) throw new Error("原文件恢复锁无法确认，请保留原UUID并核实服务端历史，不能重建上传。");
+        const lock: OriginalLock = { requestId: uuid(), hash, mode, fileName: encoded.fileName, customerVersion: data.customerVersion };
+        snapshot = { lock, raw: JSON.stringify(lock) };
+        // Hold the UUID even when storage throws, silently drops, or replaces this write.
+        originalOperation.current = { requestId: lock.requestId, mode, file: encoded, snapshot };
+        sessionStorage.setItem(operationKey, snapshot.raw);
+        const saved = readLock();
+        if (!saved || saved.raw !== snapshot.raw || !sameLock(saved.lock, lock)) throw new Error("无法确认原文件恢复记录已保存，已阻止提交。");
+      }
+      const requestId = snapshot.lock.requestId;
+      const operation = { requestId, mode, file: encoded, snapshot };
+      originalOperation.current = operation;
+      const ownsRequest = () => current() && frozen.current?.customerVersion === data.customerVersion
+        && contextRef.current?.customer.version === data.customerVersion && originalOperation.current === operation && operation.requestId === requestId;
+      const release = () => {
+        try {
+          if (!ownsRequest()) return false;
+          const held = readLock();
+          if (!held || held.raw !== snapshot.raw || !sameLock(held.lock, snapshot.lock) || !ownsRequest()) return false;
+          sessionStorage.removeItem(operationKey);
+          if (sessionStorage.getItem(operationKey) !== null || !ownsRequest()) return false;
+          originalOperation.current = null;
+          return true;
+        } catch { return false; }
+      };
+      const fresh = await readContext();
+      if (!ownsRequest() || !contextAllowed(fresh) || fresh.customer.version !== data.customerVersion) throw new Error("客户版本、渠道或上传权限已变化。");
+      const abort = controller();
+      try {
+        let history: History;
+        try {
+          const result = await utils.client.channelInventory.customerUploadOriginal.mutate({ ...expected, customerId: props.customerId, expectedCustomerVersion: data.customerVersion, mode, file: encoded, requestId }, { signal: abort.signal });
+          history = result.history;
+        } catch (error) {
+          const response = error as { data?: { code?: unknown }; message?: unknown } | null;
+          const prefix = "原文件未保存：";
+          if (response && typeof response === "object" && response.data?.code === "BAD_REQUEST" && typeof response.message === "string"
+            && response.message.startsWith(prefix) && response.message.slice(prefix.length).trim()) release();
+          // Preserve the real backend rejection; no synthetic response or unused marker.
+          throw error;
+        }
+        if (!ownsRequest()) throw new Error("提交结果待原身份核实，请保留原请求。");
+        if (!history || history.customerId !== props.customerId || history.mode !== mode || !isUUID(history.historyId)) throw new Error("原文件任务回执身份不匹配。");
+        if (!release()) throw new Error("原文件恢复锁未能安全清理，提交结果待核实，请保留原文件和UUID，不能重建上传。");
+        if (mode === "standard") { const next = { ...data, history: historySession(history) }; frozen.current = next; setSessionData(next); }
+        return history;
+      } catch (error) { if (current()) props.onAuthorizationError(error); throw error; }
+      finally { requests.current.delete(abort); }
+    };
+    const slot = { file, mode, promise: undefined as unknown as Promise<History> };
+    slot.promise = send().finally(() => { if (originalInFlight.current === slot) originalInFlight.current = null; });
+    originalInFlight.current = slot;
+    return slot.promise;
   };
   const reconcileQueue = async (entries: ManagedBatchEntry[]): Promise<ManagedBatchEntry[]> => {
     const data = frozen.current;
@@ -246,7 +302,10 @@ function CustomerSupplyUploadSession(props: Props) {
   const initialRecovery = (() => {
     if (!props.initialHistory?.confirmation || !sessionData) return undefined;
     const confirmation = props.initialHistory.confirmation;
-    try { return { channelId: confirmation.batch.channelId, entries: recoveryEntries(confirmation), name: props.initialHistory.history.originalFile.fileName, sessionData, uploadBatch: { requestId: confirmation.batchRequestId, id: confirmation.batch.id, batchCode: confirmation.batch.batchCode } }; }
+    try { return { channelId: confirmation.batch.channelId, entries: recoveryEntries(confirmation), name: props.initialHistory.history.originalFile.fileName, sessionData,
+      skippedRows: confirmation.excludedRows.filter(row => props.initialHistory?.selectedVersion?.rows.some(candidate => candidate.logicalRowId === row.logicalRowId)
+        || row.sourceRefs?.some(ref => ref.sheetIndex === 0 && ref.rowNumber > 1)).length,
+      uploadBatch: { requestId: confirmation.batchRequestId, id: confirmation.batch.id, batchCode: confirmation.batch.batchCode } }; }
     catch { return undefined; }
   })();
   const complete = () => {
@@ -262,10 +321,22 @@ function CustomerSupplyUploadSession(props: Props) {
   };
   const viewResults = (entries: BatchEntry[]) => {
     if (!current()) return;
+    if (!entries.length || entries.some(entry => entry.status !== "success")) { setMessage("仍有结果待确认，请继续原批次。"); return; }
     const channelId = completedSupplyChannel(entries, props.customerId);
     if (!channelId) { setMessage("成功回执渠道不一致，已阻止跳转，请核实原批次。"); return; }
+    let location = supplyLocation(channelId, "materials");
+    const batchId = (entries[0] as ManagedBatchEntry).uploadBatchId;
+    if (Number.isSafeInteger(batchId) && batchId! > 0 && entries.every(entry => {
+      if ((entry as ManagedBatchEntry).uploadBatchId !== batchId || entry.payload.channelId !== channelId || entry.receipt?.uploadBatchId !== batchId) return false;
+      try { supplyReceipt(entry.receipt, props.customerId, channelId, batchId); return true; }
+      catch { return false; }
+    })) {
+      const [path, search] = location.split("?");
+      const params = new URLSearchParams(search); params.set("uploadBatchId", String(batchId));
+      location = `${path}?${params.toString()}`;
+    }
     // Close the real portal before navigating, never on the first successful row.
-    complete(); props.onClose(); navigate(supplyLocation(channelId, "materials"));
+    complete(); props.onClose(); navigate(location);
   };
   if (!currentRef.current || invalidated) return null;
   const globalIssuesReady = Boolean(props.initialHistory?.confirmation) || (props.initialHistory?.selectedVersion?.issues ?? []).filter(issue => issue.rowId === null).every(issue => issue.resolved || Boolean(globalResolutions[issue.issueId]?.trim()));
@@ -281,6 +352,8 @@ function CustomerSupplyUploadSession(props: Props) {
   const upload = context && sessionData ? <BatchUpload
     key={`${props.identity.key}:${props.customerId}`}
     dialogMode="content" dialogControlsRef={uploadControls}
+    skipIssueRows
+    initialExcludedRowCount={sessionData.history?.versionId ? sessionData.history.sourceExclusions?.length ?? 0 : 0}
     channels={context.channel ? [{ id: context.channel.id, name: context.customer.name,
       active: contextAllowed(context, false) && (!chooseExisting || confirmedExisting) && !settingUp && globalIssuesReady }] : []}
     channelTotal={context.channel ? 1 : 0} initialChannelId={context.channel?.id}
@@ -313,9 +386,9 @@ function CustomerSupplyUploadSession(props: Props) {
     reconcileQueue={reconcileQueue}
     renderSingleEntry={controls => <CustomerSupplySingleEntry {...controls} isCurrent={current} />}
     renderConfirmationDetails={() => <>
-      {sessionData.history?.sourceExclusions?.length && sessionData.history.versionId ? <div className="ci-dialog-note">结果版本已明确排除的行（保留原证据及问题处置依据）：{sessionData.history.sourceExclusions.map(row => <p key={row.logicalRowId}>{row.sourceRefs.map(ref => `${ref.sheetName} #${ref.rowNumber}`).join("；")}：{row.reason}</p>)}</div> : null}
+      {sessionData.history?.sourceExclusions?.length && sessionData.history.versionId ? <details className="ci-dialog-note"><summary>已排除 {sessionData.history.sourceExclusions.length} 条</summary>{sessionData.history.sourceExclusions.map(row => <p key={row.logicalRowId}>{row.sourceRefs.map(ref => `${ref.sheetName} #${ref.rowNumber}`).join("；")}：{row.reason}</p>)}</details> : null}
       {props.initialHistory?.selectedVersion?.issues.filter(issue => issue.rowId === null).map(issue => <label className="ci-field" key={issue.issueId}><span>全局问题：{issue.message}</span><input aria-label={`核对全局问题${issue.issueId}`} maxLength={1000} disabled={sourceLocked || issue.resolved} value={issue.resolved ? issue.resolution ?? "" : globalResolutions[issue.issueId] ?? ""} placeholder="须明确填写人工解决说明；排除行不能代替" onChange={e => { const values = { ...globalResolutions, [issue.issueId]: e.target.value }; const data = { ...frozen.current!, history: { ...frozen.current!.history!, globalResolutions: Object.entries(values).filter(([, resolution]) => resolution.trim()).map(([issueId, resolution]) => ({ issueId, resolution })) } }; frozen.current = data; setSessionData(data); setGlobalResolutions(values); }} /></label>)}
-      {sessionData.history?.otherSheetCount ? <label className="ci-dialog-note"><input aria-label="明确确认本次仅导入首工作表" type="checkbox" checked={sessionData.history.sourceScopeConfirmed === true} disabled={sourceLocked} onChange={e => { const data = { ...frozen.current!, history: { ...frozen.current!.history!, sourceScopeConfirmed: e.target.checked } }; frozen.current = data; setSessionData(data); }} />我已核对全部原工作表，本次仅导入首表；其余 {sessionData.history.otherSheetCount} 张工作表明确排除，原文件证据继续保留。</label> : null}
+      {sessionData.history?.otherSheetCount ? <label className="ci-dialog-note"><input aria-label="明确确认本次仅导入首工作表" type="checkbox" checked={sessionData.history.sourceScopeConfirmed === true} disabled={sourceLocked} onChange={e => { const data = { ...frozen.current!, history: { ...frozen.current!.history!, sourceScopeConfirmed: e.target.checked } }; frozen.current = data; setSessionData(data); }} />仅导入首表，跳过其余 {sessionData.history.otherSheetCount} 张表；完整原文件保留。</label> : null}
     </>}
     sourceDetails={message ? <div className="customer-supply-details">
       {message ? <p className="ci-error" role="alert">{message}</p> : null}
@@ -354,6 +427,9 @@ function CustomerSupplyUploadSession(props: Props) {
     onCreateCustomerBatch={async (input, confirmation) => {
       try {
         const data = frozen.current;
+        if (!Number.isSafeInteger(input.totalRows) || input.totalRows < 1 || input.totalRows > 1000
+          || (confirmation && (confirmation.confirmedDrafts.length !== input.totalRows || !confirmation.confirmedDrafts.length)))
+          throw new Error("没有有效行或导入数量无效，不能准备批次。");
         if (!current() || !data) throw new Error("客户或授权已变化，已停止上传。");
         if (chooseExisting && !confirmedExisting) throw new Error("请先明确确认所选渠道真实身份。");
         const fresh = await readContext();
@@ -384,7 +460,13 @@ function CustomerSupplyUploadSession(props: Props) {
             };
             const profile = data.sourceProfile;
             if (profile && !SOURCE_TYPES.includes(profile.type)) throw new Error("客户来源真实类型无效。");
-            const excludedRows = [...(data.history.sourceExclusions ?? []), ...confirmation.excludedRows.map(row => { const metadata = row.metadata as ReviewRow; if (!metadata?.logicalRowId || !row.reason.trim() || row.reason.length > 1000) throw new Error("排除行必须提供真实逻辑行和原因。"); return { logicalRowId: metadata.logicalRowId, reason: row.reason, sourceRefs: metadata.sourceRefs }; })];
+            // These reasons are operation facts, not invented human issue verification.
+            const excludedRows = [...(data.history.sourceExclusions ?? []), ...confirmation.excludedRows.map(row => {
+              const metadata = row.metadata as ReviewRow;
+              if (!isUUID(metadata?.logicalRowId) || !metadata.sourceRefs?.length || !row.reason.trim() || row.reason.length > 1000)
+                throw new Error("排除行缺少真实来源证据或操作记录。");
+              return { logicalRowId: metadata.logicalRowId, reason: row.reason, sourceRefs: metadata.sourceRefs };
+            })];
             const resolvedIssues = confirmationIssueResolutions(detail.selectedVersion, [...confirmation.confirmedDrafts, ...confirmation.excludedRows].map(row => row.metadata as ReviewRow), excludedRows, data.history.globalResolutions);
             const result = await utils.client.channelInventory.customerUploadPrepareConfirmation.mutate({ ...expected, historyId: data.history.historyId, ...(data.history.versionId ? { versionId: data.history.versionId } : {}), expectedRevision: data.history.revision,
               requestId: data.history.prepareRequestId, batchRequestId: confirmation.batchRequestId, expectedCustomerVersion: data.customerVersion,
@@ -456,7 +538,6 @@ function CustomerSupplyUploadSession(props: Props) {
       } catch (error) { if (current()) props.onAuthorizationError(error); throw error; }
     }}
     onComplete={complete}
-    onFinish={result => { if (result.complete && result.entries.length && current()) viewResults(result.entries); }}
     onViewResults={viewResults}
   /> : null;
   const missingIndustry = context && !businessIndustryCodeSchema.safeParse(context.customer.industryCode).success;
