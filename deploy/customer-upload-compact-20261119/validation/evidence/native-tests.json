@@ -1,0 +1,45 @@
+{
+  "status": "passed",
+  "realNetworkCalls": 0,
+  "realDatabaseWrites": 0,
+  "checks": [
+    {
+      "case": "native spreadsheet→review→explicit CNY→original queue receipts",
+      "sha256": "90372ddcfad0f5bae348d156649eae933de8fe2f84d96aa198e07cbcac196db0",
+      "factorySha256": "4ebaca11bb4bddcb2e49dee4ca576fd762d356fc58f4b416718caec4a6f5b369",
+      "seam": "only native factory return exposed for offline test; native lexical helpers/SheetJS/queue/schemas unchanged",
+      "module": "assets/BusinessWorkbenchPage-upload-compact-90372ddcfad0f5ba.js"
+    },
+    {
+      "case": "native history direct authorized original-task continuation",
+      "module": "assets/BusinessWorkbenchPage-upload-compact-90372ddcfad0f5ba.js",
+      "sha256": "90372ddcfad0f5bae348d156649eae933de8fe2f84d96aa198e07cbcac196db0",
+      "factorySha256": "4ebaca11bb4bddcb2e49dee4ca576fd762d356fc58f4b416718caec4a6f5b369"
+    },
+    {
+      "case": "native detail confirmation witness blocks missing mapping and original-file rebuild",
+      "module": "assets/BusinessWorkbenchPage-upload-compact-90372ddcfad0f5ba.js",
+      "sha256": "90372ddcfad0f5bae348d156649eae933de8fe2f84d96aa198e07cbcac196db0",
+      "factorySha256": "4ebaca11bb4bddcb2e49dee4ca576fd762d356fc58f4b416718caec4a6f5b369"
+    },
+    {
+      "case": "native spreadsheet→review→explicit CNY→original queue receipts",
+      "sha256": "2fa71e1ec0baef3274f7ade5bb412ac033b2280f2253a1662e83a9d9234f614b",
+      "factorySha256": "c9c5ab1f375813c912217fcd65b068d94d88ca3eadc4c6217a1fafe8ce010371",
+      "seam": "only native factory return exposed for offline test; native lexical helpers/SheetJS/queue/schemas unchanged",
+      "module": "assets/BusinessWorkbenchPage-upload-compact-2fa71e1ec0baef32.js"
+    },
+    {
+      "case": "native history direct authorized original-task continuation",
+      "module": "assets/BusinessWorkbenchPage-upload-compact-2fa71e1ec0baef32.js",
+      "sha256": "2fa71e1ec0baef3274f7ade5bb412ac033b2280f2253a1662e83a9d9234f614b",
+      "factorySha256": "c9c5ab1f375813c912217fcd65b068d94d88ca3eadc4c6217a1fafe8ce010371"
+    },
+    {
+      "case": "native detail confirmation witness blocks missing mapping and original-file rebuild",
+      "module": "assets/BusinessWorkbenchPage-upload-compact-2fa71e1ec0baef32.js",
+      "sha256": "2fa71e1ec0baef3274f7ade5bb412ac033b2280f2253a1662e83a9d9234f614b",
+      "factorySha256": "c9c5ab1f375813c912217fcd65b068d94d88ca3eadc4c6217a1fafe8ce010371"
+    }
+  ]
+}

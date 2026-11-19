@@ -193,6 +193,9 @@ function BatchUploadSession(props: Props) {
   const [parseBusy, setParseBusy] = useState(false);
   const [edits, setEdits] = useState<Record<number, Draft>>({});
   const [currencyConfirmed, setCurrencyConfirmed] = useState(false);
+  const customerMode = Boolean(props.onOriginalFilePersist);
+  const [reviewedMapping, setReviewedMapping] = useState<(keyof Draft)[]>([]);
+  const [blankBrand, setBlankBrand] = useState("");
   const excludedReasons = useRef<Record<number, string>>({});
   const rowMetadata = useRef(new Map<number, unknown>(props.initialRows?.map(r => [r.row, r.metadata]) ?? []));
   const importSession = useRef<unknown>(props.sessionData);
@@ -263,11 +266,17 @@ function BatchUploadSession(props: Props) {
   ) => {
     setGrid(next);
     setRawGrid(originalValues);
-    setMapping(suggestMapping(next[0]?.map(String) ?? []));
+    const suggested = suggestMapping(next[0]?.map(String) ?? []);
+    // Reuse the importer aliases, but never silently pick the first ambiguous column.
+    if (customerMode) fields.forEach(field => {
+      if ((next[0] ?? []).filter(header => suggestMapping([header])[field.key] === 0).length > 1) suggested[field.key] = -1;
+    });
+    setMapping(suggested);
     setName(fileName);
     setExcluded([]); setEdits({}); setCurrencyConfirmed(false); excludedReasons.current = {};
+    setReviewedMapping([]); setBlankBrand("");
     setError("");
-    setStep(2);
+    setStep(customerMode ? 3 : 2);
     latest.current.onDirtyChange(true);
   };
   const selectFile = async (file: File, retry = false) => {
@@ -364,17 +373,21 @@ function BatchUploadSession(props: Props) {
       if (current()) setError("模板生成失败，请稍后重试。");
     }
   };
-  const historyOptIn = rowMetadata.current.size > 0 && entryMode === "table";
+  const historyOptIn = (customerMode || rowMetadata.current.size > 0) && entryMode === "table";
   const allRows = mapGrid(grid, mapping, rawGrid).map(r => {
     let draft = edits[r.row] ?? r.draft;
     if (historyOptIn && !edits[r.row] && mapping.currency < 0) draft = { ...draft, currency: "" };
-    if (currencyConfirmed) draft = { ...draft, currency: "CNY" };
-    const errors = validateDraft(draft);
     const metadata = rowMetadata.current.get(r.row) as { issues?: { field: string; resolved: boolean }[] } | undefined;
+    const originalCurrency = mapping.currency < 0 ? "" : String(grid[r.row - 1]?.[mapping.currency] ?? "").trim();
+    const currencyNeedsConfirmation = customerMode && historyOptIn && (!originalCurrency || r.draft.currency !== "CNY" || Boolean(metadata?.issues?.some(issue => issue.field === "currency" && !issue.resolved)));
+    if (customerMode && historyOptIn && !edits[r.row] && !originalCurrency) draft = { ...draft, currency: "" };
+    if (currencyConfirmed && !customerMode) draft = { ...draft, currency: "CNY" };
+    const errors = validateDraft(draft);
     if (historyOptIn && metadata?.issues?.some(issue => (issue.field === "source" || issue.field === "other") && !issue.resolved)) errors.push("来源或其他问题尚未填写核实依据");
     if (historyOptIn && draft.currency.trim() !== "CNY") errors.push("币种待人工明确CNY；不能默认或换算外币");
+    if (currencyNeedsConfirmation && !currencyConfirmed) errors.push("请明确选择本次候选币种为CNY");
     if (historyOptIn && !rowMetadata.current.has(r.row)) errors.push("缺少服务端原行证据，不能猜测来源");
-    return { ...r, draft, errors };
+    return { ...r, draft, errors, currencyNeedsConfirmation };
   });
   const rows = allRows.filter(r => !excluded.includes(r.row));
   const excludeRow = (row: number) => {
@@ -386,13 +399,32 @@ function BatchUploadSession(props: Props) {
     setExcluded(v => [...v, row]);
   };
   const bad = rows.filter(r => r.errors.length);
-  const mappingErrors = validateMapping(mapping);
+  const mappingErrors = validateMapping(mapping).filter(message => !(customerMode && mapping.brand === -1 && rows.length > 0 && rows.every(row => row.draft.brand.trim()) && message === "品牌为必填字段，必须映射列"));
+  const mappingNeedsReview = customerMode ? fields.filter(field => {
+    const ambiguous = (grid[0] ?? []).filter(header => suggestMapping([header])[field.key] === 0).length > 1;
+    return (ambiguous && !reviewedMapping.includes(field.key))
+      || (field.required && mapping[field.key] < 0 && !(field.key === "brand" && rows.length > 0 && rows.every(row => row.draft.brand.trim())))
+      || (mapping[field.key] >= 0 && fields.some(other => other.key !== field.key && mapping[other.key] === mapping[field.key]));
+  }) : [];
+  if (mappingNeedsReview.some(field => !reviewedMapping.includes(field.key) && (grid[0] ?? []).filter(header => suggestMapping([header])[field.key] === 0).length > 1)) mappingErrors.push("存在歧义列，请明确选择匹配列或不导入");
   const selected = channels.find(c => c.id === Number(channelId))
     ?? (resolvedChannel.current?.id === Number(channelId) ? resolvedChannel.current : undefined);
-  const sourceReady = selected?.active || (props.onCreateCustomerBatch && props.customerSourceReady);
+  const sourceReady = customerMode && props.customerSourceReady !== undefined ? props.customerSourceReady && (!selected || selected.active) : selected?.active || (props.onCreateCustomerBatch && props.customerSourceReady);
   const completed = entries.filter(e => e.status === "success").length;
   const hasQueue = entries.length > 0;
   const modeLocked = busy || loading || parseBusy || hasQueue || !!preparing || !!savedPreparation || !!saved || restoreBlocked;
+  const confirmDisabledReason = !current() ? "客户或授权已变化，请重新核验" : modeLocked ? "请先完成或恢复原批次" : !sourceReady ? "请先核实客户来源、工作表范围及全局问题" : mappingErrors.length ? mappingErrors.join("；") : !rows.length ? "没有可导入的候选行" : bad.length ? `还有 ${bad.length} 条需要核对：${bad[0].errors.join("；")}` : "";
+  const changeMapping = (field: keyof Draft, column: number) => {
+    setMapping(value => ({ ...value, [field]: column }));
+    setReviewedMapping(value => [...value, field]);
+    setEdits({}); setCurrencyConfirmed(false);
+  };
+  const renderMapping = (items: typeof fields) => <div className="ci-batch-mapping">{items.map(field => <label className="ci-field" key={field.key}>
+    <span>{field.label}{field.required ? " *" : ""}</span>
+    <select aria-label={`匹配${field.label}`} className="ci-batch-control" value={mapping[field.key]} onChange={event => changeMapping(field.key, Number(event.target.value))}>
+      <option value={-1}>不导入 / 留空</option>{(grid[0] ?? []).map((header, index) => <option key={index} value={index}>{String(header || `第${index + 1}列`)}</option>)}
+    </select>{mapping[field.key] >= 0 ? <small>示例：{String(grid[1]?.[mapping[field.key]] ?? "") || "空白"}</small> : null}
+  </label>)}</div>;
   const changeMode = (mode: "table" | "single" | "parse") => {
     if (!current() || running.current || modeLocked || mode === entryMode) return;
     if (parseDirty && !window.confirm("解析上传尚未提交，切换将关闭草稿，是否继续？")) return;
@@ -411,6 +443,7 @@ function BatchUploadSession(props: Props) {
   };
   const start = async () => {
     if (running.current || !current() || restoreBlocked || saved || savedPreparation) return;
+    if (customerMode && !hasQueue && !preparing && confirmDisabledReason) { setError(confirmDisabledReason); return; }
     if (!sourceReady) {
       setError("请选择有权访问且启用的已加载渠道。");
       return;
@@ -584,6 +617,14 @@ function BatchUploadSession(props: Props) {
     if (running.current) { event.preventDefault(); stop.current = true; }
   };
   useImperativeHandle(props.dialogControlsRef, () => ({ close, onEscapeKeyDown }));
+  const renderCustomerFields = (row: typeof rows[number]) => {
+    const issues = (rowMetadata.current.get(row.row) as { issues?: { field: string; resolved: boolean }[] } | undefined)?.issues ?? [];
+    const validValues: Draft = { partNumber: "核对", brand: "核对", qty: "", dateCode: "", price: "", currency: "CNY", taxIncluded: "unknown", leadTime: "", note: "" };
+    const editable = fields.filter(field => field.key !== "currency");
+    const problemFields = editable.filter(field => validateDraft({ ...row.draft, [field.key]: validValues[field.key] }).length < validateDraft(row.draft).length || issues.some(issue => !issue.resolved && issue.field === field.key));
+    const input = (field: typeof fields[number]) => <label key={field.key} className="ci-field"><span>{field.label}</span><input aria-label={`核对第${row.row}行${field.label}`} value={row.draft[field.key]} onChange={event => setEdits(value => ({ ...value, [row.row]: { ...row.draft, [field.key]: event.target.value } }))} /></label>;
+    return <>{problemFields.map(input)}<details><summary>{row.errors.length ? "编辑其他字段" : "编辑本行"}</summary>{editable.filter(field => !problemFields.includes(field)).map(input)}</details></>;
+  };
   const content = <>
         <div
           data-testid="channel-inventory-batch-scroll"
@@ -601,16 +642,20 @@ function BatchUploadSession(props: Props) {
           {props.renderSingleEntry ? <div className="customer-supply-methods">
             <div role="group" aria-label="客户物料上传方式" className="customer-supply-method-controls">
               <Button type="button" variant="outline" className={`ci-button${entryMode === "table" ? " ci-primary" : ""}`} aria-pressed={entryMode === "table"} disabled={modeLocked} onClick={() => changeMode("table")}>表格上传</Button>
-              <Button type="button" variant="outline" className={`ci-button${entryMode === "single" ? " ci-primary" : ""}`} aria-pressed={entryMode === "single"} disabled={modeLocked} onClick={() => changeMode("single")}>单条上传</Button>
-              {props.renderParseEntry ? <Button type="button" variant="outline" className={`ci-button${entryMode === "parse" ? " ci-primary" : ""}`} aria-pressed={entryMode === "parse"} disabled={modeLocked} onClick={() => changeMode("parse")}>解析上传</Button> : null}
+              <Button type="button" variant="outline" className={`ci-button${entryMode === "single" ? " ci-primary" : ""}`} aria-pressed={entryMode === "single"} disabled={modeLocked} onClick={() => changeMode("single")}>{customerMode ? "手动录入" : "单条上传"}</Button>
+              {!customerMode && props.renderParseEntry ? <Button type="button" variant="outline" className={`ci-button${entryMode === "parse" ? " ci-primary" : ""}`} aria-pressed={entryMode === "parse"} disabled={modeLocked} onClick={() => changeMode("parse")}>解析上传</Button> : null}
             </div>
             {modeLocked ? <p className="ci-dialog-note">请先完成或恢复原批次。</p> : null}
           </div> : null}
+          {customerMode && props.renderParseEntry ? <details className="ci-batch-note" open={entryMode === "parse" || (step === 3 && mapping.partNumber < 0) || Boolean(retryFile)}>
+            <summary>其他方式</summary><p>无法识别表格时，可提交原文件供人工整理；不会自动调用解析。</p>
+            <Button type="button" variant="outline" className="ci-button" disabled={modeLocked} onClick={() => changeMode("parse")}>提交原文件人工整理</Button>
+          </details> : null}
           {entryMode === "parse" && props.renderParseEntry ? props.renderParseEntry({ onDirtyChange: dirty => { setParseDirty(dirty); props.onDirtyChange(dirty); }, onBusyChange: setParseBusy }) : null}
           {entryMode !== "parse" ? <div className="ci-batch-steps" style={{ padding: "0" }}>
-            {(entryMode === "single" ? ["填写物料", "预览确认"] : ["选文件", "匹配字段", "确认上传"]).map((label, i) => (
-              <span key={label} className={step >= (entryMode === "single" && i === 1 ? 3 : i + 1) ? "is-active" : ""}>
-                <b>{step > (entryMode === "single" && i === 1 ? 3 : i + 1) ? "✓" : i + 1}</b>
+            {(customerMode ? [entryMode === "single" ? "填写物料" : "选文件", "核对", "结果"] : entryMode === "single" ? ["填写物料", "预览确认"] : ["选文件", "匹配字段", "确认上传"]).map((label, i) => (
+              <span key={label} className={step >= (customerMode ? [1, 3, 4][i] : entryMode === "single" && i === 1 ? 3 : i + 1) ? "is-active" : ""}>
+                <b>{step > (customerMode ? [1, 3, 4][i] : entryMode === "single" && i === 1 ? 3 : i + 1) ? "✓" : i + 1}</b>
                 {label}
               </span>
             ))}
@@ -792,6 +837,11 @@ function BatchUploadSession(props: Props) {
         {(step === 3 || step === 4) ? props.renderConfirmationDetails?.() : null}
         {step === 3 && (
           <>
+            {customerMode && entryMode === "table" ? <>
+              <div className="ci-batch-file"><Icon kind="file" /><div><strong>{name}</strong><p>已自动识别列并保留原表行号；请核对候选，不猜品牌、价格或币种。</p></div></div>
+              {mappingNeedsReview.length ? <section aria-label="需要调整的列匹配"><p className="ci-error">以下列无法识别或存在歧义，请调整匹配；缺品牌也可批量补齐空白。</p>{renderMapping(mappingNeedsReview)}</section> : null}
+              <details className="ci-batch-note"><summary>调整列匹配</summary>{renderMapping(fields.filter(field => !mappingNeedsReview.some(item => item.key === field.key)))}<p>未匹配列不会导入。调整匹配将重新生成候选，请重新核对币种和编辑值。</p></details>
+            </> : null}
             <div className="ci-batch-summary">
               <span>
                 <b>{rows.length - bad.length}</b> 条通过校验
@@ -803,11 +853,22 @@ function BatchUploadSession(props: Props) {
                 <small>已明确移除 {excluded.length} 行</small>
               )}
             </div>
-            {historyOptIn ? <label className="ci-dialog-note"><input type="checkbox" aria-label="明确确认本次核对币种为CNY" checked={currencyConfirmed} onChange={e => setCurrencyConfirmed(e.target.checked)} /> 我已核对本次所选物料币种为CNY（不自动换算外币）；未知数量、价格和税务口径请核对后编辑，或注明问题排除。</label> : null}
+            {historyOptIn && customerMode && (currencyConfirmed || rows.some(row => row.currencyNeedsConfirmation || row.draft.currency.trim() !== "CNY")) ? <label className="ci-field">
+              <span>明确本次候选币种（不自动换算外币）</span>
+              <select className="ci-batch-control" aria-label="明确确认本次核对币种为CNY" value={currencyConfirmed ? "CNY" : ""} onChange={event => {
+                const confirmed = event.target.value === "CNY"; setCurrencyConfirmed(confirmed);
+                if (confirmed) setEdits(value => ({ ...value, ...Object.fromEntries(rows.map(row => [row.row, { ...row.draft, currency: "CNY" }])) }));
+              }}><option value="">尚未确认，请核对原币种和报价</option><option value="CNY">已核对，本次候选币种为 CNY</option></select>
+              <small>只明确币种，不修改报价数字；如原报价为外币，请人工核实人民币报价后编辑，无法核实请排除。</small>
+            </label> : historyOptIn && !customerMode ? <label className="ci-dialog-note"><input type="checkbox" aria-label="明确确认本次核对币种为CNY" checked={currencyConfirmed} onChange={e => setCurrencyConfirmed(e.target.checked)} /> 我已核对本次所选物料币种为CNY（不自动换算外币）；未知数量、价格和税务口径请核对后编辑，或注明问题排除。</label> : null}
+            {customerMode && historyOptIn && rows.some(row => !row.draft.brand.trim()) ? <div className="ci-batch-channel">
+              <label className="ci-field"><span>批量补齐空白品牌</span><input aria-label="空白行品牌" maxLength={64} value={blankBrand} onChange={event => setBlankBrand(event.target.value)} /></label>
+              <Button type="button" variant="outline" className="ci-button" disabled={!blankBrand.trim()} onClick={() => setEdits(value => ({ ...value, ...Object.fromEntries(rows.filter(row => !row.draft.brand.trim()).map(row => [row.row, { ...row.draft, brand: blankBrand.trim() }])) }))}>仅填空白品牌</Button>
+            </div> : null}
             {bad.length > 0 && (
               <div className="ci-error ci-batch-errors">
                 <div>
-                  请修正文件后重新上传，或明确移除错误行。不会静默跳过错误记录。
+                  {customerMode ? "请在此核对错误字段，或注明原因排除无法核实的行。不会静默跳过错误记录。" : "请修正文件后重新上传，或明确移除错误行。不会静默跳过错误记录。"}
                 </div>
                 <Button
                   type="button"
@@ -827,7 +888,7 @@ function BatchUploadSession(props: Props) {
                     <th>原表行号</th>
                     <th>料号 / 品牌</th>
                     <th>可供数量</th>
-                    <th>报价 CNY</th>
+                    <th>{customerMode ? "报价 / 币种" : "报价 CNY"}</th>
                     <th>税务口径</th>
                     {entryMode === "single" ? <><th>交期</th><th>Date Code</th><th>备注（仅本人）</th></> : null}
                     <th>校验</th>
@@ -836,7 +897,7 @@ function BatchUploadSession(props: Props) {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.slice(0, 100).map(r => (
+                  {(customerMode ? [...bad, ...rows.filter(row => !row.errors.length)] : rows).slice(0, 100).map(r => (
                     <tr
                       key={r.row}
                       className={r.errors.length ? "has-error" : ""}
@@ -847,7 +908,7 @@ function BatchUploadSession(props: Props) {
                         <small>{r.draft.brand || "—"}</small>
                       </td>
                       <td>{r.draft.qty || "待确认"}</td>
-                      <td>{r.draft.price || "面议"}</td>
+                      <td>{r.draft.price || (customerMode ? "未填写" : "面议")}{customerMode ? <small>{r.draft.currency || "币种未确认"}</small> : null}</td>
                       <td>
                         {r.draft.taxIncluded === "true"
                           ? "含税"
@@ -865,7 +926,7 @@ function BatchUploadSession(props: Props) {
                           <span className="ci-batch-green">✓ 通过</span>
                         )}
                       </td>
-                      {historyOptIn ? <td>{fields.map(f => <label key={f.key} className="ci-field"><span>{f.label}</span><input aria-label={`核对第${r.row}行${f.label}`} value={r.draft[f.key]} onChange={e => setEdits(v => ({ ...v, [r.row]: { ...r.draft, [f.key]: e.target.value } }))} /></label>)}
+                      {historyOptIn ? <td>{customerMode ? renderCustomerFields(r) : fields.map(f => <label key={f.key} className="ci-field"><span>{f.label}</span><input aria-label={`核对第${r.row}行${f.label}`} value={r.draft[f.key]} onChange={e => setEdits(v => ({ ...v, [r.row]: { ...r.draft, [f.key]: e.target.value } }))} /></label>)}
                         {(rowMetadata.current.get(r.row) as { issues?: { issueId: string; message: string; resolved: boolean; resolution: string | null; field: string }[] } | undefined)?.issues?.map(issue => <label key={issue.issueId} className="ci-field"><span>{issue.message}</span><input aria-label={`核对问题${issue.issueId}`} maxLength={1000} defaultValue={issue.resolution ?? ""} placeholder="核对结果或明确保留未知的依据（必填）" onChange={e => { issue.resolution = e.target.value.trim() || null; issue.resolved = Boolean(issue.resolution); setEdits(v => ({ ...v, [r.row]: v[r.row] ?? r.draft })); if (issue.field === "source" && issue.resolved) setEdits(v => { const { sourceIssue, ...draft } = v[r.row] ?? r.draft; return { ...v, [r.row]: draft }; }); }} /></label>)}
                         {r.draft.sourceIssue ? <button type="button" className="ci-inline-link" onClick={() => { const reason = window.prompt("请填写核验原始文本型号/来源精度的依据，无法核实请排除本行"); if (reason?.trim() && !((rowMetadata.current.get(r.row) as { issues?: { field: string; resolved: boolean }[] } | undefined)?.issues?.some(issue => issue.field === "source" && !issue.resolved))) { const { sourceIssue, ...draft } = r.draft; setEdits(v => ({ ...v, [r.row]: draft })); } }}>核实来源问题</button> : null}</td> : null}
                       <td>
@@ -884,7 +945,7 @@ function BatchUploadSession(props: Props) {
               </table>
             </div>
             <p className="ci-batch-preview-note">
-              {entryMode === "single" ? "确认后新增此条物料。" : `预览前100条，确认后新增全部 ${rows.length} 条。`}
+              {entryMode === "single" ? "确认后新增此条物料。" : customerMode ? `优先展示需要核对的行（最多100条），确认后导入全部 ${rows.length} 条候选。` : `预览前100条，确认后新增全部 ${rows.length} 条。`}
             </p>
           </>
         )}
@@ -909,6 +970,7 @@ function BatchUploadSession(props: Props) {
               <p>
                 已确认保存 <strong>{completed}</strong> / {preparing?.rows.length ?? entries.length} 条
               </p>
+              {customerMode ? <p>待确认 {entries.filter(entry => entry.status === "unknown").length} 条；未完成 {(preparing?.rows.length ?? entries.length) - completed} 条</p> : null}
               {uploadBatch.current?.id ? <small>上传批次：{uploadBatch.current.batchCode || `#${uploadBatch.current.id}`}</small> : null}
               <progress value={completed} max={entries.length || 1} />
               <small>
@@ -961,7 +1023,7 @@ function BatchUploadSession(props: Props) {
             borderTop: "1px solid #e8edf3",
           }}
         >
-          {step > 1 && !hasQueue && (
+          {step > 1 && !hasQueue && (!customerMode || (!preparing && !busy)) && (
             <Button
               type="button"
               variant="outline"
@@ -969,11 +1031,11 @@ function BatchUploadSession(props: Props) {
               className="ci-button"
               disabled={loading}
               onClick={() => {
-                setStep(entryMode === "single" ? 1 : step === 3 ? 2 : 1);
+                setStep(customerMode || entryMode === "single" ? 1 : step === 3 ? 2 : 1);
                 setError("");
               }}
             >
-              上一步
+              {customerMode ? entryMode === "single" ? "返回录入" : "返回文件" : "上一步"}
             </Button>
           )}
           <Button
@@ -983,7 +1045,7 @@ function BatchUploadSession(props: Props) {
             className="ci-button"
             onClick={close}
           >
-            {busy
+            {customerMode ? "关闭" : busy
               ? "停止后关闭"
               : hasQueue && completed === entries.length
                 ? "完成"
@@ -1004,11 +1066,14 @@ function BatchUploadSession(props: Props) {
             </Button>
           )}
           {step === 3 && (
+            <>
+            {customerMode && confirmDisabledReason ? <p id="customer-import-disabled-reason" className="ci-dialog-note" role="status">暂不能导入：{confirmDisabledReason}</p> : null}
             <Button
               type="button"
               size="sm"
               className="ci-button ci-primary"
-              disabled={
+              aria-describedby={customerMode && confirmDisabledReason ? "customer-import-disabled-reason" : undefined}
+              disabled={customerMode ? Boolean(confirmDisabledReason) :
                 !sourceReady ||
                 !!bad.length ||
                 !rows.length ||
@@ -1016,8 +1081,9 @@ function BatchUploadSession(props: Props) {
               }
               onClick={() => void start()}
             >
-              确认上传 {rows.length} 条
+              {customerMode ? `确认导入 ${rows.length} 条` : `确认上传 ${rows.length} 条`}
             </Button>
+            </>
           )}
           {step === 4 && (preparing || completed < entries.length) && (
             <Button
@@ -1027,7 +1093,7 @@ function BatchUploadSession(props: Props) {
               disabled={busy || !sourceReady}
               onClick={() => void start()}
             >
-              按原批次继续 / 重试
+              {customerMode ? "继续处理未完成（沿用原请求）" : "按原批次继续 / 重试"}
             </Button>
           )}
           {step === 4 && completed > 0 && props.onViewResults && (

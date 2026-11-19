@@ -1,0 +1,46 @@
+{
+  "status": "passed",
+  "independent": true,
+  "manifestSha256": "fa278d68418b341b6e6406e287892dab4e8c882721082e90d12f801e31fd9ab0",
+  "controllerSha256": "0148685bb13b336f50fb52f594c582ec051f20704d0f910cca27aceed0a4cac0",
+  "reviewer": "独立审核：最终冻结包只读定点复核（本次仅写 review.json）",
+  "ownerTask": "PnHdmd0yBiQfYpcPRYWNvD",
+  "scope": "customer-upload-compact-20261119-PnHdmd0yBi",
+  "captureSha256": "1a9dc32c5728ace0cb1a71021c0ec250abf69a52f0d5c3c80134753ef31942df",
+  "checks": [
+    "逐一复算全部19个 packageFiles 的完整 SHA256；实际包文件集合严格匹配，manifest 与 review 自身不参与循环 pin；manifest、controller、capture、before/after HTML 和两 JS 一 CSS 均与指定最终 pin 一致。",
+    "独立按原始 HTML bytes 检查两 oldURL 的全部32/53个 occurrences 均为相同引号包围的完整引用，全部替换且新引用计数不变；after 完全等于仅两 URL 全部替换加 sole </head> 前 canonical 独立 CSS link 和换行，没有其它字节变化。",
+    "两最终 JS 的 delta 均仅覆盖实际 AST 函数 T6/z3；在内存逆转每个 hunk 后与本地只读 capture 原 JS 全字节一致，原 SHA256 同时匹配 capture protectedFiles，叶子以外 native helpers、queue、schema、原工厂与其它代码保持。",
+    "定点复算四个 ABI 文件对应的真实 native lexical bindings，全部匹配；最新两源码在内存重新 emittedLeaf 编译后的 source/compiled SHA256 及 wrapper bytes 精确等于两个最终 JS delta 内的对应补丁，HistoryDialog 最终源码 pin 为193494650a192d375531b0b964374f4511a7723b268815d0f169f0e112ea8bc2。",
+    "独立审读 HistorySession：按 historyId 的 Map 绑定 confirmation/batch/version/entry identities 与 canonical payload，Set 对已发现映射丢失、变化或归属错误的 history 在本 session 内永久阻断；openDetail 的初次 get、reconcile 后 get 与 startReview 的每次 fresh get 均验证；reconcile 响应核验原 history/customer/batch/channel/code。下载、继续、结果回传和管理入口不得绕过阻断。",
+    "见证只包含 immutable identities/payloads，不冻结合法推进的 history/batch revision、status 或 receipt；核对38项 compact tests 中 pending/unknown→success 及 payload 属性顺序变化恢复回归；已绑定 all-tests.log 为6文件128 tests PASS，其中 History compact38/render23/helper26共87。未重跑会写其它文件的源测试。",
+    "原版 native harness 最终证据写入语句仅在内存删除后独立重跑，六用例全部 PASS：两模块分别普通表格→核对→明确CNY→原queue回执、授权后原history任务继续、详情 conf→reconcile→get(null)阻断且不能 download/prepare/create 重建。实际工厂只修改 return-only 测试 seam，native lexical helpers/SheetJS/queue/schema未mock；证据 module/factory SHA256 均独立复算匹配最终资产。",
+    "PM2_RPC 仅兼容已有 modules/node_modules 两布局，检查已有 pidfile/rpc.sock 与 kill(pid,0)，仅调用 getMonitorData；没有 pm2.connect、启动、spawn、reload 或 fallback daemon。完全 mock 的内存 VM 对 modules、node_modules、全部缺失三个 fixture 均 PASS，不接真实 socket 或进程。",
+    "现场 server 目录软链仅接受 Config 精确 alias/target 白名单，记录 link文本/metadata/target 且递归 target 的 .js/.mjs/.cjs；四个实际 runtime JS 文件软链的 link/metadata/targetRecord 完整 SHA256、mode、uid/gid、size 均在 capture 中绑定。pm_exec_path 使用同样目标 pin；public、包、HTML、locks 未知软链仍拒绝。新增合法/目标漂移/runtime文件目标变化等 fixture 已静态核对，绑定 controller-tests.log 与42个测试方法及42 PASS一致。",
+    "控制器全程两既有 flock LOCK_NB/inode、full-byte+metadata CAS、900秒TTL、完整 inventory 与12 distinct online PID的 rawProcEnviron/configenv hash、实际 serving roots 和静态 HTTPS 验证、own COORD/HTML 回滚与旧资产保留、closed history append 和 no-replay 等 guard 保持；本次仅执行禁用所有 subprocess/process/http reader 的本地 validate，通过，未执行真实 capture/preflight/apply。",
+    "capture 18210 protectedFiles 与12 PID完整哈希字段已核对；task2 front HTML、五资产、既有front/admin API的8个 pins均与capture匹配，COORD完整bytes hash736f7ab3d085a3da550b3e9cfdaef04b3c4aaa770930e5517853f0315124fa1c，shared_release_active=false、window closed/outcome verified、needsOperatorRecovery=false。"
+  ],
+  "limitations": [
+    "离线匿名native不是生产写测。transport与外UI为mock/JSDOM，不是真browser、真实业务API或真实数据库回执；本次未做任何生产写入。",
+    "未使用SSH、浏览器、真实网络、业务API、Git或发布；只审核冻结capture，无法独立证明审核后的真实现场仍未漂移。执行方仍必须经过原controller锁、TTL、最新inventory/PID/env/fullbytesCAS和实际静态GET的preflight/apply guard。",
+    "本地validate仅在内存适配本地冻结包位置并略过目标stage/package私有目录检查；不代表目标0700/owner/同文件系统或生产部署就绪，此类条件必须由未修改的controller现场校验。",
+    "冻结capture中 server_target 前缀的独立文件条目数量为0；未读取真实目标目录。本次核对的是实际alias记录、递归JS保护代码和已绑定合法/漂移fixture，不声称离线检查已看到目标目录中的真实JS文件。",
+    "独立passed针对本次明确范围与最终冻结pin，不豁免capture时效、现场漂移、私有目录、协作锁或其它生产guard，也不授权扩大主站/front、API/worker/DB/env/process的修改范围。"
+  ],
+  "offlineNativeRerun": {
+    "status": "passed",
+    "tests": 6,
+    "realNetworkCalls": 0,
+    "realDatabaseWrites": 0,
+    "evidenceWriteRemovedInMemory": true,
+    "moduleSha256": [
+      "90372ddcfad0f5bae348d156649eae933de8fe2f84d96aa198e07cbcac196db0",
+      "2fa71e1ec0baef3274f7ade5bb412ac033b2280f2253a1662e83a9d9234f614b"
+    ]
+  },
+  "quotedReferenceCounts": [32, 53],
+  "protectedFileCount": 18210,
+  "processCount": 12,
+  "productionWrites": 0,
+  "reproducibleBlockingFindings": []
+}

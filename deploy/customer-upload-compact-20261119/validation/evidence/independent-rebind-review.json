@@ -1,0 +1,64 @@
+{
+  "status": "passed",
+  "independent": true,
+  "manifestSha256": "4e5ed13bd4933983cb6f06eb7b5d9d90cef16ca47226e5f54077c0b6f7a5687d",
+  "controllerSha256": "0148685bb13b336f50fb52f594c582ec051f20704d0f910cca27aceed0a4cac0",
+  "priorReviewSha256": "c9e57a9854006a2bad01ee717f827331194445c4861f43aa614cab105c0dc871",
+  "reviewer": "独立fresh-capture重绑定审核",
+  "checks": [
+    "prior approved package exact",
+    "only capture time changed",
+    "all protected graphs identical",
+    "all asset/source evidence hashes same"
+  ],
+  "limitations": [
+    "继承此前真实独审；不豁免生产preflight/TTL/CAS",
+    "离线匿名native不是生产写测",
+    "本次仅确定性文件比对与冻结审核绑定，未重新审核已通过源码，未重跑typechecking、native、controller或测试；此前审核的范围与全部限制继续有效。",
+    "只核对本地冻结capture；不能独立证明审核后生产现场仍无漂移。静态HTML在capture中仍为before；本次未apply、未开窗口、未使用SSH、网络、业务API或Git，未执行真实库存写测。"
+  ],
+  "ownerTask": "PnHdmd0yBiQfYpcPRYWNvD",
+  "scope": "customer-upload-compact-20261119-PnHdmd0yBi",
+  "freshCaptureRebindOnly": true,
+  "priorManifestSha256": "fa278d68418b341b6e6406e287892dab4e8c882721082e90d12f801e31fd9ab0",
+  "priorCaptureSha256": "1a9dc32c5728ace0cb1a71021c0ec250abf69a52f0d5c3c80134753ef31942df",
+  "captureSha256": "5cb61673accac6218611fa185f8136b03252a546da1f6b3736365e1a6175647f",
+  "priorCapturedAtUtc": "2026-11-19T10:21:14.381460+00:00",
+  "capturedAtUtc": "2026-11-19T10:33:09.394592+00:00",
+  "captureChangedPaths": [
+    "/capturedAtUtc"
+  ],
+  "manifestChangedPaths": [
+    "/captureSha256",
+    "/packageFiles/capture.json"
+  ],
+  "captureBytesOnlyTimeChanged": true,
+  "protectedFileCount": 18210,
+  "processCount": 12,
+  "distinctOnlineProcessCount": 12,
+  "packagePinCount": 19,
+  "unchangedNonCapturePackagePinCount": 18,
+  "strictPackageFileAndDirectorySets": true,
+  "manifestAndReviewExcludedFromCircularPins": true,
+  "sourcePinsVerified": [
+    {
+      "sourcePath": "client/src/business/platform/client/src/components/channelInventory/BatchUpload.tsx",
+      "sourceSha256": "3aa58488ac5b5432a9a3901d02e8013bbad84105c79dc93e8f599e85e82e8c52"
+    },
+    {
+      "sourcePath": "client/src/business/platform/client/src/components/customers/CustomerUploadHistoryDialog.tsx",
+      "sourceSha256": "193494650a192d375531b0b964374f4511a7723b268815d0f169f0e112ea8bc2"
+    }
+  ],
+  "controllerPath": "/home/ubuntu/work/manager-git/deploy/customer-upload-compact-20261119/validation/release.py",
+  "coordSha256": "736f7ab3d085a3da550b3e9cfdaef04b3c4aaa770930e5517853f0315124fa1c",
+  "staticHtmlState": "before",
+  "beforeHtmlSha256": "fd723a123f660bed630b2d6f87587afaa142faa1e7f333572a696e1d8ae00868",
+  "afterHtmlSha256": "fce2e4a73ff8d9a08a1267ebabd271900313a4eebb3e771dec15f648428d9d4e",
+  "sourceReviewRerun": false,
+  "typecheckingRerun": false,
+  "nativeRerun": false,
+  "controllerExecution": false,
+  "productionWrites": 0,
+  "reproducibleBlockingFindings": []
+}

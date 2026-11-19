@@ -1,0 +1,13 @@
+{
+  "status": "verified-readonly",
+  "productionWrites": 0,
+  "originalProtectedFiles": 18210,
+  "currentProtectedFiles": 18213,
+  "allOriginalProtectedRecordsExceptOwnAdminHtmlExact": true,
+  "newAssetPinsExact": true,
+  "task2FrontAndOldAssetsExact": true,
+  "allTwelveProcessesAndRawAndConfigEnvironmentExact": true,
+  "coordinatorSha256": "681b0373749ba80adb8436ef0ac5b3d064eb6451f0beefe078894a17001d18e5",
+  "adminHtmlSha256": "fce2e4a73ff8d9a08a1267ebabd271900313a4eebb3e771dec15f648428d9d4e",
+  "readOnlyCapturedAtUtc": "2026-11-19T10:39:11.477671+00:00"
+}
