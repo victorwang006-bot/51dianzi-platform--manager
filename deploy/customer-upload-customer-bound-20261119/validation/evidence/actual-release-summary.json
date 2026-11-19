@@ -1,0 +1,22 @@
+{
+  "status": "verified-recovered",
+  "closedAtUtc": "2026-11-19T12:25:48.141722+00:00",
+  "originalScope": "customer-upload-customer-bound-20261119-PnHdmd0yBi",
+  "scope": "customer-upload-customer-bound-recovery-20261119-PnHdmd0yBi",
+  "nonce": "1adfd1c7c63e40868fe1e36c0177cb51",
+  "manifestSha256": "aba9a91cb801296ff7cf40c946f27cc1a6a40b8899117f12c3a8d0beca314ed7",
+  "captureSha256": "d441bd1fa442ccefac4983fcc8e1fb01232b56203ace2425e02effafeb910aa4",
+  "controllerSha256": "d3e71a42b3740bf9d474b986c291219c7cd7e3605b79b4a245c91c85b0d77046",
+  "recoveryApprovalSha256": "869a1b013454910d00b45a7292544963b184a864996a2ef7a75c4a2c11de4daa",
+  "originalManifestSha256": "d44feb14524326501770e2053463a44b78d4e39f74e12d8ad236dc2f7c2da14b",
+  "originalFailureSha256": "1fc0767021ae4a855feab8e8103ef10048a789598c7e07bf410cad2101cbb6a4",
+  "coordSha256": "a31fea6dd613875c2df3f728fb18820d50fee63a6b1dae85ddc44f8dd1149e83",
+  "processReloads": 4,
+  "originalProcessReloads": 1,
+  "recoveryProcessReloads": 3,
+  "alreadyCompleted190NotRepeated": true,
+  "remaining3Only": true,
+  "noAPIorAssetRewrite": true,
+  "otherEightProcessesRawExact": true,
+  "verificationRequiresClosedCoordSha256": true
+}

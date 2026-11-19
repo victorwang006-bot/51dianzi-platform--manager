@@ -1,0 +1,29 @@
+NODE_PRIMARY_SOURCE_SHA 59fff5090a10b5234baab900d2e34de50f385b68ac1f4561dc2d5e5b8ccf14a0
+ter.setupPrimary;
+
+function setupSettingsNT(settings) {
+  cluster.emit('setup', settings);
+}
+
+function createWorkerProcess(id, env) {
+  const workerEnv = { ...process.env, ...env, NODE_UNIQUE_ID: `${id}` };
+  const execArgv = [...cluster.settings.execArgv];
+
+  if (cluster.settings.inspectPort === null) {
+    throw new ERR_SOCKET_BAD_PORT('Port', null, true);
+r (const { 0: key, 1: handle } of handles) {
+    if (handle.remove(worker))
+      handles.delete(key);
+  }
+}
+
+cluster.fork = function(env) {
+  cluster.setupPrimary();
+  const id = ++ids;
+  const workerProcess = createWorkerProcess(id, env);
+  const worker = new Worker({
+    id: id,
+    process: workerProcess,
+  });
+
+  worker.on('message', function(message, h

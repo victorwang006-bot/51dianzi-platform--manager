@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "command": "pnpm exec tsc --noEmit --pretty false",
+  "executionJob": "job_GKjYZT4F",
+  "exitCode": 0,
+  "sourceCommit": "488f8cd42b3d55aed2318b1df98677389b09fe1c",
+  "existingUnchangedSiblingInterfaceRestoredForLocalCheck": true,
+  "productionChanges": 0
+}

@@ -1,0 +1,12 @@
+{
+  "APIAndAssetsNotRewrittenInRecovery": true,
+  "adminHtmlSha256": "533bd5cd663536d8e20bad24d1bbfeabc9f2f50b2efd9fa676165c489e989623",
+  "allOriginalFilesExceptOwnAdminHtmlExact": true,
+  "apiSha256": "af0ac76947f6f063dd155d3ec5fa28d24d84ccc45cb524586b3e2e876f3a2aca",
+  "coordSha256": "a31fea6dd613875c2df3f728fb18820d50fee63a6b1dae85ddc44f8dd1149e83",
+  "oldFailureRawSha256": "1fc0767021ae4a855feab8e8103ef10048a789598c7e07bf410cad2101cbb6a4",
+  "processCount": 12,
+  "productionWrites": 0,
+  "protectedFiles": 19561,
+  "status": "verified-closed-readonly"
+}

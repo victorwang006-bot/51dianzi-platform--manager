@@ -1,0 +1,36 @@
+# 客户物料上传：直接归属客户与文案精简
+
+本改造沿用原ECS，不创建或整包覆盖新站点。用户2026-11-19 19:01授权；源码main488f8cd已正常保存。20:25:48北京时间实际完成verified-recovered闭窗，随后只读全量复验通过。
+
+## 产品改动
+
+上传物料直接归属正在操作的客户，不再要求选择来源类型，不默认猜测工厂。已有客户库存绑定原样复用；首次未建来源在既有事务内以中性other兼容分类建立归属，保留原owner/企业/团队/权限/客户版本/渠道修订/确认请求和原文件证据，不复制联系方式、不改客户档案或既有来源类型。
+
+删除红框中的首表表头/工作表常驻说明、来源类型整行、币种长说明与最多100行预览说明。保留文件名、核对表、通过/需修正数量、币种选择、具体错误和确认导入按钮；未知币种与外币不静默当人民币，多工作表仍选择实际范围。原任务继续导入、UUID、DC识别、来源覆盖/排除证据与未知结果保护保留。
+
+## 最小发布边界
+
+两管理端新哈希Workbench资源，各仅六处明确原生span；其他函数可逐字逆回复原。后台HTML仅替换既有两资源的53/32处完整quoted引用，不增加新CSS。前台API仅customerSupply source函数两处字节补丁，原SQL、权限、归属与事务不改。只滚动加载dianzi51前台实例190/193/194/200，其他八进程/adminAPI/worker/env和任务2R5主站、所有新旧资源及CartPay均保护。
+
+源码483项、真实native13项、发布控制器97项、真实类型检查通过；恢复28项TemporaryDirectory/mock安全测试通过。测试不调用真实物料确认写接口，不声称原文件5条已入库。
+
+## 实际失败与限定恢复
+
+原控制器release.py是不可重放的本次历史执行器，原SHA9bb7a96bb26b8998fcbd586fd7d5c4ac012dd6a9afb5ac4690634266e94d300b。单次apply已创建两newJS、APIafter并成功reload190；raw环境门禁因Node内部NODE_UNIQUE_ID由1335变1339停止在HTML切换前，原永久failure SHA1fc0767021ae4a855feab8e8103ef10048a789598c7e07bf410cad2101cbb6a4保留不改。
+
+只在内存将一个外层NUL字段NODE_UNIQUE_ID改回1335，精确重构原rawSemantic SHA3b12b8a2829a62ecf8884465b7f2d9bd22bc010e60fd64dc3b68772be1163448；所有其他规范化环境字节、配置和权限相同。实际Node primary源码SHA59fff5090a10b5234baab900d2e34de50f385b68ac1f4561dc2d5e5b8ccf14a0证明这是内部cluster递增工作进程编号，不是NODE_APP_INSTANCE或租户身份。
+
+独立recover.py使用新鲜19561完整META/12进程/自家原open COORD/永久failure绑定与新独审，仅续行193/194/200；190不重复、API和资源零重写。仅四获准front实例允许外层NODE_UNIQUE_ID生命周期变化；NODE_APP_INSTANCE、NODE_CHANNEL_FD、应用JSON status、所有权限/top-child配置与其它八实例fullraw必须相同。最后仅后台HTML完整META CAS并核实际GET，保留原历史/外部flags后关闭原owned nonce。原失败与原manifest/review/controller不覆盖，不以过期原capture作为新审批。
+
+成功必须同时满足新receipt.verificationRequiresClosedCoordSha256=true、实际COORD rawSHA等于receipt.coordSha256且没有新failure.json；不能只看预先持久化的receipt.status。旧release/recover均有attempt/receipt防重放，不可对已结束窗口再次运行。flock/fullMETA CAS不声称抵抗非合作写入者的内核级CAS。
+
+## 当前实际指纹
+
+- COORD：a31fea6dd613875c2df3f728fb18820d50fee63a6b1dae85ddc44f8dd1149e83
+- 后台HTML：533bd5cd663536d8e20bad24d1bbfeabc9f2f50b2efd9fa676165c489e989623
+- 前台API：af0ac76947f6f063dd155d3ec5fa28d24d84ccc45cb524586b3e2e876f3a2aca
+- 任务2主站HTML保持：586de1725e62aacec2d306d4b7f77b6427a3fe8221894d1d22564c4a40e29bfb
+- 管理端API保持：0cbd371e467ffe4d063b57f252df2de34eb9b4644f3e52532527bf643495bc2e
+- 当前19554普通文件+7固定链接=19561完整META；全部新旧资源保留，两新增JS均被引用，无新未引用留存。
+
+完整现场元数据与原配置不提交仓库；已私有交接任务2。部署/恢复工具、限定源码、匿名测试和非秘密验收摘要保存在本目录。任何未来发布必须重新捕获现存基线并独立审批，不复用本次nonce或回退任务2及本次成果。

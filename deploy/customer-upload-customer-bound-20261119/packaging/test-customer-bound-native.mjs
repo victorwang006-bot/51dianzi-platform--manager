@@ -1,0 +1,60 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import ts from 'typescript';
+import {JSDOM} from 'jsdom';
+import React,{act} from 'react';
+import * as jsx from 'react/jsx-runtime';
+import * as XLSX from 'xlsx';
+const BASE=process.env.CUSTOMER_BOUND_DIR??'/home/ubuntu/work/customer-bound';
+const H=x=>crypto.createHash('sha256').update(x).digest('hex');
+const parse=s=>{const a=ts.createSourceFile('actual.js',s,99,true,1);assert.equal(a.parseDiagnostics.length,0);return a;};
+const find=(a,p)=>{let out=[];function w(n){if(p(n))out.push(n);ts.forEachChild(n,w);}w(a);return out;};
+const one=(x,m)=>{assert.equal(x.length,1,m);return x[0];};
+const dom=new JSDOM('<div id="root"></div>',{url:'https://offline.invalid/',pretendToBeVisual:true}),w=dom.window;
+for(const k of ['window','document','sessionStorage','localStorage','File','Blob','Event','MouseEvent','HTMLElement','HTMLInputElement','HTMLSelectElement'])Object.defineProperty(globalThis,k,{value:k==='window'?w:k==='document'?w.document:w[k],configurable:true});
+Object.defineProperty(globalThis,'navigator',{value:w.navigator,configurable:true});globalThis.IS_REACT_ACT_ENVIRONMENT=true;
+const forbidden=()=>{throw Error('REAL_NETWORK_OR_WRITE_FORBIDDEN');};globalThis.fetch=forbidden;w.fetch=forbidden;globalThis.XMLHttpRequest=class{constructor(){forbidden();}};
+const {createRoot}=await import('react-dom/client');
+const grid=[['型号','品牌','数量','币种','价格','DC'],['ONE','TI',4,'CNY','1','24+']];
+const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(grid),'首表');const bytes=XLSX.write(wb,{type:'array',bookType:'xlsx'});
+const hid=crypto.randomUUID(),identity={enterpriseId:31,actorUserId:7,key:'offline-first-customer'},hash='b'.repeat(64);
+const history={historyId:hid,customerId:801,customerName:'匿名客户',mode:'standard',state:'awaiting_confirmation',revision:1,latestVersionId:null,createdAt:new Date().toISOString(),originalFile:{fileId:crypto.randomUUID(),fileName:'anonymous.xlsx',byteSize:bytes.byteLength,mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',sha256:H(Buffer.from(bytes))},capabilities:{canConfirm:true}};
+const detail={history,originalSheets:[{sheetIndex:0,sheetName:'首表',rows:grid.map((cells,i)=>({rowNumber:i+1,cells,originalRowHash:hash}))}],versions:[],selectedVersion:null,confirmation:null};
+let preparedInput;
+const rpc={customerSupplyContext:{query:async()=>({customer:{id:801,name:'匿名客户',version:1,archivedAt:null,industryCode:'electronic_components'},channel:null,canUpload:true})},customerUploadHistoryGet:{query:async()=>detail},customerUploadPrepareConfirmation:{mutate:async input=>{preparedInput=input;throw Error('OFFLINE_PREPARE_CAPTURE_STOP');}}};
+const trpc={customerDemand:{suggestPartNumbers:{useQuery:()=>({data:[],isFetching:false,isError:false})}},useUtils:()=>({client:{channelInventory:new Proxy(rpc,{get:(o,k)=>o[k]??{query:forbidden,mutate:forbidden}})},channelInventory:new Proxy({},{get:()=>({invalidate:async()=>{}})})})};
+const div=({children,className,style,...p})=>React.createElement('div',{className,style,...Object.fromEntries(Object.entries(p).filter(([k])=>k.startsWith('data-')||k.startsWith('aria-')))},children);
+const button=({children,variant,size,className,...p})=>React.createElement('button',{className,...p},children);
+const bridge=new Proxy({React,jsx,bridge_0_trpc:trpc,bridge_2_useLocation:()=>['/',()=>{}],bridge_21_Button:button,bridge_3_useBusinessScope:()=>({storageScope:'offline',officialInventoryPermissions:{read:true,write:true,note:false}}),bridge_7_useAuth:()=>({}),bridge_8_useOptionalEnterpriseSession:()=>null},{get:(o,k)=>o[k]??div});
+const modules=JSON.parse(fs.readFileSync(BASE+'/modules.json'));const checks=[];
+for(const module of modules){
+ const text=fs.readFileSync(BASE+'/package/'+module.after,'utf8'),a=parse(text);const factory=one(find(a,n=>ts.isVariableDeclaration(n)&&n.name?.text==='__CHANNEL_REFERENCE_HOST_EXPORTS'),'actual factory').initializer.getText(a);
+ assert.equal(factory.split('return i2(q3);').length,2);const seam=factory.replace('return i2(q3);','return {Supply:jf};');const cap=new Function('__customerLive',`return ${seam};`)(bridge);
+ const actualInit=one(find(a,n=>ts.isFunctionDeclaration(n)&&n.name?.text==='uk'&&n.getText(a).includes('customerVersion')),'actual customer initializer');
+ const init=new Function('return ('+actualInit.getText(a)+');')()(801,{customer:{version:1},channel:null});assert.equal(init.sourceProfile,undefined);assert.equal(init.customerId,801);
+ const root=createRoot(document.getElementById('root'));const file=new w.File([bytes],'anonymous.xlsx');Object.defineProperty(file,'arrayBuffer',{value:async()=>bytes});
+ preparedInput=undefined;await act(async()=>{root.render(React.createElement(cap.Supply,{customerId:801,identity,isCurrent:()=>true,initialHistory:detail,initialFile:file,onClose:()=>{},onComplete:()=>{},onAuthorizationError:forbidden}));});
+ for(let i=0;i<3;i++)await act(async()=>await new Promise(r=>setTimeout(r,35)));
+ assert(!document.querySelector('[aria-label="核对客户来源类型"]'),'no source type dropdown');assert(!document.body.textContent.includes('本次首表表头明确不入库'));assert(!document.body.textContent.includes('优先展示需要核对的行'));
+ const submit=[...document.querySelectorAll('button')].find(n=>n.textContent.trim()==='确认导入 1 条');assert(submit&&!submit.disabled,'first customer can submit with known original CNY, no type selection');
+ await act(async()=>submit.dispatchEvent(new w.MouseEvent('click',{bubbles:true})));await act(async()=>await new Promise(r=>setTimeout(r,45)));
+ assert(preparedInput,'actual native parent reached prepare with no source type');assert.equal(preparedInput.historyId,hid);assert.equal(preparedInput.expectedEnterpriseId,31);assert.equal(preparedInput.expectedActorUserId,7);assert.equal(preparedInput.sourceProfile,undefined);assert.equal(preparedInput.confirmedRows.length,1);assert(preparedInput.excludedRows.some(r=>r.sourceRefs?.some(ref=>ref.rowNumber===1)),'header original evidence retained');
+ checks.push({case:'real native first customer no type→prepare same customer with original evidence',sha256:H(text),factorySha256:H(factory),originalNetworkCalls:0});await act(async()=>root.unmount());document.getElementById('root').replaceChildren();sessionStorage.clear();localStorage.clear();
+}
+w.close();
+const api=fs.readFileSync(BASE+'/package/after-api.js','utf8'),aa=parse(api);const fn=one(find(aa,n=>ts.isFunctionDeclaration(n)&&n.name?.text==='source'&&n.getText(aa).includes('crm_customer_supply_channels')),'actual API source').getText(aa);
+function nativeAdapter(initialType=null){
+ let link=initialType?{channelId:11}:null,type=initialType,creates=[],inserts=0;
+ const tx={execute:async q=>{if(q.text.startsWith('INSERT')){inserts++;link={channelId:11};}return [];}};
+ const deps={registerTeamRecord:()=>{}},scope={enterpriseId:31,dataOwnerUserId:31,actorUserId:7};
+ const names=['binding','createChannelInventoryService','deps','writeFence','fail11','rows12','sql85','businessIndustryCodeSchema'];
+ const values=[async(_tx,_scope,cid)=>{assert.equal(cid,801);return link;},()=>({createChannel:async(_s,p)=>{creates.push(p);type=p.type;return {item:{id:11}};}}),deps,async(_tx,_scope,id)=>{assert.equal(id,11);return {type,revision:1};},(code,message)=>{throw Object.assign(Error(message),{code});},r=>r,(parts,...values)=>({text:parts.join('?').trim(),values}),{parse:x=>x}];
+ const source=new Function(...names,`return (${fn});`)(...values);
+ return {run:input=>source(tx,scope,{name:'匿名客户',industryCode:'electronic_components'},input),summary:()=>({creates,inserts,type})};
+}
+const input={customerId:801,expectedCustomerVersion:1,requestId:crypto.randomUUID()};
+let adapter=nativeAdapter();let result=await adapter.run(input);assert.equal(result.sourceType,'other');let summary=adapter.summary();assert.equal(summary.creates.length,1);assert.equal(summary.creates[0].type,'other');for(const k of ['contactName','phone','wechat','qq','notes'])assert.equal(summary.creates[0][k],null);await adapter.run(input);assert.equal(adapter.summary().creates.length,1);assert.equal(adapter.summary().inserts,1);
+checks.push({case:'actual native API missing profile creates neutral customer source once; replay reuses',apiSha256:H(api)});
+for(const type of ['factory','agent','trade','other']){adapter=nativeAdapter(type);result=await adapter.run(input);assert.equal(result.sourceType,type);assert.equal(adapter.summary().creates.length,0);await assert.rejects(adapter.run({...input,sourceProfile:{type:type==='other'?'factory':'other'}}),e=>e.code==='CONFLICT');await assert.rejects(adapter.run({...input,expectedChannelRevision:2}),e=>e.code==='CONFLICT');checks.push({case:'actual API existing '+type+' unchanged; invalid type and revision rejected',apiSha256:H(api)});}
+fs.writeFileSync(BASE+'/evidence/customer-bound-native-tests.json',JSON.stringify({status:'passed',tests:checks.length,realNetworkCalls:0,realDatabaseWrites:0,checks},null,2)+'\n');console.log(JSON.stringify({status:'passed',tests:checks.length,realNetworkCalls:0,realDatabaseWrites:0},null,2));
