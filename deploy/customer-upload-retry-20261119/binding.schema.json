@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "customer-upload-retry-20261119 logical binding bundle (four separate files)",
+  "type": "object",
+  "required": ["manifest", "baseline", "review", "backend2Verified"],
+  "additionalProperties": false,
+  "properties": {
+    "manifest": {"$ref": "#/$defs/manifest"},
+    "baseline": {"$ref": "#/$defs/baseline"},
+    "review": {"$ref": "#/$defs/review"},
+    "backend2Verified": {"$ref": "#/$defs/backend2Verified"}
+  },
+  "$defs": {
+    "sha": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "relative": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"},
+    "absolute": {"type": "string", "pattern": "^(?!.*(?:^|/)\\.\\.(?:/|$))/.+$"},
+    "otherTask": {"type": "string", "minLength": 1, "not": {"const": "lRq82a3bSHrvLgTrLggfSY"}},
+    "descriptor": {
+      "type": "object", "required": ["source", "sha256"], "additionalProperties": false,
+      "properties": {"source": {"$ref": "#/$defs/relative"}, "sha256": {"$ref": "#/$defs/sha"}}
+    },
+    "proofDescriptor": {
+      "type": "object", "required": ["source", "sha256", "ownerTask"], "additionalProperties": false,
+      "properties": {"source": {"$ref": "#/$defs/relative"}, "sha256": {"$ref": "#/$defs/sha"}, "ownerTask": {"$ref": "#/$defs/otherTask"}}
+    },
+    "replace": {
+      "type": "object", "required": ["kind", "target", "beforeSource", "beforeSha256", "source", "sha256"], "additionalProperties": false,
+      "properties": {
+        "kind": {"enum": ["front-api", "admin-html"]}, "target": {"$ref": "#/$defs/absolute"},
+        "beforeSource": {"$ref": "#/$defs/relative"}, "beforeSha256": {"$ref": "#/$defs/sha"},
+        "source": {"$ref": "#/$defs/relative"}, "sha256": {"$ref": "#/$defs/sha"}
+      }
+    },
+    "edit": {
+      "type": "object", "required": ["kind", "start", "end", "beforeSha256", "source", "sha256"], "additionalProperties": false,
+      "properties": {
+        "kind": {"enum": ["check-zip-flag", "appendFile-guard"]}, "start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 1},
+        "beforeSha256": {"$ref": "#/$defs/sha"}, "source": {"$ref": "#/$defs/relative"}, "sha256": {"$ref": "#/$defs/sha"}
+      }
+    },
+    "add": {
+      "type": "object", "required": ["relative", "oldURL", "source", "sha256"], "additionalProperties": false,
+      "properties": {
+        "relative": {"type": "string", "pattern": "^assets/BusinessWorkbenchPage-[A-Za-z0-9_-]*[0-9a-f]{16}\\.js$"},
+        "oldURL": {"type": "string", "pattern": "^/assets/BusinessWorkbenchPage-[A-Za-z0-9._-]+\\.js$"},
+        "source": {"$ref": "#/$defs/relative"}, "sha256": {"$ref": "#/$defs/sha"}
+      }
+    },
+    "manifest": {
+      "type": "object", "required": ["schemaVersion", "ownerTask", "scope", "driverSha256", "baseline", "backend2Verified", "replace", "frontEdits", "add", "reloadPmIds"], "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {"const": 1}, "ownerTask": {"const": "lRq82a3bSHrvLgTrLggfSY"}, "scope": {"const": "customer-upload-retry-20261119"},
+        "driverSha256": {"$ref": "#/$defs/sha"}, "baseline": {"$ref": "#/$defs/descriptor"}, "backend2Verified": {"$ref": "#/$defs/proofDescriptor"},
+        "replace": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/replace"}},
+        "frontEdits": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/edit"}},
+        "add": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/add"}},
+        "reloadPmIds": {"type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true, "items": {"type": "integer", "minimum": 0}}
+      }
+    },
+    "process": {
+      "type": "object", "required": ["id", "pid", "name", "status", "script", "cwd", "rawEnvSha", "configuredEnvSha"], "additionalProperties": false,
+      "properties": {
+        "id": {"type": "integer", "minimum": 0}, "pid": {"type": "integer", "minimum": 1}, "name": {"type": "string", "minLength": 1}, "status": {"const": "online"},
+        "script": {"$ref": "#/$defs/absolute"}, "cwd": {"$ref": "#/$defs/absolute"}, "rawEnvSha": {"$ref": "#/$defs/sha"}, "configuredEnvSha": {"$ref": "#/$defs/sha"}
+      }
+    },
+    "baseline": {
+      "type": "object", "required": ["capturedAtUnix", "coordSha256", "adminPublic", "frontPublic", "files", "assets", "processes"], "additionalProperties": false,
+      "properties": {
+        "capturedAtUnix": {"type": "number", "minimum": 0}, "coordSha256": {"$ref": "#/$defs/sha"}, "adminPublic": {"$ref": "#/$defs/absolute"}, "frontPublic": {"$ref": "#/$defs/absolute"},
+        "files": {"type": "object", "minProperties": 1, "propertyNames": {"$ref": "#/$defs/absolute"}, "additionalProperties": {"$ref": "#/$defs/sha"}},
+        "assets": {"type": "object", "minProperties": 2, "propertyNames": {"type": "string", "pattern": "^(?!.*(?:^|/)\\.\\.(?:/|$))assets/.+$"}, "additionalProperties": {"$ref": "#/$defs/sha"}},
+        "processes": {"type": "array", "minItems": 12, "maxItems": 12, "items": {"$ref": "#/$defs/process"}}
+      }
+    },
+    "backend2Verified": {
+      "type": "object", "required": ["status", "ownerTask", "frontHtmlSha256"], "additionalProperties": false,
+      "properties": {"status": {"const": "verified"}, "ownerTask": {"$ref": "#/$defs/otherTask"}, "frontHtmlSha256": {"$ref": "#/$defs/sha"}}
+    },
+    "review": {
+      "type": "object", "required": ["status", "independent", "reviewerTask", "manifestSha256", "driverSha256", "baselineSha256", "backend2VerifiedSha256", "frontNodesVerified"], "additionalProperties": false,
+      "properties": {
+        "status": {"const": "passed"}, "independent": {"const": true}, "reviewerTask": {"$ref": "#/$defs/otherTask"},
+        "manifestSha256": {"$ref": "#/$defs/sha"}, "driverSha256": {"$ref": "#/$defs/sha"}, "baselineSha256": {"$ref": "#/$defs/sha"}, "backend2VerifiedSha256": {"$ref": "#/$defs/sha"},
+        "frontNodesVerified": {"type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true, "items": {"enum": ["check-zip-flag", "appendFile-guard"]}}
+      }
+    }
+  }
+}

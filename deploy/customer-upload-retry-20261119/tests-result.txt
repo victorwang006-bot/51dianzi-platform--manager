@@ -1,0 +1,97 @@
+test_actual_front_html_drift_rejected_with_old_alias_symlink (test_release.OfflineRelease.test_actual_front_html_drift_rejected_with_old_alias_symlink) ... ok
+test_actual_front_html_must_be_listed_not_old_alias (test_release.OfflineRelease.test_actual_front_html_must_be_listed_not_old_alias) ... ok
+test_actual_front_public_realpath_protected_old_alias_never_read (test_release.OfflineRelease.test_actual_front_public_realpath_protected_old_alias_never_read) ... ok
+test_admin_public_must_be_real_not_symlink (test_release.OfflineRelease.test_admin_public_must_be_real_not_symlink) ... ok
+test_after_both_switches_failure_restores_only_exact_own_bytes (test_release.OfflineRelease.test_after_both_switches_failure_restores_only_exact_own_bytes) ... ok
+test_all_old_assets_including_non_workbench_protected (test_release.OfflineRelease.test_all_old_assets_including_non_workbench_protected) ... ok
+test_apply_requires_explicit_parent_authorization (test_release.OfflineRelease.test_apply_requires_explicit_parent_authorization) ... ok
+test_backend2_must_be_verified_and_front_html_bound (test_release.OfflineRelease.test_backend2_must_be_verified_and_front_html_bound) ... ok
+test_baseline_env_hash_drift_rejected (test_release.OfflineRelease.test_baseline_env_hash_drift_rejected) ... ok
+test_binding_schema_json_references_patterns_and_fixture_shape (test_release.OfflineRelease.test_binding_schema_json_references_patterns_and_fixture_shape) ... ok
+test_both_locks_held_for_reload_and_recovery (test_release.OfflineRelease.test_both_locks_held_for_reload_and_recovery) ... ok
+test_busy_foreign_owner_is_not_claimed (test_release.OfflineRelease.test_busy_foreign_owner_is_not_claimed) ... ok
+test_candidate_syntax_checks_all_three (test_release.OfflineRelease.test_candidate_syntax_checks_all_three) ... ok
+test_candidate_syntax_failure_rejected (test_release.OfflineRelease.test_candidate_syntax_failure_rejected) ... ok
+test_cas_last_moment_change_is_not_overwritten (test_release.OfflineRelease.test_cas_last_moment_change_is_not_overwritten) ... ok
+test_coord_cas_drift_even_whitespace (test_release.OfflineRelease.test_coord_cas_drift_even_whitespace) ... ok
+test_duplicate_json_coord_rejected_without_losing_fields (test_release.OfflineRelease.test_duplicate_json_coord_rejected_without_losing_fields) ... ok
+test_each_front_node_must_change_without_empty_deletion (test_release.OfflineRelease.test_each_front_node_must_change_without_empty_deletion) ... ok
+test_empty_reviewer_identity_is_not_independent_review (test_release.OfflineRelease.test_empty_reviewer_identity_is_not_independent_review) ... ok
+test_exact_file_mode_preserved (test_release.OfflineRelease.test_exact_file_mode_preserved) ... ok
+test_existing_asset_collision_rejected (test_release.OfflineRelease.test_existing_asset_collision_rejected) ... ok
+test_failed_reload_precise_healthy_rollback_closes (test_release.OfflineRelease.test_failed_reload_precise_healthy_rollback_closes) ... ok
+test_foreign_front_bytes_are_never_overwritten (test_release.OfflineRelease.test_foreign_front_bytes_are_never_overwritten) ... ok
+test_foreign_html_preserved_but_own_front_restored (test_release.OfflineRelease.test_foreign_html_preserved_but_own_front_restored) ... ok
+test_front_extra_byte_change_rejected (test_release.OfflineRelease.test_front_extra_byte_change_rejected) ... ok
+test_front_node_overlap_rejected (test_release.OfflineRelease.test_front_node_overlap_rejected) ... ok
+test_front_public_cannot_overlap_admin_public (test_release.OfflineRelease.test_front_public_cannot_overlap_admin_public) ... ok
+test_front_target_cannot_be_admin_api (test_release.OfflineRelease.test_front_target_cannot_be_admin_api) ... ok
+test_html_clone_dependency_change_rejected (test_release.OfflineRelease.test_html_clone_dependency_change_rejected) ... ok
+test_html_import_key_change_rejected (test_release.OfflineRelease.test_html_import_key_change_rejected) ... ok
+test_html_missing_clone_rejected (test_release.OfflineRelease.test_html_missing_clone_rejected) ... ok
+test_html_old_scope_dependency_change_rejected (test_release.OfflineRelease.test_html_old_scope_dependency_change_rejected) ... ok
+test_html_old_scope_keys_cannot_be_replaced (test_release.OfflineRelease.test_html_old_scope_keys_cannot_be_replaced) ... ok
+test_html_outside_importmap_change_rejected (test_release.OfflineRelease.test_html_outside_importmap_change_rejected) ... ok
+test_html_target_cannot_be_front_main (test_release.OfflineRelease.test_html_target_cannot_be_front_main) ... ok
+test_html_third_scope_rejected (test_release.OfflineRelease.test_html_third_scope_rejected) ... ok
+test_html_two_exact_44_scope_clones_pass_values_only (test_release.OfflineRelease.test_html_two_exact_44_scope_clones_pass_values_only) ... ok
+test_lock_contention_does_not_claim (test_release.OfflineRelease.test_lock_contention_does_not_claim) ... ok
+test_missing_pm2_daemon_does_not_invoke_cli (test_release.OfflineRelease.test_missing_pm2_daemon_does_not_invoke_cli) ... ok
+test_noatime_read_and_symlink_refusal (test_release.OfflineRelease.test_noatime_read_and_symlink_refusal) ... ok
+test_non_content_addressed_asset_rejected (test_release.OfflineRelease.test_non_content_addressed_asset_rejected) ... ok
+test_non_regular_read_cannot_block_on_fifo (test_release.OfflineRelease.test_non_regular_read_cannot_block_on_fifo) ... ok
+test_old_front_public_alias_cannot_be_baseline_front_public (test_release.OfflineRelease.test_old_front_public_alias_cannot_be_baseline_front_public) ... ok
+test_one_apply_no_replay_even_new_baseline (test_release.OfflineRelease.test_one_apply_no_replay_even_new_baseline) ... ok
+test_ownership_loss_never_rolls_back_or_closes_foreign_window (test_release.OfflineRelease.test_ownership_loss_never_rolls_back_or_closes_foreign_window) ... ok
+test_pinned_manifest_cannot_be_rewritten (test_release.OfflineRelease.test_pinned_manifest_cannot_be_rewritten) ... ok
+test_pm2_daemon_read_guard_contains_no_start_operation (test_release.OfflineRelease.test_pm2_daemon_read_guard_contains_no_start_operation) ... ok
+test_process_capture_only_hashes_environment (test_release.OfflineRelease.test_process_capture_only_hashes_environment) ... ok
+test_readonly_has_no_locks_writes_or_attempt (test_release.OfflineRelease.test_readonly_has_no_locks_writes_or_attempt) ... ok
+test_replace_kind_target_cannot_be_swapped (test_release.OfflineRelease.test_replace_kind_target_cannot_be_swapped) ... ok
+test_restored_but_unhealthy_keeps_shared_true (test_release.OfflineRelease.test_restored_but_unhealthy_keeps_shared_true) ... ok
+test_review_manifest_and_independence_pins_required (test_release.OfflineRelease.test_review_manifest_and_independence_pins_required) ... ok
+test_rollback_reload_failure_does_not_close_window (test_release.OfflineRelease.test_rollback_reload_failure_does_not_close_window) ... ok
+test_stale_baseline_rejected (test_release.OfflineRelease.test_stale_baseline_rejected) ... ok
+test_success_preflight_apply_verify_and_protections (test_release.OfflineRelease.test_success_preflight_apply_verify_and_protections) ... ok
+test_two_new_assets_require_distinct_content_hashes (test_release.OfflineRelease.test_two_new_assets_require_distinct_content_hashes) ... ok
+test_unlisted_asset_rejected (test_release.OfflineRelease.test_unlisted_asset_rejected) ... ok
+test_unrelated_process_drift_cannot_be_hidden_by_front_reload (test_release.OfflineRelease.test_unrelated_process_drift_cannot_be_hidden_by_front_reload) ... ok
+
+----------------------------------------------------------------------
+Ran 58 tests in 1.676s
+
+OK
+
+Python compile exit: 0
+usage: release.py [-h] --package PACKAGE --manifest-sha256 MANIFEST_SHA256
+                  --review-sha256 REVIEW_SHA256 --baseline-sha256
+                  BASELINE_SHA256 --coord-sha256 COORD_SHA256
+                  [--allow-reviewed-apply]
+                  {preflight,apply,verify}
+
+One-shot, SHA-bound customer-upload release. No network, SQL or configuration
+writes.
+
+positional arguments:
+  {preflight,apply,verify}
+
+options:
+  -h, --help            show this help message and exit
+  --package PACKAGE
+  --manifest-sha256 MANIFEST_SHA256
+  --review-sha256 REVIEW_SHA256
+  --baseline-sha256 BASELINE_SHA256
+  --coord-sha256 COORD_SHA256
+  --allow-reviewed-apply
+
+CLI --help exit: 0
+Unittest exit: 0
+Schema: JSON syntax, local references, regex patterns and synthetic binding shape checked in unittest; full external Draft validator unavailable; no network installation attempted.
+Safety: all PM2/Node subprocess mocked; only offline Python unittest/py_compile/--help executed; no SSH/network/DB/production/user-data/Git operations.
+Schema validation exit: 0
+
+Current SHA-256:
+69c743ac7e1212045e2f5034a5a3264c7b4fd8c591588cf4e65dddd1e6200e1d  release.py
+66086bcd2425ae01424f22d4731e6173901c3f32ad0998f17a0b102f35446d92  test_release.py
+d9b860e3aafa8071befcd1f41499831f8e05a54238e2fe17a61dfbd33ccdc6ff  binding.schema.json
+b63acb4377f4d92bae4facf090bdc0e6cb95134051e0eb2572ca5c9d5370f3c5  README.md
