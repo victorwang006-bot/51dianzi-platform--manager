@@ -479,3 +479,107 @@
 .ci-stock-edit-table .ci-row-actions {
   gap: 7px;
 }
+
+/* Customer review stays inside the caller-owned dialog; no viewport sizing here. */
+.ci-batch-toolbar,
+.ci-batch-pagination {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+}
+.ci-batch-toolbar {
+  justify-content: space-between;
+}
+.ci-batch-toolbar > strong {
+  color: #475569;
+  font-size: var(--admin-content-font-body, 13px);
+  font-weight: 500;
+}
+.ci-batch-pagination {
+  justify-content: flex-end;
+  color: #64748b;
+  font-size: var(--admin-content-font-body, 12px);
+}
+.ci-batch-pagination > span {
+  margin-right: auto;
+}
+.ci-batch-pagination select {
+  min-width: 56px;
+  height: 30px;
+  margin: 0 4px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #fff;
+  color: #475569;
+}
+.ci-batch-preview.ci-batch-review {
+  min-width: 0;
+  width: 100%;
+  min-height: 180px;
+  max-height: min(52dvh, 560px);
+  overflow-x: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.ci-batch-review table {
+  min-width: 1580px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.ci-batch-review th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f1f5f9;
+  box-shadow: 0 1px 0 #cbd5e1;
+}
+.ci-batch-review td {
+  vertical-align: top;
+  padding: 8px;
+}
+.ci-batch-review td.ci-batch-edit-cell {
+  min-width: 140px;
+  background: #fff;
+}
+.ci-batch-review td.ci-batch-edit-cell:nth-child(2),
+.ci-batch-review td.ci-batch-edit-cell:nth-child(10) {
+  min-width: 210px;
+}
+.ci-batch-cell-control {
+  display: block;
+  width: 100%;
+  min-width: 120px;
+  height: 34px;
+  padding: 5px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+}
+.ci-batch-review td.has-cell-error {
+  background: #fff1f2;
+}
+.ci-batch-review .has-cell-error > .ci-batch-cell-control {
+  border-color: #dc2626;
+  color: #b91c1c;
+  background: #fff7f7;
+}
+.ci-batch-cell-control:focus-visible,
+.ci-batch-pagination select:focus-visible,
+.ci-batch-review:focus-visible {
+  outline: 2px solid #185fa5;
+  outline-offset: 1px;
+}
+.ci-batch-issue {
+  margin-top: 6px;
+  gap: 4px;
+  white-space: normal;
+  font-size: var(--admin-content-font-caption, 11px);
+}
+.ci-batch-issue input {
+  width: 100%;
+  min-width: 120px;
+}

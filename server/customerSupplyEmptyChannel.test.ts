@@ -87,6 +87,11 @@ beforeEach(() => {
       UNIQUE (enterpriseId, dataOwnerUserId, customerId, inventoryResponsibleUserId), UNIQUE (enterpriseId, dataOwnerUserId, channelId));
     CREATE TABLE crm_customer_contact_primary (enterpriseId INTEGER, customerId INTEGER, primaryContactId TEXT, legacyContactPresent INTEGER);
     CREATE TABLE crm_customer_contacts (customerId INTEGER, contactName TEXT, phone TEXT, isPrimary INTEGER);
+    -- Existing history tables are intentionally empty for the legacy/no-history path.
+    -- The native unified create fence must query real SQL, not be stubbed out.
+    CREATE TABLE customer_upload_histories (history_id TEXT PRIMARY KEY, enterprise_id INTEGER, data_owner_user_id INTEGER, customer_id INTEGER, uploaded_by_user_id INTEGER, uploaded_by_admin_account_id INTEGER);
+    CREATE TABLE customer_upload_confirmations (history_id TEXT UNIQUE, enterprise_id INTEGER, data_owner_user_id INTEGER, customer_id INTEGER, frozen_data TEXT);
+    CREATE TABLE customer_upload_requests (enterprise_id INTEGER, data_owner_user_id INTEGER, actor_user_id INTEGER, request_id TEXT, operation TEXT, history_id TEXT, result_data TEXT, created_at TEXT);
     INSERT INTO enterprises VALUES (1,99,99),(2,199,199);
     INSERT INTO users VALUES (10,0),(20,0);
     INSERT INTO enterprise_members VALUES (1,1,10,'staff','active'),(2,1,20,'staff','active');

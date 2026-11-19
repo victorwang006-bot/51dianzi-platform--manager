@@ -47,6 +47,7 @@ function CustomerSupplyUploadSession(props: Props) {
   const utils = trpc.useUtils();
   const [, navigate] = useLocation();
   const uploadControls = useRef<BatchUploadDialogControls | null>(null);
+  const [fullscreen, setFullscreen] = useState(false);
   const [context, setContext] = useState<SupplyContext | null>(null);
   const [message, setMessage] = useState("");
   const [invalidated, setInvalidated] = useState(false);
@@ -554,11 +555,13 @@ function CustomerSupplyUploadSession(props: Props) {
     : context?.channel && !context.channel.active ? "关联渠道已停用，请核实后再上传。" : "";
   const close = () => { if (uploadControls.current) uploadControls.current.close(); else props.onClose(); };
   return <Dialog open onOpenChange={open => { if (!open) close(); }}>
-    <DialogContent className="ci-dialog ci-batch-dialog customer-supply-dialog" style={batchUploadDialogStyle}
+    <DialogContent className="ci-dialog ci-batch-dialog customer-supply-dialog" style={{ ...batchUploadDialogStyle,
+      width: fullscreen ? "100vw" : "min(90vw, calc(100vw - 24px))", maxWidth: fullscreen ? "100vw" : "90vw",
+      height: fullscreen ? "100dvh" : "85dvh", maxHeight: fullscreen ? "100dvh" : "85dvh", borderRadius: fullscreen ? 0 : undefined }}
       data-testid={upload ? "channel-inventory-batch-dialog" : "customer-supply-loading-dialog"}
       aria-describedby={undefined} onEscapeKeyDown={event => uploadControls.current?.onEscapeKeyDown(event)}
       onPointerDownOutside={event => event.preventDefault()}>
-      <DialogHeader style={{ flex: "0 0 auto" }}><DialogTitle>上传客户物料</DialogTitle></DialogHeader>
+      <DialogHeader style={{ flex: "0 0 auto", display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingRight: 28 }}><DialogTitle>上传客户物料</DialogTitle><button type="button" className="ci-inline-link" onClick={() => setFullscreen(value => !value)}>{fullscreen ? "退出全屏" : "全屏"}</button></DialogHeader>
       {upload ?? <>
         <div className="customer-supply-loading-body">
           {!context && !message ? <p role="status">正在核验上传权限…</p> : null}

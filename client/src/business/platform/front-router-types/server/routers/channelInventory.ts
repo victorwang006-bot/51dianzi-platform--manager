@@ -211,8 +211,16 @@ export function createChannelInventoryRouter(registerTeamRecord: RegisterTeamRec
       try { assertExpectedContext(ctx, input); return await historyService.customerUploadDownload(scopeFromContext(ctx), input); }
       catch (error) { return asTrpcError(error); }
     }),
+    customerUploadProblemsExport: readProcedure.input(historySchemas.customerUploadProblemsExportSchema).mutation(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await historyService.customerUploadProblemsExport(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
     customerUploadPrepareConfirmation: procedure.input(historySchemas.customerUploadPrepareConfirmationSchema).mutation(async ({ ctx, input }) => {
       try { assertExpectedContext(ctx, input); return await historyService.customerUploadPrepareConfirmation(scopeFromContext(ctx), input); }
+      catch (error) { return asTrpcError(error); }
+    }),
+    customerUploadRepairPrepareConfirmation: procedure.input(historySchemas.customerUploadRepairPrepareConfirmationSchema).mutation(async ({ ctx, input }) => {
+      try { assertExpectedContext(ctx, input); return await historyService.customerUploadRepairPrepareConfirmation(scopeFromContext(ctx), input); }
       catch (error) { return asTrpcError(error); }
     }),
     customerUploadReconcileBatch: procedure.input(historySchemas.customerUploadReconcileBatchSchema).mutation(async ({ ctx, input }) => {

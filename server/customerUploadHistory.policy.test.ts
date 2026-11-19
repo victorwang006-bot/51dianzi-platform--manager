@@ -23,11 +23,11 @@ const dependencies = (options: Partial<CustomerUploadHistoryPolicyDependencies> 
 });
 
 describe("customer history: fixed strict contracts and trusted identity policy", () => {
-  it("exactly eight static methods with original inventory.manage and proper read/write", () => {
-    expect(Object.keys(schemas.CUSTOMER_UPLOAD_HISTORY_INPUT_SCHEMAS)).toHaveLength(8);
+  it("exactly ten static methods with original inventory.manage and proper read/write", () => {
+    expect(Object.keys(schemas.CUSTOMER_UPLOAD_HISTORY_INPUT_SCHEMAS)).toHaveLength(10);
     for (const method of Object.keys(schemas.CUSTOMER_UPLOAD_HISTORY_INPUT_SCHEMAS)) {
       expect(CHANNEL_INVENTORY_BUSINESS_METHOD_IDS).toContain(method); expect(schemas.isCustomerUploadHistoryMethod(method)).toBe(true);
-      const mode = ["channelInventory.customerUploadHistoryList", "channelInventory.customerUploadHistoryGet", "channelInventory.customerUploadDownload"].includes(method) ? "read" : "write";
+      const mode = ["channelInventory.customerUploadHistoryList", "channelInventory.customerUploadHistoryGet", "channelInventory.customerUploadDownload", "channelInventory.customerUploadProblemsExport"].includes(method) ? "read" : "write";
       expect(CHANNEL_INVENTORY_BUSINESS_METHOD_POLICIES[method as keyof typeof CHANNEL_INVENTORY_BUSINESS_METHOD_POLICIES]).toEqual({ mode, permission: "inventory.manage" });
       expect(officialInventoryMethodRequirement(method)).toBe(mode); expect(NATIVE_TEAM_READ_METHODS).not.toContain(method);
     }

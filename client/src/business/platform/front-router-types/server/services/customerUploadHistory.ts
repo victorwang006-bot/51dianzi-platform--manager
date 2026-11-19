@@ -11,6 +11,10 @@ import { createCustomerSupplyService } from "./customerSupply";
 import { customerSupplyCompletion } from "./customerSupplyCompany";
 import { historyActorIsSelf, resolveCustomerUploadHistoryPolicy, type CustomerUploadHistoryPolicy, type CustomerUploadHistoryPolicyDependencies } from "./customerUploadHistoryPolicy";
 import { inspectCustomerUploadFile } from "./customerUploadPrivateStorage";
+import { resolveTeamInventoryVisibility } from "./channelTeamInventoryAccess";
+import { customerUploadProblemsWorkbook } from "./customerUploadHistoryExport";
+import { assertCustomerSupplyRepairWriteFence } from "./customerSupply";
+import { assertCustomerUploadRepairSources, customerUploadIsSkippedProblem, readCustomerUploadRepairEntries, type CustomerUploadFrozen, type CustomerUploadFrozenEntry, type CustomerUploadRepairRecord, type CustomerUploadRepairEntry, customerUploadSourceKeys } from "./customerUploadHistoryValidation";
 /** Storage is injected. No generic storagePut/storageProxy/public URL capability. */
 export type PrivateStoredFile = { locator: string; fileName: string; mimeType: string; byteSize: number; sha256: string; manifest: OriginalWorkbookManifest | null };
 export type CustomerUploadPrivateStorage = { put(file: FileInput): Promise<PrivateStoredFile>; read(locator: string): Promise<Buffer> };
@@ -22,8 +26,8 @@ export type CustomerUploadHistoryDependencies = ChannelInventoryServiceDependenc
 };
 type HistoryRow = SqlResultRow & { history_id: string; enterprise_id: number; data_owner_user_id: number; customer_id: number; uploaded_by_user_id: number; uploaded_by_admin_account_id: number | null; original_file_id: string; latest_version_id: string | null; latest_version_no: number; revision: number; mode: "standard" | "parse"; state: schemas.HistoryState; customer_name: string; created_at: Date | string; leader_access?: unknown };
 type FileRow = SqlResultRow & { file_id: string; kind: FileDto["kind"]; locator: string; file_name: string; mime_type: string; byte_size: number; sha256: string; original_manifest: unknown; created_at: Date | string };
-type Frozen = Omit<ConfirmationDto, "entries"> & { entries: (ConfirmationEntry & { createPayloadHash: string; sourceRefs: SourceRef[] })[]; originalFileHash: string; eligibleComplete: boolean; batchCreatePayloadHash: string };
-type PersistedConfirmation = { frozen: Frozen; entries: ConfirmationEntry[]; remaining: number | null };
+type Frozen = CustomerUploadFrozen;
+type PersistedConfirmation = { frozen: Frozen; formalEntries: CustomerUploadFrozenEntry[]; repairs: CustomerUploadRepairEntry[]; entries: ConfirmationEntry[]; remaining: number | null };
 const rows = <T extends SqlResultRow = SqlResultRow>(r: unknown): T[] => {
   if (!Array.isArray(r)) throw new Error("SQL_RESULT_SHAPE");
   return (Array.isArray(r[0]) ? r[0] : r) as T[];
@@ -104,12 +108,14 @@ export function createCustomerUploadHistoryService(deps: CustomerUploadHistoryDe
     if (!c) return null;
     const frozen = json<Frozen>(c.frozen_data); const stored = json<Pick<ConfirmationEntry, "logicalRowId" | "status" | "receipt">[]>(c.receipts_data);
     if (frozen.confirmationId !== String(c.confirmation_id) || frozen.batchRequestId !== String(c.batch_request_id) || frozen.entries.length < 1) throw new Error("CONFIRMATION_SHAPE");
-    const entries = frozen.entries.map(({ createPayloadHash: _hash, ...entry }) => { const status = stored.find(r => r.logicalRowId === entry.logicalRowId); return { ...entry, status: status?.status ?? "pending", ...(status?.receipt ? { receipt: status.receipt } : {}) }; });
-    return { frozen, entries, remaining: c.remaining_material_count == null ? null : Number(c.remaining_material_count) };
+    const repairs = await readCustomerUploadRepairEntries(tx, h, frozen);
+    const formalEntries = [...frozen.entries, ...repairs];
+    const entries = formalEntries.map(({ createPayloadHash: _hash, ...entry }) => { const status = stored.find(r => r.logicalRowId === entry.logicalRowId); return { ...entry, status: status?.status ?? "pending", ...(status?.receipt ? { receipt: status.receipt } : {}) }; });
+    return { frozen, formalEntries, repairs, entries, remaining: c.remaining_material_count == null ? null : Number(c.remaining_material_count) };
   }
   function confirmationDto(c: PersistedConfirmation): ConfirmationDto {
     const { confirmationId, versionId, batchRequestId, batch, excludedRows, resolvedIssues, sourceCoverage, createdAt } = c.frozen;
-    return { confirmationId, versionId, batchRequestId, batch, entries: c.entries, excludedRows, resolvedIssues, sourceCoverage, createdAt };
+    return { confirmationId, versionId, batchRequestId, batch, entries: c.entries, excludedRows: excludedRows.filter(e => !c.repairs.some(r => r.logicalRowId === e.logicalRowId)), resolvedIssues, sourceCoverage, createdAt };
   }
   async function dto(tx: SqlExecutor, policy: CustomerUploadHistoryPolicy, scope: ChannelInventoryScope, h: HistoryRow): Promise<HistoryDto> {
     const original = await file(tx, h, h.original_file_id);
@@ -117,14 +123,34 @@ export function createCustomerUploadHistoryService(deps: CustomerUploadHistoryDe
     const v = h.latest_version_id ? await version(tx, h, h.latest_version_id) : null;
     const cf = await confirmation(tx, h); const access = policy.access(h); const self = historyActorIsSelf(scope, h);
     const successCount = cf?.entries.filter(e => e.status === "success").length ?? 0;
+    let batchMetadata: Pick<HistoryDto, "uploadBatch" | "batchClosed"> = {};
+    if (cf && self) {
+      try {
+        // Same live stock-read gate as native batch listing; history-manager ACL
+        // alone cannot reveal current own-batch navigation or delete CAS metadata.
+        await resolveTeamInventoryVisibility(tx, scope, { lock: true });
+        const current = await assertCurrentBatch(tx, scope, h, cf);
+        batchMetadata = { uploadBatch: { ...cf.frozen.batch, revision: current.revision }, batchClosed: current.closed };
+      } catch (error) {
+        if (!((error instanceof ChannelInventoryError || error instanceof TRPCError) && ["NOT_FOUND", "FORBIDDEN", "PRECONDITION_FAILED"].includes(error.code))) throw error;
+      }
+    } else if (!cf) batchMetadata = { uploadBatch: null };
     const frozen = cf != null; const actionable = !frozen && !["cancelled", "imported", "partially_imported"].includes(h.state);
+    let repairableCount = 0;
+    if (cf) {
+      try {
+        assertCustomerUploadRepairSources(cf.frozen, cf.repairs, manifest);
+        repairableCount = cf.frozen.excludedRows.filter(e => customerUploadIsSkippedProblem(e) && !cf.repairs.some(r => r.logicalRowId === e.logicalRowId)).length;
+      } catch (error) { if (!(error instanceof ChannelInventoryError && error.code === "PRECONDITION_FAILED")) throw error; }
+    } else repairableCount = v?.rows.filter(r => r.disposition !== "excluded" && (r.disposition === "pending" || r.issues.some(i => !i.resolved))).length ?? 0;
     return { historyId: h.history_id, customerId: Number(h.customer_id), customerName: h.customer_name, mode: h.mode, state: h.state, revision: Number(h.revision), uploadedBy: { adminAccountId: h.uploaded_by_admin_account_id == null ? null : Number(h.uploaded_by_admin_account_id), frontUserId: Number(h.uploaded_by_user_id), displayName: `用户 ${Number(h.uploaded_by_user_id)}` },
       createdAt: iso(h.created_at), originalFile: fileDto(original), latestVersionId: h.latest_version_id, latestVersionNo: Number(h.latest_version_no), access,
       stats: { sourceRowCount: manifest ? manifest.sheets.reduce((n, s) => n + s.rows.length, 0) : null, resultRowCount: v?.rows.length ?? 0,
         pendingCount: cf ? cf.entries.filter(e => e.status === "pending").length : v?.rows.filter(r => r.disposition === "pending" || r.issues.some(i => !i.resolved)).length ?? 0,
-        excludedCount: cf?.frozen.excludedRows.length ?? v?.rows.filter(r => r.disposition === "excluded").length ?? 0, successCount, unknownCount: cf?.entries.filter(e => e.status === "unknown").length ?? 0, failedCount: 0, remainingMaterialCount: cf?.remaining ?? null, unprocessedSourceRowCount: cf?.frozen.sourceCoverage?.unprocessedSourceRefs.length ?? 0 },
+        excludedCount: cf ? confirmationDto(cf).excludedRows.length : v?.rows.filter(r => r.disposition === "excluded").length ?? 0, successCount, unknownCount: cf?.entries.filter(e => e.status === "unknown").length ?? 0, failedCount: 0, repairableCount, remainingMaterialCount: cf?.remaining ?? null, unprocessedSourceRowCount: cf?.frozen.sourceCoverage?.unprocessedSourceRefs.length ?? 0 },
       ...(cf?.frozen.sourceCoverage?.warning ? { sourceCoverageWarning: cf.frozen.sourceCoverage.warning } : {}),
-      capabilities: { canDownload: true, canManage: policy.canManage, canUploadResult: policy.canManage && policy.crm.write && policy.channels.write && policy.stocks.write && actionable, canConfirm: self && policy.crm.write && policy.channels.write && policy.stocks.write && (actionable && h.state === "awaiting_confirmation" || frozen), canCancel: !frozen && successCount === 0 && (self || policy.canManage) && policy.crm.write && policy.channels.write && policy.stocks.write && h.state !== "cancelled" } };
+      ...batchMetadata,
+      capabilities: { canDownload: true, canManage: policy.canManage, canUploadResult: policy.canManage && policy.crm.write && policy.channels.write && policy.stocks.write && actionable, canConfirm: self && policy.crm.write && policy.channels.write && policy.stocks.write && (actionable && h.state === "awaiting_confirmation" || frozen && batchMetadata.batchClosed === false), canCancel: !frozen && successCount === 0 && (self || policy.canManage) && policy.crm.write && policy.channels.write && policy.stocks.write && h.state !== "cancelled" } };
   }
   async function appendFile(tx: SqlExecutor, h: HistoryRow, kind: FileDto["kind"], input: FileInput, fileId = randomUUID()): Promise<FileRow> {
     const decoded = Buffer.from(input.base64, "base64");
@@ -217,7 +243,19 @@ export function createCustomerUploadHistoryService(deps: CustomerUploadHistoryDe
         const versions: schemas.VersionSummary[] = [];
         for (const item of list) { const { rows: _rows, issues: _issues, ...summary } = await version(tx, h, String(item.version_id)); versions.push(summary); }
         const cf = await confirmation(tx, h);
-        return { history: await dto(tx, policy, scope, h), versions, selectedVersion: input.versionId ? await version(tx, h, input.versionId) : h.latest_version_id ? await version(tx, h, h.latest_version_id) : null, confirmation: cf ? confirmationDto(cf) : null, originalSheets: manifestOf(f)?.sheets ?? [] };
+        const current = await dto(tx, policy, scope, h);
+        return { history: current, versions, selectedVersion: input.versionId ? await version(tx, h, input.versionId) : h.latest_version_id ? await version(tx, h, h.latest_version_id) : null, confirmation: cf ? { ...confirmationDto(cf), ...(current.batchClosed === undefined ? {} : { batchClosed: current.batchClosed }) } : null, originalSheets: manifestOf(f)?.sheets ?? [] };
+      });
+    },
+    async customerUploadProblemsExport(scope: ChannelInventoryScope, raw: schemas.CustomerUploadProblemsExportInput): Promise<schemas.CustomerUploadProblemsExportOutput> {
+      const input = parse(schemas.customerUploadProblemsExportSchema, scope, raw);
+      return transaction(scope, false, async (tx, policy) => {
+        const h = await history(tx, policy, input.historyId);
+        if (input.expectedRevision !== undefined) cas(h, input.expectedRevision);
+        const cf = await confirmation(tx, h);
+        const versionId = cf ? cf.frozen.versionId : h.latest_version_id;
+        const v = versionId ? await version(tx, h, versionId) : null;
+        return customerUploadProblemsWorkbook(await dto(tx, policy, scope, h), v, cf ? confirmationDto(cf) : null);
       });
     },
     async customerUploadOriginal(scope: ChannelInventoryScope, raw: schemas.CustomerUploadOriginalInput): Promise<CustomerUploadHistoryOutputs["channelInventory.customerUploadOriginal"]> {
@@ -372,6 +410,75 @@ export function createCustomerUploadHistoryService(deps: CustomerUploadHistoryDe
         const cf = await confirmation(tx, h); if (!cf) return hidden(); await assertCurrentBatch(tx, scope, h, cf);
       });
     },
+    async customerUploadRepairPrepareConfirmation(scope: ChannelInventoryScope, raw: schemas.CustomerUploadRepairPrepareConfirmationInput): Promise<CustomerUploadHistoryOutputs["channelInventory.customerUploadRepairPrepareConfirmation"]> {
+      const input = parse(schemas.customerUploadRepairPrepareConfirmationSchema, scope, raw);
+      const payloadHash = channelInventoryPayloadHash({ operation: "repair_prepare", input, officialAdminId: scope.officialActor?.adminAccountId ?? null });
+      return transaction(scope, true, async (tx, policy) => {
+        // The ORIGINAL history serializes source claims. Never prepare based on missing receipts.
+        const h = await history(tx, policy, input.historyId);
+        if (!historyActorIsSelf(scope, h)) fail("FORBIDDEN", "仅原上传本人可补发未提交的问题行");
+        const cf = await confirmation(tx, h);
+        if (!cf || cf.frozen.confirmationId !== input.confirmationId) return hidden();
+        const c = rows(await tx.execute(sql`SELECT c.id,c.name,c.version,c.industryCode,c.archivedAt FROM crm_customers c WHERE c.id = ${Number(h.customer_id)} AND ${policy.customerWhere()} LIMIT 1 FOR UPDATE`))[0];
+        if (!c) return hidden();
+        if (Number(c.version) !== input.expectedCustomerVersion) conflict();
+        const reason = customerSupplyCompletion(c); if (reason) fail("PRECONDITION_FAILED", reason);
+        const source = await assertCustomerSupplyRepairWriteFence(tx, scope, cf.frozen.batch.channelId);
+        const current = await assertCurrentBatch(tx, scope, h, cf);
+        if (current.closed) fail("CONFLICT", "上传批次已关闭，不能补发问题行");
+        const p = await prior(tx, scope, input, "repair_prepare", payloadHash);
+        if (p) {
+          if (String(p.history_id) !== h.history_id) conflict();
+          const record = json<CustomerUploadRepairRecord>(p.result_data);
+          const ids = new Set(record.entries.map(e => e.rowRequestId));
+          const entries = cf.entries.filter(e => ids.has(e.rowRequestId));
+          if (entries.length !== record.entries.length) fail("PRECONDITION_FAILED", "原补发映射无法完整恢复，请保留原请求号");
+          return { historyId: h.history_id, revision: Number(h.revision), confirmationId: cf.frozen.confirmationId, batch: { ...cf.frozen.batch, revision: current.revision }, entries };
+        }
+        cas(h, input.expectedRevision);
+        if (current.revision !== input.expectedBatchRevision) conflict();
+        const original = await file(tx, h, h.original_file_id); const manifest = manifestOf(original);
+        if (original.sha256 !== cf.frozen.originalFileHash) fail("PRECONDITION_FAILED", "原文件与冻结证据不匹配");
+        assertCustomerUploadRepairSources(cf.frozen, cf.repairs, manifest);
+        const v = cf.frozen.versionId ? await version(tx, h, cf.frozen.versionId) : null;
+        const logicalIds = new Set(cf.formalEntries.map(e => e.logicalRowId));
+        const requestIds = new Set([...cf.formalEntries.map(e => e.rowRequestId), input.requestId, cf.frozen.batchRequestId]);
+        const prepared: CustomerUploadRepairEntry[] = [];
+        for (const row of input.rows) {
+          if (logicalIds.has(row.logicalRowId) || requestIds.has(row.rowRequestId)) fail("CONFLICT", "问题行已进入原确认或补发集合，必须恢复原请求与原内容");
+          const excluded = cf.frozen.excludedRows.filter(e => e.logicalRowId === row.logicalRowId);
+          if (excluded.length !== 1 || !customerUploadIsSkippedProblem(excluded[0])) fail("PRECONDITION_FAILED", "仅允许补发原冻结集合中明确跳过的未提交问题行");
+          const refs = excluded[0].sourceRefs!;
+          assertCustomerUploadSourceRefs(manifest, refs);
+          if (row.sourceRefs && channelInventoryPayloadHash(row.sourceRefs) !== channelInventoryPayloadHash(refs)) fail("BAD_REQUEST", "补发来源不能改变原冻结映射");
+          const candidates = v?.rows.filter(r => r.logicalRowId === row.logicalRowId);
+          if (v && (candidates?.length !== 1 || channelInventoryPayloadHash(candidates[0].sourceRefs) !== channelInventoryPayloadHash(refs))) fail("PRECONDITION_FAILED", "原候选行来源不完整或存在歧义");
+          if (row.fields.currency !== "CNY") fail("BAD_REQUEST", "币种必须人工明确确认为CNY，未知币种不能默认人民币");
+          const fields = createCustomerMaterialSchema.safeParse({ ...row.fields, expectedEnterpriseId: scope.enterpriseId, expectedActorUserId: scope.actorUserId, customerId: Number(h.customer_id), expectedCustomerVersion: input.expectedCustomerVersion, requestId: row.rowRequestId, uploadBatchId: cf.frozen.batch.id });
+          if (!fields.success) fail("BAD_REQUEST", fields.error.issues[0]?.message ?? "请按原正式字段校验补全，不猜测价格或税费");
+          const rowId = candidates?.[0]?.rowId ?? randomUUID();
+          const payload: ConfirmationEntry["payload"] = { ...fields.data!, channelId: cf.frozen.batch.channelId };
+          const rowHash = channelInventoryPayloadHash({ historyId: h.history_id, confirmationId: cf.frozen.confirmationId, logicalRowId: row.logicalRowId, rowId, payload, sourceRefs: refs, officialAdminId: scope.officialActor?.adminAccountId ?? null });
+          if (await prior(tx, scope, { requestId: row.rowRequestId }, "repair_row_claim", rowHash)) fail("CONFLICT", "补发行请求号已绑定其他内容");
+          if (rows(await tx.execute(sql`SELECT m.id FROM channel_inventory_materials m WHERE m.enterprise_id = ${scope.enterpriseId} AND m.create_request_id = ${row.rowRequestId} LIMIT 2 FOR UPDATE`)).length) fail("CONFLICT", "补发行请求号曾用于正式提交，不能替换原内容");
+          const sourceRowKeys = customerUploadSourceKeys(refs, manifest);
+          prepared.push({ logicalRowId: row.logicalRowId, rowId, rowRequestId: row.rowRequestId, uploadBatchId: cf.frozen.batch.id, payload, sourceRefs: refs, sourceRowKeys, status: "pending", createPayloadHash: customerUploadFormalCreateHash(payload, String(source!.type) as "factory" | "agent" | "trade" | "other") });
+          logicalIds.add(row.logicalRowId); requestIds.add(row.rowRequestId);
+          await saveRequest(tx, scope, row.rowRequestId, "repair_row_claim", h.history_id, rowHash, { confirmationId: cf.frozen.confirmationId, logicalRowId: row.logicalRowId, sourceRowKeys, originalFileHash: original.sha256 });
+        }
+        if (cf.formalEntries.length + prepared.length > 1000 || Buffer.byteLength(JSON.stringify(prepared), "utf8") > 8 * 1024 * 1024) fail("BAD_REQUEST", "同批次补发超过1000行或8MiB安全上限");
+        const batch = { ...cf.frozen.batch, revision: current.revision + 1 };
+        const record: CustomerUploadRepairRecord = { schemaVersion: 1, historyId: h.history_id, confirmationId: cf.frozen.confirmationId, originalFileHash: original.sha256, revision: Number(h.revision) + 1, batch, entries: prepared };
+        // Immutable mapping/source identities and CAS capacity commit together, before any create.
+        await saveRequest(tx, scope, input.requestId, "repair_prepare", h.history_id, payloadHash, record);
+        if (!changed(await tx.execute(sql`UPDATE channel_inventory_upload_batches SET total_rows = total_rows + ${prepared.length},revision = revision + 1
+          WHERE id = ${batch.id} AND enterprise_id = ${scope.enterpriseId} AND data_owner_user_id = ${scope.dataOwnerUserId}
+            AND channel_id = ${batch.channelId} AND uploaded_by_user_id = ${scope.actorUserId} AND revision = ${input.expectedBatchRevision}
+            AND total_rows = ${cf.formalEntries.length} AND closed = 0`))) conflict();
+        await advance(tx, h, cf.entries.some(e => e.status === "success") ? "partially_imported" : "awaiting_confirmation");
+        return { historyId: h.history_id, revision: Number(h.revision) + 1, confirmationId: cf.frozen.confirmationId, batch, entries: prepared.map(({ createPayloadHash: _hash, sourceRowKeys: _keys, ...entry }) => entry) };
+      });
+    },
     async customerUploadReconcileBatch(scope: ChannelInventoryScope, raw: schemas.CustomerUploadReconcileBatchInput): Promise<CustomerUploadHistoryOutputs["channelInventory.customerUploadReconcileBatch"]> {
       const input = parse(schemas.customerUploadReconcileBatchSchema, scope, raw);
       return mutation(scope, input, "channelInventory.customerUploadReconcileBatch", async (tx, policy) => {
@@ -385,7 +492,7 @@ export function createCustomerUploadHistoryService(deps: CustomerUploadHistoryDe
               AND NOT EXISTS (SELECT 1 FROM channel_inventory_material_management dm WHERE dm.enterprise_id = m.enterprise_id AND dm.material_id = m.id AND dm.deleted_at IS NOT NULL) LIMIT 1 FOR UPDATE`));
             remaining += exists.length ? 1 : 0; next.push({ logicalRowId: entry.logicalRowId, status: "success", receipt: entry.receipt }); continue;
           }
-          const frozenEntry = cf.frozen.entries.find(e => e.logicalRowId === entry.logicalRowId)!;
+          const frozenEntry = cf.formalEntries.find(e => e.logicalRowId === entry.logicalRowId)!;
           const evidence = rows(await tx.execute(sql`SELECT m.id AS material_id,m.revision AS material_revision,m.create_request_id,m.create_payload_hash,
             bm.initial_revision,bm.initial_channel_id,bm.initial_owner_user_id,ca.actor_user_id AS creator_user_id,ca.payload_hash AS audit_payload_hash,ca.after_data AS creation_data,
             dm.deleted_at FROM channel_inventory_upload_batch_materials bm
@@ -414,7 +521,7 @@ export function createCustomerUploadHistoryService(deps: CustomerUploadHistoryDe
 /** Current original customer + batch/channel/member scope. Manager ACL alone never expands native own-batch read. */
 async function assertCurrentBatch(tx: SqlExecutor, scope: ChannelInventoryScope, h: HistoryRow, cf: PersistedConfirmation) {
   if (!historyActorIsSelf(scope, h)) fail("FORBIDDEN", "请由原上传本人核实原正式批次");
-  const b = rows(await tx.execute(sql`SELECT b.id,br.result_data AS batch_creation_receipt FROM channel_inventory_upload_batches b
+  const b = rows(await tx.execute(sql`SELECT b.id,b.revision,b.closed,br.result_data AS batch_creation_receipt FROM channel_inventory_upload_batches b
     INNER JOIN channel_inventory_channels c ON c.id = b.channel_id AND c.enterprise_id = b.enterprise_id AND c.data_owner_user_id = b.data_owner_user_id
     INNER JOIN crm_customer_supply_channels sc ON sc.channelId = c.id AND sc.enterpriseId = c.enterprise_id AND sc.dataOwnerUserId = c.data_owner_user_id AND sc.inventoryResponsibleUserId = c.responsible_user_id
     INNER JOIN enterprise_team_members tm ON tm.enterpriseId = b.enterprise_id AND tm.userId = b.uploaded_by_user_id AND tm.teamId = b.team_id AND tm.id = b.owner_membership_id
@@ -430,6 +537,9 @@ async function assertCurrentBatch(tx: SqlExecutor, scope: ChannelInventoryScope,
   if (b.length !== 1) hidden();
   const receipt = json<{ id: number; batchCode: string; revision: number }>(b[0].batch_creation_receipt);
   if (receipt.id !== cf.frozen.batch.id || receipt.batchCode !== cf.frozen.batch.batchCode || receipt.revision !== cf.frozen.batch.revision) hidden();
+  const revision = Number(b[0].revision);
+  if (!Number.isSafeInteger(revision) || revision < 1 || ![0, 1, "0", "1", false, true].includes(b[0].closed as number | string | boolean)) hidden();
+  return { revision, closed: [1, "1", true].includes(b[0].closed as number | string | boolean) };
 }
 function verifyEvidence(e: SqlResultRow, h: HistoryRow, entry: ConfirmationEntry, payloadHash: string): VerifiedRowReceipt | null {
   let event: SqlResultRow; try { event = json<SqlResultRow>(e.creation_data); } catch { return null; }

@@ -9,6 +9,7 @@ import { currentReadExecutor, readCustomerPrimaryContact, resolveCustomerSupplyR
 import { resolveTeamInventoryVisibility, TEAM_MATERIAL_FROM, teamInventoryAll } from "./channelTeamInventoryAccess";
 import { teamMaterialSourceEligibility } from "./channelInventorySource";
 import { createChannelInventoryManagementService } from "./channelInventoryManagement";
+import { lockCustomerUploadFormalHistory } from "./customerUploadHistoryValidation";
 const rows = (r: unknown): SqlResultRow[] => Array.isArray(r) ? (Array.isArray(r[0]) ? r[0] : r) as SqlResultRow[] : [];
 const fail = (code: ConstructorParameters<typeof ChannelInventoryError>[0], message: string): never => { throw new ChannelInventoryError(code, message); };
 function expected(scope: ChannelInventoryScope, input: { expectedEnterpriseId: number; expectedActorUserId: number }) {
@@ -47,6 +48,10 @@ async function writeFence(tx: SqlExecutor, scope: ChannelInventoryScope, channel
     return found;
   }
   return null;
+}
+/** Repair never creates/rebinds a source: reuses the full native live write fence. */
+export async function assertCustomerSupplyRepairWriteFence(tx: SqlExecutor, scope: ChannelInventoryScope, channelId: number) {
+  return writeFence(tx, scope, channelId);
 }
 /** Upload preparation only, after current CRM read/write and completion checks.
  * Never use visibility/soft-delete/source predicates to prove an empty channel. */
@@ -196,6 +201,7 @@ export function createCustomerSupplyService(deps: ChannelInventoryServiceDepende
         const tx = currentReadExecutor(transaction);
         // Keep enterprise/member/module/team lock order ahead of customer business rows.
         await writeFence(tx, scope);
+        await lockCustomerUploadFormalHistory(tx, scope, input);
         const c = await customer(tx, scope, input.customerId);
         await assertCrmCustomerPolicy(currentReadExecutor(tx), scope, input.customerId,
           await resolveCrmCustomerPolicy(currentReadExecutor(tx), scope, true), true);

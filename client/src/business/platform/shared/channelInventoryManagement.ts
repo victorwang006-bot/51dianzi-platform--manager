@@ -9,7 +9,7 @@ export const deleteMaterialsSchema = z.object({ items: z.array(z.object({ id, ex
 export const listDeletedMaterialsSchema = z.object({ page, pageSize, ...inventoryManagementExpectedContext }).strict();
 export const restoreMaterialSchema = z.object({ id, expectedRevision: id, requestId, ...inventoryManagementExpectedContext }).strict();
 export const createUploadBatchSchema = z.object({ channelId: id, fileName: z.string().trim().min(1).max(255), totalRows: z.number().int().safe().min(1).max(1000), requestId, ...inventoryManagementExpectedContext }).strict();
-export const listUploadBatchesSchema = z.object({ page, pageSize, channelId: id.optional(), archived: z.boolean().optional(), ...inventoryManagementExpectedContext }).strict();
+export const listUploadBatchesSchema = z.object({ page, pageSize, channelId: id.optional(), customerId: id.optional(), archived: z.boolean().optional(), ...inventoryManagementExpectedContext }).strict();
 export const updateUploadBatchSchema = z.object({ id, expectedRevision: id, name: z.string().trim().min(1).max(128).optional(), archived: z.boolean().optional(), requestId, ...inventoryManagementExpectedContext }).strict()
   .refine(value => value.name !== undefined || value.archived !== undefined, { message: "请提供批次名称或归档状态" });
 export const previewDeleteUploadBatchSchema = z.object({ id, ...inventoryManagementExpectedContext }).strict();
@@ -23,7 +23,7 @@ export type PreviewDeleteUploadBatchInput = z.input<typeof previewDeleteUploadBa
 export type DeleteUploadBatchInput = z.input<typeof deleteUploadBatchSchema>;
 export type DeleteMaterialsResult = { deletedCount: number; skippedCount: number; results: { id: number; success: boolean; reason?: string }[] };
 export type DeletedMaterial = { id: number; partNumber: string; brand: string; revision: number; deletedAt: Date | string; uploadBatchId: number | null; canRestore: boolean };
-export type UploadBatch = { id: number; batchCode: string; name: string | null; fileName: string; channelId: number; channelName: string; uploadedByName: string; createdAt: Date | string; totalRows: number; successCount: number; remainingCount: number; revision: number; archived: boolean };
+export type UploadBatch = { id: number; batchCode: string; name: string | null; fileName: string; channelId: number; channelName: string; uploadedByName: string; createdAt: Date | string; totalRows: number; successCount: number; remainingCount: number; revision: number; archived: boolean; closed: boolean };
 export const CHANNEL_MANAGEMENT_BUSINESS_INPUT_SCHEMAS: Record<string, z.ZodTypeAny> = {
   "channelInventory.deleteMaterials": deleteMaterialsSchema,
   "channelInventory.listDeletedMaterials": listDeletedMaterialsSchema,

@@ -3,13 +3,13 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const runtime = vi.hoisted(() => {
-  const list = vi.fn(), detail = vi.fn(), update = vi.fn(), remove = vi.fn(), invalidate = vi.fn(), lookup = vi.fn();
-  return { list, detail, update, remove, invalidate, lookup, rows: [] as any[], total: 0, canWrite: true,
+  const list = vi.fn(), batches = vi.fn(), detail = vi.fn(), update = vi.fn(), remove = vi.fn(), invalidate = vi.fn(), lookup = vi.fn();
+  return { list, batches, detail, update, remove, invalidate, lookup, rows: [] as any[], total: 0, canWrite: true,
     scope: { merchantId: 55, storageScope: "scope-7-31", frontUser: { id: 7, role: "user" },
       staffPrincipal: { frontendUserId: 7, enterpriseId: 31 },
       contextVerification: { identity: "scope-7-31", state: "verified", authorizationVersion: "auth-1", readVersion: "read-1" },
       officialInventoryPermissions: { read: true, write: true, note: true, publish: true, authorizationVersion: "native-1" } },
-    utils: { client: { channelInventory: { listTeamMaterials: { query: list }, getTeamMaterialForEdit: { query: detail } } },
+    utils: { client: { channelInventory: { listUploadBatches: { query: batches }, listTeamMaterials: { query: list }, getTeamMaterialForEdit: { query: detail } } },
       channelInventory: { listTeamMaterials: { invalidate } } } };
 });
 vi.mock("../../../../../BusinessScope", () => ({ useBusinessScope: () => runtime.scope }));
@@ -56,6 +56,7 @@ beforeEach(() => {
     officialInventoryPermissions: { read: true, write: true, note: true, publish: true, authorizationVersion: "native-1" } };
   runtime.rows = [stock()]; runtime.total = 0; runtime.canWrite = true;
   runtime.list.mockReset().mockImplementation(input => Promise.resolve(page(input)));
+  runtime.batches.mockReset().mockImplementation(input => Promise.resolve({ items: [], total: 0, page: input.page, pageSize: input.pageSize, pageCount: 0 }));
   runtime.detail.mockReset().mockImplementation(({ id }) => Promise.resolve(detail(id)));
   runtime.remove.mockReset().mockImplementation(({ items }) => Promise.resolve(response(items.map((item: any) => item.id))));
   runtime.update.mockReset().mockResolvedValue({}); runtime.invalidate.mockReset().mockResolvedValue(undefined);
@@ -91,7 +92,7 @@ describe("customer inventory management: original page, identity and server gran
     await confirm(); expect(runtime.remove).toHaveBeenCalledTimes(1);
     expect(runtime.remove.mock.calls[0][0]).toEqual({ items: [{ id: 101, expectedRevision: 1101 }], requestId: expect.stringMatching(/^[a-f0-9-]{36}$/i), expectedEnterpriseId: 31, expectedActorUserId: 7 });
     expect(host.querySelector('[role="alertdialog"]')).toBeNull(); expect(host.textContent).not.toContain("MODEL-101");
-    expect(host.textContent).toContain("已删除 1 条"); expect(runtime.invalidate).toHaveBeenCalledWith({ customerId: 801, expectedEnterpriseId: 31, expectedActorUserId: 7 });
+    expect(host.querySelector('.ci-customer-delete-status [role="alert"]')?.textContent).toBe("已删除"); expect(runtime.invalidate).toHaveBeenCalledWith({ customerId: 801, expectedEnterpriseId: 31, expectedActorUserId: 7 });
   });
   it("cancel is write-free; re-selection has no reason field or extra confirmation", async () => {
     await render(); await prepare(); await click(named("取消", review()));
@@ -199,5 +200,21 @@ describe("delete write outcomes and immutable unknown recovery", () => {
     runtime.total = 21; runtime.list.mockImplementation(input => Promise.resolve({ ...page(input), items: input.page === 1 ? [stock(102)] : [stock(101)] }));
     await render(); await click(named("下一页")); await prepare(); runtime.total = 20; await confirm();
     expect(runtime.list.mock.calls.at(-1)?.[0]).toMatchObject({ customerId: 801, page: 1, pageSize: 20 }); expect(host.textContent).toContain("MODEL-102");
+  });
+
+  it.each(["pending", "unknown"])("external selectedBatchId change during %s stays on applied batch and is applied exactly after the original write unlocks", async state => {
+    runtime.batches.mockImplementation(input => Promise.resolve({ items: [501, 502].map(id => ({ id, fileName: `B-${id}.xlsx`, createdAt: "2026-11-19T08:00:00Z" })), total: 2, page: input.page, pageSize: 100, pageCount: 1 }));
+    runtime.rows = [stock(101, { uploadBatchId: 501 })]; const pending = deferred(); runtime.remove.mockReturnValueOnce(pending.promise);
+    await render({ selectedBatchId: 501 }); expect(runtime.list).toHaveBeenCalledTimes(1); await prepare(); await confirm();
+    const original = runtime.remove.mock.calls[0][0];
+    if (state === "unknown") { await act(async () => pending.reject(new Error("lost batch receipt"))); await settle(); }
+    await render({ ...props, selectedBatchId: 502 });
+    const filter = required(host.querySelector<HTMLSelectElement>('[aria-label="按上传批次查看"]'));
+    expect(filter.value).toBe("501"); expect(filter.disabled).toBe(true); expect(runtime.list).toHaveBeenCalledTimes(1);
+    runtime.rows = [stock(102, { uploadBatchId: 502 })];
+    if (state === "pending") { await act(async () => pending.resolve(response([101]))); await settle(); }
+    else { await click(named("按原请求重试", review())); expect(runtime.remove.mock.calls[1][0]).toBe(original); }
+    expect(runtime.list).toHaveBeenCalledTimes(2); expect(runtime.list.mock.calls[1][0]).toMatchObject({ customerId: 801, uploadBatchId: 502, page: 1 });
+    expect(filter.value).toBe("502"); expect(host.textContent).toContain("MODEL-102"); expect(host.textContent).not.toContain("MODEL-101");
   });
 });

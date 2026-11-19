@@ -31,6 +31,12 @@ export const customerUploadResultSchema = z.object({ ...expected, ...fence, pare
 export const customerUploadDownloadSchema = z.object({ ...expected, files: z.array(z.object({ historyId: uuid, fileId: uuid }).strict()).min(1).max(20), includeManifest: z.boolean().default(false) }).strict();
 export const customerUploadPrepareConfirmationSchema = z.object({ ...expected, ...fence, versionId: uuid.optional(), batchRequestId: uuid, expectedCustomerVersion: id, expectedChannelId: id.optional(), expectedChannelRevision: id.optional(), sourceProfile: z.object({ type: z.enum(["factory", "agent", "trade", "other"]), existingChannelId: id.optional() }).strict().optional(), confirmedRows: z.array(z.object({ logicalRowId: uuid, rowId: uuid, rowRequestId: uuid, sourceRefs: z.array(customerUploadSourceRefSchema).min(1).max(100), fields: customerUploadCandidateFieldsSchema }).strict()).min(1).max(1000), excludedRows: z.array(z.object({ logicalRowId: uuid, reason: text(1000).min(1), sourceRefs: z.array(customerUploadSourceRefSchema).min(1).max(100).optional() }).strict()).max(1000), resolvedIssues: z.array(z.object({ issueId: uuid, resolution: text(1000).min(1) }).strict()).max(1000).optional() }).strict();
 export const customerUploadReconcileBatchSchema = z.object({ ...expected, historyId: uuid, confirmationId: uuid, requestId: uuid }).strict();
+/** Only previously unsubmitted, explicitly skipped validation-problem rows are eligible. */
+export const customerUploadRepairPrepareConfirmationSchema = z.object({ ...expected, ...fence, confirmationId: uuid, expectedBatchRevision: id, expectedCustomerVersion: id, rows: z.array(z.object({ logicalRowId: uuid, rowRequestId: uuid, fields: customerUploadCandidateFieldsSchema, sourceRefs: z.array(customerUploadSourceRefSchema).min(1).max(100).optional() }).strict()).min(1).max(1000) }).strict();
+/** Read-only renderer; router/BFF must still enforce the live history read policy. */
+export const customerUploadProblemsExportSchema = z.object({ ...expected, historyId: uuid, expectedRevision: id.optional() }).strict();
+export type CustomerUploadProblemsExportInput = z.input<typeof customerUploadProblemsExportSchema>;
+export type CustomerUploadProblemsExportOutput = { historyId: string; revision: number; fileName: string; mimeType: string; byteSize: number; sha256: string; base64: string; problemCount: number; verificationCount: number; definitiveFailedCount: 0 };
 export const CUSTOMER_UPLOAD_HISTORY_INPUT_SCHEMAS = {
   "channelInventory.customerUploadHistoryList": customerUploadHistoryListSchema,
   "channelInventory.customerUploadHistoryGet": customerUploadHistoryGetSchema,
@@ -40,18 +46,20 @@ export const CUSTOMER_UPLOAD_HISTORY_INPUT_SCHEMAS = {
   "channelInventory.customerUploadDownload": customerUploadDownloadSchema,
   "channelInventory.customerUploadPrepareConfirmation": customerUploadPrepareConfirmationSchema,
   "channelInventory.customerUploadReconcileBatch": customerUploadReconcileBatchSchema,
+  "channelInventory.customerUploadProblemsExport": customerUploadProblemsExportSchema,
+  "channelInventory.customerUploadRepairPrepareConfirmation": customerUploadRepairPrepareConfirmationSchema,
 } as const;
 export type CustomerUploadHistoryMethod = keyof typeof CUSTOMER_UPLOAD_HISTORY_INPUT_SCHEMAS;
 export function isCustomerUploadHistoryMethod(method: string): method is CustomerUploadHistoryMethod { return Object.prototype.hasOwnProperty.call(CUSTOMER_UPLOAD_HISTORY_INPUT_SCHEMAS, method); }
 export type CustomerUploadHistoryInputs = { [K in CustomerUploadHistoryMethod]: z.input<typeof CUSTOMER_UPLOAD_HISTORY_INPUT_SCHEMAS[K]> };
 export type FileDto = { fileId: string; kind: "original" | "normalized" | "issues"; fileName: string; mimeType: string; byteSize: number; sha256: string; createdAt: string };
-export type Statistics = { sourceRowCount: number | null; resultRowCount: number; pendingCount: number; excludedCount: number; successCount: number; unknownCount: number; failedCount: number; remainingMaterialCount: number | null; unprocessedSourceRowCount?: number };
-export type HistoryDto = { historyId: string; customerId: number; customerName: string; mode: UploadMode; state: HistoryState; revision: number; uploadedBy: { adminAccountId: number | null; frontUserId: number; displayName: string }; createdAt: string; originalFile: FileDto; latestVersionId: string | null; latestVersionNo: number; stats: Statistics; sourceCoverageWarning?: string; access: HistoryAccess; capabilities: { canDownload: boolean; canManage: boolean; canUploadResult: boolean; canConfirm: boolean; canCancel: boolean } };
+export type Statistics = { sourceRowCount: number | null; resultRowCount: number; pendingCount: number; excludedCount: number; successCount: number; unknownCount: number; failedCount: number; repairableCount?: number; remainingMaterialCount: number | null; unprocessedSourceRowCount?: number };
+export type HistoryDto = { historyId: string; customerId: number; customerName: string; mode: UploadMode; state: HistoryState; revision: number; uploadedBy: { adminAccountId: number | null; frontUserId: number; displayName: string }; createdAt: string; originalFile: FileDto; latestVersionId: string | null; latestVersionNo: number; stats: Statistics; sourceCoverageWarning?: string; uploadBatch?: FormalBatchReceipt | null; batchClosed?: boolean; access: HistoryAccess; capabilities: { canDownload: boolean; canManage: boolean; canUploadResult: boolean; canConfirm: boolean; canCancel: boolean } };
 export type VersionDto = { versionId: string; versionNo: number; parentVersionId: string | null; createdAt: string; normalizedFile: FileDto | null; issuesFile: FileDto | null; rows: ResultRow[]; issues: Issue[] };
 export type FormalBatchReceipt = { id: number; batchCode: string; revision: number; channelId: number; customerId: number };
 export type VerifiedRowReceipt = { logicalRowId: string; rowRequestId: string; uploadBatchId: number; channelId: number; customerId: number; materialId: number; materialRevision: number; status: "success" };
-export type ConfirmationEntry = { logicalRowId: string; rowId: string; rowRequestId: string; uploadBatchId: number; payload: CreateCustomerMaterialInput & { channelId: number }; status: "pending" | "unknown" | "success"; receipt?: VerifiedRowReceipt };
-export type ConfirmationDto = { confirmationId: string; versionId: string | null; batchRequestId: string; batch: FormalBatchReceipt; entries: ConfirmationEntry[]; excludedRows: { logicalRowId: string; reason: string; sourceRefs?: SourceRef[] }[]; resolvedIssues?: { issueId: string; resolution: string }[]; sourceCoverage?: { unprocessedSourceRefs: SourceRef[]; warning: string | null }; createdAt: string };
+export type ConfirmationEntry = { logicalRowId: string; rowId: string; rowRequestId: string; uploadBatchId: number; payload: CreateCustomerMaterialInput & { channelId: number }; sourceRefs?: SourceRef[]; status: "pending" | "unknown" | "success"; receipt?: VerifiedRowReceipt };
+export type ConfirmationDto = { confirmationId: string; versionId: string | null; batchRequestId: string; batch: FormalBatchReceipt; batchClosed?: boolean; entries: ConfirmationEntry[]; excludedRows: { logicalRowId: string; reason: string; sourceRefs?: SourceRef[] }[]; resolvedIssues?: { issueId: string; resolution: string }[]; sourceCoverage?: { unprocessedSourceRefs: SourceRef[]; warning: string | null }; createdAt: string };
 export type VersionSummary = Omit<VersionDto, "rows" | "issues">;
 export type CustomerUploadHistoryOutputs = {
   "channelInventory.customerUploadHistoryList": { items: HistoryDto[]; nextCursor: string | null; canManage: boolean };
@@ -62,6 +70,8 @@ export type CustomerUploadHistoryOutputs = {
   "channelInventory.customerUploadDownload": { fileName: string; mimeType: string; byteSize: number; sha256: string; base64: string };
   "channelInventory.customerUploadPrepareConfirmation": { historyId: string; revision: number; confirmationId: string; batch: FormalBatchReceipt; entries: ConfirmationEntry[] };
   "channelInventory.customerUploadReconcileBatch": { history: HistoryDto; entries: Pick<ConfirmationEntry, "logicalRowId" | "rowRequestId" | "status" | "receipt">[]; batch: FormalBatchReceipt };
+  "channelInventory.customerUploadProblemsExport": CustomerUploadProblemsExportOutput;
+  "channelInventory.customerUploadRepairPrepareConfirmation": { historyId: string; revision: number; confirmationId: string; batch: FormalBatchReceipt; entries: ConfirmationEntry[] };
 };
 export type CustomerUploadHistoryListInput = z.input<typeof customerUploadHistoryListSchema>;
 export type CustomerUploadHistoryGetInput = z.input<typeof customerUploadHistoryGetSchema>;
@@ -71,3 +81,4 @@ export type CustomerUploadResultInput = z.input<typeof customerUploadResultSchem
 export type CustomerUploadDownloadInput = z.input<typeof customerUploadDownloadSchema>;
 export type CustomerUploadPrepareConfirmationInput = z.input<typeof customerUploadPrepareConfirmationSchema>;
 export type CustomerUploadReconcileBatchInput = z.input<typeof customerUploadReconcileBatchSchema>;
+export type CustomerUploadRepairPrepareConfirmationInput = z.input<typeof customerUploadRepairPrepareConfirmationSchema>;

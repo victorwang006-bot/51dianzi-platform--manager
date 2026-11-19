@@ -35,16 +35,16 @@ afterEach(async () => { await act(async () => root?.unmount()); root = undefined
 describe("history ACL real portal", () => {
   it("lists only on open using exact verified scope and one real portal", async () => { render(); await settle(); expect(rt.list.mock.calls[0][0]).toEqual({ expectedEnterpriseId: 31, expectedActorUserId: 7, customerId: 801, view: "mine", pageSize: 50 }); expect(host.querySelector('[role="dialog"]')).toBeNull(); expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(1); expect(document.querySelector(".history-list")?.textContent).toContain("原表.csv"); expect(document.querySelector(".history-list")?.textContent).not.toContain(id); expect(rt.get).not.toHaveBeenCalled(); });
   it("remains read-only with or without server management capability", async () => {
-    render(); await settle(); click(button("查看")); await settle();
+    render(); await settle(); click(button("原表.csv")); await settle();
     expect(document.body.textContent).not.toMatch(/解析管理|继续导入|继续处理|回传|标记解析/);
     expect(document.querySelector('input[type="file"], textarea')).toBeNull();
     for (const call of [rt.reconcile, rt.mark, rt.result, rt.prepare, rt.create, rt.batch, rt.original]) expect(call).not.toHaveBeenCalled();
   });
   it("uses ACL base64 original download, a short-lived blob URL and no public URL", async () => {
-    render(); await settle(); click(button("下载")); await settle();
+    render(); await settle(); click(button("原表.csv")); await settle(); click(button("下载")); await settle();
     expect(rt.download.mock.calls[0][0]).toEqual({ expectedEnterpriseId: 31, expectedActorUserId: 7, files: [{ historyId: id, fileId: history().originalFile.fileId }], includeManifest: false });
     expect(URL.createObjectURL).toHaveBeenCalledWith(expect.any(File)); expect(document.body.querySelector('a[href^="http"]')).toBeNull();
-    expect(rt.get).not.toHaveBeenCalled(); expect(rt.prepare).not.toHaveBeenCalled(); expect(rt.create).not.toHaveBeenCalled();
+    expect(rt.get).toHaveBeenCalledTimes(1); expect(rt.prepare).not.toHaveBeenCalled(); expect(rt.create).not.toHaveBeenCalled();
   });
   it("stale root aborts an outstanding read and suppresses old data", async () => {
     let resolve!: (d: any) => void;

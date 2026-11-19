@@ -21,6 +21,8 @@ import "./CustomerChannelInventory.css";
 export type CustomerChannelInventoryProps = {
   customerId: number;
   customerVersion?: number;
+  selectedBatchId?: number;
+  onBatchChange?: (id: number | undefined) => void;
   identity: SupplyIdentity;
   enabled: boolean;
   refreshVersion?: number;
@@ -37,10 +39,10 @@ export type CustomerInventoryResult = SupplyOutputs["listTeamMaterials"] & {
   bindingCount: number;
 };
 const PAGE_SIZE = 20;
-export function customerInventoryInput(identity: SupplyIdentity, customerId: number, filters: { partNumber: string; brand: string }, page: number): CustomerInventoryInput {
+export function customerInventoryInput(identity: SupplyIdentity, customerId: number, filters: { partNumber: string; brand: string; uploadBatchId?: number }, page: number): CustomerInventoryInput {
   return { expectedEnterpriseId: identity.enterpriseId, expectedActorUserId: identity.actorUserId,
     customerId, partNumber: filters.partNumber.normalize("NFKC").trim() || undefined,
-    brand: filters.brand.trim() || undefined, page, pageSize: PAGE_SIZE };
+    brand: filters.brand.trim() || undefined, ...(filters.uploadBatchId ? { uploadBatchId: filters.uploadBatchId } : {}), page, pageSize: PAGE_SIZE };
 }
 /** Defense-in-depth on a server-filtered response, not client filtering of a global read. */
 export function verifiedCustomerInventory(value: SupplyOutputs["listTeamMaterials"], input: CustomerInventoryInput, version?: number): CustomerInventoryResult {
@@ -55,6 +57,7 @@ export function verifiedCustomerInventory(value: SupplyOutputs["listTeamMaterial
     || result.items.some(row => {
       const company = (row as typeof row & InventoryCompanyProjection).company;
       return !Number.isSafeInteger(row.id) || row.id <= 0 || row.currency !== "CNY" || row.canViewSource !== true
+        || (input.uploadBatchId !== undefined && row.uploadBatchId !== input.uploadBatchId)
         || (company != null && company.id !== input.customerId);
     })) {
     throw new Error("客户库存范围未能确认，未展示其他公司的库存。请刷新或联系管理员核实接口版本。");
@@ -70,7 +73,7 @@ const columnLayout = channelInventoryColumnLayout(DEFAULT_CHANNEL_INVENTORY_COLU
 export function CustomerChannelInventory(props: CustomerChannelInventoryProps) {
   const utils = trpc.useUtils();
   const business = useBusinessScope();
-  const [filters, setFilters] = useState({ partNumber: "", brand: "" });
+  const [filters, setFilters] = useState<{ partNumber: string; brand: string; uploadBatchId?: number }>(() => ({ partNumber: "", brand: "", uploadBatchId: props.selectedBatchId }));
   const [draft, setDraft] = useState(filters);
   const [page, setPage] = useState(1);
   const [revision, setRevision] = useState(0);
@@ -105,6 +108,7 @@ export function CustomerChannelInventory(props: CustomerChannelInventoryProps) {
   const lifecycle = useRef({ mounted: false, key, generation: 0 });
   if (lifecycle.current.key !== key) { lifecycle.current.key = key; lifecycle.current.generation++; }
   const latest = useRef(props); latest.current = props;
+  const [batchOptions, setBatchOptions] = useState<{ scope: string; items: SupplyOutputs["listUploadBatches"]["items"]; error?: string }>({ scope: "", items: [] });
   const readable = props.enabled && (props.isCurrent?.() ?? true);
   const result = readable && query.key === key && !query.loading && !query.error ? query.result : undefined;
   const rows = result?.items ?? [];
@@ -139,6 +143,38 @@ export function CustomerChannelInventory(props: CustomerChannelInventoryProps) {
     deferredRefresh.current = false;
     setRevision(value => value + 1);
   };
+  useEffect(() => {
+    if (!readable) return;
+    const abort = new AbortController();
+    setBatchOptions({ scope: scopeKey, items: [] });
+    void (async () => {
+      try {
+        const batches: SupplyOutputs["listUploadBatches"]["items"] = [];
+        const ids = new Set<number>();
+        let expectedTotal: number | undefined;
+        let batchPage = 1;
+        do {
+          const value = await utils.client.channelInventory.listUploadBatches.query({ expectedEnterpriseId: props.identity.enterpriseId,
+            expectedActorUserId: props.identity.actorUserId, customerId: props.customerId, page: batchPage, pageSize: 100 }, { signal: abort.signal });
+          if (abort.signal.aborted || !latest.current.enabled || !(latest.current.isCurrent?.() ?? true)) return;
+          if (!Number.isSafeInteger(value.total) || value.total < 0 || value.page !== batchPage || value.pageSize !== 100
+            || value.pageCount !== Math.ceil(value.total / 100) || !Array.isArray(value.items) || value.items.length > 100
+            || (expectedTotal !== undefined && value.total !== expectedTotal)
+            || value.items.some(item => !Number.isSafeInteger(item.id) || item.id <= 0 || ids.has(item.id))) throw new Error("批次读取未完成");
+          for (const item of value.items) { if (ids.has(item.id)) throw new Error("批次读取未完成"); ids.add(item.id); }
+          expectedTotal = value.total;
+          batches.push(...value.items);
+          if (batchPage >= value.pageCount) break;
+          batchPage++;
+        } while (true);
+        if (batches.length !== expectedTotal) throw new Error("批次读取未完成");
+        if (!abort.signal.aborted) setBatchOptions({ scope: scopeKey, items: batches });
+      } catch (error) {
+        if (!abort.signal.aborted) { latest.current.onAuthorizationError(error); setBatchOptions({ scope: scopeKey, items: [], error: errorMessage(error, "批次读取失败") }); }
+      }
+    })();
+    return () => abort.abort();
+  }, [scopeKey, readable, props.refreshVersion]);
   useEffect(() => {
     lifecycle.current.mounted = true;
     return () => { lifecycle.current.mounted = false; lifecycle.current.generation++; };
@@ -273,6 +309,13 @@ export function CustomerChannelInventory(props: CustomerChannelInventoryProps) {
     // (or the existing permitted close) releases an ordinary deferred reread.
     if (!editBusy && !retryLocked && !unresolvedEdit() && deferredRefresh.current && current()) void refresh();
   }, [editBusy, retryLocked, editingKey, key, deletion]);
+  useEffect(() => {
+    // Keep showing/querying the applied batch while an immutable write is unresolved.
+    // An external selection is applied only after cancellation or a confirmed receipt.
+    if (unresolvedEdit() || filters.uploadBatchId === props.selectedBatchId) return;
+    setFilters(value => value.uploadBatchId === props.selectedBatchId ? value : { ...value, uploadBatchId: props.selectedBatchId });
+    setPage(1);
+  }, [props.selectedBatchId, editBusy, retryLocked, deletion, filters.uploadBatchId]);
   useEffect(() => {
     if (!editor || !editingKey) return;
     const trigger = document.activeElement as HTMLElement | null;
@@ -414,7 +457,7 @@ export function CustomerChannelInventory(props: CustomerChannelInventoryProps) {
     const lastPage = Math.max(1, Math.ceil(nextTotal / PAGE_SIZE));
     const failures = receipt.results.filter(item => !item.success);
     setDeletion({ key, busy: false, retryLocked: false,
-      message: failures.length ? `已删除 ${deleted.size} 条，${failures.length} 条未删除：${failures.map(item => `${operation.labels[payload.items.findIndex(value => value.id === item.id)]}：${item.reason || "权限或版本已变化，请刷新后重试"}`).join("；")}` : `已删除 ${deleted.size} 条` });
+      message: failures.length ? `已删除 ${deleted.size} 条，${failures.length} 条未删除：${failures.map(item => `${operation.labels[payload.items.findIndex(value => value.id === item.id)]}：${item.reason || "权限或版本已变化，请刷新后重试"}`).join("；")}` : "已删除" });
     // Only confirmed successes on this proven customer's original page disappear.
     // Failed/order-blocked/conflicting rows remain; no optimistic all-row removal.
     setSelection(previous => previous.key === key ? { key, ids: previous.ids.filter(id => !deleted.has(id)) } : previous);
@@ -436,7 +479,7 @@ export function CustomerChannelInventory(props: CustomerChannelInventoryProps) {
   };
   const submit = (event: React.FormEvent) => {
     event.preventDefault(); if (!current() || unresolvedEdit()) return;
-    const next = { partNumber: draft.partNumber.normalize("NFKC").trim(), brand: draft.brand.trim() };
+    const next = { partNumber: draft.partNumber.normalize("NFKC").trim(), brand: draft.brand.trim(), uploadBatchId: filters.uploadBatchId };
     setFilters(next); setPage(1);
     if (page === 1 && next.partNumber === filters.partNumber && next.brand === filters.brand) void refresh();
   };
@@ -480,8 +523,15 @@ export function CustomerChannelInventory(props: CustomerChannelInventoryProps) {
       <button type="submit" className="ci-button ci-primary" disabled={!readable || editBusy || retryLocked || deleteLocked}>搜索</button>
       <button type="button" className="ci-button" disabled={!readable || editBusy || retryLocked || deleteLocked} onClick={() => void refresh()}>刷新库存</button>
       {selectedIds.length ? <button type="button" className="ci-button ci-customer-delete" disabled={editBusy || retryLocked || deleteLocked} onClick={() => prepareDelete(selectedIds)}>删除所选（{selectedIds.length}）</button> : null}
+      <select className="ci-customer-batch-filter" aria-label="按上传批次查看" value={filters.uploadBatchId ?? ""} disabled={!readable || editBusy || retryLocked || deleteLocked || batchOptions.scope !== scopeKey} onChange={event => {
+        if (unresolvedEdit()) return;
+        const id = event.target.value ? Number(event.target.value) : undefined;
+        if (id !== undefined && !batchOptions.items.some(item => item.id === id)) return;
+        props.onBatchChange?.(id); setFilters(value => ({ ...value, uploadBatchId: id })); setPage(1);
+      }}><option value="">全部批次</option>{batchOptions.scope === scopeKey ? batchOptions.items.map(batch => <option key={batch.id} value={batch.id}>{new Date(batch.createdAt).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })} · {batch.fileName}</option>) : null}</select>
       <span className="ci-filter-count">{result ? `共 ${result.total} 条` : loading ? "正在读取库存条数…" : "库存条数不可用"}</span>
     </form>
+    {batchOptions.scope === scopeKey && batchOptions.error ? <p className="ci-error" role="alert">{batchOptions.error}</p> : null}
     {visibleDeletion ? <div className="ci-customer-delete-status">
       {visibleDeletion.review ? <section role="alertdialog" aria-label="确认删除客户库存" aria-describedby="ci-customer-delete-count" className="ci-customer-delete-review">
         <p id="ci-customer-delete-count">删除选中的 <strong>{visibleDeletion.review.payload?.items.length}</strong> 条物料？</p>
