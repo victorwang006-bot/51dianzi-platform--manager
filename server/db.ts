@@ -1,3 +1,5 @@
+import { officialTechnicalPreparation, finishOfficialTechnicalSourceCommit } from "./services/officialTechnicalPreparation";
+import type { OfficialTechnicalPreparationTicket } from "./services/officialTechnicalPreparedStore";
 import {
   effectiveHkChineseCompanyName,
   merchantEffectiveHkChineseNameSql,
@@ -969,7 +971,9 @@ export async function createMaterial(
 ) {
   const db = await getDb();
   if (!db) throw new Error("数据库不可用");
-  return db.transaction(async tx => {
+  const sourceParts = [data.partNumber];
+  let preparationTicket: OfficialTechnicalPreparationTicket = {};
+  const committed = await db.transaction(async tx => {
     // 新库自动从 1 起步；生产迁移会把 nextValue 初始化为历史物料数 + 1。
     await tx
       .insert(materialNumberSequences)
@@ -995,6 +999,7 @@ export async function createMaterial(
         eq(materialNumberSequences.sequenceKey, PLATFORM_MATERIAL_SEQUENCE_KEY)
       );
 
+    preparationTicket = await officialTechnicalPreparation.beforeSourceMutation(sourceParts);
     await tx.insert(materials).values({ ...data, materialNo });
     const result = await tx
       .select()
@@ -1020,7 +1025,14 @@ export async function createMaterial(
       });
     }
     return material;
+  }).catch(async error => {
+    await officialTechnicalPreparation.abortSourceMutation(preparationTicket).catch(() => {
+      console.warn("[officialTechnical] source transaction rejected; pending cleanup unavailable; explicit repair required");
+    });
+    throw error;
   });
+  await finishOfficialTechnicalSourceCommit(db, sourceParts, preparationTicket);
+  return committed;
 }
 
 export async function updateMaterial(
@@ -1030,16 +1042,21 @@ export async function updateMaterial(
 ) {
   const db = await getDb();
   if (!db) return;
-  return db.transaction(async tx => {
+  let sourceParts: string[] = [];
+  let preparationTicket: OfficialTechnicalPreparationTicket = {};
+  const committed = await db.transaction(async tx => {
     const [existing] = await tx
       .select()
       .from(materials)
       .where(eq(materials.id, id))
-      .limit(1);
+      .limit(1)
+      .for("update");
     if (!existing) throw new Error("MATERIAL_NOT_FOUND");
     if (Object.prototype.hasOwnProperty.call(data, "materialNo")) {
       throw new Error("MATERIAL_CODE_IMMUTABLE");
     }
+    sourceParts = Array.from(new Set([existing.partNumber, data.partNumber ?? existing.partNumber]));
+    preparationTicket = await officialTechnicalPreparation.beforeSourceMutation(sourceParts);
     await tx.update(materials).set(data).where(eq(materials.id, id));
     const [updated] = await tx
       .select()
@@ -1062,7 +1079,14 @@ export async function updateMaterial(
       note: audit.note ?? null,
     });
     return updated;
+  }).catch(async error => {
+    await officialTechnicalPreparation.abortSourceMutation(preparationTicket).catch(() => {
+      console.warn("[officialTechnical] source transaction rejected; pending cleanup unavailable; explicit repair required");
+    });
+    throw error;
   });
+  await finishOfficialTechnicalSourceCommit(db, sourceParts, preparationTicket);
+  return committed;
 }
 
 /** 对外“移除”只能软归档；主档行和平台码永久保留，避免历史业务引用失效。 */
@@ -1151,11 +1175,14 @@ export async function appendMaterialImage(
 ) {
   const db = await getDb();
   if (!db) throw new Error("DB_NOT_AVAILABLE");
-  return db.transaction(async tx => {
+  let sourceParts: string[] = [];
+  let preparationTicket: OfficialTechnicalPreparationTicket = {};
+  const committed = await db.transaction(async tx => {
     // `images` 是 JSON 数组；事务外读后覆写会在多 PM2 实例并发上传时丢失更新。
     // 锁住物料行，确保每次追加都以已提交的最新图集为基准。
     const [existing] = await tx
       .select({
+        partNumber: materials.partNumber,
         images: materials.images,
         coverImageUrl: materials.coverImageUrl,
       })
@@ -1177,12 +1204,21 @@ export async function appendMaterialImage(
       image.asCover || !existing.coverImageUrl
         ? image.url
         : existing.coverImageUrl;
+    sourceParts = [existing.partNumber];
+    preparationTicket = await officialTechnicalPreparation.beforeSourceMutation(sourceParts);
     await tx
       .update(materials)
       .set({ images: list, coverImageUrl })
       .where(eq(materials.id, id));
     return { coverImageUrl, imageCount: list.length };
+  }).catch(async error => {
+    await officialTechnicalPreparation.abortSourceMutation(preparationTicket).catch(() => {
+      console.warn("[officialTechnical] source transaction rejected; pending cleanup unavailable; explicit repair required");
+    });
+    throw error;
   });
+  await finishOfficialTechnicalSourceCommit(db, sourceParts, preparationTicket);
+  return committed;
 }
 
 // ─── 商户 ─────────────────────────────────────────────────────────────────────

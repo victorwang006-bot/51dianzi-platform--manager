@@ -1,3 +1,4 @@
+import { officialTechnicalPreparation } from "./officialTechnicalPreparation";
 import { createHash, randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq, inArray, isNotNull, like, ne, or, sql } from "drizzle-orm";
@@ -619,6 +620,10 @@ export function createOfficialMallService(deps: OfficialMallDependencies) {
     const date = new Date();
     const nextRevision = row.revision + 1;
     const status = action === "publish" ? "published" : "offshelf";
+    if (action === "publish") {
+      try { await officialTechnicalPreparation.preparePublication(context.tx, {publicId:row.publicId,revision:nextRevision,partNumber:data.partNumber,brand:data.brand,pkg:data.pkg}); }
+      catch { fail("真实技术参数准备失败，未上架，请修复后重试", "INTERNAL_SERVER_ERROR"); }
+    }
     context.audit.before.push(row);
     await context.tx
       .delete(publications)
