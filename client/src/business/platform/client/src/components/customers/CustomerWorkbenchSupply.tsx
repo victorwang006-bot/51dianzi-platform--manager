@@ -121,7 +121,7 @@ export function CustomerWorkbenchSupply(props: CustomerWorkbenchSupplyProps) {
         if (!identity || !readEnabled || historyOpenRef.current || openRef.current) return;
         const key = sessionKey;
         act(() => { if (!lifecycle.current.mounted || lifecycle.current.key !== key || !live.current.readEnabled || !(latest.current.isCurrent?.() ?? true)) return; historyOpenRef.current = true; setHistoryKey(key); latest.current.onOpenChange?.(true); });
-      }}>解析历史</button>
+      }}>上传历史</button>
     </div>
     {uploadReason ? <p id={descriptionId} className="customer-detail-meta">{uploadReason}</p> : null}
     {context?.disabledReason && context.disabledReason !== uploadReason ? <p className="customer-detail-meta">{context.disabledReason}</p> : null}

@@ -67,7 +67,7 @@ describe("customer supply entry integration without broader API reads", () => {
     expect(host.querySelectorAll("p")).toHaveLength(0);
     expect(button("上传库存表").getAttribute("aria-disabled")).toBe("false");
     expect(host.textContent).not.toContain("渠道设置");
-    expect(button("上传库存表").nextElementSibling).toBe(button("解析历史")); expect(host.textContent).not.toContain("解析上传");
+    expect(button("上传库存表").nextElementSibling).toBe(button("上传历史")); expect(host.textContent).not.toContain("解析上传");
   });
   it("uses exact scoped context and existing importer, never copies customer fields or invents another upload mode", async () => {
     const onOpenChange = vi.fn(); await render({ onOpenChange });

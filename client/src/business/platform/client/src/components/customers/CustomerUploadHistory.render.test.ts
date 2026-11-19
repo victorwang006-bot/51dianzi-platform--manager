@@ -33,26 +33,27 @@ beforeEach(() => { rt.current = true; Object.values(rt).forEach(value => { if (t
 beforeEach(() => { rt.result.mockImplementation(async input => { assertCustomerUploadRows(input.rows, input.issues, { sheets: detail().originalSheets }); return { history: history(), version: {}, idempotent: false }; }); });
 afterEach(async () => { await act(async () => root?.unmount()); root = undefined; document.body.replaceChildren(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 describe("history ACL real portal", () => {
-  it("lists only on open using exact verified scope and one real portal", async () => { render(); await settle(); expect(rt.list.mock.calls[0][0]).toMatchObject({ expectedEnterpriseId: 31, expectedActorUserId: 7, customerId: 801, view: "mine" }); expect(host.querySelector('[role="dialog"]')).toBeNull(); expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(1); expect(document.querySelector(".history-list")?.textContent).toContain("原表.csv"); expect(document.querySelector(".history-list")?.textContent).not.toContain(id); expect(rt.get).not.toHaveBeenCalled(); });
-  it("only renders management tab with server canManage", async () => { rt.list.mockResolvedValue({ items: [history()], nextCursor: null, canManage: false }); render(); await settle(); expect(document.body.textContent).not.toContain("解析管理"); });
-  it("management view drops fixed customer restriction and passes explicit filters, not actor impersonation", async () => { render(); await settle(); click(button("解析管理")); await settle(); expect(rt.list.mock.calls[1][0]).not.toHaveProperty("customerId"); change(document.querySelector('[aria-label="管理客户ID"]')!, "802"); change(document.querySelector('[aria-label="管理上传人ID"]')!, "12"); click(button("筛选")); await settle(); expect(rt.list.mock.calls.at(-1)![0]).toMatchObject({ view: "management", customerId: 802, uploadedByFrontUserId: 12, expectedActorUserId: 7 }); });
-  it("uses ACL base64 download, creates only short-lived blob URL, no public URL", async () => { render(); await settle(); click(button("详情")); await settle(); click(button("下载原文件")); await settle(); expect(rt.download.mock.calls[0][0]).toEqual({ expectedEnterpriseId: 31, expectedActorUserId: 7, files: [{ historyId: id, fileId: history().originalFile.fileId }], includeManifest: false }); expect(URL.createObjectURL).toHaveBeenCalledWith(expect.any(File)); expect(document.body.querySelector('a[href^="http"]')).toBeNull(); });
-  it("blocks bulk21files and explains explicit batching without sending download", async () => { rt.list.mockResolvedValue({ items: Array.from({ length: 21 }, () => history({ historyId: randomUUID() })), nextCursor: null, canManage: true }); render(); await settle(); document.querySelectorAll('input[type="checkbox"]').forEach(click); click(button("下载所选(21)")); await settle(); expect(rt.download).not.toHaveBeenCalled(); expect(document.body.textContent).toContain("明确分批"); });
-  it("blocks bulk cumulative size over10MiB", async () => { const h = history(); h.originalFile.byteSize = 10485761; rt.list.mockResolvedValue({ items: [h], nextCursor: null, canManage: true }); render(); await settle(); click(document.querySelector('input[type="checkbox"]')!); click(button("下载所选(1)")); expect(rt.download).not.toHaveBeenCalled(); });
-  it("a management reader cannot impersonate uploader through confirm button", async () => { render(); await settle(); click(button("详情")); await settle(); expect(Array.from(document.querySelectorAll("button")).some(button => button.textContent === "继续导入")).toBe(false); expect(rt.prepare).not.toHaveBeenCalled(); expect(rt.create).not.toHaveBeenCalled(); expect(document.body.textContent).toContain("不可正式确认"); });
-  it("manage reason and revision CAS are preserved across unknown retry UUID", async () => { rt.mark.mockRejectedValueOnce(new Error("response lost")); render(); await settle(); click(button("详情")); await settle(); click(button("标记解析失败")); expect(rt.mark).not.toHaveBeenCalled(); change(document.querySelector('[aria-label="历史操作原因"]')!, "原表无法识别，需补充"); click(button("标记解析失败")); await settle(); const original = rt.mark.mock.calls[0][0]; expect(original).toMatchObject({ historyId: id, expectedRevision: 4, action: "fail_parse", reason: "原表无法识别，需补充" }); click(button("按原操作UUID重试（不换版本／任务）")); await settle(); expect(rt.mark.mock.calls[1][0]).toEqual(original); });
-  it("result upload binds selected task UUID not filename and never directly creates inventory", async () => { render(); await settle(); click(button("详情")); await settle(); await upload("回传整理结果", [["型号", "品牌", "原工作表", "原行号", "原内容"], ["ONE", "TI", "原表", "8", "完整原文"]]); click(button("按此任务UUID保存新结果版本")); await settle(); expect(rt.result.mock.calls[0][0]).toMatchObject({ historyId: id, expectedRevision: 4, parentVersionId: null }); expect(rt.result.mock.calls[0][0].rows[0].sourceRefs[0].rowNumber).toBe(8); expect(rt.result.mock.calls[0][0].rows[0].candidate.currency).toBeNull(); expect(rt.result.mock.calls[0][0].rows[0].disposition).toBe("pending"); expect(rt.create).not.toHaveBeenCalled(); expect(rt.batch).not.toHaveBeenCalled(); });
-  it("rejects result without source columns or with multiple sheets visibly", async () => { render(); await settle(); click(button("详情")); await settle(); await upload("回传整理结果", [["型号", "品牌"], ["ONE", "TI"]]); expect(document.body.textContent).toContain("来源列"); expect(rt.result).not.toHaveBeenCalled(); await upload("回传整理结果", [["型号", "品牌"], ["ONE", "TI"]], true); expect(document.body.textContent).toContain("一张结果"); });
-  it("existing confirmation blocks result replacement and calls server reconciliation on reopen", async () => { const d = detail(); d.confirmation = { confirmationId: randomUUID(), batchRequestId: randomUUID(), batch: { id: 501, batchCode: randomUUID(), revision: 1, channelId: 411, customerId: 801 }, entries: [], versionId: null, excludedRows: [], createdAt: new Date().toISOString() }; rt.get.mockResolvedValue(d); rt.reconcile.mockResolvedValue({ history: d.history, entries: [], batch: d.confirmation.batch }); render(); await settle(); click(button("详情")); await settle(); expect(rt.reconcile).toHaveBeenCalledTimes(1); expect(document.querySelector('[aria-label="回传整理结果"]')).toBeNull(); expect(document.body.textContent).toContain("禁止回传新版本"); });
-  it("stale root aborts outstanding read and suppresses old data", async () => {
+  it("lists only on open using exact verified scope and one real portal", async () => { render(); await settle(); expect(rt.list.mock.calls[0][0]).toEqual({ expectedEnterpriseId: 31, expectedActorUserId: 7, customerId: 801, view: "mine", pageSize: 50 }); expect(host.querySelector('[role="dialog"]')).toBeNull(); expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(1); expect(document.querySelector(".history-list")?.textContent).toContain("原表.csv"); expect(document.querySelector(".history-list")?.textContent).not.toContain(id); expect(rt.get).not.toHaveBeenCalled(); });
+  it("remains read-only with or without server management capability", async () => {
+    render(); await settle(); click(button("查看")); await settle();
+    expect(document.body.textContent).not.toMatch(/解析管理|继续导入|继续处理|回传|标记解析/);
+    expect(document.querySelector('input[type="file"], textarea')).toBeNull();
+    for (const call of [rt.reconcile, rt.mark, rt.result, rt.prepare, rt.create, rt.batch, rt.original]) expect(call).not.toHaveBeenCalled();
+  });
+  it("uses ACL base64 original download, a short-lived blob URL and no public URL", async () => {
+    render(); await settle(); click(button("下载")); await settle();
+    expect(rt.download.mock.calls[0][0]).toEqual({ expectedEnterpriseId: 31, expectedActorUserId: 7, files: [{ historyId: id, fileId: history().originalFile.fileId }], includeManifest: false });
+    expect(URL.createObjectURL).toHaveBeenCalledWith(expect.any(File)); expect(document.body.querySelector('a[href^="http"]')).toBeNull();
+    expect(rt.get).not.toHaveBeenCalled(); expect(rt.prepare).not.toHaveBeenCalled(); expect(rt.create).not.toHaveBeenCalled();
+  });
+  it("stale root aborts an outstanding read and suppresses old data", async () => {
     let resolve!: (d: any) => void;
     rt.list.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
-    render(); rt.current = false;
-    // Abort must be checked while the read is still outstanding, not after finally removed it.
+    render(); await settle(); rt.current = false;
     await act(async () => root?.unmount()); root = undefined;
     expect(rt.list.mock.calls[0][1].signal.aborted).toBe(true);
     await act(async () => { resolve({ items: [history()], nextCursor: null, canManage: true }); });
-    expect(document.body.textContent).not.toContain(id);
+    expect(document.body.textContent).not.toContain("原表.csv"); expect(rt.auth).not.toHaveBeenCalled();
   });
 });
 describe("parse-only upload and persistent original", () => {
@@ -75,59 +76,9 @@ describe("restored history conservative recovery regressions", () => {
     expect(rt.original.mock.calls[0][0].requestId).not.toBe(rt.original.mock.calls[1][0].requestId);
     expect(rt.prepare).not.toHaveBeenCalled(); expect(rt.create).not.toHaveBeenCalled();
   });
-  it("restores a lost mark reply after close using the same operation UUID and CAS", async () => {
-    rt.mark.mockRejectedValueOnce(new Error("reply lost"));
-    render(); await settle(); click(button("详情")); await settle();
-    change(document.querySelector('[aria-label="历史操作原因"]')!, "原文件无法识别");
-    click(button("标记解析失败")); await settle();
-    const original = rt.mark.mock.calls[0][0];
-    expect(sessionStorage.length).toBe(1);
-    await act(async () => root?.unmount()); root = undefined;
-    render(); await settle();
-    expect(document.body.textContent).toContain(original.requestId);
-    expect(rt.mark).toHaveBeenCalledTimes(1); // no automatic retry
-    click(button("按原操作UUID重试（不换版本／任务）")); await settle();
-    expect(rt.mark.mock.calls[1][0]).toEqual(original);
-    expect(sessionStorage.length).toBe(0);
-  });
-  it("restores an uncertain result payload without new row IDs or another version request", async () => {
-    rt.result.mockRejectedValueOnce(new Error("result reply lost"));
-    render(); await settle(); click(button("详情")); await settle();
-    await upload("回传整理结果", [["型号", "品牌", "原工作表", "原行号", "原内容"], ["ONE", "TI", "原表", "8", "完整原文"]]);
-    click(button("按此任务UUID保存新结果版本")); await settle();
-    const original = rt.result.mock.calls[0][0];
-    await act(async () => root?.unmount()); root = undefined;
-    render(); await settle();
-    expect(rt.result).toHaveBeenCalledTimes(1);
-    click(button("按原操作UUID重试（不换版本／任务）")); await settle();
-    expect(rt.result.mock.calls[1][0]).toEqual(original);
-    expect(rt.create).not.toHaveBeenCalled(); expect(rt.batch).not.toHaveBeenCalled();
-  });
-  it("does not send a management write when canonical recovery storage cannot be saved", async () => {
-    render(); await settle(); click(button("详情")); await settle();
-    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("quota denied"); });
-    change(document.querySelector('[aria-label="历史操作原因"]')!, "需要补充原文件");
-    click(button("标记解析失败")); await settle();
-    expect(rt.mark).not.toHaveBeenCalled(); expect(rt.result).not.toHaveBeenCalled();
-    expect(document.body.textContent).toContain("已阻止提交");
-  });
 });
 
 describe("issue transport and explicit exclusion regressions", () => {
-  it("sends edited row issues once through the actual service assertion while retaining unknown candidates", async () => {
-    render(); await settle(); click(button("详情")); await settle();
-    await upload("回传整理结果", [["型号", "品牌", "原工作表", "原行号", "原内容"], ["ONE", "TI", "原表", "8", "完整原文"]]);
-    const editors = Array.from(document.querySelectorAll<HTMLInputElement>('input[aria-label^="问题解决依据"]'));
-    expect(editors.length).toBeGreaterThan(0);
-    change(editors[0], "管理员核对原文件；字段仍留未知供员工确认");
-    click(button("按此任务UUID保存新结果版本")); await settle();
-    const input = rt.result.mock.calls[0][0];
-    expect(input.issues).toEqual([]); expect(input.rows[0].issues).toHaveLength(editors.length);
-    expect(input.rows[0].issues[0]).toMatchObject({ resolved: true, resolution: "管理员核对原文件；字段仍留未知供员工确认" });
-    expect(input.rows[0].candidate).toMatchObject({ qty: null, price: null, currency: null, taxIncluded: null });
-    expect(rt.auth).not.toHaveBeenCalled(); expect(sessionStorage.length).toBe(0);
-    expect(rt.create).not.toHaveBeenCalled(); expect(rt.batch).not.toHaveBeenCalled();
-  });
   it.each([false, true])("includes excluded row issues and preserves manual resolutions (manual=%s)", async manual => {
     const d = detail(history({ state: "awaiting_confirmation", latestVersionId: randomUUID(), latestVersionNo: 1, capabilities: { ...history().capabilities, canConfirm: true } }));
     const firstId = randomUUID(); const excludedId = randomUUID(); const issueId = randomUUID();

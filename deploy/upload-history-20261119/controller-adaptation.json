@@ -1,0 +1,12 @@
+{
+  "source": "/home/ubuntu/51dianzi-manager/deploy/customer-upload-compact-20261119/validation/release.py",
+  "sourceSha256": "0148685bb13b336f50fb52f594c582ec051f20704d0f910cca27aceed0a4cac0",
+  "outputSha256": "79309d87fbe33350eff637a13f6ed7f1a3451fa39505ddaddce2019e091119ac",
+  "exactSubstitutions": {
+    "OWNER = 'PnHdmd0yBiQfYpcPRYWNvD'": "OWNER = '6hBIbUvPpWI2Wkj3jxYdIQ'",
+    "SCOPE = 'customer-upload-compact-20261119-PnHdmd0yBi'": "SCOPE = 'upload-history-20261119-6hBIbUvP'",
+    "Path('/opt/ops/customer-upload-compact-20261119-PnHdmd0yBi')": "Path('/opt/ops/upload-history-20261119-6hBIbUvP')",
+    "customer-upload-compact-capture-v1": "upload-history-capture-v1"
+  },
+  "allOtherControllerBytesUnchanged": true
+}

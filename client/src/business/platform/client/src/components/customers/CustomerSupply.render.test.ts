@@ -817,7 +817,7 @@ describe("customer-detail supply entry uses the real existing upload portal", ()
     render(React.createElement(CustomerWorkbenchSupply, { customerId: 801, customerVersion: 4,
       scope: { enterpriseId: 31, actorUserId: 7, canManageAll: false }, scopeReady: true, onOpenChange }));
     expect(document.querySelector("h2")?.nextElementSibling).toBe(button("上传库存表"));
-    expect(document.body.textContent).not.toContain("渠道设置"); expect(button("上传库存表").nextElementSibling).toBe(button("解析历史"));
+    expect(document.body.textContent).not.toContain("渠道设置"); expect(button("上传库存表").nextElementSibling).toBe(button("上传历史"));
     click(button("上传库存表")); await setupUpload();
     expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
     expect(onOpenChange).toHaveBeenLastCalledWith(true); click(button("手动录入"));

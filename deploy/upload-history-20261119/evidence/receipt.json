@@ -1,0 +1,28 @@
+{
+  "addedAssets": [
+    "assets/BusinessWorkbenchPage-upload-history-50b4bb692f995bbf.js",
+    "assets/BusinessWorkbenchPage-upload-history-ae2fa10c659cd37b.js",
+    "assets/customer-upload-history-3cddbfc1c80d3769.css"
+  ],
+  "afterHtmlSha256": "60f7adcce23397a9a9333ed9b54546930ed808215dd19d1d6ad8b0fbdfb2aae5",
+  "allOriginalFilesExceptAdminHtmlUnchanged": true,
+  "apiWrites": 0,
+  "beforeHtmlSha256": "533bd5cd663536d8e20bad24d1bbfeabc9f2f50b2efd9fa676165c489e989623",
+  "captureSha256": "74a48a31f24cb7a2fbac67d6c7980318d255a0333436dabcdb77e4461cd5d057",
+  "closedAtUtc": "2026-11-19T13:09:04.781703+00:00",
+  "controllerSha256": "79309d87fbe33350eff637a13f6ed7f1a3451fa39505ddaddce2019e091119ac",
+  "coordSha256": "b4be72ebad9f14a2eb946f71c3c3005705d3df1acc68fdb4051c0013d3de9b32",
+  "databaseWrites": 0,
+  "envWrites": 0,
+  "frontHtmlWrites": 0,
+  "manifestSha256": "efcc032057084898347d5095ef0b250a6803373b762d8f262ff6b1d52077f73c",
+  "nonce": "1018dd2286d04b1c90482a65e70f49e6",
+  "ownerTask": "6hBIbUvPpWI2Wkj3jxYdIQ",
+  "processCount": 12,
+  "processReloads": 0,
+  "processesAndEnvironUnchanged": true,
+  "protectedFiles": 18220,
+  "reviewSha256": "e216f1e98a224c1965bd78ab439e8c5620f21ddd884ce723568e730153d51557",
+  "scope": "upload-history-20261119-6hBIbUvP",
+  "status": "verified"
+}

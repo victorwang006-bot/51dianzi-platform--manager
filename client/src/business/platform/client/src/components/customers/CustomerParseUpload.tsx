@@ -19,7 +19,7 @@ export function CustomerParseUpload(props: Props) {
   };
   const selectionDisabled = busy || unknown || !current();
   return <section className="customer-parse-upload">
-    {history ? <div role="status"><strong>已提交，等待解析</strong><p>任务UUID：<code>{history.historyId}</code></p><p>原文件：{history.originalFile.fileName}；关闭页面后原文件与任务仍保存在服务端，可从“解析历史”查看。</p></div> : <>
+    {history ? <div role="status"><strong>已提交，等待解析</strong><p>任务UUID：<code>{history.historyId}</code></p><p>原文件：{history.originalFile.fileName}；关闭页面后原文件与任务仍保存在服务端，可从“上传历史”查看。</p></div> : <>
       <p>支持 .xlsx/.xls/.csv，文件非空且最大 10MiB。</p>
       <input ref={inputRef} type="file" hidden tabIndex={-1} style={{ display: "none" }} accept=".xlsx,.xls,.csv" aria-label="上传待解析原表" disabled={selectionDisabled} onChange={event => {
         const selected = event.target.files?.[0]; event.target.value = "";
