@@ -258,6 +258,37 @@ class OfflineRelease(unittest.TestCase):
         self.assertEqual(r.read(self.front), self.old_front); self.assertEqual(r.read(self.public / 'index.html'), self.old_html)
         self.assertEqual(len(self.reloads()), 5)
         for row in self.m['add']: self.assertTrue((self.public / row['relative']).exists())
+    def receipt_failure(self, failure, rollback=False):
+        if rollback: self.reload_hook = lambda args: 1 if self.reload_count == 1 else 0
+        target = self.ops / 'receipt.json'
+        original_exclusive, original_fsync, original_syncdir, original_read = r.exclusive, r.os.fsync, r.syncdir, r.read
+        def exclusive(path, data, mode=0o600):
+            if failure == 'write' and Path(path) == target: raise OSError('synthetic receipt write failure')
+            return original_exclusive(path, data, mode)
+        def fsync(fd):
+            if failure == 'fsync' and os.readlink('/proc/self/fd/' + str(fd)) == str(target): raise OSError('synthetic receipt fsync failure')
+            return original_fsync(fd)
+        def syncdir(path):
+            if failure == 'dirsync' and Path(path) == self.ops and target.exists(): raise OSError('synthetic receipt directory fsync failure')
+            return original_syncdir(path)
+        def read(path):
+            if failure == 'readback' and Path(path) == target: raise OSError('synthetic receipt readback failure')
+            return original_read(path)
+        with patch.object(r, 'exclusive', side_effect=exclusive), patch.object(r.os, 'fsync', side_effect=fsync), patch.object(r, 'syncdir', side_effect=syncdir), patch.object(r, 'read', side_effect=read):
+            result = self.apply()
+        self.assertEqual(result['status'], 'recovery-required'); self.assertIs(result['receiptPersistenceUnconfirmed'], True)
+        self.assertIs(self.state()['shared_release_active'], True); self.assertEqual(self.state()['window']['status'], 'recovery-required')
+        self.assertEqual(r.read(self.front), self.old_front); self.assertEqual(r.read(self.public / 'index.html'), self.old_html)
+        self.assertFalse(any(w.get('owner_task') == r.OWNER and w.get('status') == 'closed' for w in self.state()['window_history']))
+        with self.assertRaises(Exception): self.release().readonly('verify')
+    def test_success_receipt_write_failure_holds_window(self): self.receipt_failure('write')
+    def test_success_receipt_fsync_failure_holds_window(self): self.receipt_failure('fsync')
+    def test_success_receipt_directory_fsync_failure_holds_window(self): self.receipt_failure('dirsync')
+    def test_success_receipt_readback_failure_holds_window(self): self.receipt_failure('readback')
+    def test_rollback_receipt_write_failure_holds_window(self): self.receipt_failure('write', True)
+    def test_rollback_receipt_fsync_failure_holds_window(self): self.receipt_failure('fsync', True)
+    def test_rollback_receipt_directory_fsync_failure_holds_window(self): self.receipt_failure('dirsync', True)
+    def test_rollback_receipt_readback_failure_holds_window(self): self.receipt_failure('readback', True)
     def test_foreign_front_bytes_are_never_overwritten(self):
         def fail(args):
             self.put(self.front, b'foreign-owner-code'); return 1

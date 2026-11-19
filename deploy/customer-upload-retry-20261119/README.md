@@ -206,3 +206,5 @@ python3 deploy/customer-upload-retry-20261119/release.py --help
 测试仅在系统临时目录搭建合成 production-like tree，patch 本 module 常量，不触碰父 manifest；所有 PM2/Node subprocess 都 mock，且断言 PM2 只允许 manifest 指定的四个精确 id 的 reload。覆盖成功/只读/CAS 字节漂移及最后时刻 race/双锁 busy/foreign owner/后台2 gate/最新 baseline/env hash/独立 pins/单 front 和目标角色绑定/HTML key 与外部字节保护/全部旧资产/唯一 hash 命名/one apply/精准 own-hash 回滚/外来文件保持/ownership lost/恢复 reload 失败与不健康 shared=true/metadata 与 O_NOATIME/secret 仅 hash。
 
 完整输出见 `tests-result.txt`；测试中的 `verified`、`rolled-back` 等均为 **mock 结果，不是生产 receipt**。
+
+收据保护：成功或精确回滚后必须先保存、fsync、回读收据，再关闭共享窗口。收据写入、文件/目录同步或回读失败时，即使原代码已健康恢复，也保留 shared_release_active=true/recovery-required，禁止自动重放。当前纯内存发布测试66项全部通过。

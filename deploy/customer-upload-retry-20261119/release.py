@@ -105,6 +105,7 @@ class Release:
         self.bb = self.staged(self.m['baseline']); need(sha(self.bb) == pins['baseline'], 'BASELINE_PIN_DRIFT')
         self.b = loads(self.bb); self.proof = self.staged(self.m['backend2Verified'])
         self.mutations = []; self.assets = []; self.owned = None; self.reloaded = False
+        self.receipt_bytes = None
     def staged(self, row):
         rel = Path(row['source']); need(not rel.is_absolute() and '..' not in rel.parts, 'STAGED_PATH_SCOPE')
         data = read(self.root / rel); need(sha(data) == row['sha256'], 'STAGED_HASH_DRIFT'); return data
@@ -229,6 +230,12 @@ class Release:
             self.check({r['target']: sha(a) for r, _, a in self.mutations}, rolling=True, additions=True)
             need(all(H(p) == sha(data) for p, data in self.assets), 'ADDITIVE_HASH_DRIFT')
         return {'status': 'preflight-passed' if mode == 'preflight' else 'verified', 'writes': 0, 'manifestSha256': sha(self.mb)}
+    def persist_receipt(self, result):
+        data = encode(result); path = OPS / 'receipt.json'
+        if self.receipt_bytes is None: exclusive(path, data)
+        else: cas(path, self.receipt_bytes, data)
+        need(read(path) == data, 'RECEIPT_READBACK_DRIFT')
+        self.receipt_bytes = data
     def close(self, outcome):
         self.owned_check(); c = loads(self.owned); c['shared_release_active'] = False
         c['window'].update(status='closed', outcome=outcome, closedAtUtc=stamp(), receipt=str(OPS / 'receipt.json'))
@@ -245,6 +252,7 @@ class Release:
             self.check(); need(all(not p.exists() for p, _ in self.assets), 'ADDITIVE_COLLISION')
             safe(OPS); OPS.mkdir(mode=0o700); syncdir(OPS.parent)  # irreversible attempt marker: no replay, including failure
             nonce = uuid.uuid4().hex; result = {'status': 'recovery-required', 'manifestSha256': sha(self.mb), 'nonce': nonce, 'ownerTask': OWNER, 'retryForbidden': True}
+            receipt_failed = False
             try:
                 for name, data in [('manifest.json', self.mb), ('review.json', self.rb), ('baseline.json', self.bb), ('backend2-verified.json', self.proof), ('coord-before.json', raw)]: exclusive(OPS / name, data)
                 for n, (_, before, after) in enumerate(self.mutations):
@@ -261,7 +269,11 @@ class Release:
                     self.owned_check(); self.check(overrides, rolling=self.reloaded, additions=True); cas(row['target'], before, after); overrides[row['target']] = sha(after)
                     if row['kind'] == 'front-api': self.roll(overrides)
                 self.owned_check(); self.check(overrides, rolling=True, additions=True)
-                need(all(H(p) == sha(data) for p, data in self.assets), 'FINAL_ADD_HASH'); self.close('verified'); result['status'] = 'verified'
+                need(all(H(p) == sha(data) for p, data in self.assets), 'FINAL_ADD_HASH')
+                result['status'] = 'verified'
+                try: self.persist_receipt(result)
+                except BaseException: receipt_failed = True; raise
+                self.close('verified')
             except BaseException:
                 result['status'] = 'recovery-required'; result['foreignFilesNotTouched'] = []; result['ownFilesRestored'] = []
                 try:
@@ -273,14 +285,22 @@ class Release:
                     need(not result['foreignFilesNotTouched'], 'FOREIGN_BYTES_NOT_OVERWRITTEN')
                     self.check(rolling=True, additions=True)
                     if self.reloaded: self.roll({})
-                    self.owned_check(); self.check(rolling=True, additions=True); self.close('rolled-back'); result['status'] = 'rolled-back'
+                    self.owned_check(); self.check(rolling=True, additions=True)
+                    need(not receipt_failed, 'RECEIPT_PERSISTENCE_UNCONFIRMED')
+                    result['status'] = 'rolled-back'
+                    try: self.persist_receipt(result)
+                    except BaseException: receipt_failed = True; raise
+                    self.close('rolled-back')
                 except BaseException:
+                    result['status'] = 'recovery-required'
                     try:
                         self.owned_check(); c = loads(self.owned)
                         c['window'].update(status='recovery-required', receipt=str(OPS / 'receipt.json')); c['updated_at'] = stamp()
                         updated = encode(c); cas(COORD, self.owned, updated); self.owned = updated
                     except BaseException: result['ownershipUnconfirmed'] = True  # never overwrite foreign coordination
-            exclusive(OPS / 'receipt.json', encode(result)); return result
+            if receipt_failed: result['receiptPersistenceUnconfirmed'] = True
+            elif result['status'] == 'recovery-required': self.persist_receipt(result)
+            return result
 
 def main():
     p = argparse.ArgumentParser(description=__doc__); p.add_argument('mode', choices=['preflight', 'apply', 'verify'])

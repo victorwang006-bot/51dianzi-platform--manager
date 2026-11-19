@@ -50,48 +50,25 @@ test_readonly_has_no_locks_writes_or_attempt (test_release.OfflineRelease.test_r
 test_replace_kind_target_cannot_be_swapped (test_release.OfflineRelease.test_replace_kind_target_cannot_be_swapped) ... ok
 test_restored_but_unhealthy_keeps_shared_true (test_release.OfflineRelease.test_restored_but_unhealthy_keeps_shared_true) ... ok
 test_review_manifest_and_independence_pins_required (test_release.OfflineRelease.test_review_manifest_and_independence_pins_required) ... ok
+test_rollback_receipt_directory_fsync_failure_holds_window (test_release.OfflineRelease.test_rollback_receipt_directory_fsync_failure_holds_window) ... ok
+test_rollback_receipt_fsync_failure_holds_window (test_release.OfflineRelease.test_rollback_receipt_fsync_failure_holds_window) ... ok
+test_rollback_receipt_readback_failure_holds_window (test_release.OfflineRelease.test_rollback_receipt_readback_failure_holds_window) ... ok
+test_rollback_receipt_write_failure_holds_window (test_release.OfflineRelease.test_rollback_receipt_write_failure_holds_window) ... ok
 test_rollback_reload_failure_does_not_close_window (test_release.OfflineRelease.test_rollback_reload_failure_does_not_close_window) ... ok
 test_stale_baseline_rejected (test_release.OfflineRelease.test_stale_baseline_rejected) ... ok
 test_success_preflight_apply_verify_and_protections (test_release.OfflineRelease.test_success_preflight_apply_verify_and_protections) ... ok
+test_success_receipt_directory_fsync_failure_holds_window (test_release.OfflineRelease.test_success_receipt_directory_fsync_failure_holds_window) ... ok
+test_success_receipt_fsync_failure_holds_window (test_release.OfflineRelease.test_success_receipt_fsync_failure_holds_window) ... ok
+test_success_receipt_readback_failure_holds_window (test_release.OfflineRelease.test_success_receipt_readback_failure_holds_window) ... ok
+test_success_receipt_write_failure_holds_window (test_release.OfflineRelease.test_success_receipt_write_failure_holds_window) ... ok
 test_two_new_assets_require_distinct_content_hashes (test_release.OfflineRelease.test_two_new_assets_require_distinct_content_hashes) ... ok
 test_unlisted_asset_rejected (test_release.OfflineRelease.test_unlisted_asset_rejected) ... ok
 test_unrelated_process_drift_cannot_be_hidden_by_front_reload (test_release.OfflineRelease.test_unrelated_process_drift_cannot_be_hidden_by_front_reload) ... ok
 
 ----------------------------------------------------------------------
-Ran 58 tests in 1.676s
+Ran 66 tests in 2.542s
 
 OK
 
-Python compile exit: 0
-usage: release.py [-h] --package PACKAGE --manifest-sha256 MANIFEST_SHA256
-                  --review-sha256 REVIEW_SHA256 --baseline-sha256
-                  BASELINE_SHA256 --coord-sha256 COORD_SHA256
-                  [--allow-reviewed-apply]
-                  {preflight,apply,verify}
-
-One-shot, SHA-bound customer-upload release. No network, SQL or configuration
-writes.
-
-positional arguments:
-  {preflight,apply,verify}
-
-options:
-  -h, --help            show this help message and exit
-  --package PACKAGE
-  --manifest-sha256 MANIFEST_SHA256
-  --review-sha256 REVIEW_SHA256
-  --baseline-sha256 BASELINE_SHA256
-  --coord-sha256 COORD_SHA256
-  --allow-reviewed-apply
-
-CLI --help exit: 0
-Unittest exit: 0
-Schema: JSON syntax, local references, regex patterns and synthetic binding shape checked in unittest; full external Draft validator unavailable; no network installation attempted.
-Safety: all PM2/Node subprocess mocked; only offline Python unittest/py_compile/--help executed; no SSH/network/DB/production/user-data/Git operations.
-Schema validation exit: 0
-
-Current SHA-256:
-69c743ac7e1212045e2f5034a5a3264c7b4fd8c591588cf4e65dddd1e6200e1d  release.py
-66086bcd2425ae01424f22d4731e6173901c3f32ad0998f17a0b102f35446d92  test_release.py
-d9b860e3aafa8071befcd1f41499831f8e05a54238e2fe17a61dfbd33ccdc6ff  binding.schema.json
-b63acb4377f4d92bae4facf090bdc0e6cb95134051e0eb2572ca5c9d5370f3c5  README.md
+py_compile exit 0
+driver SHA256 ee6243502e19d5464ddfd26d30e1a4d22c5f26a760ec53315809f0bcaa84fe68
