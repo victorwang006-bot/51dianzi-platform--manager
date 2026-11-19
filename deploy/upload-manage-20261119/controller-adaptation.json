@@ -1,0 +1,66 @@
+{
+  "source": "/home/ubuntu/51dianzi-manager/deploy/upload-history-20261119/release.py",
+  "sourceSha256": "79309d87fbe33350eff637a13f6ed7f1a3451fa39505ddaddce2019e091119ac",
+  "outputSha256": "dbde2033e6e30f736349f4cca8083582597b06ca124f55fe796681cae121d775",
+  "exactSubstitutions": {
+    "SCOPE = 'upload-history-20261119-6hBIbUvP'": "SCOPE = 'upload-manage-20261119-6hBIbUvP'",
+    "Path('/opt/ops/upload-history-20261119-6hBIbUvP')": "Path('/opt/ops/upload-manage-20261119-6hBIbUvP')",
+    "upload-history-capture-v1": "upload-manage-capture-v1"
+  },
+  "substitutionCounts": {
+    "SCOPE = 'upload-history-20261119-6hBIbUvP'": 1,
+    "Path('/opt/ops/upload-history-20261119-6hBIbUvP')": 1,
+    "upload-history-capture-v1": 2
+  },
+  "offsetUnits": "raw bytes",
+  "patches": [
+    {
+      "oldStart": 2352,
+      "oldEnd": 2394,
+      "newStart": 2352,
+      "newEnd": 2393,
+      "oldBase64": "U0NPUEUgPSAndXBsb2FkLWhpc3RvcnktMjAyNjExMTktNmhCSWJVdlAn",
+      "newBase64": "U0NPUEUgPSAndXBsb2FkLW1hbmFnZS0yMDI2MTExOS02aEJJYlV2UCc=",
+      "oldSha256": "129dcd5630b9d2759a27680a81e20d421c4eb7b26b283fb6cbfb7cd8ae1a30c2",
+      "newSha256": "65fe44846b00346ddf65844d892768be092c87ac69d99076d3ba00c0356f53f0"
+    },
+    {
+      "oldStart": 7580,
+      "oldEnd": 7629,
+      "newStart": 7579,
+      "newEnd": 7627,
+      "oldBase64": "UGF0aCgnL29wdC9vcHMvdXBsb2FkLWhpc3RvcnktMjAyNjExMTktNmhCSWJVdlAnKQ==",
+      "newBase64": "UGF0aCgnL29wdC9vcHMvdXBsb2FkLW1hbmFnZS0yMDI2MTExOS02aEJJYlV2UCcp",
+      "oldSha256": "957ea95dbc3a80279131481157a40c13c2ef761ed133531c8f89b575ef7e0263",
+      "newSha256": "334a01735942f0dd1a2ff74008148b0cdf1d68532df394787defa37d9ba95234"
+    },
+    {
+      "oldStart": 18321,
+      "oldEnd": 18346,
+      "newStart": 18319,
+      "newEnd": 18343,
+      "oldBase64": "dXBsb2FkLWhpc3RvcnktY2FwdHVyZS12MQ==",
+      "newBase64": "dXBsb2FkLW1hbmFnZS1jYXB0dXJlLXYx",
+      "oldSha256": "8242ca3a5c01c75c76025596f97bdfe12c15e9f76023e2d122affdae4e0fd3c3",
+      "newSha256": "9211a4da67c1013f5798e59fc747da812338932e4ef5f9388b656eea6dacfcdf"
+    },
+    {
+      "oldStart": 21417,
+      "oldEnd": 21442,
+      "newStart": 21414,
+      "newEnd": 21438,
+      "oldBase64": "dXBsb2FkLWhpc3RvcnktY2FwdHVyZS12MQ==",
+      "newBase64": "dXBsb2FkLW1hbmFnZS1jYXB0dXJlLXYx",
+      "oldSha256": "8242ca3a5c01c75c76025596f97bdfe12c15e9f76023e2d122affdae4e0fd3c3",
+      "newSha256": "9211a4da67c1013f5798e59fc747da812338932e4ef5f9388b656eea6dacfcdf"
+    }
+  ],
+  "inverseVerified": true,
+  "forwardVerified": true,
+  "allOtherControllerBytesUnchanged": true,
+  "ownerUnchanged": "6hBIbUvPpWI2Wkj3jxYdIQ",
+  "testSource": "/home/ubuntu/51dianzi-manager/deploy/upload-history-20261119/test_release.py",
+  "testSourceSha256": "74e8c42ed039b54457e24f8526e6b0975aa1ed16e54484ba0b4b70ffe61fc5a2",
+  "testOutputSha256": "74e8c42ed039b54457e24f8526e6b0975aa1ed16e54484ba0b4b70ffe61fc5a2",
+  "allTestBytesUnchanged": true
+}

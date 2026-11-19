@@ -24,7 +24,7 @@ import "./layout.css";
 
 type Channel = { id: number; name: string; active: boolean };
 export type CustomerConfirmRows = { batchRequestId: string; sessionData?: unknown; confirmedDrafts: { row: number; rowRequestId: string; draft: Draft; metadata?: unknown }[]; excludedRows: { row: number; reason: string; metadata?: unknown }[] };
-export type CustomerInitialRecovery = { channelId: number; entries: ManagedBatchEntry[]; name: string; sessionData?: unknown; uploadBatch: PersistentUploadBatch };
+export type CustomerInitialRecovery = { channelId: number; entries: ManagedBatchEntry[]; name: string; sessionData?: unknown; uploadBatch: PersistentUploadBatch; skippedRows?: number };
 type Grid = (string | number | null | undefined)[][];
 type Props = {
   channels: Channel[];
@@ -41,6 +41,9 @@ type Props = {
   onCreateBatch?: (input: UploadBatchInput) => Promise<UploadBatchReceipt>;
   /** Customer-only preparation: no virtual channel/placeholder material is ever queued. */
   onCreateCustomerBatch?: (input: Omit<UploadBatchInput, "channelId">, confirmation?: CustomerConfirmRows) => Promise<UploadBatchReceipt & { channelId: number }>;
+  /** Customer spreadsheet opt-in. Ordinary channel/manual entry stays strict. */
+  skipIssueRows?: boolean;
+  initialExcludedRowCount?: number;
   customerSourceReady?: boolean;
   customerSourceDisabledReason?: string;
   onOriginalFilePersist?: (file: File) => Promise<{ sessionData: unknown; rows: { row: number; metadata: unknown }[] }>;
@@ -76,8 +79,8 @@ export const batchUploadDialogStyle: React.CSSProperties = {
   height: "min(85dvh, 680px)", maxHeight: "85dvh", display: "flex",
   flexDirection: "column", gap: "12px", overflow: "hidden", padding: "18px",
 };
-type CustomerPreparation = { confirmation?: CustomerConfirmRows; rows: { row: number; requestId: string; draft: Draft }[]; requestId: string; name: string; sessionData?: unknown; entryMode: "table" | "single" };
-type SavedBatch = { channelId: number; entries: ManagedBatchEntry[]; name: string; sessionData?: unknown; entryMode?: "table" | "single"; uploadBatch?: PersistentUploadBatch };
+type CustomerPreparation = { confirmation?: CustomerConfirmRows; rows: { row: number; requestId: string; draft: Draft }[]; requestId: string; name: string; sessionData?: unknown; entryMode: "table" | "single"; skippedRows?: number };
+type SavedBatch = { channelId: number; entries: ManagedBatchEntry[]; name: string; sessionData?: unknown; entryMode?: "table" | "single"; uploadBatch?: PersistentUploadBatch; skippedRows?: number };
 const storageKey = (props: Props) => `d51-channel-inventory-batch-v1:${props.actorUserId}:${props.enterpriseId}${props.storageKeySuffix ? `:${props.storageKeySuffix}` : ""}`;
 function readSavedBatch(props: Props): { saved: SavedBatch | null; preparation?: CustomerPreparation; error: string; blocked: boolean } {
   const empty = { saved: null, error: "", blocked: false };
@@ -187,6 +190,9 @@ function BatchUploadSession(props: Props) {
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [excluded, setExcluded] = useState<number[]>([]);
+  const [exclusionUndo, setExclusionUndo] = useState<number[][]>([]);
+  const uploadSkippedRows = useRef(initial.saved?.skippedRows ?? initial.preparation?.skippedRows ?? 0);
+  const [skippedRows, setSkippedRows] = useState(uploadSkippedRows.current);
   const [entries, setEntries] = useState<BatchEntry[]>([]);
   const restoreBlocked = initial.blocked;
   const [entryMode, setEntryMode] = useState<"table" | "single" | "parse">("table");
@@ -246,6 +252,7 @@ function BatchUploadSession(props: Props) {
           name,
           entries: next,
           ...(uploadBatch.current ? { uploadBatch: uploadBatch.current } : {}),
+          ...(latest.current.skipIssueRows ? { skippedRows: uploadSkippedRows.current } : {}),
           ...(importSession.current === undefined ? {} : { sessionData: importSession.current }),
           ...(latest.current.renderSingleEntry ? { entryMode } : {}),
         })
@@ -275,6 +282,7 @@ function BatchUploadSession(props: Props) {
     setMapping(suggested);
     setName(fileName);
     setExcluded([]); setEdits({}); setCurrencyConfirmed(false); excludedReasons.current = {};
+    setExclusionUndo([]); uploadSkippedRows.current = 0; setSkippedRows(0);
     setReviewedMapping([]); setBlankBrand("");
     setError("");
     setStep(customerMode ? 3 : 2);
@@ -375,10 +383,11 @@ function BatchUploadSession(props: Props) {
     }
   };
   const historyOptIn = (customerMode || rowMetadata.current.size > 0) && entryMode === "table";
+  const skipIssues = Boolean(props.skipIssueRows && customerMode && props.onCreateCustomerBatch && historyOptIn);
   const allRows = mapGrid(grid, mapping, rawGrid).map(r => {
     let draft = edits[r.row] ?? r.draft;
     if (historyOptIn && !edits[r.row] && mapping.currency < 0) draft = { ...draft, currency: "" };
-    const metadata = rowMetadata.current.get(r.row) as { issues?: { field: string; resolved: boolean }[] } | undefined;
+    const metadata = rowMetadata.current.get(r.row) as { issues?: { field: string; resolved: boolean; message?: string }[] } | undefined;
     const originalCurrency = mapping.currency < 0 ? "" : String(grid[r.row - 1]?.[mapping.currency] ?? "").trim();
     const currencyNeedsConfirmation = customerMode && historyOptIn && (!originalCurrency || r.draft.currency !== "CNY" || Boolean(metadata?.issues?.some(issue => issue.field === "currency" && !issue.resolved)));
     if (customerMode && historyOptIn && !edits[r.row] && !originalCurrency) draft = { ...draft, currency: "" };
@@ -388,11 +397,16 @@ function BatchUploadSession(props: Props) {
     if (historyOptIn && draft.currency.trim() !== "CNY") errors.push("币种待人工明确CNY；不能默认或换算外币");
     if (currencyNeedsConfirmation && !currencyConfirmed) errors.push("请明确选择本次候选币种为CNY");
     if (historyOptIn && !rowMetadata.current.has(r.row)) errors.push("缺少服务端原行证据，不能猜测来源");
+    // Pending version issues are not good rows merely because optional DTO fields allow null.
+    if (skipIssues) metadata?.issues?.filter(issue => !issue.resolved).forEach(issue => errors.push(issue.message || "问题待核对"));
     return { ...r, draft, errors, currencyNeedsConfirmation };
   });
   const rows = allRows.filter(r => !excluded.includes(r.row));
   const excludeRow = (row: number) => {
-    if (historyOptIn) {
+    if (skipIssues) {
+      excludedReasons.current[row] = "用户移除";
+      setExclusionUndo(value => [...value, [row]]);
+    } else if (historyOptIn) {
       const reason = window.prompt(`请填写原表第${row}行的排除原因（1至1000字）`);
       if (!reason?.trim() || reason.trim().length > 1000) { setError("排除行必须填写1至1000字原因。"); return; }
       excludedReasons.current[row] = reason.trim();
@@ -400,7 +414,11 @@ function BatchUploadSession(props: Props) {
     setExcluded(v => [...v, row]);
   };
   const bad = rows.filter(r => r.errors.length);
-  const mappingErrors = validateMapping(mapping).filter(message => !(customerMode && mapping.brand === -1 && rows.length > 0 && rows.every(row => row.draft.brand.trim()) && message === "品牌为必填字段，必须映射列"));
+  const goodRows = rows.filter(r => !r.errors.length);
+  const importRows = skipIssues ? goodRows : rows;
+  const filledBrandRows = skipIssues ? goodRows : rows;
+  const pendingSkipCount = excluded.length + bad.length + (props.initialExcludedRowCount ?? 0);
+  const mappingErrors = validateMapping(mapping).filter(message => !(customerMode && mapping.brand === -1 && filledBrandRows.length > 0 && filledBrandRows.every(row => row.draft.brand.trim()) && message === "品牌为必填字段，必须映射列"));
   const mappingNeedsReview = customerMode ? fields.filter(field => {
     const ambiguous = (grid[0] ?? []).filter(header => suggestMapping([header])[field.key] === 0).length > 1;
     return (ambiguous && !reviewedMapping.includes(field.key))
@@ -414,7 +432,7 @@ function BatchUploadSession(props: Props) {
   const completed = entries.filter(e => e.status === "success").length;
   const hasQueue = entries.length > 0;
   const modeLocked = busy || loading || parseBusy || hasQueue || !!preparing || !!savedPreparation || !!saved || restoreBlocked;
-  const confirmDisabledReason = !current() ? "客户或授权已变化，请重新核验" : modeLocked ? "请先完成或恢复原批次" : !sourceReady ? props.customerSourceDisabledReason || (selected && !selected.active ? "所选来源不可写或已停用，请核实上传权限" : "请选择有权访问且启用的已加载渠道") : mappingErrors.length ? mappingErrors.join("；") : !rows.length ? "没有可导入的候选行" : bad.length ? `还有 ${bad.length} 条需要核对：${bad[0].errors.join("；")}` : "";
+  const confirmDisabledReason = !current() ? "客户或授权已变化，请重新核验" : modeLocked ? "请先完成或恢复原批次" : !sourceReady ? props.customerSourceDisabledReason || (selected && !selected.active ? "所选来源不可写或已停用，请核实上传权限" : "请选择有权访问且启用的已加载渠道") : mappingErrors.length ? mappingErrors.join("；") : !importRows.length ? (bad.length ? `没有可导入的行：${bad[0].errors.join("；")}` : "没有可导入的行") : !skipIssues && bad.length ? `还有 ${bad.length} 条需要核对：${bad[0].errors.join("；")}` : "";
   const changeMapping = (field: keyof Draft, column: number) => {
     setMapping(value => ({ ...value, [field]: column }));
     setReviewedMapping(value => [...value, field]);
@@ -453,15 +471,18 @@ function BatchUploadSession(props: Props) {
     let preparation = preparing;
     let target = selected;
     if (!hasQueue && !preparation) {
-      if (mappingErrors.length || bad.length || !rows.length) {
+      if (mappingErrors.length || (!skipIssues && bad.length) || !importRows.length || allRows.length > 1000) {
         setError("请完成字段匹配并修正错误行。"); return;
       }
       if (latest.current.onCreateCustomerBatch) {
+        uploadSkippedRows.current = skipIssues ? pendingSkipCount : excluded.length;
+        setSkippedRows(uploadSkippedRows.current);
         preparation = { requestId: uuid(), name, entryMode: entryMode === "single" ? "single" : "table", sessionData: importSession.current,
-          rows: rows.map(r => ({ row: r.row, requestId: uuid(), draft: r.draft })) };
+          skippedRows: uploadSkippedRows.current, rows: importRows.map(r => ({ row: r.row, requestId: uuid(), draft: r.draft })) };
         if (historyOptIn) preparation.confirmation = { batchRequestId: preparation.requestId, sessionData: importSession.current,
           confirmedDrafts: preparation.rows.map(r => ({ row: r.row, rowRequestId: r.requestId, draft: r.draft, metadata: rowMetadata.current.get(r.row) })),
-          excludedRows: allRows.filter(r => excluded.includes(r.row)).map(r => ({ row: r.row, reason: excludedReasons.current[r.row] ?? "", metadata: rowMetadata.current.get(r.row) })) };
+          excludedRows: allRows.filter(r => excluded.includes(r.row) || (skipIssues && r.errors.length)).map(r => ({ row: r.row,
+            reason: excluded.includes(r.row) ? excludedReasons.current[r.row] ?? "" : `跳过问题行：${r.errors.join("；")}`.slice(0, 1000), metadata: rowMetadata.current.get(r.row) })) };
         setPreparing(preparation);
       } else {
         if (!target) return;
@@ -595,6 +616,7 @@ function BatchUploadSession(props: Props) {
   };
   const restore = () => {
     if (savedPreparation) {
+      uploadSkippedRows.current = savedPreparation.skippedRows ?? savedPreparation.confirmation?.excludedRows.length ?? 0; setSkippedRows(uploadSkippedRows.current);
       importSession.current = savedPreparation.sessionData; latest.current.onRestoreSession?.(savedPreparation.sessionData, []);
       setPreparing(savedPreparation); setName(savedPreparation.name); setEntryMode(savedPreparation.entryMode);
       setSavedPreparation(undefined); setStep(4); props.onDirtyChange(true);
@@ -605,6 +627,7 @@ function BatchUploadSession(props: Props) {
     setChannelId(String(saved.channelId));
     setEntries(saved.entries);
     setName(saved.name);
+    uploadSkippedRows.current = saved.skippedRows ?? 0; setSkippedRows(uploadSkippedRows.current);
     uploadBatch.current = saved.uploadBatch;
     setEntryMode(saved.entryMode === "single" && latest.current.renderSingleEntry ? "single" : "table");
     setSaved(null);
@@ -844,14 +867,20 @@ function BatchUploadSession(props: Props) {
               <details className="ci-batch-note"><summary>调整列匹配</summary>{renderMapping(fields.filter(field => !mappingNeedsReview.some(item => item.key === field.key)))}<p>未匹配列不会导入。调整匹配将重新生成候选，请重新核对币种和编辑值。</p></details>
             </> : null}
             <div className="ci-batch-summary">
-              <span>
+              {skipIssues ? <span>可导入 <b>{goodRows.length}</b> 条 · 问题 <b>{bad.length}</b> 条</span> : <><span>
                 <b>{rows.length - bad.length}</b> 条通过校验
               </span>
               <span className={bad.length ? "ci-batch-red" : ""}>
                 <b>{bad.length}</b> 条需要修正
-              </span>
-              {excluded.length > 0 && (
-                <small>已明确移除 {excluded.length} 行</small>
+              </span></>}
+              {excluded.length > 0 && <small>已移除 {excluded.length} 条</small>}
+              {skipIssues && exclusionUndo.length > 0 && (
+                <Button type="button" variant="ghost" size="sm" className="ci-inline-link" onClick={() => {
+                  const removed = exclusionUndo[exclusionUndo.length - 1];
+                  setExcluded(value => value.filter(row => !removed.includes(row)));
+                  removed.forEach(row => { delete excludedReasons.current[row]; });
+                  setExclusionUndo(value => value.slice(0, -1));
+                }}>撤销移除</Button>
               )}
             </div>
             {historyOptIn && customerMode && (currencyConfirmed || rows.some(row => row.currencyNeedsConfirmation || row.draft.currency.trim() !== "CNY")) ? <label className="ci-field">
@@ -868,16 +897,24 @@ function BatchUploadSession(props: Props) {
             {bad.length > 0 && (
               <div className="ci-error ci-batch-errors">
                 <div>
-                  {customerMode ? "请在此核对错误字段，或注明原因排除无法核实的行。不会静默跳过错误记录。" : "请修正文件后重新上传，或明确移除错误行。不会静默跳过错误记录。"}
+                  {skipIssues ? "问题行可修改或移除；导入时将跳过。" : customerMode ? "修改问题行或移除后导入。" : "请修正文件后重新上传，或明确移除错误行。不会静默跳过错误记录。"}
                 </div>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   className="ci-button"
-                  onClick={() => { if (historyOptIn) bad.forEach(r => excludeRow(r.row)); else setExcluded(v => [...v, ...bad.map(r => r.row)]); }}
+                  onClick={() => {
+                    if (skipIssues) {
+                      const removed = bad.map(row => row.row);
+                      removed.forEach(row => { excludedReasons.current[row] = "用户移除"; });
+                      setExcluded(value => [...value, ...removed]);
+                      setExclusionUndo(value => [...value, removed]);
+                    } else if (historyOptIn) bad.forEach(r => excludeRow(r.row));
+                    else setExcluded(v => [...v, ...bad.map(r => r.row)]);
+                  }}
                 >
-                  移除全部错误行
+                  {skipIssues ? "移除全部问题行" : "移除全部错误行"}
                 </Button>
               </div>
             )}
@@ -928,7 +965,7 @@ function BatchUploadSession(props: Props) {
                       </td>
                       {historyOptIn ? <td>{customerMode ? renderCustomerFields(r) : fields.map(f => <label key={f.key} className="ci-field"><span>{f.label}</span><input aria-label={`核对第${r.row}行${f.label}`} value={r.draft[f.key]} onChange={e => setEdits(v => ({ ...v, [r.row]: { ...r.draft, [f.key]: e.target.value } }))} /></label>)}
                         {(rowMetadata.current.get(r.row) as { issues?: { issueId: string; message: string; resolved: boolean; resolution: string | null; field: string }[] } | undefined)?.issues?.map(issue => <label key={issue.issueId} className="ci-field"><span>{issue.message}</span><input aria-label={`核对问题${issue.issueId}`} maxLength={1000} defaultValue={issue.resolution ?? ""} placeholder="核对结果或明确保留未知的依据（必填）" onChange={e => { issue.resolution = e.target.value.trim() || null; issue.resolved = Boolean(issue.resolution); setEdits(v => ({ ...v, [r.row]: v[r.row] ?? r.draft })); if (issue.field === "source" && issue.resolved) setEdits(v => { const { sourceIssue, ...draft } = v[r.row] ?? r.draft; return { ...v, [r.row]: draft }; }); }} /></label>)}
-                        {r.draft.sourceIssue ? <button type="button" className="ci-inline-link" onClick={() => { const reason = window.prompt("请填写核验原始文本型号/来源精度的依据，无法核实请排除本行"); if (reason?.trim() && !((rowMetadata.current.get(r.row) as { issues?: { field: string; resolved: boolean }[] } | undefined)?.issues?.some(issue => issue.field === "source" && !issue.resolved))) { const { sourceIssue, ...draft } = r.draft; setEdits(v => ({ ...v, [r.row]: draft })); } }}>核实来源问题</button> : null}</td> : null}
+                        {r.draft.sourceIssue && !skipIssues ? <button type="button" className="ci-inline-link" onClick={() => { const reason = window.prompt("请填写核验原始文本型号/来源精度的依据，无法核实请排除本行"); if (reason?.trim() && !((rowMetadata.current.get(r.row) as { issues?: { field: string; resolved: boolean }[] } | undefined)?.issues?.some(issue => issue.field === "source" && !issue.resolved))) { const { sourceIssue, ...draft } = r.draft; setEdits(v => ({ ...v, [r.row]: draft })); } }}>核实来源问题</button> : null}</td> : null}
                       <td>
                         <button
                           type="button"
@@ -963,14 +1000,15 @@ function BatchUploadSession(props: Props) {
               <h3>
                 {busy
                   ? "正在按行上传，请勿重复提交"
-                  : completed === entries.length && !preparing
-                    ? "本批渠道库存已保存"
+                  : completed === entries.length && entries.length > 0 && !preparing
+                    ? skipIssues ? `已导入${completed}条 · 跳过${skippedRows}条` : "本批渠道库存已保存"
                     : "上传已暂停 / 中断"}
               </h3>
               <p>
                 已确认保存 <strong>{completed}</strong> / {preparing?.rows.length ?? entries.length} 条
               </p>
               {customerMode ? <p>待确认 {entries.filter(entry => entry.status === "unknown").length} 条；未完成 {(preparing?.rows.length ?? entries.length) - completed} 条</p> : null}
+              {skipIssues && (busy || preparing || completed < entries.length) ? <p>跳过{skippedRows}条</p> : null}
               {uploadBatch.current?.id ? <small>上传批次：{uploadBatch.current.batchCode || `#${uploadBatch.current.id}`}</small> : null}
               <progress value={completed} max={entries.length || 1} />
               <small>
@@ -1081,8 +1119,9 @@ function BatchUploadSession(props: Props) {
               }
               onClick={() => void start()}
             >
-              {customerMode ? `确认导入 ${rows.length} 条` : `确认上传 ${rows.length} 条`}
+              {skipIssues ? `导入${goodRows.length}条` : customerMode ? `确认导入 ${rows.length} 条` : `确认上传 ${rows.length} 条`}
             </Button>
+            {skipIssues ? <span className="ci-dialog-note" role="status">跳过{pendingSkipCount}条</span> : null}
             </>
           )}
           {step === 4 && (preparing || completed < entries.length) && (
@@ -1097,9 +1136,9 @@ function BatchUploadSession(props: Props) {
             </Button>
           )}
           {step === 4 && completed > 0 && props.onViewResults && (
-            <Button type="button" variant="outline" size="sm" className="ci-button" disabled={busy}
+            <Button type="button" variant="outline" size="sm" className="ci-button" disabled={busy || (customerMode && (Boolean(preparing) || completed !== entries.length))}
               onClick={() => props.onViewResults?.(entries)}>
-              查看已上传结果 / 完成
+              {customerMode ? "查看物料" : "查看已上传结果 / 完成"}
             </Button>
           )}
           {busy && (

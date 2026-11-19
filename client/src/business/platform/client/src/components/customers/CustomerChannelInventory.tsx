@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createBusinessScopeTrpcClient, trpc } from "../../../../../api/business-trpc";
 import { useBusinessScope } from "../../../../../BusinessScope";
-import { ChannelInventoryCopyPartNumber, MaterialEditPanel, PrivateNotesPanel, createRequestId, definitiveWriteFailure, errorMessage, materialFormFrom, materialInputFromForm, validateMaterialForm } from "../../pages/ChannelInventoryHost";
+import { ChannelInventoryCopyPartNumber, PrivateNotesPanel, createRequestId, definitiveWriteFailure, errorMessage, materialFormFrom, materialInputFromForm, validateMaterialForm } from "../../pages/ChannelInventoryHost";
 import type { MaterialForm } from "../../pages/ChannelInventoryMaterialEditPanel";
 import { DEFAULT_CHANNEL_INVENTORY_COLUMNS, channelInventoryColumnLayout, channelInventoryMaterialAccess, channelInventoryMaterialEditGranted } from "../../pages/channelInventoryColumns";
 import { ChannelReferenceCell } from "../../pages/ChannelReferenceCell";
@@ -13,7 +13,7 @@ import type { ChannelReferenceRow } from "@shared/channelReference";
 import { CollaborationNotesPanel } from "../channelInventory/CollaborationNotesPanel";
 import { ChannelInventoryCustomerSource, ChannelInventorySourcePanel } from "../channelInventory/ChannelInventorySourcePanel";
 import { useFactoryMaterialPublish } from "../channelInventory/FactoryMaterialPublish";
-import { inventoryError } from "../channelInventory/management";
+import { inventoryError, inventoryRequestId } from "../channelInventory/management";
 import type { InventoryCompanyProjection } from "../channelInventory/company";
 import type { SupplyIdentity, SupplyInputs, SupplyOutputs } from "./customerSupply";
 import "./CustomerChannelInventory.css";
@@ -63,6 +63,9 @@ export function verifiedCustomerInventory(value: SupplyOutputs["listTeamMaterial
 }
 
 type Panel = { key: string; kind: "source" | "notes" | "private" | "edit"; id: number; generation: number };
+type DeleteOperation = { key: string; generation: number; controller: AbortController; pending: boolean; submitted?: boolean;
+  payload?: SupplyInputs["deleteMaterials"]; labels: string[] };
+type DeleteState = { key: string; busy: boolean; retryLocked: boolean; message: string; review?: DeleteOperation };
 const columnLayout = channelInventoryColumnLayout(DEFAULT_CHANNEL_INVENTORY_COLUMNS, false);
 export function CustomerChannelInventory(props: CustomerChannelInventoryProps) {
   const utils = trpc.useUtils();
@@ -74,8 +77,11 @@ export function CustomerChannelInventory(props: CustomerChannelInventoryProps) {
   const editPending = useRef(false);
   const frozen = useRef<SupplyInputs["updateTeamMaterial"] | null>(null);
   const deferredRefresh = useRef(false);
+  const deleteOperation = useRef<DeleteOperation | null>(null);
+  const [deletion, setDeletion] = useState<DeleteState | null>(null);
+  const [selection, setSelection] = useState<{ key: string; ids: number[] }>({ key: "", ids: [] });
   // These refs are authoritative even before busy/retryLocked has rerendered.
-  const unresolvedEdit = () => editPending.current || frozen.current !== null;
+  const unresolvedEdit = () => editPending.current || frozen.current !== null || deleteOperation.current !== null;
   const input = useMemo(() => customerInventoryInput(props.identity, props.customerId, filters, page), [props.identity.enterpriseId, props.identity.actorUserId, props.customerId, filters, page]);
   const authorityKey = JSON.stringify([business.storageScope, business.contextVerification?.identity,
     business.contextVerification?.state, business.contextVerification?.authorizationVersion, business.contextVerification?.readVersion,
@@ -114,6 +120,19 @@ export function CustomerChannelInventory(props: CustomerChannelInventoryProps) {
   const materialContext = readable && contextVerified && business.officialInventoryPermissions.write === true && result?.canWrite === true;
   const accessRef = useRef(materialContext); accessRef.current = materialContext;
   const access = (row: (typeof rows)[number]) => channelInventoryMaterialAccess(row, current() && accessRef.current);
+  // The native/global permissions can deny, never manufacture a server delete grant.
+  const canDelete = (row: (typeof rows)[number]) => access(row) && row.canDelete === true;
+  const sourceChannelId = (row: (typeof rows)[number]) => {
+    // Native list DTOs expose the real channel under channelSource.id, not the
+    // customer's company.id. Accept explicit channelId only when server-returned.
+    const projection = row as typeof row & { channelId?: unknown };
+    const id = Object.prototype.hasOwnProperty.call(projection, "channelId") ? projection.channelId : row.channelSource?.id;
+    return row.canViewSource === true && typeof id === "number" && Number.isSafeInteger(id) && id > 0 ? id : null;
+  };
+  const deletableRows = rows.filter(canDelete);
+  const selectedIds = selection.key === key ? selection.ids.filter(id => deletableRows.some(row => row.id === id)) : [];
+  const visibleDeletion = readable && deletion?.key === key ? deletion : null;
+  const deleteLocked = Boolean(visibleDeletion?.busy || visibleDeletion?.review || visibleDeletion?.retryLocked);
   const refresh = async () => {
     if (!current()) return;
     if (unresolvedEdit()) { deferredRefresh.current = true; return; }
@@ -147,6 +166,11 @@ export function CustomerChannelInventory(props: CustomerChannelInventoryProps) {
     return () => window.removeEventListener("focus", focus);
   }, [key]);
   useEffect(() => { setPanel(null); }, [key, readable]);
+  useEffect(() => {
+    setSelection({ key, ids: [] }); setDeletion(null);
+    deleteOperation.current?.controller.abort(); deleteOperation.current = null;
+    return () => { deleteOperation.current?.controller.abort(); deleteOperation.current = null; };
+  }, [key, readable]);
   const nativeNote = business.officialInventoryPermissions.note === true;
   const nativePublish = business.officialInventoryPermissions.publish === true;
   const context = { expectedEnterpriseId: props.identity.enterpriseId, expectedActorUserId: props.identity.actorUserId };
@@ -166,7 +190,7 @@ export function CustomerChannelInventory(props: CustomerChannelInventoryProps) {
     && liveRows.current.some(row => row.id === visiblePanel?.id
       && (visiblePanel.kind !== "source" && visiblePanel.kind !== "edit" || access(row)));
   const modalOpen = Boolean(visiblePanel && panelRow
-    && (visiblePanel.kind !== "source" && visiblePanel.kind !== "edit" || access(panelRow)) || publishing.dialog);
+    && (visiblePanel.kind !== "source" && visiblePanel.kind !== "edit" || access(panelRow)) || publishing.dialog || visibleDeletion?.review);
   const openRef = useRef(false);
   useEffect(() => {
     if (openRef.current !== modalOpen) { openRef.current = modalOpen; latest.current.onOpenChange?.(modalOpen); }
@@ -207,8 +231,8 @@ export function CustomerChannelInventory(props: CustomerChannelInventoryProps) {
     });
   }, [referenceKey]);
 
-  // Public editing shares the Host's modal, form validation and manual-price
-  // contract. CRM/source grants remain server-owned and are rechecked at every step.
+  // Only presentation becomes inline. The Host's validation/manual-price
+  // transaction and original live CRM/source/owner grants stay unchanged.
   const [editor, setEditor] = useState<SupplyOutputs["getTeamMaterialForEdit"] | null>(null);
   const [editorKey, setEditorKey] = useState("");
   const [form, setForm] = useState<MaterialForm>(() => materialFormFrom({ channelId: null, partNumber: "", brand: "", qty: null, dateCode: null, price: null, taxIncluded: null, leadTime: null } as SupplyOutputs["getTeamMaterialForEdit"]));
@@ -220,6 +244,7 @@ export function CustomerChannelInventory(props: CustomerChannelInventoryProps) {
   const editRequest = useRef(0);
   const dialogRef = useRef<HTMLElement>(null);
   const update = trpc.channelInventory.updateTeamMaterial.useMutation();
+  const remove = trpc.channelInventory.deleteMaterials.useMutation();
   const editingId = visiblePanel?.kind === "edit" && panelRow && access(panelRow) ? panelRow.id : undefined;
   const editingKey = editingId === undefined ? "" : JSON.stringify([key, generation, editingId]);
   const editingLive = useRef(editingKey); editingLive.current = editingKey;
@@ -234,7 +259,11 @@ export function CustomerChannelInventory(props: CustomerChannelInventoryProps) {
     const valid = () => !controller.signal.aborted && editRequest.current === request && editCurrent();
     void utils.client.channelInventory.getTeamMaterialForEdit.query({ ...context, id: editingId }, { signal: controller.signal }).then(detail => {
       if (!valid()) return;
-      if (detail.id !== editingId || !channelInventoryMaterialEditGranted(detail)) throw new Error("库存编辑范围或写权限未能确认，请刷新后重试。");
+      const row = liveRows.current.find(item => item.id === editingId);
+      const projection = detail as typeof detail & { company?: { id: number } | null };
+      if (!row || !access(row) || detail.id !== editingId || !channelInventoryMaterialEditGranted(detail)
+        || sourceChannelId(row) === null || detail.channelId !== sourceChannelId(row)
+        || (Object.prototype.hasOwnProperty.call(projection, "company") && projection.company?.id !== props.customerId)) throw new Error("库存编辑范围或写权限未能确认，请刷新后重试。");
       setEditor(detail); setEditorKey(editingKey); setForm(materialFormFrom(detail)); setManualDraft(manualReferenceDraftFrom(detail)); setConfirmation("");
     }).catch(error => { if (valid()) { latest.current.onAuthorizationError(error); setEditMessage(errorMessage(error, "库存详情读取失败。")); } });
     return () => { controller.abort(); editRequest.current++; };
@@ -243,7 +272,7 @@ export function CustomerChannelInventory(props: CustomerChannelInventoryProps) {
     // Unknown receipts keep the original UUID/payload. Only a confirmed outcome
     // (or the existing permitted close) releases an ordinary deferred reread.
     if (!editBusy && !retryLocked && !unresolvedEdit() && deferredRefresh.current && current()) void refresh();
-  }, [editBusy, retryLocked, editingKey, key]);
+  }, [editBusy, retryLocked, editingKey, key, deletion]);
   useEffect(() => {
     if (!editor || !editingKey) return;
     const trigger = document.activeElement as HTMLElement | null;
@@ -288,6 +317,123 @@ export function CustomerChannelInventory(props: CustomerChannelInventoryProps) {
       settleRefresh(refresh),
     ]);
   };
+  const toggleSelection = (id?: number) => {
+    if (!current() || !result || unresolvedEdit() || retryLocked) return;
+    const eligible = liveRows.current.filter(canDelete).map(row => row.id);
+    if (id !== undefined && !eligible.includes(id)) return;
+    setSelection(previous => {
+      const prior = previous.key === key ? previous.ids.filter(value => eligible.includes(value)) : [];
+      return { key, ids: id === undefined ? eligible.every(value => prior.includes(value)) ? [] : eligible
+        : prior.includes(id) ? prior.filter(value => value !== id) : [...prior, id] };
+    });
+  };
+  const deleteCurrent = (operation: DeleteOperation) => deleteOperation.current === operation
+    && !operation.controller.signal.aborted && current() && operation.key === key
+    && lifecycle.current.generation === operation.generation;
+  const prepareDelete = (ids: number[]) => act(() => {
+    if (!ids.length || ids.length > 100 || new Set(ids).size !== ids.length) return;
+    const candidates = ids.map(id => liveRows.current.find(row => row.id === id));
+    if (candidates.some(row => !row || !canDelete(row))) return;
+    const operation: DeleteOperation = { key, generation: lifecycle.current.generation,
+      controller: new AbortController(), pending: false, labels: candidates.map(row => row!.partNumber) };
+    deleteOperation.current = operation; setPanel(null);
+    setDeletion({ key, busy: true, retryLocked: false, message: `正在核验 ${ids.length} 条库存的删除权限和版本…` });
+    void (async () => {
+      try {
+        const items: SupplyInputs["deleteMaterials"]["items"] = [];
+        // Never borrow a list revision, another page's IDs, or an owner/admin hint.
+        // The existing authenticated detail read re-proves original actor + CRM +
+        // industry/share grants; source-bearing channelId is present only on grant.
+        for (const id of ids) {
+          if (!deleteCurrent(operation)) return;
+          const row = liveRows.current.find(item => item.id === id);
+          if (!row || !canDelete(row) || sourceChannelId(row) === null) throw new Error("库存删除权限或来源已变化，请刷新后重试。");
+          const channelId = sourceChannelId(row);
+          const detail = await utils.client.channelInventory.getTeamMaterialForEdit.query({ ...context, id }, { signal: operation.controller.signal });
+          if (!deleteCurrent(operation)) return;
+          const projection = detail as typeof detail & { canDelete?: unknown; company?: { id: number } | null };
+          if (detail.id !== id || !channelInventoryMaterialEditGranted(detail)
+            || detail.currency !== "CNY"
+            || !Number.isSafeInteger(detail.revision) || detail.revision <= 0
+            || !Number.isSafeInteger(detail.channelId) || detail.channelId! <= 0
+            || detail.channelId !== channelId || sourceChannelId(row) !== channelId
+            || (Object.prototype.hasOwnProperty.call(projection, "canDelete") && projection.canDelete !== true)
+            || (Object.prototype.hasOwnProperty.call(projection, "company") && projection.company?.id !== props.customerId)
+            || !canDelete(row)) throw new Error("库存删除范围、来源或写权限未能确认，请刷新后重试。");
+          items.push({ id, expectedRevision: detail.revision });
+        }
+        if (!deleteCurrent(operation)) return;
+        operation.payload = { ...context, items, requestId: inventoryRequestId() };
+        setDeletion({ key, busy: false, retryLocked: false, message: "", review: operation });
+      } catch (error) {
+        if (!deleteCurrent(operation)) return;
+        deleteOperation.current = null; latest.current.onAuthorizationError(error);
+        setDeletion({ key, busy: false, retryLocked: false, message: errorMessage(error, "删除权限核验失败，未删除任何库存。") });
+      }
+    })();
+  });
+  const cancelDelete = () => {
+    const operation = deleteOperation.current;
+    if (!operation || !deleteCurrent(operation) || operation.pending || operation.submitted) return;
+    operation.controller.abort(); deleteOperation.current = null; setDeletion(null);
+  };
+  const submitDelete = async () => {
+    const operation = deleteOperation.current;
+    if (!operation?.payload || !deleteCurrent(operation) || operation.pending
+      || operation.payload.items.some(item => !liveRows.current.some(row => row.id === item.id && canDelete(row)))) return;
+    const payload = operation.payload;
+    operation.pending = true; operation.submitted = true;
+    setDeletion({ key, busy: true, retryLocked: false, message: "", review: operation });
+    let receipt: SupplyOutputs["deleteMaterials"];
+    try {
+      receipt = await remove.mutateAsync(payload);
+      if (!deleteCurrent(operation)) return;
+      // An incomplete/malformed receipt is unknown, never a fabricated success.
+      const expected = new Set(payload.items.map(item => item.id));
+      if (!receipt || !Array.isArray(receipt.results) || receipt.results.length !== expected.size
+        || new Set(receipt.results.map(item => item.id)).size !== expected.size
+        || receipt.results.some(item => !expected.has(item.id) || typeof item.success !== "boolean")
+        || receipt.deletedCount !== receipt.results.filter(item => item.success).length
+        || receipt.skippedCount !== expected.size - receipt.deletedCount) throw new Error("删除回执未能确认");
+    } catch (error) {
+      if (!deleteCurrent(operation)) return;
+      latest.current.onAuthorizationError(error);
+      if (definitiveWriteFailure(error)) {
+        deleteOperation.current = null;
+        setDeletion({ key, busy: false, retryLocked: false, message: errorMessage(error, "删除失败，未移除任何库存。") });
+      } else {
+        setDeletion({ key, busy: false, retryLocked: true, review: operation,
+          message: "删除结果未确认。已锁定原库存和请求号，请按原请求重试；未确认成功的库存不会移除。" });
+      }
+      return;
+    } finally { operation.pending = false; }
+    if (!deleteCurrent(operation)) return;
+    deleteOperation.current = null;
+    const deleted = new Set(receipt.results.filter(item => item.success).map(item => item.id));
+    const nextTotal = Math.max(0, result!.total - deleted.size);
+    const lastPage = Math.max(1, Math.ceil(nextTotal / PAGE_SIZE));
+    const failures = receipt.results.filter(item => !item.success);
+    setDeletion({ key, busy: false, retryLocked: false,
+      message: failures.length ? `已删除 ${deleted.size} 条，${failures.length} 条未删除：${failures.map(item => `${operation.labels[payload.items.findIndex(value => value.id === item.id)]}：${item.reason || "权限或版本已变化，请刷新后重试"}`).join("；")}` : `已删除 ${deleted.size} 条` });
+    // Only confirmed successes on this proven customer's original page disappear.
+    // Failed/order-blocked/conflicting rows remain; no optimistic all-row removal.
+    setSelection(previous => previous.key === key ? { key, ids: previous.ids.filter(id => !deleted.has(id)) } : previous);
+    if (deleted.size) {
+      setQuery(previous => {
+        if (!deleteCurrentScope() || previous.key !== key || !previous.result) return previous;
+        const next = { ...previous.result, items: previous.result.items.filter(row => !deleted.has(row.id)),
+          total: previous.result.total - deleted.size };
+        return { ...previous, result: { ...next, pageCount: Math.ceil(next.total / PAGE_SIZE) } };
+      });
+      // Settle cache errors outside the write/retry block. Preserve failed rows;
+      // only a now-empty obsolete last page needs an immediate scoped reread.
+      await Promise.allSettled([
+        Promise.resolve().then(() => { if (deleteCurrentScope()) return utils.channelInventory.listTeamMaterials.invalidate({ ...context, customerId: props.customerId }); }),
+        Promise.resolve().then(() => { if (deleteCurrentScope() && page > lastPage && liveRows.current.every(row => deleted.has(row.id))) setPage(lastPage); }),
+      ]);
+    }
+    function deleteCurrentScope() { return current() && lifecycle.current.generation === operation!.generation; }
+  };
   const submit = (event: React.FormEvent) => {
     event.preventDefault(); if (!current() || unresolvedEdit()) return;
     const next = { partNumber: draft.partNumber.normalize("NFKC").trim(), brand: draft.brand.trim() };
@@ -296,22 +442,63 @@ export function CustomerChannelInventory(props: CustomerChannelInventoryProps) {
   };
   const loading = readable && (query.key !== key || query.loading);
   const error = readable && query.key === key ? query.error : undefined;
+  const change = (field: keyof MaterialForm, value: string, identity = false) => {
+    if (!editCurrent() || unresolvedEdit() || retryLocked) return;
+    setForm(previous => ({ ...previous, [field]: value }));
+    if (identity) setConfirmation("");
+  };
+  const inlineEditor = editingKey && editCurrent() ? <section ref={dialogRef} className="ci-customer-inline-editor" aria-label="编辑渠道库存"
+    onKeyDown={event => { if (event.key === "Escape" && !unresolvedEdit() && !retryLocked && editCurrent()) { event.preventDefault(); closeEdit(); } }}>
+    {editor && editorKey === editingKey ? <form onSubmit={event => { event.preventDefault(); void submitEdit(); }}>
+      <fieldset className="ci-customer-edit-fields" disabled={editBusy || retryLocked}>
+        <label className="ci-field"><span>型号 *</span><input aria-label="编辑库存型号" required value={form.partNumber} maxLength={128} onChange={event => change("partNumber", event.target.value, true)} /></label>
+        <label className="ci-field"><span>品牌 *</span><input aria-label="编辑库存品牌" required value={form.brand} maxLength={64} onChange={event => change("brand", event.target.value, true)} /></label>
+        <label className="ci-field"><span>可供数量</span><input aria-label="编辑库存数量" inputMode="numeric" placeholder="待确认" value={form.qty} onChange={event => change("qty", event.target.value)} /></label>
+        <label className="ci-field"><span>报价 CNY</span><input aria-label="编辑库存价格" inputMode="decimal" placeholder="面议" value={form.price} onChange={event => change("price", event.target.value)} /></label>
+      </fieldset>
+      <details className="ci-customer-edit-extra" open={Boolean(retentionKey)}>
+        <summary>更多字段</summary>
+        <fieldset className="ci-customer-edit-fields" disabled={editBusy || retryLocked}>
+          <label className="ci-field"><span>Date Code</span><input aria-label="编辑库存DC" maxLength={32} value={form.dateCode} onChange={event => change("dateCode", event.target.value)} /></label>
+          <label className="ci-field"><span>交期</span><input aria-label="编辑库存交期" maxLength={64} placeholder="待确认" value={form.leadTime} onChange={event => change("leadTime", event.target.value)} /></label>
+          <label className="ci-field"><span>税务口径</span><select aria-label="编辑库存税务口径" value={form.taxIncluded} onChange={event => change("taxIncluded", event.target.value)}><option value="unknown">待确认</option><option value="included">含税</option><option value="excluded">未税</option></select></label>
+          <ChannelInventoryManualReferenceFields draft={manualDraft} partNumber={editor.partNumber}
+            autoReferences={rows.some(row => row.id === editor.id && row.partNumber === editor.partNumber && row.brand === editor.brand) ? currentReferences.get(editor.id) : undefined}
+            locked={editBusy || retryLocked} retentionRequired={Boolean(retentionKey)} retentionConfirmed={Boolean(retentionKey && confirmation === retentionKey)}
+            onChange={(field, value) => { if (!editCurrent() || unresolvedEdit() || retryLocked) return; setManualDraft(previous => ({ ...previous, [field]: { value, edited: true } })); setConfirmation(""); }}
+            onConfirm={confirmed => { if (editCurrent() && !unresolvedEdit() && !retryLocked) setConfirmation(confirmed ? retentionKey : ""); }} />
+        </fieldset>
+      </details>
+      {editMessage ? <p className="ci-error" role="alert">{editMessage}</p> : null}
+      <footer className="ci-customer-edit-footer"><button type="submit" className="ci-button ci-primary" disabled={editBusy} onClick={() => void submitEdit()}>{editBusy ? "保存中…" : retryLocked ? "按原请求重试" : "保存"}</button><button type="button" className="ci-button" aria-label="关闭库存编辑" disabled={editBusy || retryLocked} onClick={closeEdit}>取消</button></footer>
+    </form> : <><p className={editMessage ? "ci-error" : "ci-empty"} role={editMessage ? "alert" : "status"}>{editMessage || "正在读取库存编辑权限…"}</p><button type="button" className="ci-button" aria-label="关闭库存编辑" onClick={closeEdit}>取消</button></>}
+  </section> : null;
   return <section className="ci-page ci-host ci-panel ci-flat-view customer-channel-inventory" aria-label="客户渠道库存列表">
     <form className="ci-toolbar" onSubmit={submit}>
-      <label className="ci-field ci-toolbar-search"><span className="ci-filter-label">型号</span><input aria-label="筛选客户库存型号" placeholder="搜索型号" maxLength={128} value={draft.partNumber} onChange={event => setDraft(value => ({ ...value, partNumber: event.target.value }))} /></label>
-      <label className="ci-field ci-brand-input"><span className="ci-filter-label">品牌</span><input aria-label="筛选客户库存品牌" placeholder="搜索品牌" maxLength={64} value={draft.brand} onChange={event => setDraft(value => ({ ...value, brand: event.target.value }))} /></label>
-      <button type="submit" className="ci-button ci-primary" disabled={!readable || editBusy || retryLocked}>搜索</button>
-      <button type="button" className="ci-button" disabled={!readable || editBusy || retryLocked} onClick={() => void refresh()}>刷新库存</button>
-      <span className="ci-filter-count">{result ? `${result.total} 条库存 · ${result.bindingCount} 个已确认可读渠道` : loading ? "正在读取库存条数…" : "库存条数不可用"}</span>
+      <label className="ci-field ci-toolbar-search"><span className="ci-filter-label">型号</span><input aria-label="筛选客户库存型号" placeholder="搜索型号" maxLength={128} disabled={deleteLocked} value={draft.partNumber} onChange={event => { if (!deleteOperation.current) setDraft(value => ({ ...value, partNumber: event.target.value })); }} /></label>
+      <label className="ci-field ci-brand-input"><span className="ci-filter-label">品牌</span><input aria-label="筛选客户库存品牌" placeholder="搜索品牌" maxLength={64} disabled={deleteLocked} value={draft.brand} onChange={event => { if (!deleteOperation.current) setDraft(value => ({ ...value, brand: event.target.value })); }} /></label>
+      <button type="submit" className="ci-button ci-primary" disabled={!readable || editBusy || retryLocked || deleteLocked}>搜索</button>
+      <button type="button" className="ci-button" disabled={!readable || editBusy || retryLocked || deleteLocked} onClick={() => void refresh()}>刷新库存</button>
+      {selectedIds.length ? <button type="button" className="ci-button ci-customer-delete" disabled={editBusy || retryLocked || deleteLocked} onClick={() => prepareDelete(selectedIds)}>删除所选（{selectedIds.length}）</button> : null}
+      <span className="ci-filter-count">{result ? `共 ${result.total} 条` : loading ? "正在读取库存条数…" : "库存条数不可用"}</span>
     </form>
-    <div className="ci-tablewrap ci-compact-tablewrap"><table className="ci-table ci-compact-stock-table ci-stock-edit-table admin-table-readable customer-channel-inventory-table" style={{ "--ci-stock-min-width": `${columnLayout.minWidth}px` } as React.CSSProperties}>
-      <colgroup>{columnLayout.visible.map(column => <col key={column.id} data-column={column.id} style={{ width: column.width }} />)}</colgroup>
-      <thead><tr><th className="ci-material-part-col">型号</th><th className="ci-material-brand-col">品牌</th><th className="ci-material-recorder-col">负责人</th><th className="ci-material-source-col" title="已确认关联的 CRM 客户；与公共渠道参考独立">来源客户</th><th className="ci-material-qty-col">可供数量</th><th className="ci-material-price-col">报价 CNY</th><th className="ci-material-reference-col" title="立创商城公共网页参考">渠道参考一</th><th className="ci-material-reference-col" title="云汉芯城公共网页参考">渠道参考二</th><th className="ci-col-actions">操作</th></tr></thead>
+    {visibleDeletion ? <div className="ci-customer-delete-status">
+      {visibleDeletion.review ? <section role="alertdialog" aria-label="确认删除客户库存" aria-describedby="ci-customer-delete-count" className="ci-customer-delete-review">
+        <p id="ci-customer-delete-count">删除选中的 <strong>{visibleDeletion.review.payload?.items.length}</strong> 条物料？</p>
+        <p className="ci-customer-delete-models">{visibleDeletion.review.labels.join("、")}</p>
+        {visibleDeletion.message ? <p role="alert" className="ci-error">{visibleDeletion.message}</p> : null}
+        <div className="ci-customer-delete-buttons"><button type="button" className="ci-button ci-customer-delete" disabled={visibleDeletion.busy} onClick={() => void submitDelete()}>{visibleDeletion.busy ? "删除中…" : visibleDeletion.retryLocked ? "按原请求重试" : "删除"}</button><button type="button" className="ci-button" disabled={visibleDeletion.busy || visibleDeletion.retryLocked} onClick={cancelDelete}>取消</button></div>
+      </section> : <p role={visibleDeletion.busy ? "status" : "alert"} className={visibleDeletion.busy ? "" : "ci-error"}>{visibleDeletion.message}</p>}
+    </div> : null}
+    <div className="ci-tablewrap ci-compact-tablewrap"><table className="ci-table ci-compact-stock-table ci-stock-edit-table admin-table-readable customer-channel-inventory-table" style={{ "--ci-stock-min-width": `${columnLayout.minWidth + 36}px` } as React.CSSProperties}>
+      <colgroup><col data-column="selection" style={{ width: 36 }} />{columnLayout.visible.map(column => <col key={column.id} data-column={column.id} style={{ width: column.width }} />)}</colgroup>
+      <thead><tr><th className="ci-customer-selection"><input type="checkbox" aria-label="选择本页可删除库存" checked={Boolean(deletableRows.length && selectedIds.length === deletableRows.length)} disabled={!deletableRows.length || editBusy || retryLocked || deleteLocked} onChange={() => toggleSelection()} /></th><th className="ci-material-part-col">型号</th><th className="ci-material-brand-col">品牌</th><th className="ci-material-recorder-col">负责人</th><th className="ci-material-source-col" title="已确认关联的 CRM 客户；与公共渠道参考独立">来源客户</th><th className="ci-material-qty-col">可供数量</th><th className="ci-material-price-col">报价 CNY</th><th className="ci-material-reference-col" title="立创商城公共网页参考">渠道参考一</th><th className="ci-material-reference-col" title="云汉芯城公共网页参考">渠道参考二</th><th className="ci-col-actions">操作</th></tr></thead>
       <tbody>
-        {!readable ? <tr><td colSpan={9} className="ci-empty">正在核验客户库存读取权限…</td></tr> : loading ? <tr><td colSpan={9} className="ci-empty">正在读取客户渠道库存…</td></tr> : error ? <tr><td colSpan={9} className="ci-empty ci-host-error" role="alert">{error}</td></tr> : !result ? <tr><td colSpan={9} className="ci-empty">客户库存范围尚未确认。</td></tr> : result.bindingCount === 0 ? null : !rows.length ? <tr><td colSpan={9} className="ci-empty">已确认绑定渠道暂无符合筛选条件的库存。</td></tr> : null}
+        {!readable ? <tr><td colSpan={10} className="ci-empty">正在核验客户库存读取权限…</td></tr> : loading ? <tr><td colSpan={10} className="ci-empty">正在读取客户渠道库存…</td></tr> : error ? <tr><td colSpan={10} className="ci-empty ci-host-error" role="alert">{error}</td></tr> : !result ? <tr><td colSpan={10} className="ci-empty">客户库存范围尚未确认。</td></tr> : result.bindingCount === 0 ? null : !rows.length ? <tr><td colSpan={10} className="ci-empty">已确认绑定渠道暂无符合筛选条件的库存。</td></tr> : null}
         {rows.map(row => {
           const granted = channelInventoryMaterialAccess(row, materialContext);
-          return <tr key={row.id}>
+          return <React.Fragment key={row.id}><tr>
+            <td className="ci-customer-selection"><input type="checkbox" aria-label={`选择库存：${row.partNumber}`} checked={selectedIds.includes(row.id)} disabled={!canDelete(row) || editBusy || retryLocked || deleteLocked} onChange={() => toggleSelection(row.id)} /></td>
             <td className="ci-material-part-col"><ChannelInventoryCopyPartNumber partNumber={row.partNumber} resetKey={key} /></td>
             <td className="ci-material-brand-col" title={row.brand}>{row.brand || "—"}</td>
             <td className="ci-material-recorder-col admin-cell-primary" title={row.originalRecorderName ?? "待核实"}>{row.originalRecorderName ?? "待核实"}</td>
@@ -320,33 +507,16 @@ export function CustomerChannelInventory(props: CustomerChannelInventoryProps) {
             <td className="ci-price ci-material-price-col admin-cell-primary">{row.price === null ? "面议" : `¥${row.price}`}{typeof row.taxIncluded === "boolean" ? <small className="ci-subtext admin-cell-secondary">{row.taxIncluded ? "含税" : "未税"}</small> : null}</td>
             <td className="ci-material-reference-col" data-reference-source="lcsc"><ChannelReferenceCell key={referenceKey} source="lcsc" partNumber={row.partNumber} manualPrice={row.manualReferenceLcsc} quote={currentReferences.get(row.id)?.lcsc} /></td>
             <td className="ci-material-reference-col" data-reference-source="ickey"><ChannelReferenceCell key={referenceKey} source="ickey" partNumber={row.partNumber} manualPrice={row.manualReferenceIckey} quote={currentReferences.get(row.id)?.ickey} /></td>
-            <td className="ci-col-actions"><div className="ci-row-actions"><button type="button" className="ci-inline-link ci-edit-entry" aria-label={`编辑库存：${row.partNumber}`} disabled={!granted || editBusy || retryLocked} title={granted ? "编辑公共库存，可补全型号和品牌" : "只读：当前库存编辑与来源客户授权不可用"} onClick={() => open(row.id, "edit")}>编辑</button><CustomerInventoryMore row={row} granted={granted} locked={editBusy || retryLocked} nativeNote={nativeNote} publishing={publishing.action(row)} open={open} /></div></td>
-          </tr>;
+            <td className="ci-col-actions"><div className="ci-row-actions"><button type="button" className="ci-inline-link ci-edit-entry" aria-label={`编辑库存：${row.partNumber}`} disabled={!granted || editBusy || retryLocked || deleteLocked} title={granted ? "编辑公共库存，可补全型号和品牌" : "只读：当前库存编辑与来源客户授权不可用"} onClick={() => open(row.id, "edit")}>编辑</button><button type="button" className="ci-inline-link ci-customer-delete" aria-label={`删除库存：${row.partNumber}`} disabled={!canDelete(row) || editBusy || retryLocked || deleteLocked} title={canDelete(row) ? "删除本条库存，原上传文件保留" : "只读：服务端未授予库存删除权限"} onClick={() => prepareDelete([row.id])}>删除</button><CustomerInventoryMore row={row} granted={granted} locked={editBusy || retryLocked || deleteLocked} nativeNote={nativeNote} publishing={publishing.action(row)} open={open} /></div></td>
+          </tr>{editingId === row.id && inlineEditor ? <tr className="ci-customer-edit-row"><td colSpan={10}>{inlineEditor}</td></tr> : null}</React.Fragment>;
         })}
       </tbody>
     </table></div>
-    {result ? <nav className="ci-pagination" aria-label="客户渠道库存分页"><span>共 {result.total} 条，第 {page} / {Math.max(1, result.pageCount)} 页</span><button type="button" className="ci-button" disabled={page <= 1 || editBusy || retryLocked} onClick={() => { if (current() && !unresolvedEdit()) setPage(value => value - 1); }}>上一页</button><button type="button" className="ci-button" disabled={page >= Math.max(1, result.pageCount) || editBusy || retryLocked} onClick={() => { if (current() && !unresolvedEdit()) setPage(value => value + 1); }}>下一页</button></nav> : null}
+    {result ? <nav className="ci-pagination" aria-label="客户渠道库存分页"><span>共 {result.total} 条，第 {page} / {Math.max(1, result.pageCount)} 页</span><button type="button" className="ci-button" disabled={page <= 1 || editBusy || retryLocked || deleteLocked} onClick={() => { if (current() && !unresolvedEdit()) setPage(value => value - 1); }}>上一页</button><button type="button" className="ci-button" disabled={page >= Math.max(1, result.pageCount) || editBusy || retryLocked || deleteLocked} onClick={() => { if (current() && !unresolvedEdit()) setPage(value => value + 1); }}>下一页</button></nav> : null}
     {publishing.dialog}
     {visiblePanel && panelRow && visiblePanel.kind === "source" && access(panelRow) ? <ChannelInventorySourcePanel key={`${key}:source:${panelRow.id}`} materialId={panelRow.id} enterpriseId={props.identity.enterpriseId} actorUserId={props.identity.actorUserId} scopeKey={scopeKey} active={readable && materialContext} isCurrent={panelCurrent} onClose={() => setPanel(null)} onAuthorizationError={props.onAuthorizationError} /> : null}
     {visiblePanel && panelRow && visiblePanel.kind === "notes" ? <CollaborationNotesPanel key={`${key}:notes:${panelRow.id}`} materialId={panelRow.id} partNumber={panelRow.partNumber} brand={panelRow.brand} enterpriseId={props.identity.enterpriseId} actorUserId={props.identity.actorUserId} canWriteNote={nativeNote} canAddNote={nativeNote && panelRow.canAddNote} isCurrent={panelCurrent} onClose={() => setPanel(null)} onComplete={() => void refresh()} /> : null}
     {visiblePanel && panelRow && visiblePanel.kind === "private" && panelRow.isMine && nativeNote ? <PrivateNotesPanel key={`${key}:private:${panelRow.id}`} materialId={panelRow.id} enterpriseId={props.identity.enterpriseId} actorUserId={props.identity.actorUserId} isCurrent={() => panelCurrent() && liveRows.current.find(row => row.id === panelRow.id)?.isMine === true} onClose={() => setPanel(null)} onComplete={() => void refresh()} /> : null}
-    {editingKey && editCurrent() ? editor && editorKey === editingKey ? <MaterialEditPanel key={editingKey} mode="edit" form={form} setForm={setForm} onIdentityChange={() => setConfirmation("")}
-      busy={editBusy} retryLocked={retryLocked} channels={[]} nativeNote={nativeNote} dialogRef={dialogRef}
-      context={context} scopeKey={scopeKey} isCurrent={editCurrent} message={editMessage} onClose={closeEdit} onSubmit={() => void submitEdit()}
-      onKeyDown={event => {
-        if (event.key === "Escape" && !unresolvedEdit() && !retryLocked && editCurrent()) { event.preventDefault(); closeEdit(); }
-        if (event.key !== "Tab") return;
-        const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled)'));
-        const first = controls[0]; const last = controls.at(-1);
-        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
-        if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
-      }}
-      manualFields={<ChannelInventoryManualReferenceFields draft={manualDraft} partNumber={editor.partNumber}
-        autoReferences={rows.some(row => row.id === editor.id && row.partNumber === editor.partNumber && row.brand === editor.brand) ? currentReferences.get(editor.id) : undefined}
-        locked={editBusy || retryLocked} retentionRequired={Boolean(retentionKey)} retentionConfirmed={Boolean(retentionKey && confirmation === retentionKey)}
-        onChange={(field, value) => { if (!editCurrent() || unresolvedEdit() || retryLocked) return; setManualDraft(previous => ({ ...previous, [field]: { value, edited: true } })); setConfirmation(""); }}
-        onConfirm={confirmed => { if (editCurrent() && !unresolvedEdit() && !retryLocked) setConfirmation(confirmed ? retentionKey : ""); }} />}
-    /> : <div className="ci-modal-backdrop" role="presentation"><section className="ci-host-dialog ci-host-material-dialog" role="dialog" aria-modal="true" aria-label="编辑渠道库存"><header><h2>编辑渠道库存</h2><button type="button" className="ci-icon-close" aria-label="关闭库存编辑" onClick={closeEdit}>×</button></header><p className={editMessage ? "ci-error" : "ci-empty"} role={editMessage ? "alert" : "status"}>{editMessage || "正在读取库存编辑权限…"}</p></section></div> : null}
   </section>;
 }
 

@@ -1,0 +1,11 @@
+build/
+build-*/
+inputs/
+test-tmp/
+*.log
+__pycache__/
+evidence/abi-inspection.json
+evidence/baseline-after-index.html
+evidence/native-*.js
+evidence/references.txt
+evidence/source-pins.json

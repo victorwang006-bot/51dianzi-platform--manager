@@ -1,0 +1,42 @@
+{
+  "schema": "upload-manage-source-freeze-v1",
+  "ownerTask": "6hBIbUvPpWI2Wkj3jxYdIQ",
+  "scope": "upload-manage-20261119-6hBIbUvP",
+  "frozen": true,
+  "supplyNativeSafetyReviewed": true,
+  "sources": [
+    {
+      "path": "client/src/business/platform/client/src/components/channelInventory/BatchUpload.tsx",
+      "sha256": "88e6d80e90bb9b4620b7d608db758a3a5b46d6b363352714801c392d8e31d02a"
+    },
+    {
+      "path": "client/src/business/platform/client/src/components/customers/CustomerSupplyUploadDialog.tsx",
+      "sha256": "d68e4308c3b8fdcca7c6e75f6456a9cfe04cc09887aaa1661efec7b045b3fb09"
+    },
+    {
+      "path": "client/src/business/platform/client/src/components/customers/CustomerChannelInventory.tsx",
+      "sha256": "5206b78aa098377f994898eae0790d65ee1af7019d98e421333651135f5017fe"
+    },
+    {
+      "path": "client/src/business/platform/client/src/components/customers/CustomerChannelInventory.css",
+      "sha256": "bf3b30da278989303817f3263a25f9ffb6b962b3644163c96f21c7d87814157c"
+    },
+    {
+      "path": "client/src/business/platform/client/src/components/customers/customerUploadOriginalRetry.ts",
+      "sha256": "9c10de7cfe7ce08abacd1e7c8a98c06ca1f7c1dd31202f7ef9748095bf4c1a90"
+    },
+    {
+      "path": "client/src/business/platform/client/src/components/customers/CustomerParseUpload.tsx",
+      "sha256": "b071ad868bd2ec62aebadc1f445c61610c16eceec7d6af188080fe1730075f8c"
+    }
+  ],
+  "changedTargets": [
+    "T6/BatchUploadSession",
+    "B3/CustomerSupplyUploadSession",
+    "mk/CustomerChannelInventory"
+  ],
+  "supplyRetryNativeAliases": [
+    "__customerUploadRetry20261119_originalNotSavedAfterRelease"
+  ],
+  "beforeHtmlSha256": "60f7adcce23397a9a9333ed9b54546930ed808215dd19d1d6ad8b0fbdfb2aae5"
+}

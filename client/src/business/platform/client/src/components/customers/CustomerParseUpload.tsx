@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "../channelInventory/bridge";
 import { validateFile, type History } from "./customerUploadHistory";
+import { __customerUploadRetry20261119_isReleasedOriginalRejection } from "./customerUploadOriginalRetry";
 import "./CustomerUploadHistory.css";
 
 type Props = { persistOriginal: (file: File, mode: "parse") => Promise<History>; isCurrent: () => boolean; onDirtyChange: (dirty: boolean) => void; onBusyChange: (busy: boolean) => void };
@@ -14,7 +15,7 @@ export function CustomerParseUpload(props: Props) {
   const submit = async () => {
     if (!file || running.current || !current()) return; running.current = true; setBusy(true); setError(""); props.onBusyChange(true);
     try { validateFile(file); const saved = await latest.current.persistOriginal(file, "parse"); if (!current()) return; setHistory(saved); setUnknown(false); latest.current.onDirtyChange(false); }
-    catch (error) { if (current()) { setUnknown(true); setError(error instanceof Error ? error.message : "原文件提交结果待确认，请使用同一文件、同一请求重试。"); } }
+    catch (error) { if (current()) { setUnknown(!__customerUploadRetry20261119_isReleasedOriginalRejection(error)); setError(error instanceof Error ? error.message : "原文件提交结果待确认，请使用同一文件、同一请求重试。"); } }
     finally { running.current = false; if (current()) { setBusy(false); latest.current.onBusyChange(false); } }
   };
   const selectionDisabled = busy || unknown || !current();

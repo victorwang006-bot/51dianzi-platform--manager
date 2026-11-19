@@ -13,6 +13,7 @@ import type { ManagedBatchEntry } from "../channelInventory/management";
 import { CustomerParseUpload } from "./CustomerParseUpload";
 import { canonicalConfirmationPayload, confirmationIssueResolutions, fileInput, historySession, isUUID, originalReview, recoveryEntries, resultReview, uuid, type History, type HistoryDetail, type HistorySession, type ReviewRow, type Confirmation } from "./customerUploadHistory";
 import { CustomerSupplySingleEntry } from "./CustomerSupplySingleEntry";
+import { __customerUploadRetry20261119_originalNotSavedAfterRelease } from "./customerUploadOriginalRetry";
 import "./CustomerSupplyUploadDialog.css";
 
 type Channel = SupplyOutputs["getChannel"];
@@ -258,8 +259,10 @@ function CustomerSupplyUploadSession(props: Props) {
           const response = error as { data?: { code?: unknown }; message?: unknown } | null;
           const prefix = "原文件未保存：";
           if (response && typeof response === "object" && response.data?.code === "BAD_REQUEST" && typeof response.message === "string"
-            && response.message.startsWith(prefix) && response.message.slice(prefix.length).trim()) release();
-          // Preserve the real backend rejection; no synthetic response or unused marker.
+            && response.message.startsWith(prefix) && response.message.slice(prefix.length).trim() && release()) {
+            throw __customerUploadRetry20261119_originalNotSavedAfterRelease({ message: response.message });
+          }
+          // Unknown or unowned failures stay unbranded and keep the original lock.
           throw error;
         }
         if (!ownsRequest()) throw new Error("提交结果待原身份核实，请保留原请求。");
@@ -363,8 +366,12 @@ function CustomerSupplyUploadSession(props: Props) {
     sourceLabel={context.customer.name} fixedSource
     renderParseEntry={controls => <CustomerParseUpload {...controls} persistOriginal={persistOriginal} isCurrent={current} />}
     onOriginalFilePersist={async file => {
+      if (!current() || !frozen.current) throw new Error("客户上传会话已失效。");
       const attachment = standardAttachment.current;
-      const history = props.initialHistory && props.initialFile === file ? props.initialHistory.history : attachment && attachment.file === file && !attachment.rows ? attachment.history : await persistOriginal(file, "standard");
+      if (attachment?.file === file && attachment.sessionData.customerVersion !== frozen.current.customerVersion) throw new Error("客户版本已变化，不能复用原上传任务。");
+      if (attachment?.file === file && originalOperation.current) throw new Error("另一个原文件提交结果待确认，请保留原文件和UUID，不能更换上传。");
+      if (attachment?.file === file && attachment.rows) return { sessionData: frozen.current, rows: attachment.rows };
+      const history = props.initialHistory && props.initialFile === file ? props.initialHistory.history : attachment && attachment.file === file ? attachment.history : await persistOriginal(file, "standard");
       if (!attachment || attachment.history.historyId !== history.historyId) standardAttachment.current = { history, sessionData: frozen.current!, file };
       const abort = controller();
       try {

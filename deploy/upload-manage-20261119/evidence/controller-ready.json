@@ -1,0 +1,21 @@
+{
+  "status": "CONTROLLER_READY_BUILDER_PENDING_SOURCE_FREEZE",
+  "controllerSha256": "dbde2033e6e30f736349f4cca8083582597b06ca124f55fe796681cae121d775",
+  "testSha256": "74e8c42ed039b54457e24f8526e6b0975aa1ed16e54484ba0b4b70ffe61fc5a2",
+  "offlineTests": { "count": 42, "status": "passed", "log": "controller-tests.log" },
+  "controllerRawByteChangeSpans": 4,
+  "owner": "6hBIbUvPpWI2Wkj3jxYdIQ",
+  "scope": "upload-manage-20261119-6hBIbUvP",
+  "schema": "upload-manage-capture-v1",
+  "nativeVerifiedMappings": {
+    "createBusinessScopeTrpcClient": "ss",
+    "customerInventoryInput": "V3",
+    "verifiedCustomerInventory": "H3",
+    "columnLayout": "dk",
+    "CustomerInventoryMore": "Z3"
+  },
+  "abiCaveat": "Native U3 is K.string().regex(/^[a-f0-9]{64}$/), not verifiedCustomerInventory; legacy tm is not a patch target.",
+  "productionConnections": 0,
+  "productionWrites": 0,
+  "finalBuildRun": false
+}

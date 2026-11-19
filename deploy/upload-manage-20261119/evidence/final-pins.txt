@@ -1,0 +1,6 @@
+a07c7630ac7e92981f1824b7725a59d429b2a52b0e0b66f96fe7eb9beb243626  /opt/ops/upload-manage-20261119-6hBIbUvP/receipt/receipt.json
+f873c20dadfa9c517b36064c21a39ba10472b6a8832a83633ab4316f5878ee98  /opt/ops/51-project-release-coordination-20261027.json
+71aca2bb6483befa1f3a4bf09a8aaf73f619bac3299d9bec9f4ea9d67878efa3  /opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/index.html
+99cc4404a021690bb308faf04f021df7063e6d6043c1209e700fa5927a314778  /opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/BusinessWorkbenchPage-upload-manage-99cc4404a021690b.js
+6dfd25aea7e621cde3e883c6c23d78c3b8bc8b8ded86e6bc4a08c0e13cf08f82  /opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/BusinessWorkbenchPage-upload-manage-6dfd25aea7e621cd.js
+3b83db4061a4088ea88d1a192377024f93b026913c730c41d044c71ea0978ea3  /opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-upload-manage-3b83db4061a4088e.css

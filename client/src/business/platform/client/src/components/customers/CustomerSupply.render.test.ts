@@ -59,7 +59,9 @@ let root: Root | null = null;
 let container: HTMLDivElement | null = null;
 let generation = 0;
 function required<T>(value: T | undefined | null): T { if (value == null) throw new Error("missing fixture control"); return value; }
-function button(name: string) { return required(Array.from(document.body.querySelectorAll<HTMLButtonElement>("button")).find(item => item.textContent?.trim() === name)); }
+function button(name: string) {
+  if (document.querySelector('[aria-label="客户物料上传方式"] [aria-pressed="true"]')?.textContent === "表格上传") name = name.replace(/^确认导入 (\d+) 条$/, "导入$1条");
+  return required(Array.from(document.body.querySelectorAll<HTMLButtonElement>("button")).find(item => item.textContent?.trim() === name)); }
 function click(element: Element) { act(() => { element.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); }); }
 function change(element: HTMLSelectElement, value: string) { act(() => { Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), "value")?.set?.call(element, value); element.dispatchEvent(new Event("change", { bubbles: true })); }); }
 async function settle() { await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); }); }
@@ -238,14 +240,16 @@ describe("customer supply real portal and reused importer", () => {
     expect(document.querySelector('[data-testid="channel-inventory-batch-dialog"]')).toBeNull(); expect(document.querySelector('[aria-label="首次渠道类型"]')).toBeNull();
     click(button("补全客户档案")); expect(runtime.navigate).toHaveBeenCalledWith("/customers/801"); expect(runtime.create).not.toHaveBeenCalled();
   });
-  it("never closes/navigates on first success and only closes the portal after all rows pass", async () => {
+  it("never auto-closes or navigates, shows the success result and views the verified batch only on click", async () => {
     let finish!: (value: unknown) => void;
     runtime.create.mockImplementationOnce(() => { runtime.context = { ...context(), channel }; return Promise.resolve(receipt()); })
       .mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
     render(); await setupUpload(); await upload(); click(button("确认导入 3 条")); await settle();
     expect(runtime.create).toHaveBeenCalledTimes(2); expect(runtime.navigate).not.toHaveBeenCalled(); expect(document.querySelector('[role="dialog"]')).not.toBeNull();
     await act(async () => { finish(receipt()); }); await settle();
-    expect(runtime.create).toHaveBeenCalledTimes(3); expect(runtime.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=materials");
+    expect(runtime.create).toHaveBeenCalledTimes(3); expect(runtime.navigate).not.toHaveBeenCalled();
+    expect(document.querySelector(".ci-batch-result h3")?.textContent).toBe("已导入3条 · 跳过0条");
+    click(button("查看物料")); expect(runtime.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=materials&uploadBatchId=501");
     expect(document.querySelector('[role="dialog"]')).toBeNull(); expect(sessionStorage.length).toBe(0);
     expect(runtime.invalidateMaterials).toHaveBeenCalledWith(); expect(runtime.invalidateChannels).toHaveBeenCalledWith(); expect(runtime.invalidateBatches).toHaveBeenCalledWith();
     for (const [dto] of runtime.create.mock.calls) { expect(dto).not.toHaveProperty("channelId"); expect(dto).toMatchObject({ customerId: 801, expectedCustomerVersion: 4 }); expect(dto).not.toHaveProperty("sourceProfile"); }
@@ -261,12 +265,12 @@ describe("customer supply real portal and reused importer", () => {
     expect(saved.entries[0].receipt).toMatchObject({ customerId: 801, channelId: 411 }); expect(saved.entries[1].status).toBe("unknown");
     click(button("关闭")); render(); await setupUpload(); click(button("恢复原批次")); click(button("继续处理未完成（沿用原请求）")); await settle();
     expect(runtime.create.mock.calls[2][0]).toEqual(original); expect(runtime.create.mock.calls.map(([dto]) => dto.partNumber)).toEqual(["ONE", "TWO", "TWO", "THREE"]);
-    expect(runtime.navigate).toHaveBeenCalledTimes(1); expect(sessionStorage.length).toBe(0);
+    expect(runtime.navigate).not.toHaveBeenCalled(); click(button("查看物料")); expect(runtime.navigate).toHaveBeenCalledTimes(1); expect(sessionStorage.length).toBe(0);
   });
-  it("requires explicit partial finish and leaves the failed original batch recoverable", async () => {
+  it("blocks viewing an unknown partial batch and leaves the original batch recoverable", async () => {
     runtime.create.mockImplementationOnce(() => { runtime.context = { ...context(), channel }; return Promise.resolve(receipt()); }).mockRejectedValueOnce(new Error("unknown"));
     render(); await setupUpload(); await upload(); click(button("确认导入 3 条")); await settle();
-    click(button("查看已上传结果 / 完成")); expect(runtime.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=materials"); expect(sessionStorage.length).toBe(1);
+    expect(button("查看物料").disabled).toBe(true); click(button("查看物料")); expect(runtime.navigate).not.toHaveBeenCalled(); expect(sessionStorage.length).toBe(1);
   });
   it("all-fail and cancel cannot client-precreate or navigate an empty channel", async () => {
     runtime.create.mockRejectedValue(new Error("FORBIDDEN")); render(); await setupUpload(); await upload(); click(button("确认导入 3 条")); await settle();
@@ -317,7 +321,7 @@ describe("customer supply real portal and reused importer", () => {
     render(); await setupUpload(); await upload(); click(button("确认导入 3 条")); await settle();
     expect(button("继续处理未完成（沿用原请求）").disabled).toBe(false); const original = runtime.create.mock.calls[1][0];
     click(button("继续处理未完成（沿用原请求）")); await settle(); expect(runtime.create.mock.calls[2][0]).toEqual(original);
-    expect(runtime.navigate).toHaveBeenCalledTimes(1);
+    expect(runtime.navigate).not.toHaveBeenCalled(); click(button("查看物料")); expect(runtime.navigate).toHaveBeenCalledTimes(1);
   });
   it("reports a pre-submit authorization error to the root and does not mutate any material", async () => {
     render(); await setupUpload(); await upload([["型号", "品牌"], ["ONE", "TI"]]);
@@ -548,7 +552,8 @@ describe("customer single material upload uses the customer batch transaction", 
     expect(runtime.create.mock.calls[0][0]).toEqual({ expectedEnterpriseId: 31, expectedActorUserId: 7, customerId: 801, expectedCustomerVersion: 4,
       partNumber: "ONE", brand: "TI", qty: 4000, price: "1.123456789012", currency: "CNY", taxIncluded: true, leadTime: "7天", dateCode: "0026+", note: "个人说明", requestId: expect.stringMatching(/^[-0-9a-f]{36}$/i), uploadBatchId: 501 });
     expect(runtime.listChannels).not.toHaveBeenCalled(); expect(runtime.getChannel).not.toHaveBeenCalled();
-    expect(runtime.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=materials");
+    expect(runtime.navigate).not.toHaveBeenCalled(); click(button("查看物料"));
+    expect(runtime.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=materials&uploadBatchId=501");
     expect(document.querySelector('[role="dialog"]')).toBeNull(); expect(sessionStorage.length).toBe(0);
   });
   it.each(["unknown", "true", "false"])("preserves %s tax including nullable blank qty/price", async tax => {
@@ -587,7 +592,7 @@ describe("customer single material upload uses the customer batch transaction", 
     expect(button("表格上传").disabled).toBe(true); expect(button("手动录入").disabled).toBe(true); expect(button("预览单条物料").disabled).toBe(true);
     click(button("表格上传")); click(button("继续处理未完成（沿用原请求）")); expect(runtime.create).toHaveBeenCalledTimes(1);
     expect(runtime.navigate).not.toHaveBeenCalled();
-    await act(async () => { finish(receipt()); }); await settle(); expect(runtime.navigate).toHaveBeenCalledTimes(1);
+    await act(async () => { finish(receipt()); }); await settle(); expect(runtime.navigate).not.toHaveBeenCalled(); click(button("查看物料")); expect(runtime.navigate).toHaveBeenCalledTimes(1);
   });
   it("retains a committed-but-lost result, prohibits switching and retries the whole original customer request", async () => {
     runtime.create.mockImplementationOnce(() => { runtime.context = { ...context(), channel }; return Promise.reject(new Error("committed response lost")); });
@@ -596,7 +601,7 @@ describe("customer single material upload uses the customer batch transaction", 
     expect(saved.entryMode).toBe("single"); expect(saved.entries).toHaveLength(1); expect(saved.entries[0].status).toBe("unknown");
     expect(button("表格上传").disabled).toBe(true); click(button("表格上传"));
     expect(button("继续处理未完成（沿用原请求）").disabled).toBe(false); expect(runtime.navigate).not.toHaveBeenCalled();
-    click(button("继续处理未完成（沿用原请求）")); await settle(); expect(runtime.create.mock.calls[1][0]).toEqual(original); expect(runtime.navigate).toHaveBeenCalledTimes(1);
+    click(button("继续处理未完成（沿用原请求）")); await settle(); expect(runtime.create.mock.calls[1][0]).toEqual(original); expect(runtime.navigate).not.toHaveBeenCalled(); click(button("查看物料")); expect(runtime.navigate).toHaveBeenCalledTimes(1);
   });
   it("restores a single unknown request in the same recovery namespace and keeps modes blocked before restoration", async () => {
     runtime.create.mockRejectedValueOnce(new Error("unknown"));
@@ -779,7 +784,7 @@ describe("historical existing-channel recovery after visible association removal
     expect(runtime.createBatch).not.toHaveBeenCalled(); expect(runtime.create).toHaveBeenCalledTimes(1);
     expect(runtime.create.mock.calls[0][0]).toMatchObject({ sourceProfile: original.sourceProfile, requestId: original.rowId, uploadBatchId: 501 });
     expect(runtime.getChannel).toHaveBeenCalledWith({ expectedEnterpriseId: 31, expectedActorUserId: 7, id: 411 }, { signal: expect.any(AbortSignal) });
-    expect(runtime.navigate).toHaveBeenCalledTimes(1); expect(sessionStorage.getItem(original.key)).toBeNull();
+    expect(runtime.navigate).not.toHaveBeenCalled(); click(button("查看物料")); expect(runtime.navigate).toHaveBeenCalledTimes(1); expect(sessionStorage.getItem(original.key)).toBeNull();
   });
   it.each(["type", "revision", "permission", "enterprise", "inactive", "id"])("still rejects changed historical existing-channel %s before batch or row writes", async kind => {
     const original = seedHistoricalExisting("table");
@@ -810,6 +815,7 @@ describe("customer-detail supply entry uses the real existing upload portal", ()
     expect(document.querySelector('[aria-label="批量关联渠道"]')).toBeNull(); expect(runtime.listChannels).not.toHaveBeenCalled();
     await upload([["型号", "品牌"], ["ONE", "TI"]]); click(button("确认导入 1 条")); await settle();
     expect(runtime.createBatch).toHaveBeenCalledTimes(1); expect(runtime.create.mock.calls[0][0]).toMatchObject({ customerId: 801, uploadBatchId: 501 }); expect(runtime.create.mock.calls[0][0]).not.toHaveProperty("sourceProfile");
+    expect(document.querySelector('[role="dialog"]')).not.toBeNull(); expect(runtime.navigate).not.toHaveBeenCalled(); click(button("查看物料"));
     expect(document.querySelector('[role="dialog"]')).toBeNull(); expect(runtime.navigate).toHaveBeenCalledTimes(1);
   });
   it("opens one existing portal from verified supply context and sends the original customer batch DTO", async () => {
@@ -826,7 +832,8 @@ describe("customer-detail supply entry uses the real existing upload portal", ()
       customerId: 801, expectedCustomerVersion: 4, expectedEnterpriseId: 31, expectedActorUserId: 7, uploadBatchId: 501,
     });
     expect(runtime.create.mock.calls[0][0]).not.toHaveProperty("channelId");
-    expect(runtime.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=materials");
+    expect(runtime.navigate).not.toHaveBeenCalled(); click(button("查看物料"));
+    expect(runtime.navigate).toHaveBeenCalledWith("/channel-inventory?supplyChannelId=411&supplyTab=materials&uploadBatchId=501");
     expect(document.querySelector('[role="dialog"]')).toBeNull(); expect(onOpenChange).toHaveBeenLastCalledWith(false);
     expect(runtime.invalidateContext).toHaveBeenCalled(); expect(runtime.invalidateSummary).toHaveBeenCalled();
     expect(sessionStorage.length).toBe(0);
@@ -861,6 +868,6 @@ describe("real persisted batch code and strict create boundary", () => {
     click(button("恢复原批次")); click(button("继续处理未完成（沿用原请求）")); await settle();
     expect(runtime.create.mock.calls[1][0]).toEqual(original);
     expect(runtime.prepare).toHaveBeenCalledTimes(1); expect(runtime.createBatch).toHaveBeenCalledTimes(1);
-    expect(sessionStorage.length).toBe(0); expect(runtime.navigate).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.length).toBe(0); expect(runtime.navigate).not.toHaveBeenCalled(); click(button("查看物料")); expect(runtime.navigate).toHaveBeenCalledTimes(1);
   });
 });

@@ -96,11 +96,12 @@ describe("issue transport and explicit exclusion regressions", () => {
     if (manual) change(document.querySelector(`[aria-label="核对问题${issueId}"]`)!, "人工核对为外币，不作换算");
     click(document.querySelector('[aria-label="移除原表第3行"]')!);
     expect(document.querySelector('[aria-label="核对客户来源类型"]')).toBeNull();
-    click(button("确认导入 1 条")); await settle();
+    click(button("导入1条")); await settle();
     const input = rt.prepare.mock.calls[0][0];
-    expect(input.resolvedIssues).toEqual([{ issueId, resolution: manual ? "人工核对为外币，不作换算" : "明确排除此行：原报价币种无法核实，本次明确不入库" }]);
+    expect(input.resolvedIssues).toEqual([{ issueId, resolution: manual ? "人工核对为外币，不作换算" : "明确排除此行：用户移除" }]);
     expect(input.confirmedRows).toHaveLength(1); expect(input.confirmedRows[0].rowId).toBe(firstId);
-    expect(input.excludedRows).toEqual([{ logicalRowId: d.selectedVersion.rows[1].logicalRowId, reason: "原报价币种无法核实，本次明确不入库", sourceRefs: refs }]);
+    expect(input.excludedRows).toEqual([{ logicalRowId: d.selectedVersion.rows[1].logicalRowId, reason: "用户移除", sourceRefs: refs }]);
+    expect(window.prompt).not.toHaveBeenCalled();
     expect(input).toMatchObject({ expectedEnterpriseId: 31, expectedActorUserId: 7, expectedCustomerVersion: 4, expectedRevision: 4, versionId: d.history.latestVersionId });
     expect(input.batchRequestId).not.toBe(input.requestId); expect(rt.create).not.toHaveBeenCalled();
   });
@@ -122,9 +123,9 @@ describe("version-source exclusions and explicit global evidence", () => {
     render(element()); await settle(); expect(document.body.textContent).toContain("解析结果核对");
     expect(document.querySelector('[aria-label="移除原表第3行"]')).toBeNull();
     expect(document.body.textContent).toContain("原版本员工明确排除非本次报价");
-    expect(button("确认导入 1 条").disabled).toBe(true); click(button("确认导入 1 条")); expect(rt.prepare).not.toHaveBeenCalled();
+    expect(button("导入1条").disabled).toBe(true); click(button("导入1条")); expect(rt.prepare).not.toHaveBeenCalled();
     change(document.querySelector(`[aria-label="核对全局问题${globalId}"]`)!, "员工核实全部原工作表与本次导入范围");
-    expect(button("确认导入 1 条").disabled).toBe(false); click(button("确认导入 1 条")); await settle();
+    expect(button("导入1条").disabled).toBe(false); click(button("导入1条")); await settle();
     const input = rt.prepare.mock.calls[0][0];
     expect(input.resolvedIssues).toEqual([{ issueId: globalId, resolution: "员工核实全部原工作表与本次导入范围" }, { issueId, resolution: "明确排除此行：原版本员工明确排除非本次报价" }]);
     expect(input.excludedRows).toEqual([{ logicalRowId: d.selectedVersion.rows[1].logicalRowId, reason: "原版本员工明确排除非本次报价", sourceRefs: refs }]);

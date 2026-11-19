@@ -1,0 +1,98 @@
+import fs from 'node:fs';
+import crypto from 'node:crypto';
+import assert from 'node:assert/strict';
+import ts from 'typescript';
+import { JSDOM } from 'jsdom';
+import React, { act } from 'react';
+import * as jsxRuntime from 'react/jsx-runtime';
+import * as XLSX from 'xlsx';
+const BASE = process.env.UPLOAD_MANAGE_DIR ?? new URL('./build/', import.meta.url).pathname.replace(/\/$/, '');
+const H = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+const dom = new JSDOM('<html><body><div id="root"></div></body></html>', { url: 'https://offline.invalid/', pretendToBeVisual: true });
+const w = dom.window;
+for (const k of ['window','document','sessionStorage','localStorage','File','Blob','Event','MouseEvent','HTMLElement','HTMLInputElement','HTMLSelectElement']) Object.defineProperty(globalThis, k, { value: k === 'window' ? w : k === 'document' ? w.document : w[k], configurable: true });
+Object.defineProperty(globalThis, 'navigator', { value: w.navigator, configurable: true });
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+const forbidden = () => { throw Error('REAL_NETWORK_OR_UNAPPROVED_WRITE_FORBIDDEN'); };
+globalThis.fetch = forbidden; w.fetch = forbidden; globalThis.XMLHttpRequest = class { constructor() { forbidden(); } };
+w.prompt = forbidden; w.confirm = () => true; globalThis.confirm = w.confirm;
+w.File.prototype.arrayBuffer = function () { return new Promise((resolve,reject) => { const reader = new w.FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(reader.error); reader.readAsArrayBuffer(this); }); };
+URL.createObjectURL = () => 'blob:private-offline'; URL.revokeObjectURL = () => {}; w.HTMLAnchorElement.prototype.click = () => {};
+const { createRoot } = await import('react-dom/client');
+const identity = { enterpriseId: 31, actorUserId: 7, key: 'native-round2' };
+const business = { storageScope: 'official:31:7', contextVerification: { identity: 'official:31:7', state: 'verified', authorizationVersion: 1, readVersion: 1 }, officialInventoryPermissions: { read: true, write: true, note: false, publish: false }, frontUser: { id: 7, role: 'admin' }, staffPrincipal: { frontendUserId: 7, enterpriseId: 31 }, merchantId: 0 };
+const material = id => ({ id, revision: 4, uploadBatchId: 81, channelId: 11, partNumber: id === 1 ? 'ONE' : 'TWO', brand: 'TI', qty: 100, dateCode: '24+', price: '0.25', currency: 'CNY', taxIncluded: false, leadTime: null, noteCount: 0, canAddNote: false, isMine: true, canDelete: true, canEdit: true, canEditMaterial: true, canViewSource: true, readOnly: false, company: { id: 801, name: '匿名客户' }, originalRecorderName: '匿名负责人', manualReferenceLcsc: null, manualReferenceIckey: null });
+let materials = [material(1), material(2)], calls = [], updateUnknown = false, deleteUnknown = false;
+const rpc = {
+ listTeamMaterials: { query: async input => { calls.push(['list',input]); return { customerId: 801, customerVersion: 1, bindingCount: 1, items: materials, total: materials.length, page: 1, pageSize: 20, pageCount: Math.ceil(materials.length/20), canWrite: true }; } },
+ getTeamMaterialForEdit: { query: async input => { calls.push(['get',input]); const found = materials.find(row => row.id === input.id); assert(found); return {...found}; } },
+ updateTeamMaterial: { mutateAsync: async input => { calls.push(['update',input]); if (updateUnknown) { updateUnknown = false; throw Error('NETWORK_UNKNOWN'); } const found = materials.find(row => row.id === input.id); assert(found); Object.assign(found,input,{revision:5}); return {item:{...found},idempotent:false}; } },
+ deleteMaterials: { mutateAsync: async input => { calls.push(['delete',input]); if (deleteUnknown) { deleteUnknown = false; throw Error('NETWORK_UNKNOWN'); } materials = materials.filter(row => !input.items.some(item => item.id === row.id)); return {deletedCount:input.items.length,skippedCount:0,results:input.items.map(item=>({id:item.id,success:true}))}; } },
+};
+for (const endpoint of [rpc.updateTeamMaterial,rpc.deleteMaterials]) endpoint.mutate = endpoint.mutateAsync;
+const endpoint = key => ({ ...rpc[key], useMutation: () => ({ mutateAsync: rpc[key]?.mutateAsync ?? forbidden, isPending: false }), useQuery: () => ({ data: undefined, isFetching:false, isError:false }) });
+const trpc = { useUtils: () => ({ client: { channelInventory: new Proxy(rpc,{get:(target,key)=>key in target ? endpoint(key) : {query:forbidden,mutate:forbidden}}) }, channelInventory: new Proxy({}, {get:()=>({invalidate:async()=>{}})}) }), channelInventory: new Proxy({}, {get:(_,key)=>endpoint(key)}), customerDemand:{suggestPartNumbers:{useQuery:()=>({data:[],isFetching:false,isError:false})}} };
+const div = ({children,className,style,...props}) => React.createElement('div',{className,style,...Object.fromEntries(Object.entries(props).filter(([key])=>key.startsWith('data-')||key.startsWith('aria-')))},children);
+const stableNativeUtils = trpc.useUtils(); trpc.useUtils = () => stableNativeUtils;
+const bridge = new Proxy({React,jsx:jsxRuntime,bridge_0_trpc:trpc,bridge_2_useLocation:()=>['/',()=>{}],bridge_21_Button:({children,variant,size,...props})=>React.createElement('button',props,children),bridge_3_useBusinessScope:()=>business,bridge_7_useAuth:()=>({}),bridge_8_useOptionalEnterpriseSession:()=>null},{get:(target,key)=>key in target?target[key]:div});
+function nativeFactory(file){const bytes=fs.readFileSync(file),a=ts.createSourceFile(file,bytes.toString(),99,true,1);assert.equal(a.parseDiagnostics.length,0);const found=[];function walk(n){if(ts.isVariableDeclaration(n)&&n.name?.text==='__CHANNEL_REFERENCE_HOST_EXPORTS')found.push(n);ts.forEachChild(n,walk);}walk(a);assert.equal(found.length,1);const code=found[0].initializer.getText(a);assert.equal(code.split('return i2(q3);').length,2);let capturedSupplyProps; const capture=props=>{capturedSupplyProps=props;return React.createElement('div');}; const cap=new Function('__customerLive','__capture',`return ${code.replace('return i2(q3);','return {BatchUpload:T6,Supply:B3,Inventory:mk,History:z3,instrumentSupply:()=>{du=__capture;},readReleased:__customerUploadRetry20261119_isReleasedOriginalRejection};')};`)(bridge,capture);return {cap,getSupplyProps:()=>capturedSupplyProps,sha256:H(bytes),factorySha256:H(code)};}
+const mount=document.getElementById('root');let root;
+const settle=async()=>{await act(async()=>{await new Promise(resolve=>setTimeout(resolve,35));});};
+const render=async(component,props)=>{root=createRoot(mount);await act(async()=>root.render(React.createElement(component,props)));await settle();};
+const close=async()=>{await act(async()=>root.unmount());mount.replaceChildren();sessionStorage.clear();};
+const click=async element=>{assert(element&&!element.disabled,'enabled control');await act(async()=>element.dispatchEvent(new w.MouseEvent('click',{bubbles:true})));await settle();};
+const button=(name,scope=document)=>[...scope.querySelectorAll('button')].find(element=>element.textContent.trim()===name);
+const fill=async(element,value)=>{assert(element,'input exists');await act(async()=>{Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element),'value').set.call(element,value);element.dispatchEvent(new w.Event(element.tagName==='SELECT'?'change':'input',{bubbles:true}));});await settle();};
+const passes=[];
+for(const module of JSON.parse(fs.readFileSync(BASE+'/modules.json'))){
+ const actual=nativeFactory(BASE+'/package/'+module.after);calls=[];console.log('BEGIN native batch',module.after);
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['型号','品牌','数量','报价','币种','DC'],['ONE','TI',4000,'0.25','CNY','24+'],['','ADI',20,'','CNY','25+'],['TWO','TI',30,'','CNY','24+']]),'首表');const bytes=XLSX.write(wb,{type:'array',bookType:'xlsx'});
+ let confirmation,viewed=false;
+ await render(actual.cap.BatchUpload,{skipIssueRows:true,channels:[{id:11,name:'原客户来源',active:true}],channelTotal:1,initialChannelId:11,enterpriseId:31,actorUserId:7,fixedSource:true,customerSourceReady:true,sourceLabel:'匿名客户',storageKeySuffix:'round2',dialogMode:'content',onClose:()=>{},onComplete:()=>{},isCurrent:()=>true,onDirtyChange:()=>{},onBusyChange:()=>{},onLoadMoreChannels:()=>{},loadingMoreChannels:false,onOriginalFilePersist:async()=>({sessionData:{customerId:801,history:{historyId:crypto.randomUUID()}},rows:[2,3,4].map(row=>({row,metadata:{logicalRowId:crypto.randomUUID(),rowId:crypto.randomUUID(),sourceRefs:[{sheetIndex:0,sheetName:'首表',rowNumber:row,originalRowHash:'b'.repeat(64)}],issues:[]}}))}),onCreateCustomerBatch:async(input,value)=>{calls.push(['prepare',input]);confirmation=value;return {id:81,channelId:11,batchCode:crypto.randomUUID(),revision:1};},onCreate:async(payload,requestId,id)=>{calls.push(['create',payload,requestId,id]);return {idempotent:false};},onViewResults:()=>{viewed=true;},renderSingleEntry:()=>null,renderParseEntry:()=>null});
+ const file=new w.File([bytes],'问题行原表.xlsx');const input=document.querySelector('[aria-label="上传库存表格"]');assert(input);Object.defineProperty(input,'files',{value:[file],configurable:true});await act(async()=>input.dispatchEvent(new w.Event('change',{bubbles:true})));await settle();
+ const currency=document.querySelector('[aria-label="明确确认本次核对币种为CNY"]');if(currency)await fill(currency,'CNY');
+ assert(document.body.textContent.includes('问题'));assert(!document.body.textContent.includes('注明原因'));
+ const importButton=[...document.querySelectorAll('button')].find(element=>/^导入\s*2\s*条$/.test(element.textContent.trim()));await click(importButton);
+ assert.equal(confirmation.confirmedDrafts.length,2);assert.equal(confirmation.excludedRows.length,1);assert.equal(confirmation.excludedRows[0].row,3);assert(confirmation.excludedRows[0].reason);assert.equal(calls.filter(call=>call[0]==='create').length,2);
+ assert(confirmation.confirmedDrafts.every(row=>row.draft.currency==='CNY'));assert(document.body.textContent.includes('跳过'));assert(!viewed);
+ await click(button('查看物料'));assert(viewed);
+ await close();
+ actual.cap.instrumentSupply();
+ let originalCalls=0,detailCalls=0,originalFailure=null;
+ rpc.customerSupplyContext={query:async()=>({customer:{id:801,name:'匿名客户',version:1,industryCode:'electronic_components',archivedAt:null},channel:{id:11,revision:4,active:true},canUpload:true,disabledReason:null})};
+ rpc.customerUploadOriginal={mutate:async input=>{originalCalls++;if(originalFailure)throw originalFailure;return {history:{historyId:crypto.randomUUID(),customerId:801,mode:input.mode,revision:1,latestVersionId:null,originalFile:{fileName:input.file.fileName}}};}};
+ rpc.customerUploadHistoryGet={query:async()=>{detailCalls++;return {originalSheets:[{sheetIndex:0,sheetName:'首表',rows:[]}]};}};
+ await render(actual.cap.Supply,{customerId:801,identity,isCurrent:()=>true,onClose:()=>{},onComplete:()=>{},onAuthorizationError:()=>{}});
+ let savedAttachment;await act(async()=>{savedAttachment=await actual.getSupplyProps().onOriginalFilePersist(file);});
+ let cachedAttachment;await act(async()=>{cachedAttachment=await actual.getSupplyProps().onOriginalFilePersist(file);});
+ assert.equal(originalCalls,1,'same cached File never resubmits original');assert.equal(detailCalls,1,'same cached File reuses existing evidence');assert.equal(cachedAttachment.rows,savedAttachment.rows);
+ originalFailure=Object.assign(new Error('原文件未保存：文件格式不支持'),{data:{code:'BAD_REQUEST'}});
+ const parseElement=actual.getSupplyProps().renderParseEntry({onDirtyChange:()=>{},onBusyChange:()=>{}});
+ let marked;await act(async()=>{try{await parseElement.props.persistOriginal(new w.File(['x'],'failed.csv'),'parse');}catch(error){marked=error;}});
+ assert.equal(actual.cap.readReleased(marked),true,'actual B3 emits the same WeakSet brand consumed by unchanged native ok');assert.equal(actual.cap.readReleased(originalFailure),false,'unreleased server rejection is never guessed safe');
+ passes.push({case:'native actual SheetJS skip and UUID queue plus actual B3 attachment cache and released-error brand',module:module.after,sha256:actual.sha256});await close();
+ console.log('BEGIN native inventory',module.after);materials=[material(1),material(2)];calls=[];updateUnknown=false;deleteUnknown=false;
+ await render(actual.cap.Inventory,{customerId:801,customerVersion:1,identity,enabled:true,isCurrent:()=>true,onOpenChange:()=>{},onAuthorizationError:()=>{}});
+ await click(document.querySelector('[aria-label="编辑库存：ONE"]'));
+ assert(!document.querySelector('.ci-host-material-dialog'),'inline editor is not a modal');
+ const qty=[...document.querySelectorAll('input')].find(element=>element.getAttribute('aria-label')?.includes('数量')&&!element.getAttribute('aria-label')?.includes('筛选'));
+ await fill(qty,'120');updateUnknown=true;await click(button('保存'));
+ const firstUpdate=calls.find(call=>call[0]==='update')[1];assert.equal(firstUpdate.expectedRevision,4);assert.equal(firstUpdate.expectedEnterpriseId,31);assert.equal(firstUpdate.qty,120);
+ const retryUpdate=button('重试保存')??button('按原请求重试')??button('重试');assert(retryUpdate,'unknown update offers original retry');await click(retryUpdate);
+ const updates=calls.filter(call=>call[0]==='update');assert.equal(updates.length,2);assert.deepEqual(updates[0][1],updates[1][1]);
+ passes.push({case:'native inline edit and unknown-receipt retries exact revision UUID payload',module:module.after,sha256:actual.sha256});
+ calls=[];const singleDelete=document.querySelector('[aria-label="删除库存：ONE"]');assert(singleDelete,'single delete control');deleteUnknown=true;await click(singleDelete);
+ const confirmDelete=button('删除')??button('确认删除');if(confirmDelete)await click(confirmDelete);
+ assert(calls.some(call=>call[0]==='delete'),'delete is sent after single confirmation');
+ const originalDelete=calls.find(call=>call[0]==='delete')[1];const retryDelete=button('重试删除')??button('按原请求重试')??button('重试');await click(retryDelete);
+ const deletes=calls.filter(call=>call[0]==='delete');assert.equal(deletes.length,2);assert.deepEqual(deletes[0][1],deletes[1][1]);assert.equal(originalDelete.items[0].id,1);assert(!document.querySelector('[aria-label="删除库存：ONE"]'));
+ passes.push({case:'native soft delete unknown receipt retries original tuple and only hides confirmed success',module:module.after,sha256:actual.sha256});await close();
+ materials=[material(1),{...material(2),canDelete:false}];calls=[];
+ await render(actual.cap.Inventory,{customerId:801,customerVersion:1,identity,enabled:true,isCurrent:()=>true,onOpenChange:()=>{},onAuthorizationError:()=>{}});
+ const denied=document.querySelector('[aria-label="删除库存：TWO"]');assert(!denied||denied.disabled,'delete does not inherit edit grant');
+ const selectable=[...document.querySelectorAll('tbody input[type="checkbox"]')].filter(element=>!element.disabled);assert.equal(selectable.length,1);await click(selectable[0]);assert([...document.querySelectorAll('button')].some(element=>element.textContent.trim().startsWith('删除所选')));
+ await click([...document.querySelectorAll('button')].find(element=>element.textContent.trim().startsWith('删除所选')));const bulkConfirm=button('删除')??button('确认删除');if(bulkConfirm)await click(bulkConfirm);
+ assert.equal(calls.filter(call=>call[0]==='delete')[0][1].items.length,1);assert(materials.some(row=>row.id===2));
+ passes.push({case:'native current-page selection respects independent canDelete grant',module:module.after,sha256:actual.sha256});await close();
+}
+const evidence={status:'passed',realNetworkCalls:0,businessWrites:0,businessWritesDuringProductionTests:0,mockedWritesOnly:true,count:passes.length,checks:passes};fs.mkdirSync(BASE+'/evidence',{recursive:true});fs.writeFileSync(BASE+'/evidence/native-tests.json',JSON.stringify(evidence,null,2)+'\n');console.log(JSON.stringify(evidence,null,2));w.close();

@@ -7,8 +7,8 @@ import type { ComponentProps } from "react";
 import type { BatchUpload, CustomerConfirmRows } from "../channelInventory/BatchUpload";
 import type { History, HistoryDetail } from "./customerUploadHistory";
 
-const rt = vi.hoisted(() => ({ context: vi.fn(), get: vi.fn(), prepare: vi.fn(), create: vi.fn(), batch: vi.fn(), upload: vi.fn(), close: vi.fn(), auth: vi.fn(), channel: vi.fn() }));
-vi.mock("wouter", () => ({ useLocation: () => ["/customers", vi.fn()] }));
+const rt = vi.hoisted(() => ({ context: vi.fn(), get: vi.fn(), prepare: vi.fn(), create: vi.fn(), batch: vi.fn(), upload: vi.fn(), close: vi.fn(), auth: vi.fn(), channel: vi.fn(), navigate: vi.fn() }));
+vi.mock("wouter", () => ({ useLocation: () => ["/customers", rt.navigate] }));
 vi.mock("../../../../../BusinessScope", () => ({ useBusinessScope: () => ({ storageScope: "customer-bound", officialInventoryPermissions: { read: true, write: true, note: true } }) }));
 vi.mock("../../../../../api/business-trpc", () => ({ trpc: { useUtils: () => ({ channelInventory: { listTeamMaterials: { invalidate: vi.fn() }, listChannels: { invalidate: vi.fn() }, listUploadBatches: { invalidate: vi.fn() } }, client: { channelInventory: { customerSupplyContext: { query: rt.context }, customerUploadHistoryGet: { query: rt.get }, customerUploadPrepareConfirmation: { mutate: rt.prepare }, createCustomerMaterial: { mutate: rt.create }, createCustomerUploadBatch: { mutate: rt.batch }, getChannel: { query: rt.channel } } } }) } }));
 vi.mock("../channelInventory/BatchUpload", () => ({ batchUploadDialogStyle: {}, BatchUpload: (props: ComponentProps<typeof BatchUpload>) => { rt.upload(props); return React.createElement("div", { "data-testid": "bound-upload" }, props.renderConfirmationDetails?.()); } }));
@@ -100,5 +100,45 @@ describe("customer-bound source without redundant type selection", () => {
     await act(async () => { await upload().onCreate({ channelId: 411, ...fields }, row.rowRequestId, 501); });
     const { channelId: _channelId, ...strictOriginal } = originalPayload;
     expect(rt.create.mock.calls[0][0]).toEqual(strictOriginal); expect(rt.prepare).not.toHaveBeenCalled(); expect(rt.batch).not.toHaveBeenCalled();
+  });
+});
+
+describe("customer skip boundary and explicit receipt navigation", () => {
+  it("merges a skipped problem's actual source with standard header exclusions without inventing issue evidence", async () => {
+    const d = detail(); const file = new File(["型号,品牌\nONE,TI"], "source.csv"); rt.get.mockResolvedValue(d); render(d, file); await settle();
+    expect(upload().skipIssueRows).toBe(true); expect(upload().onFinish).toBeUndefined();
+    await act(async () => { await upload().onOriginalFilePersist!(file); });
+    const c = confirmation(d); const metadata = { logicalRowId: randomUUID(), rowId: randomUUID(), issues: [], sourceRefs: [{ sheetIndex: 0, sheetName: "首表", rowNumber: 3, originalRowHash: "d".repeat(64) }] };
+    c.excludedRows = [{ row: 3, reason: "跳过问题行：数量格式无效", metadata }];
+    await act(async () => { await expect(upload().onCreateCustomerBatch!({ fileName: file.name, totalRows: 1, requestId: c.batchRequestId }, c)).rejects.toThrow("capture prepare"); });
+    const dto = rt.prepare.mock.calls[0][0]; expect(dto.confirmedRows).toHaveLength(1); expect(dto.excludedRows).toHaveLength(2);
+    expect(dto.excludedRows[1]).toEqual({ logicalRowId: metadata.logicalRowId, reason: c.excludedRows[0].reason, sourceRefs: metadata.sourceRefs });
+    expect(dto.resolvedIssues).toEqual([]); expect(metadata.issues).toEqual([]); expect(rt.create).not.toHaveBeenCalled();
+  });
+
+  it("refuses zero valid rows before prepare, batch creation or any follow-up permission request", async () => {
+    render(detail()); await settle(); const before = rt.context.mock.calls.length;
+    const c = confirmation(detail()); c.confirmedDrafts = [];
+    await act(async () => { await expect(upload().onCreateCustomerBatch!({ fileName: "source.csv", totalRows: 0, requestId: c.batchRequestId }, c)).rejects.toThrow("没有有效行"); });
+    expect(rt.context).toHaveBeenCalledTimes(before); expect(rt.prepare).not.toHaveBeenCalled(); expect(rt.batch).not.toHaveBeenCalled(); expect(rt.create).not.toHaveBeenCalled();
+  });
+
+  it.each(["missing-source", "blank-action"])("rejects %s on excluded rows instead of losing their evidence", async kind => {
+    const d = detail(); rt.get.mockResolvedValue(d); render(d); await settle(); const c = confirmation(d);
+    c.excludedRows = [{ row: 3, reason: kind === "blank-action" ? "" : "用户移除", metadata: { logicalRowId: randomUUID(), issues: [], sourceRefs: kind === "missing-source" ? [] : [{ sheetIndex: 0, sheetName: "首表", rowNumber: 3, originalRowHash: "d".repeat(64) }] } }];
+    await act(async () => { await expect(upload().onCreateCustomerBatch!({ fileName: "source.csv", totalRows: 1, requestId: c.batchRequestId }, c)).rejects.toThrow("排除行缺少真实来源证据或操作记录"); });
+    expect(rt.prepare).not.toHaveBeenCalled(); expect(rt.batch).not.toHaveBeenCalled(); expect(rt.create).not.toHaveBeenCalled();
+  });
+
+  it.each(["uniform-batch", "mixed-batches", "unknown", "wrong-receipt"])("views only acknowledged results using verified %s attribution", async kind => {
+    render(detail()); await settle();
+    const entries = [501, kind === "mixed-batches" ? 502 : 501].map((batchId, i) => ({ row: i + 2, requestId: randomUUID(), uploadBatchId: batchId,
+      payload: { ...fields, channelId: 411 }, status: "success" as const,
+      receipt: { item: { id: i + 901, channelId: 411, uploadBatchId: batchId }, idempotent: false, customerId: 801, channelId: 411, uploadBatchId: batchId } }));
+    if (kind === "wrong-receipt") entries[0].receipt.item.uploadBatchId = 999;
+    const supplied = kind === "unknown" ? entries.map((entry, i) => i ? { ...entry, status: "unknown" as const, receipt: undefined } : entry) : entries;
+    expect(rt.navigate).not.toHaveBeenCalled(); act(() => upload().onViewResults!(supplied));
+    if (kind === "unknown" || kind === "wrong-receipt") { expect(rt.navigate).not.toHaveBeenCalled(); expect(rt.close).not.toHaveBeenCalled(); }
+    else { expect(rt.navigate).toHaveBeenCalledWith(`/channel-inventory?supplyChannelId=411&supplyTab=materials${kind === "uniform-batch" ? "&uploadBatchId=501" : ""}`); expect(rt.close).toHaveBeenCalledTimes(1); }
   });
 });

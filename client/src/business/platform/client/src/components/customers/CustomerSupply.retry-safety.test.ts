@@ -16,6 +16,7 @@ vi.mock("../../../../../api/business-trpc", () => ({ trpc: { useUtils: () => ({ 
 vi.mock("../channelInventory/BatchUpload", () => ({ batchUploadDialogStyle: {}, BatchUpload: (props: ComponentProps<typeof BatchUpload>) => { rt.upload(props); return React.createElement("div"); } }));
 import { CustomerSupplyUploadDialog } from "./CustomerSupplyUploadDialog";
 import { customerSupplySessionSuffix } from "./customerSupply";
+import { __customerUploadRetry20261119_isReleasedOriginalRejection } from "./customerUploadOriginalRetry";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const identity = { enterpriseId: 31, actorUserId: 7, key: "retry-safety-auth" };
@@ -96,7 +97,11 @@ describe("native original upload retry safety", () => {
   });
   it("releases only a real BAD_REQUEST with exact native notSaved prefix and nonempty detail", async () => {
     await setup(); const run = await started(); const error = Object.assign(new Error("原文件未保存：文件格式不支持"), { data: { code: "BAD_REQUEST" } });
-    run.fail(error); expect(await run.outcome).toEqual({ error }); expect(sessionStorage.getItem(key)).toBeNull();
+    run.fail(error); const outcome = await run.outcome;
+    expect(outcome).toMatchObject({ error: expect.objectContaining({ message: error.message }) });
+    expect(__customerUploadRetry20261119_isReleasedOriginalRejection("error" in outcome ? outcome.error : null)).toBe(true);
+    expect(__customerUploadRetry20261119_isReleasedOriginalRejection(error)).toBe(false);
+    expect(sessionStorage.getItem(key)).toBeNull();
     rt.original.mockResolvedValue({ history: history() }); await send(file(), "parse");
     expect(rt.original.mock.calls[1][0].requestId).not.toBe(JSON.parse(run.raw).requestId);
   });

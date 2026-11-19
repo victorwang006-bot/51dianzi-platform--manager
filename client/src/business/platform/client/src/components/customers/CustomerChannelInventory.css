@@ -1,12 +1,32 @@
-/* The ci-host / ci-flat-view classes use the existing Host's compact typography,
- * table, reference and edit/more rules. Column widths come only from its model. */
+/* Retain the Host's compact table/reference typography and original column model. */
 .customer-channel-inventory { box-sizing: border-box; margin-top: 16px; width: 100%; max-width: 100%; min-width: 0; }
 .customer-channel-inventory .ci-toolbar { flex-wrap: wrap; }
 .customer-channel-inventory .ci-filter-count { margin-left: auto; }
 .customer-channel-inventory .ci-empty { white-space: normal; }
 .customer-channel-inventory .ci-pagination { flex-wrap: wrap; }
-.customer-channel-settings { margin-top: 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.customer-channel-inventory .ci-customer-selection { padding-inline: 8px; text-align: center; }
+.customer-channel-inventory .ci-customer-selection input { width: 14px; height: 14px; accent-color: #2563eb; cursor: pointer; }
+.customer-channel-inventory .ci-customer-selection input:disabled { cursor: not-allowed; }
+.customer-channel-inventory .ci-customer-delete { color: #b42318; }
+.customer-channel-inventory .ci-customer-delete:disabled { color: #98a2b3; }
+.customer-channel-inventory .ci-customer-edit-row > td { padding: 0; white-space: normal; }
+.customer-channel-inventory .ci-customer-inline-editor { padding: 12px 16px; border-block: 1px solid #dbeafe; background: #f8fbff; }
+.customer-channel-inventory .ci-customer-edit-fields { border: 0; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(180px, 2fr) repeat(3, minmax(120px, 1fr)); gap: 10px; min-width: 0; }
+.customer-channel-inventory .ci-customer-edit-fields .ci-field { min-width: 0; }
+.customer-channel-inventory .ci-customer-edit-fields input,
+.customer-channel-inventory .ci-customer-edit-fields select { width: 100%; box-sizing: border-box; min-height: 32px; }
+.customer-channel-inventory .ci-customer-edit-extra { margin-top: 10px; }
+.customer-channel-inventory .ci-customer-edit-extra > summary { cursor: pointer; color: #475467; font-size: 12px; width: fit-content; }
+.customer-channel-inventory .ci-customer-edit-extra[open] > summary { margin-bottom: 10px; }
+.customer-channel-inventory .ci-customer-edit-footer,
+.customer-channel-inventory .ci-customer-delete-buttons { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.customer-channel-inventory .ci-customer-edit-footer small { color: #667085; }
+.customer-channel-inventory .ci-customer-delete-status { margin-bottom: 10px; }
+.customer-channel-inventory .ci-customer-delete-status p { margin: 4px 0; white-space: normal; }
+.customer-channel-inventory .ci-customer-delete-review { padding: 10px 12px; border: 1px solid #fecaca; border-radius: 6px; background: #fffafa; }
+.customer-channel-inventory .ci-customer-delete-models { color: #667085; max-height: 54px; overflow-y: auto; overflow-wrap: anywhere; }
 @media (max-width: 640px) {
   .customer-channel-inventory .ci-toolbar-search, .customer-channel-inventory .ci-brand-input { flex: 1 1 150px; }
   .customer-channel-inventory .ci-filter-count { width: 100%; margin-left: 0; }
+  .customer-channel-inventory .ci-customer-edit-fields { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
 }

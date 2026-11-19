@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 const runtime = vi.hoisted(() => ({
-  query: vi.fn(), detail: vi.fn(), update: vi.fn(), lookup: vi.fn(), invalidate: vi.fn(),
+  query: vi.fn(), detail: vi.fn(), update: vi.fn(), remove: vi.fn(), lookup: vi.fn(), invalidate: vi.fn(),
   authError: vi.fn(), panel: null as any, publish: null as any,
   native: { read: true, write: true, note: true, publish: true, authorizationVersion: "native-v1" }, role: "user",
   scope: { merchantId: 55, storageScope: "scope-7-31", staffPrincipal: { frontendUserId: 7, enterpriseId: 31 },
@@ -19,7 +19,7 @@ vi.mock("../../../../../api/business-trpc", () => {
       expect(merchantId).toBe(runtime.scope.merchantId);
       return { channelReference: { lookup: { query: runtime.lookup } } };
     },
-    trpc: { useUtils: () => utils, channelInventory: { updateTeamMaterial: { useMutation: () => ({ mutateAsync: runtime.update }) } } },
+    trpc: { useUtils: () => utils, channelInventory: { updateTeamMaterial: { useMutation: () => ({ mutateAsync: runtime.update }) }, deleteMaterials: { useMutation: () => ({ mutateAsync: runtime.remove }) } } },
   };
 });
 // Keep materialFormFrom, the shared editor and copy-model helpers real; only
@@ -103,11 +103,11 @@ describe("customer-bound channel inventory", () => {
     expect(runtime.query).toHaveBeenCalledTimes(1);
     expect(runtime.query.mock.calls[0][0]).toEqual({ expectedEnterpriseId: 31, expectedActorUserId: 7, customerId: 801, partNumber: undefined, brand: undefined, page: 1, pageSize: 20 });
     expect(runtime.query.mock.calls[0][1]).toEqual({ signal: expect.any(AbortSignal) });
-    expect([...host.querySelectorAll("th")].map(th => th.textContent)).toEqual(["型号", "品牌", "负责人", "来源客户", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "操作"]);
-    expect(host.textContent).toContain("2 个已确认可读渠道"); expect(host.textContent).toContain("SAME-MODEL"); expect(host.textContent).toContain("¥0"); expect(host.textContent).toContain("未税");
+    expect([...host.querySelectorAll("th")].map(th => th.textContent)).toEqual(["", "型号", "品牌", "负责人", "来源客户", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "操作"]);
+    expect(host.textContent).toContain("共 1 条"); expect(host.textContent).toContain("SAME-MODEL"); expect(host.textContent).toContain("¥0"); expect(host.textContent).toContain("未税");
     expect(host.querySelector("td.ci-material-qty-col")?.textContent).toBe("0");
     expect(host.querySelector("td.ci-material-source-col")?.textContent).toBe("客户公司");
-    expect([...host.querySelectorAll(".ci-row-actions button")].map(item => item.textContent)).toEqual(["编辑", "更多"]);
+    expect([...host.querySelectorAll(".ci-row-actions button")].map(item => item.textContent)).toEqual(["编辑", "删除", "更多"]);
   });
   it("removes the fixed filter explanation node without losing search, refresh or pagination", async () => {
     await render();
@@ -160,8 +160,8 @@ describe("customer-bound channel inventory", () => {
     expect(host.textContent).not.toContain("SAME-MODEL"); expect(host.textContent).not.toContain("暂无库存");
     expect(host.querySelector("tbody")?.children).toHaveLength(0);
     expect(host.querySelector("tbody")?.textContent).toBe(""); expect(host.querySelector("tbody .ci-empty")).toBeNull();
-    expect(host.textContent).toContain("0 条库存 · 0 个已确认可读渠道");
-    expect(host.querySelectorAll("th")).toHaveLength(9);
+    expect(host.textContent).toContain("共 0 条");
+    expect(host.querySelectorAll("th")).toHaveLength(10);
     expect(button("搜索").disabled).toBe(false); expect(button("刷新库存").disabled).toBe(false);
     expect(runtime.query).toHaveBeenCalledTimes(1);
     expect(runtime.query.mock.calls[0][0]).toMatchObject({ customerId: 801, expectedEnterpriseId: 31, expectedActorUserId: 7 });
@@ -169,7 +169,7 @@ describe("customer-bound channel inventory", () => {
     expect(host.textContent).toContain("已确认绑定渠道暂无符合筛选条件");
     expect(host.textContent).not.toContain("尚无已确认的供货渠道绑定");
     expect(host.textContent).not.toContain("SAME-MODEL"); expect(host.querySelectorAll("tbody tr")).toHaveLength(1);
-    expect(host.textContent).toContain("0 条库存 · 2 个已确认可读渠道");
+    expect(host.textContent).toContain("共 0 条");
     expect(runtime.query).toHaveBeenCalledTimes(2);
     expect(runtime.query.mock.calls.every(([input]) => input.customerId === 801 && !input.channelId && !input.customerName)).toBe(true);
     expect(runtime.authError).not.toHaveBeenCalled();
@@ -234,6 +234,6 @@ it("keeps inventory query/proof guards and all non-zero-binding status branches 
   expect(source).toContain("正在核验客户库存读取权限…"); expect(source).toContain("正在读取客户渠道库存…");
   expect(source).toContain('className="ci-empty ci-host-error" role="alert">{error}');
   expect(source).toContain("客户库存范围尚未确认。"); expect(source).toContain("已确认绑定渠道暂无符合筛选条件的库存。");
-  expect(source).toContain('disabled={!readable || editBusy || retryLocked}>搜索');
-  expect(source).toContain('disabled={!readable || editBusy || retryLocked} onClick={() => void refresh()}>刷新库存');
+  expect(source).toContain('disabled={!readable || editBusy || retryLocked || deleteLocked}>搜索');
+  expect(source).toContain('disabled={!readable || editBusy || retryLocked || deleteLocked} onClick={() => void refresh()}>刷新库存');
 });
