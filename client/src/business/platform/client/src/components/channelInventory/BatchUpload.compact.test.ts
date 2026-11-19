@@ -70,6 +70,8 @@ describe("customer compact upload", () => {
     await upload([["型号", "品牌", "数量", "报价", "币种"], ["ONE", "TI", "4,000", "0.125", "人民币"]]);
     expect(document.querySelector(".ci-batch-preview")).not.toBeNull();
     expect(document.body.textContent).not.toContain("预览并校验");
+    expect(document.querySelector(".ci-batch-file strong")?.textContent).toContain("compact.xlsx");
+    expect(document.querySelector(".ci-batch-file p")).toBeNull(); expect(document.querySelector(".ci-batch-preview-note")).toBeNull();
     expect(Array.from(document.querySelectorAll("summary")).some(item => item.textContent === "调整列匹配")).toBe(true);
     expect(document.querySelector('[aria-label="明确确认本次核对币种为CNY"]')).toBeNull();
     expect(button("确认导入 1 条").disabled).toBe(false);
@@ -81,10 +83,13 @@ describe("customer compact upload", () => {
     expect(create.mock.calls[0][2]).toBe(81); expect(parse).not.toHaveBeenCalled();
   });
 
-  it.each(["no-column", "blank", "USD"])("requires explicit CNY selection for %s and never converts the original price", async currency => {
+  it.each(["no-column", "blank", "USD", "unknown"])("requires explicit CNY selection for %s and never converts the original price", async currency => {
     render(); await upload(currency === "no-column" ? [["型号", "品牌", "报价"], ["ONE", "TI", "12.345"]] : [["型号", "品牌", "报价", "币种"], ["ONE", "TI", "12.345", currency === "blank" ? "" : currency]]);
     const control = required(document.querySelector<HTMLSelectElement>('[aria-label="明确确认本次核对币种为CNY"]'));
     expect(control.tagName).toBe("SELECT"); expect(control.value).toBe(""); expect(button("确认导入 1 条").disabled).toBe(true);
+    expect(control.closest("label")?.querySelector("span")?.textContent).toBe("币种");
+    expect(Array.from(control.options).map(option => option.textContent)).toEqual(["请选择", "CNY"]); expect(control.closest("label")?.querySelector("small")).toBeNull();
+    for (const copy of ["明确本次候选币种（不自动换算外币）", "尚未确认，请核对原币种和报价", "已核对，本次候选币种为 CNY", "只明确币种，不修改报价数字", "优先展示需要核对的行（最多100条）", "已自动识别列并保留原表行号"]) expect(document.body.textContent).not.toContain(copy);
     expect(document.querySelector('[role="status"]')?.textContent).toContain("CNY");
     click(button("确认导入 1 条")); expect(createCustomer).not.toHaveBeenCalled();
     select("明确确认本次核对币种为CNY", "CNY"); expect(button("确认导入 1 条").disabled).toBe(false);
@@ -130,11 +135,22 @@ describe("customer compact upload", () => {
     const issue = { issueId: "source-2", field: "source", message: "来源精度问题", resolved: false, resolution: null };
     persistOriginal.mockResolvedValue({ sessionData: { history: { historyId: 91 } }, rows: [{ row: 2, metadata: metadata(2, [issue]) }] });
     const details = vi.fn(() => React.createElement("p", { "data-testid": "global-source-scope" }, "原全局问题及非首表范围仍需确认"));
-    render({ customerSourceReady: false, renderConfirmationDetails: details }); await upload([["型号", "品牌"], ["ONE", "TI"]]);
+    render({ customerSourceReady: false, customerSourceDisabledReason: "请解决全局问题：原全表范围待明确", renderConfirmationDetails: details }); await upload([["型号", "品牌"], ["ONE", "TI"]]);
     select("明确确认本次核对币种为CNY", "CNY");
     expect(document.querySelector('[data-testid="global-source-scope"]')).not.toBeNull(); expect(button("确认导入 1 条").disabled).toBe(true);
-    expect(document.querySelector('[role="status"]')?.textContent).toContain("来源、工作表范围及全局问题"); expect(document.body.textContent).toContain("来源或其他问题尚未填写核实依据");
+    expect(document.querySelector('[role="status"]')?.textContent).toContain("请解决全局问题：原全表范围待明确"); expect(document.body.textContent).toContain("来源或其他问题尚未填写核实依据");
     input("核对问题source-2", "已核实原表文本"); expect(button("确认导入 1 条").disabled).toBe(true); expect(createCustomer).not.toHaveBeenCalled();
+  });
+
+  it.each(["真实来源只读：没有库存写权限", "请明确确认本次仅导入首工作表。", "请解决全局问题：报价范围未核实"])("shows the specific source blocker %s without a blanket reason", async reason => {
+    render({ customerSourceReady: false, customerSourceDisabledReason: reason }); await upload([["型号", "品牌", "币种"], ["ONE", "TI", "CNY"]]);
+    expect(button("确认导入 1 条").disabled).toBe(true); expect(document.querySelector('[role="status"]')?.textContent).toBe(`暂不能导入：${reason}`);
+    expect(document.body.textContent).not.toContain("客户来源、工作表范围及全局问题"); click(button("确认导入 1 条")); expect(createCustomer).not.toHaveBeenCalled(); expect(create).not.toHaveBeenCalled();
+  });
+
+  it("still blocks an unwritable selected source even when customer readiness is true", async () => {
+    render({ channels: [{ id: 11, name: "来源只读", active: false }], customerSourceReady: true }); await upload([["型号", "品牌", "币种"], ["ONE", "TI", "CNY"]]);
+    expect(button("确认导入 1 条").disabled).toBe(true); expect(document.querySelector('[role="status"]')?.textContent).toContain("所选来源不可写或已停用"); expect(createCustomer).not.toHaveBeenCalled();
   });
 
   it("shows explicit currency confirmation for a parse-result currency issue without removing its resolution control", async () => {
@@ -193,6 +209,7 @@ describe("customer compact upload", () => {
     expect(body.querySelector("tr td")?.textContent).toBe("102");
     expect(isCollapsed(required(document.querySelector('[aria-label="核对第102行品牌"]')))).toBe(false);
     expect(body.querySelectorAll("tr")).toHaveLength(100); expect(button("确认导入 101 条").disabled).toBe(true);
+    expect(document.querySelector(".ci-batch-preview-note")).toBeNull();
   });
 
   it("submits the exact server-prepared canonical entries rather than rebuilding local payloads", async () => {

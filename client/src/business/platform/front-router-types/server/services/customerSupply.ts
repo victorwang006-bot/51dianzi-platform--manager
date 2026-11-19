@@ -115,8 +115,7 @@ export function createCustomerSupplyService(deps: ChannelInventoryServiceDepende
     const adapter: SqlDatabase = { execute: q => tx.execute(q), transaction: fn => fn(tx) };
     const inventory = createChannelInventoryService({ getDb: async () => adapter, registerTeamRecord: deps.registerTeamRecord });
     if (!link) {
-      const sourceProfile = input.sourceProfile;
-      if (!sourceProfile) return fail("PRECONDITION_FAILED", "首次上传请明确确认渠道类型，或选择已有渠道");
+      const sourceProfile = input.sourceProfile ?? { type: 'other' as const };
       let channelId = sourceProfile.existingChannelId;
       if (channelId !== undefined) {
         const chosen = await writeFence(tx, scope, channelId);

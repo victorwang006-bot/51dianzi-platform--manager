@@ -144,7 +144,7 @@ describe("issue transport and explicit exclusion regressions", () => {
     await settle(); expect(document.body.textContent).toContain("解析结果核对");
     if (manual) change(document.querySelector(`[aria-label="核对问题${issueId}"]`)!, "人工核对为外币，不作换算");
     click(document.querySelector('[aria-label="移除原表第3行"]')!);
-    change(document.querySelector('[aria-label="核对客户来源类型"]')!, "trade");
+    expect(document.querySelector('[aria-label="核对客户来源类型"]')).toBeNull();
     click(button("确认导入 1 条")); await settle();
     const input = rt.prepare.mock.calls[0][0];
     expect(input.resolvedIssues).toEqual([{ issueId, resolution: manual ? "人工核对为外币，不作换算" : "明确排除此行：原报价币种无法核实，本次明确不入库" }]);

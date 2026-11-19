@@ -42,6 +42,7 @@ type Props = {
   /** Customer-only preparation: no virtual channel/placeholder material is ever queued. */
   onCreateCustomerBatch?: (input: Omit<UploadBatchInput, "channelId">, confirmation?: CustomerConfirmRows) => Promise<UploadBatchReceipt & { channelId: number }>;
   customerSourceReady?: boolean;
+  customerSourceDisabledReason?: string;
   onOriginalFilePersist?: (file: File) => Promise<{ sessionData: unknown; rows: { row: number; metadata: unknown }[] }>;
   initialRows?: { row: number; draft: Draft; metadata: unknown }[];
   initialFile?: File;
@@ -413,7 +414,7 @@ function BatchUploadSession(props: Props) {
   const completed = entries.filter(e => e.status === "success").length;
   const hasQueue = entries.length > 0;
   const modeLocked = busy || loading || parseBusy || hasQueue || !!preparing || !!savedPreparation || !!saved || restoreBlocked;
-  const confirmDisabledReason = !current() ? "客户或授权已变化，请重新核验" : modeLocked ? "请先完成或恢复原批次" : !sourceReady ? "请先核实客户来源、工作表范围及全局问题" : mappingErrors.length ? mappingErrors.join("；") : !rows.length ? "没有可导入的候选行" : bad.length ? `还有 ${bad.length} 条需要核对：${bad[0].errors.join("；")}` : "";
+  const confirmDisabledReason = !current() ? "客户或授权已变化，请重新核验" : modeLocked ? "请先完成或恢复原批次" : !sourceReady ? props.customerSourceDisabledReason || (selected && !selected.active ? "所选来源不可写或已停用，请核实上传权限" : "请选择有权访问且启用的已加载渠道") : mappingErrors.length ? mappingErrors.join("；") : !rows.length ? "没有可导入的候选行" : bad.length ? `还有 ${bad.length} 条需要核对：${bad[0].errors.join("；")}` : "";
   const changeMapping = (field: keyof Draft, column: number) => {
     setMapping(value => ({ ...value, [field]: column }));
     setReviewedMapping(value => [...value, field]);
@@ -838,7 +839,7 @@ function BatchUploadSession(props: Props) {
         {step === 3 && (
           <>
             {customerMode && entryMode === "table" ? <>
-              <div className="ci-batch-file"><Icon kind="file" /><div><strong>{name}</strong><p>已自动识别列并保留原表行号；请核对候选，不猜品牌、价格或币种。</p></div></div>
+              <div className="ci-batch-file"><Icon kind="file" /><div><strong>{name}</strong></div></div>
               {mappingNeedsReview.length ? <section aria-label="需要调整的列匹配"><p className="ci-error">以下列无法识别或存在歧义，请调整匹配；缺品牌也可批量补齐空白。</p>{renderMapping(mappingNeedsReview)}</section> : null}
               <details className="ci-batch-note"><summary>调整列匹配</summary>{renderMapping(fields.filter(field => !mappingNeedsReview.some(item => item.key === field.key)))}<p>未匹配列不会导入。调整匹配将重新生成候选，请重新核对币种和编辑值。</p></details>
             </> : null}
@@ -854,12 +855,11 @@ function BatchUploadSession(props: Props) {
               )}
             </div>
             {historyOptIn && customerMode && (currencyConfirmed || rows.some(row => row.currencyNeedsConfirmation || row.draft.currency.trim() !== "CNY")) ? <label className="ci-field">
-              <span>明确本次候选币种（不自动换算外币）</span>
+              <span>币种</span>
               <select className="ci-batch-control" aria-label="明确确认本次核对币种为CNY" value={currencyConfirmed ? "CNY" : ""} onChange={event => {
                 const confirmed = event.target.value === "CNY"; setCurrencyConfirmed(confirmed);
                 if (confirmed) setEdits(value => ({ ...value, ...Object.fromEntries(rows.map(row => [row.row, { ...row.draft, currency: "CNY" }])) }));
-              }}><option value="">尚未确认，请核对原币种和报价</option><option value="CNY">已核对，本次候选币种为 CNY</option></select>
-              <small>只明确币种，不修改报价数字；如原报价为外币，请人工核实人民币报价后编辑，无法核实请排除。</small>
+              }}><option value="">请选择</option><option value="CNY">CNY</option></select>
             </label> : historyOptIn && !customerMode ? <label className="ci-dialog-note"><input type="checkbox" aria-label="明确确认本次核对币种为CNY" checked={currencyConfirmed} onChange={e => setCurrencyConfirmed(e.target.checked)} /> 我已核对本次所选物料币种为CNY（不自动换算外币）；未知数量、价格和税务口径请核对后编辑，或注明问题排除。</label> : null}
             {customerMode && historyOptIn && rows.some(row => !row.draft.brand.trim()) ? <div className="ci-batch-channel">
               <label className="ci-field"><span>批量补齐空白品牌</span><input aria-label="空白行品牌" maxLength={64} value={blankBrand} onChange={event => setBlankBrand(event.target.value)} /></label>
@@ -944,9 +944,9 @@ function BatchUploadSession(props: Props) {
                 </tbody>
               </table>
             </div>
-            <p className="ci-batch-preview-note">
-              {entryMode === "single" ? "确认后新增此条物料。" : customerMode ? `优先展示需要核对的行（最多100条），确认后导入全部 ${rows.length} 条候选。` : `预览前100条，确认后新增全部 ${rows.length} 条。`}
-            </p>
+            {!customerMode ? <p className="ci-batch-preview-note">
+              {entryMode === "single" ? "确认后新增此条物料。" : `预览前100条，确认后新增全部 ${rows.length} 条。`}
+            </p> : null}
           </>
         )}
         {step === 4 && (

@@ -31,7 +31,7 @@ import { createCustomerSupplyService } from "../client/src/business/platform/fro
 import { createChannelTeamInventoryService } from "../client/src/business/platform/front-router-types/server/services/channelTeamInventory";
 import { createChannelInventorySourceService } from "../client/src/business/platform/front-router-types/server/services/channelInventorySource";
 import { createChannelInventoryCollaborationService } from "../client/src/business/platform/front-router-types/server/services/channelInventoryCollaboration";
-import { ChannelInventoryError, type ChannelInventoryScope, type SqlDatabase, type SqlExecutor, type RegisterTeamRecord } from "../client/src/business/platform/front-router-types/server/services/channelInventory";
+import { ChannelInventoryError, channelInventoryPayloadHash, type ChannelInventoryScope, type SqlDatabase, type SqlExecutor, type RegisterTeamRecord } from "../client/src/business/platform/front-router-types/server/services/channelInventory";
 
 const { DatabaseSync } = createRequire(import.meta.url)("node:sqlite") as typeof import("node:sqlite");
 const dialect = new MySqlDialect();
@@ -83,7 +83,8 @@ beforeEach(() => {
     CREATE TABLE channel_inventory_collaboration_notes (enterpriseId INTEGER, materialId INTEGER);
     CREATE TABLE channel_inventory_manual_references (enterpriseId INTEGER, dataOwnerUserId INTEGER, materialId INTEGER, manualReferenceLcsc TEXT, manualReferenceIckey TEXT, updatedByUserId INTEGER, updatedByAdminAccountId INTEGER, updatedAt TEXT);
     CREATE TABLE crm_customers (id INTEGER, enterpriseId INTEGER, assignedUserId INTEGER, name TEXT, industryCode TEXT, version INTEGER, archivedAt TEXT);
-    CREATE TABLE crm_customer_supply_channels (enterpriseId INTEGER, dataOwnerUserId INTEGER, customerId INTEGER, inventoryResponsibleUserId INTEGER, channelId INTEGER, customerVersionAtBind INTEGER, firstRequestId TEXT, schemaVersion INTEGER);
+    CREATE TABLE crm_customer_supply_channels (enterpriseId INTEGER, dataOwnerUserId INTEGER, customerId INTEGER, inventoryResponsibleUserId INTEGER, channelId INTEGER, customerVersionAtBind INTEGER, firstRequestId TEXT, schemaVersion INTEGER,
+      UNIQUE (enterpriseId, dataOwnerUserId, customerId, inventoryResponsibleUserId), UNIQUE (enterpriseId, dataOwnerUserId, channelId));
     CREATE TABLE crm_customer_contact_primary (enterpriseId INTEGER, customerId INTEGER, primaryContactId TEXT, legacyContactPresent INTEGER);
     CREATE TABLE crm_customer_contacts (customerId INTEGER, contactName TEXT, phone TEXT, isPrimary INTEGER);
     INSERT INTO enterprises VALUES (1,99,99),(2,199,199);
@@ -246,8 +247,10 @@ describe("customer supply empty-channel preparation (offline native services)", 
   it.each(["customerId=2", "inventoryResponsibleUserId=20", "enterpriseId=2", "dataOwnerUserId=199"])("another binding %s is not used, treated only as genuinely unbound", async replacement => {
     const batch = await prepare(); sqlite.exec(`UPDATE crm_customer_supply_channels SET ${replacement}`); queries = [];
     expect(await readContext()).toMatchObject({ channel: null, canUpload: true }); expect(emptyProofs()).toHaveLength(0);
-    await expect(service.createCustomerMaterial(scope, rowInput(batch.id))).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    await expect(service.createCustomerMaterial(scope, rowInput(batch.id))).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(count("channel_inventory_materials")).toBe(0);
+    expect(count("channel_inventory_channels")).toBe(1); expect(count("crm_customer_supply_channels")).toBe(1);
+    expect(rollbacks).toBe(1); // newly attempted other source joins the failed row transaction
   });
   it("SQL revalidates persisted binding rather than trusting the earlier link read", async () => {
     await prepare(); const execute = tx.execute;
@@ -305,5 +308,185 @@ describe("customer supply empty-channel preparation (offline native services)", 
     expect(originalTry.tryBlock.statements[2].getText(source)).toContain("ownEmptyUploadChannel");
     expect(source.statements.filter(n => ts.isFunctionDeclaration(n) && n.name?.text === "ownEmptyUploadChannel")).toHaveLength(1);
     expect(commits).toBe(0);
+  });
+});
+
+const automaticBatchInput = () => {
+  const { sourceProfile: _profile, ...input } = batchInput;
+  return input;
+};
+const automaticMaterialInput = () => {
+  const { uploadBatchId: _batch, ...input } = rowInput(1);
+  return input;
+};
+const sourceRows = () => sqlite.prepare("SELECT * FROM channel_inventory_channels ORDER BY id").all();
+const linkRows = () => sqlite.prepare("SELECT * FROM crm_customer_supply_channels ORDER BY channelId").all();
+const noCustomerOrChannelUpdates = () => expect(queries.some(q => /^\s*UPDATE\s+(crm_customers|crm_customer_contact\w*|channel_inventory_channels)\b/.test(q.sql))).toBe(false);
+
+describe("customer-bound uploads without sourceProfile (offline native services)", () => {
+  it("first batch defaults only its new source to other, with null contact copies and original request UUID", async () => {
+    sqlite.exec("INSERT INTO crm_customer_contacts VALUES (1,'PRIVATE CRM CONTACT','13800000000',1)");
+    const beforeCustomer = sqlite.prepare("SELECT * FROM crm_customers WHERE id=1").get();
+    const input = automaticBatchInput();
+    const batch = await service.createCustomerUploadBatch(scope, input);
+    expect(input).not.toHaveProperty("sourceProfile");
+    expect(sourceRows()).toHaveLength(1);
+    expect(sourceRows()[0]).toMatchObject({ id: batch.channelId, channel_type: "other", name: "客户甲（当前CRM）", industryCode: "automotive", contact_name: null, phone: null, wechat: null, qq: null, notes: null, create_request_id: batchRequestId, revision: 1 });
+    expect(linkRows()).toEqual([expect.objectContaining({ customerId: 1, inventoryResponsibleUserId: 10, channelId: batch.channelId, customerVersionAtBind: 3, firstRequestId: batchRequestId })]);
+    expect(await readContext()).toMatchObject({ channel: { id: batch.channelId, type: "other" }, canUpload: true });
+    const row = await service.createCustomerMaterial(scope, rowInput(batch.id));
+    expect(row).toMatchObject({ customerId: 1, channelId: batch.channelId, item: { uploadBatchId: batch.id } });
+    expect(count("channel_inventory_material_shares")).toBe(1); expect(count("channel_inventory_upload_batch_materials")).toBe(1);
+    expect(sqlite.prepare("SELECT * FROM crm_customers WHERE id=1").get()).toEqual(beforeCustomer);
+    expect(commits).toBe(3); expect(rollbacks).toBe(0); noCustomerOrChannelUpdates();
+  });
+  it("first unbatched material also creates other atomically; retry and a new UUID reuse the same customer channel", async () => {
+    const input = automaticMaterialInput();
+    const first = await service.createCustomerMaterial(scope, input);
+    const beforeSource = sourceRows(); const beforeLink = linkRows();
+    expect(beforeSource[0]).toMatchObject({ channel_type: "other", create_request_id: rowRequestId, contact_name: null, phone: null });
+    service = newService();
+    const replay = await service.createCustomerMaterial(scope, input);
+    expect(replay).toMatchObject({ channelId: first.channelId, item: { id: first.item.id }, idempotent: true });
+    const next = await service.createCustomerMaterial(scope, { ...input, requestId: "33333333-3333-4333-8333-333333333333" });
+    expect(next.channelId).toBe(first.channelId); expect(next.item.id).not.toBe(first.item.id);
+    expect(sourceRows()).toEqual(beforeSource); expect(linkRows()).toEqual(beforeLink);
+    expect(count("channel_inventory_materials")).toBe(2); expect(count("channel_inventory_material_shares")).toBe(2);
+    expect(commits).toBe(3); noCustomerOrChannelUpdates();
+  });
+  it("same batch UUID replay never creates a duplicate channel, link or batch; changed payload still conflicts", async () => {
+    const input = automaticBatchInput(); const first = await service.createCustomerUploadBatch(scope, input);
+    const beforeSource = sourceRows(); const beforeLink = linkRows();
+    service = newService(); expect(await service.createCustomerUploadBatch(scope, input)).toEqual(first);
+    await expect(service.createCustomerUploadBatch(scope, { ...input, fileName: "changed.xlsx" })).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(sourceRows()).toEqual(beforeSource); expect(linkRows()).toEqual(beforeLink); expect(count("channel_inventory_upload_batches")).toBe(1);
+    noCustomerOrChannelUpdates();
+  });
+  it("two overlapping requests serialize at the outer transaction and replay one customer source", async () => {
+    // This deterministic queue emulates the production customer FOR UPDATE
+    // serialization; SQLite does NOT prove MySQL locking or live concurrency.
+    const transaction = db.transaction; let tail: Promise<unknown> = Promise.resolve();
+    db.transaction = fn => {
+      const pending = tail.then(() => transaction(fn));
+      tail = pending.then(() => undefined, () => undefined);
+      return pending;
+    };
+    const input = automaticBatchInput();
+    const [a, b] = await Promise.all([service.createCustomerUploadBatch(scope, input), newService().createCustomerUploadBatch(scope, input)]);
+    expect(a).toEqual(b); expect(count("channel_inventory_channels")).toBe(1); expect(count("crm_customer_supply_channels")).toBe(1); expect(count("channel_inventory_upload_batches")).toBe(1);
+    expect(queries.filter(q => q.sql.includes("FROM crm_customers sc")).every(q => q.sql.includes("FOR UPDATE"))).toBe(true);
+    expect(queries.filter(q => q.sql.includes("SELECT channelId FROM crm_customer_supply_channels")).every(q => q.sql.includes("FOR UPDATE"))).toBe(true);
+    expect(() => sqlite.prepare("INSERT INTO crm_customer_supply_channels SELECT * FROM crm_customer_supply_channels").run()).toThrow(/UNIQUE/);
+  });
+  it.each(["factory", "agent", "trade", "other"] as const)("existing %s binding without profile reuses exact records for batch and material; explicit mismatch still conflicts", async type => {
+    sqlite.prepare("INSERT INTO channel_inventory_channels (id,enterprise_id,data_owner_user_id,responsible_user_id,name,industryCode,channel_type,contact_name,phone,active,revision) VALUES (55,1,99,10,'OLD PRIVATE NAME','automotive',?,'OLD CONTACT','OLD PHONE',1,4)").run(type);
+    sqlite.exec("INSERT INTO enterprise_team_record_assignments (enterpriseId,recordType,recordId,currentOwnerUserId,createdByUserId,teamId,revision) VALUES (1,'channel',55,10,10,7,4); INSERT INTO crm_customer_supply_channels VALUES (1,99,1,10,55,2,'old-request',1)");
+    const beforeSource = sourceRows(); const beforeLink = linkRows();
+    const batch = await service.createCustomerUploadBatch(scope, { ...automaticBatchInput(), expectedChannelId: 55, expectedChannelRevision: 4 });
+    const row = await service.createCustomerMaterial(scope, rowInput(batch.id));
+    expect(batch.channelId).toBe(55); expect(row.channelId).toBe(55);
+    expect(sqlite.prepare("SELECT create_payload_hash FROM channel_inventory_materials WHERE id=?").get(row.item.id)!.create_payload_hash).toBe(channelInventoryPayloadHash({
+      channelId: 55, partNumber: "SAME-PART", brand: "TI", qty: 0, dateCode: null, price: "0.000000000001", currency: "CNY", taxIncluded: null, leadTime: null, note: null,
+      uploadBatchId: batch.id, customerSupply: { customerId: 1, expectedCustomerVersion: 3, sourceType: type },
+    }));
+    expect(await service.createCustomerMaterial(scope, { ...rowInput(batch.id), sourceProfile: { type } })).toMatchObject({ item: { id: row.item.id }, idempotent: true });
+    await expect(service.createCustomerMaterial(scope, { ...rowInput(batch.id), sourceProfile: { type: type === "factory" ? "trade" : "factory" } })).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(sourceRows()).toEqual(beforeSource); expect(linkRows()).toEqual(beforeLink); noCustomerOrChannelUpdates();
+    expect(queries.some(q => /^\s*INSERT INTO (channel_inventory_channels|crm_customer_supply_channels)\b/.test(q.sql))).toBe(false);
+  });
+  it.each(["factory", "agent", "trade", "other"] as const)("first explicit %s type is still honored, not rewritten to other", async type => {
+    const batch = await service.createCustomerUploadBatch(scope, { ...batchInput, sourceProfile: { type } });
+    expect(sourceRows()[0]).toMatchObject({ id: batch.channelId, channel_type: type, create_request_id: batchRequestId });
+    expect(sourceRows()[0].create_payload_hash).toBe(channelInventoryPayloadHash({ name: "客户甲（当前CRM）", industryCode: "automotive", type, contactName: null, phone: null, wechat: null, qq: null, notes: null, active: true }));
+    expect((await service.createCustomerUploadBatch(scope, { ...batchInput, sourceProfile: { type } })).channelId).toBe(batch.channelId);
+    expect(count("channel_inventory_channels")).toBe(1); noCustomerOrChannelUpdates();
+  });
+  it.each([
+    ["CRM write", "UPDATE enterprise_member_module_access SET writeAllowed=0 WHERE module='customers'"],
+    ["stocks write", "UPDATE enterprise_member_module_access SET writeAllowed=0 WHERE module='stocks'"],
+    ["stocks read", "UPDATE enterprise_member_module_access SET readAllowed=0 WHERE module='stocks'"],
+    ["channels write", "UPDATE enterprise_member_module_access SET writeAllowed=0 WHERE module='channels'"],
+    ["ERP inventory", "DELETE FROM enterprise_member_permissions WHERE permissionKey='inventory.manage' AND enterpriseMemberId=1"],
+    ["CRM record visibility", "UPDATE crm_customers SET assignedUserId=20 WHERE id=1"],
+    ["disabled account", "UPDATE users SET loginDisabled=1 WHERE id=10"],
+    ["suspended membership", "UPDATE enterprise_members SET status='suspended' WHERE userId=10"],
+    ["data owner changed", "UPDATE enterprises SET crmDataOwnerUserId=199 WHERE id=1"],
+    ["no team", "DELETE FROM enterprise_team_members WHERE userId=10"],
+    ["inactive team", "UPDATE enterprise_teams SET status='inactive' WHERE id=7"],
+    ["ambiguous teams", "INSERT INTO enterprise_team_members VALUES (13,1,8,10,'member')"],
+    ["customer version", "UPDATE crm_customers SET version=4 WHERE id=1"],
+    ["archived customer", "UPDATE crm_customers SET archivedAt='2026-11-15' WHERE id=1"],
+  ])("missing profile never bypasses %s on either creation entrypoint", async (_name, mutation) => {
+    sqlite.exec(mutation);
+    await expect(service.createCustomerUploadBatch(scope, automaticBatchInput())).rejects.toMatchObject({ code: expect.stringMatching(/FORBIDDEN|NOT_FOUND|PRECONDITION_FAILED|CONFLICT/) });
+    await expect(service.createCustomerMaterial(scope, automaticMaterialInput())).rejects.toMatchObject({ code: expect.stringMatching(/FORBIDDEN|NOT_FOUND|PRECONDITION_FAILED|CONFLICT/) });
+    expect(sourceRows()).toHaveLength(0); expect(linkRows()).toHaveLength(0); expect(count("channel_inventory_materials")).toBe(0); expect(count("channel_inventory_upload_batches")).toBe(0);
+  });
+  it.each(["read", "write", "inventoryScopeWrite", "customerScopeRead"])("missing profile cannot bypass revoked official %s", async permission => {
+    // The real BFF intersects native write with inventory scope write before
+    // signing; a scope revoke therefore also clears the signed write bit.
+    const official: ChannelInventoryScope = { ...scope, officialActor: { adminAccountId: 303, bindingVersion: 7, requestId: "signed-test-request", inventoryPermissions: { read: true, write: true, note: false, inventoryScopeWrite: true, customerScopeRead: true, authorizationVersion: "offline-v1", [permission]: false, ...(permission === "inventoryScopeWrite" ? { write: false } : {}) } } };
+    await expect(service.createCustomerUploadBatch(official, automaticBatchInput())).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(service.createCustomerMaterial(official, automaticMaterialInput())).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(sourceRows()).toHaveLength(0); expect(linkRows()).toHaveLength(0);
+  });
+  it.each([
+    "UPDATE channel_inventory_channels SET active=0",
+    "UPDATE channel_inventory_channels SET responsible_user_id=20",
+    "UPDATE enterprise_team_record_assignments SET currentOwnerUserId=20",
+    "UPDATE enterprise_team_record_assignments SET teamId=8",
+    "UPDATE enterprise_team_record_assignments SET revision=0",
+  ])("missing profile preserves bound channel write fence: %s", async mutation => {
+    const batch = await service.createCustomerUploadBatch(scope, automaticBatchInput()); sqlite.exec(mutation);
+    const beforeSource = sourceRows(); const beforeLink = linkRows();
+    await expect(service.createCustomerUploadBatch(scope, automaticBatchInput())).rejects.toMatchObject({ code: expect.stringMatching(/NOT_FOUND|PRECONDITION_FAILED/) });
+    await expect(service.createCustomerMaterial(scope, rowInput(batch.id))).rejects.toMatchObject({ code: expect.stringMatching(/NOT_FOUND|PRECONDITION_FAILED/) });
+    expect(sourceRows()).toEqual(beforeSource); expect(linkRows()).toEqual(beforeLink); expect(count("channel_inventory_materials")).toBe(0);
+  });
+  it("missing profile keeps expected channel CAS, explicit existing ID and selected-channel occupancy conflicts", async () => {
+    const input = automaticBatchInput(); const batch = await service.createCustomerUploadBatch(scope, input);
+    await expect(service.createCustomerUploadBatch(scope, { ...input, expectedChannelId: batch.channelId + 1 })).rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(service.createCustomerUploadBatch(scope, { ...input, expectedChannelRevision: 2 })).rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(service.createCustomerMaterial(scope, { ...rowInput(batch.id), sourceProfile: { type: "other", existingChannelId: batch.channelId + 1 } })).rejects.toMatchObject({ code: "CONFLICT" });
+    const otherCustomer = { ...automaticMaterialInput(), customerId: 2, expectedCustomerVersion: 2, sourceProfile: { type: "other" as const, existingChannelId: batch.channelId } };
+    await expect(service.createCustomerMaterial(scope, otherCustomer)).rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(service.createCustomerUploadBatch(scope, { ...input, customerId: 2, expectedCustomerVersion: 2, sourceProfile: otherCustomer.sourceProfile, requestId: rowRequestId })).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(sourceRows()).toHaveLength(1); expect(linkRows()).toHaveLength(1); expect(count("channel_inventory_materials")).toBe(0);
+  });
+  it("another customer cannot upload to current batch; failure rolls back only attempted source, normal upload gets its own channel", async () => {
+    const batch = await service.createCustomerUploadBatch(scope, automaticBatchInput());
+    const beforeSource = sourceRows(); const beforeLink = linkRows();
+    await expect(service.createCustomerMaterial(scope, { ...rowInput(batch.id), customerId: 2, expectedCustomerVersion: 2 })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(sourceRows()).toEqual(beforeSource); expect(linkRows()).toEqual(beforeLink); expect(count("channel_inventory_materials")).toBe(0);
+    const row = await service.createCustomerMaterial(scope, { ...automaticMaterialInput(), customerId: 2, expectedCustomerVersion: 2 });
+    expect(row.customerId).toBe(2); expect(row.channelId).not.toBe(batch.channelId);
+    expect(linkRows().map(link => [link.customerId, link.channelId])).toEqual([[1, batch.channelId], [2, row.channelId]]);
+  });
+  it.each([/INSERT INTO channel_inventory_channels/, /INSERT INTO crm_customer_supply_channels/, /INSERT INTO channel_inventory_upload_batches/, /INSERT INTO channel_inventory_management_requests/])("first automatic batch failure at %s rolls back source/link/batch/request together and resumes original UUID", async failing => {
+    failSql = failing;
+    await expect(service.createCustomerUploadBatch(scope, automaticBatchInput())).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+    for (const table of ["channel_inventory_channels", "crm_customer_supply_channels", "enterprise_team_record_assignments", "channel_inventory_upload_batches", "channel_inventory_management_requests"]) expect(count(table)).toBe(0);
+    expect(commits).toBe(0); expect(rollbacks).toBe(1);
+    failSql = null; const resumed = await newService().createCustomerUploadBatch(scope, automaticBatchInput());
+    expect(sourceRows()[0]).toMatchObject({ id: resumed.channelId, channel_type: "other", create_request_id: batchRequestId });
+  });
+  it.each([/INSERT INTO crm_customer_supply_channels/, /INSERT INTO channel_inventory_materials\s/, /INSERT INTO enterprise_team_record_assignments/, /INSERT INTO channel_inventory_material_shares\s/, /INSERT INTO channel_inventory_material_share_audits/])("first automatic material failure at %s rolls back source/link/material/claims together", async failing => {
+    failSql = failing;
+    await expect(service.createCustomerMaterial(scope, automaticMaterialInput())).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+    for (const table of ["channel_inventory_channels", "crm_customer_supply_channels", "enterprise_team_record_assignments", "channel_inventory_materials", "channel_inventory_material_shares", "channel_inventory_material_share_audits"]) expect(count(table)).toBe(0);
+    expect(commits).toBe(0); expect(rollbacks).toBe(1);
+    failSql = null; const resumed = await newService().createCustomerMaterial(scope, automaticMaterialInput());
+    expect(sourceRows()[0]).toMatchObject({ id: resumed.channelId, channel_type: "other", create_request_id: rowRequestId });
+    expect(count("channel_inventory_materials")).toBe(1); expect(count("channel_inventory_material_shares")).toBe(1);
+  });
+  it.each(["channelId", "responsibleUserId", "enterpriseId", "dataOwnerUserId", "name", "contactName", "phone", "officialInventoryPermissions"])("missing profile does not admit custom top-level %s", async field => {
+    await expect(service.createCustomerUploadBatch(scope, { ...automaticBatchInput(), [field]: 666 })).rejects.toThrow();
+    await expect(service.createCustomerMaterial(scope, { ...automaticMaterialInput(), [field]: 666 })).rejects.toThrow();
+    expect(commits).toBe(0); expect(rollbacks).toBe(0); expect(queries).toHaveLength(0);
+  });
+  it("identity mismatch without profile rejects before any transaction", async () => {
+    await expect(service.createCustomerUploadBatch(scope, { ...automaticBatchInput(), expectedEnterpriseId: 2 })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(service.createCustomerMaterial(scope, { ...automaticMaterialInput(), expectedActorUserId: 20 })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(queries).toHaveLength(0); expect(commits).toBe(0); expect(rollbacks).toBe(0);
   });
 });
