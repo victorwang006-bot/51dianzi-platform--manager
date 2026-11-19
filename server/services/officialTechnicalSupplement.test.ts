@@ -1,3 +1,4 @@
+import "./officialTechnicalTestWorker";
 import { describe, expect, it } from "vitest";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";

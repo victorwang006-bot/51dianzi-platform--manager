@@ -1,3 +1,4 @@
+import "./officialTechnicalTestWorker";
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
