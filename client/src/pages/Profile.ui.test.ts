@@ -227,10 +227,10 @@ describe("Profile native self-service UI", () => {
     expect(state.rpc.performance.query).not.toHaveBeenCalled();
     expect(state.rpc.commission.query).not.toHaveBeenCalled();
     await click("业绩与提成");
-    expect(text()).toContain("9,000.0000");
-    expect(text()).toContain("3,000.0000");
-    expect(text()).toContain("不计入现金回款");
-    expect(text()).toContain("退款：暂无可核实账本，不以0代替。");
+    expect(text()).toContain("9,000.00");
+    expect(text()).toContain("3,000.00");
+    expect(text()).not.toContain("不计入现金回款");
+    expect(text()).not.toContain("退款：暂无可核实账本，不以0代替。");
     expect(text()).toContain("SELF-001");
     expect(text()).toContain("共 27 笔");
     expect(text()).toContain("尚未配置");
@@ -256,7 +256,7 @@ describe("Profile native self-service UI", () => {
     expect(document.querySelector(".pc-stat-grid")).toBeNull();
     expect(text()).toContain("尚未配置");
     expect(text()).not.toContain("已结算");
-    expect(text()).not.toContain("0.0000");
+    expect(text()).not.toContain("0.00");
   });
 
   it("remounts synchronously on subject changes and clears passwords, tickets, drafts and former self-cache", async () => {
@@ -431,7 +431,7 @@ describe("Profile native self-service UI", () => {
     await act(async () => commission.reject(new Error("提成来源暂不可用")));
     await settle();
     expect(document.querySelector('[aria-label="我的提成"]')?.textContent).toContain("提成查询失败");
-    expect(document.querySelector('[aria-label="我的业绩"]')?.textContent).toContain("9,000.0000");
+    expect(document.querySelector('[aria-label="我的业绩"]')?.textContent).toContain("9,000.00");
     await act(async () => button("重试", document.querySelector('[aria-label="我的提成"]')!).click());
     await settle();
     expect(text()).toContain("尚未配置");
@@ -463,7 +463,7 @@ describe("Profile native self-service UI", () => {
     await fill("pc-month", "2026-10");
     await settle();
     expect(text()).not.toContain("SELF-001");
-    expect(text()).not.toContain("9,000.0000");
+    expect(text()).not.toContain("9,000.00");
     expect(document.querySelectorAll(".pc-results [role='status']")).toHaveLength(2);
     await act(async () => {
       performance.resolve({ ...state.performance, month: "2026-10" });

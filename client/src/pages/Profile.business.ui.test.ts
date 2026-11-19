@@ -103,6 +103,27 @@ beforeEach(async () => {
 afterEach(async () => { await act(async () => root.unmount()); client.clear(); container.remove(); vi.restoreAllMocks(); });
 
 describe("Profile real-component business previews", () => {
+  it("shows performance money with grouping and two decimals, keeps integer counts and removes redundant notes from the DOM", async () => {
+    state.rpc.performance.query.mockImplementation(async (input: Input) => {
+      const result = performanceFixture(input);
+      return performanceFixture(input, { orderAmount: "70700.0000", collectedAmount: "7123.4567",
+        items: [{ ...result.items[0], totalAmount: "70700.1250" }] });
+    });
+    await click("业绩与提成");
+    const performance = section("我的业绩");
+    expect(stat("销售额", performance).querySelector("strong")?.textContent).toBe("70,700.00");
+    expect(stat("该月登记现金回款", performance).querySelector("strong")?.textContent).toBe("7,123.46");
+    expect(performance.querySelector("tbody tr td:last-child")?.textContent).toBe("70,700.13");
+    expect(stat("本人订单数", performance).querySelector("strong")?.textContent).toBe("23");
+    expect(stat("本人订单数", performance).querySelector("small")?.textContent).toBe("该月创建 · 笔");
+    expect(performance.querySelector("tbody tr td:nth-child(3)")?.textContent).toBe("已确认");
+    expect(stat("销售额", performance).querySelector("small")).toBeNull();
+    expect(stat("该月登记现金回款", performance).querySelector("small")).toBeNull();
+    expect(performance.querySelector("details")).toBeNull();
+    expect(text(performance)).not.toMatch(/订单及销售额按订单创建月|现金回款按付款日期月统计|累计回款达标预览|人民币（按订单原税务口径）|CNY|按付款日期|非提成发放|统计口径与不可用数据|账期登记|退款：|服务器全量合计/);
+    await expect(state.rpc.performance.query.mock.results[0].value).resolves.toMatchObject({ orderAmount: "70700.0000", collectedAmount: "7123.4567" });
+  });
+
   it("shows authoritative estimated/partial/gap values and never promotes them to payroll", async () => {
     expect(state.rpc.businessCompanies.query).not.toHaveBeenCalled();
     await click("业绩与提成");
@@ -229,6 +250,9 @@ describe("Profile real-component business previews", () => {
     expect(stat("预计提成").querySelector("strong")?.textContent).toBe("0.00");
     expect(stat("回款达标提成").querySelector("strong")?.textContent).toBe("0.00");
     expect(text(section("我的业绩"))).toContain("该月暂无本人已确认订单");
+    expect(stat("本人订单数", section("我的业绩")).querySelector("strong")?.textContent).toBe("0");
+    expect(stat("销售额", section("我的业绩")).querySelector("strong")?.textContent).toBe("0.00");
+    expect(stat("该月登记现金回款", section("我的业绩")).querySelector("strong")?.textContent).toBe("0.00");
     expect(section("我的提成").querySelectorAll(".pc-stat")).toHaveLength(2);
     expect(section("我的提成").querySelector("h2 .pc-business-status")).toBeNull();
     expect(text(section("我的提成"))).not.toMatch(/已发放提成|已到账|发放来源/);
@@ -244,9 +268,9 @@ describe("Profile real-component business previews", () => {
       return commissionFixture(input, { items: [{ ...result.items[0], monthlyBookedAmount: "77777.000000" }] });
     });
     await click("业绩与提成");
-    expect(text(stat("该月登记现金回款", section("我的业绩")))).toContain("2,222.0000");
+    expect(text(stat("该月登记现金回款", section("我的业绩")))).toContain("2,222.00");
     expect(section("我的提成").querySelectorAll("tbody tr td")[2].textContent).toBe("9,200.00");
-    expect(text(section("我的提成"))).not.toContain("2,222.0000");
+    expect(text(section("我的提成"))).not.toContain("2,222.00");
     expect(text(section("我的提成"))).not.toMatch(/2,222|99,999|77,777/);
     expect(section("我的提成").querySelectorAll("tbody tr td")[3].textContent).toBe("3,600.00");
     expect(stat("预计提成").querySelector("strong")?.textContent).toBe("485.17");
@@ -300,7 +324,7 @@ describe("Profile real-component business previews", () => {
     expect(text(section("我的提成"))).toContain("个人统计读取通道暂不可用");
     expect(text(section("我的提成"))).toContain(id);
     expect(section("我的提成").querySelector(".pc-stat-grid")).toBeNull();
-    expect(text(section("我的业绩"))).toContain("12,800.0000");
+    expect(text(section("我的业绩"))).toContain("12,800.00");
     await click("重试", section("我的提成"));
     expect(stat("预计提成").querySelector("strong")?.textContent).toBe("485.17");
     expect(state.rpc.performance.query).toHaveBeenCalledOnce();
@@ -311,7 +335,7 @@ describe("Profile real-component business previews", () => {
     await click("业绩下一页");
     expect(state.rpc.performance.query.mock.calls.at(-1)?.[0].page).toBe(2);
     expect(state.rpc.commission.query).toHaveBeenCalledOnce();
-    expect(text(stat("销售额", section("我的业绩")))).toContain("12,800.0000");
+    expect(text(stat("销售额", section("我的业绩")))).toContain("12,800.00");
     await click("提成下一页");
     expect(state.rpc.commission.query.mock.calls.at(-1)?.[0].page).toBe(2);
     expect(state.rpc.performance.query).toHaveBeenCalledTimes(2);
@@ -329,7 +353,7 @@ describe("Profile real-component business previews", () => {
     expect(text(section("我的提成"))).not.toContain("COMM-601-");
     expect(text(section("我的提成"))).not.toContain("485.17");
     expect(section("我的提成").querySelector('[role="status"]')).not.toBeNull();
-    expect(text(section("我的业绩"))).toContain("12,800.0000");
+    expect(text(section("我的业绩"))).toContain("12,800.00");
     await act(async () => pending.reject(new Error("SYNTHETIC_PAGE_FAILURE")));
     await settle();
     expect(text(section("我的提成"))).toContain("提成查询失败");
@@ -346,12 +370,12 @@ describe("Profile real-component business previews", () => {
     state.rpc.performance.query.mockReturnValueOnce(pending.promise);
     await click("业绩下一页");
     expect(text(section("我的业绩"))).not.toContain("PERF-601-");
-    expect(text(section("我的业绩"))).not.toContain("12,800.0000");
+    expect(text(section("我的业绩"))).not.toContain("12,800.00");
     expect(stat("预计提成").querySelector("strong")?.textContent).toBe("485.17");
     await act(async () => pending.reject(new Error("SYNTHETIC_PAGE_FAILURE")));
     await settle();
     expect(text(section("我的业绩"))).toContain("业绩查询失败");
-    expect(text(section("我的业绩"))).not.toContain("12,800.0000");
+    expect(text(section("我的业绩"))).not.toContain("12,800.00");
     expect(state.rpc.commission.query).toHaveBeenCalledOnce();
   });
 
@@ -389,7 +413,7 @@ describe("Profile real-component business previews", () => {
     state.rpc.performance.query.mockReturnValueOnce(nextPerf.promise); state.rpc.commission.query.mockReturnValueOnce(nextComm.promise);
     await month("2026-10");
     expect(text()).not.toContain("485.17");
-    expect(text()).not.toContain("12,800.0000");
+    expect(text()).not.toContain("12,800.00");
     expect(container.querySelectorAll('.pc-results [role="status"]')).toHaveLength(2);
     await month("2026-09");
     await act(async () => { nextPerf.reject(new Error("OLD_SQL_ERROR")); nextComm.reject(new Error("OLD_COMPANY_FAILURE")); });
@@ -427,7 +451,7 @@ describe("Profile real-component business previews", () => {
     await company(secondCompany.merchantId);
     expect(text()).not.toContain("COMM-601-");
     expect(text()).not.toContain("485.17");
-    expect(text()).not.toContain("12,800.0000");
+    expect(text()).not.toContain("12,800.00");
     expect(text()).not.toContain("NEW_SECRET");
     expect(text()).not.toContain("NEW_SQL");
     expect(container.querySelectorAll('[role="alert"]')).toHaveLength(2);
@@ -438,7 +462,7 @@ describe("Profile real-component business previews", () => {
     await click("业绩与提成");
     expect(text(section("我的提成"))).toContain("提成查询失败");
     expect(text(section("我的提成"))).not.toContain("485.17");
-    expect(text(section("我的业绩"))).toContain("12,800.0000");
+    expect(text(section("我的业绩"))).toContain("12,800.00");
   });
 
   it("does not revive an old query when the user switches month away and back", async () => {

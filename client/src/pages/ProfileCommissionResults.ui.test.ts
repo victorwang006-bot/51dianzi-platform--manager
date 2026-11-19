@@ -98,6 +98,18 @@ describe("simple commission results with native Radix Dialog", () => {
     expect(container.querySelectorAll(".pc-stat small")).toHaveLength(0);
     expect(drawer()).toBeNull();
   });
+  it("keeps screenshot caveats out of the DOM and formats every visible monetary cell to two decimals", async () => {
+    const base = fixture();
+    await renderResult(fixture({ estimatedAmount: "70700.00", earnedAmount: "0.00", items: [{ ...base.items[0],
+      totalAmount: "70700.000000", bankCashPaidAmount: "70000.100000", collectionGap: "699.900000", estimatedAmount: "70700.00" }] }));
+    expect(Array.from(container.querySelectorAll(".pc-stat strong")).map(node => text(node))).toEqual(["70,700.00", "0.00"]);
+    expect(Array.from(container.querySelectorAll("tbody td")).slice(1, 5).map(node => text(node)))
+      .toEqual(["70,700.00", "70,000.10", "699.90", "70,700.00"]);
+    expect(text()).toContain("预计提成"); expect(text()).toContain("部分回款");
+    expect(text()).not.toMatch(/预计按订单创建月归属|截至当前累计银行\/现金回款|不是当月结算或工资到账|服务器全量|非已发放|仅足额银行\/现金回款订单|非已结算|可核\s*\d+\s*笔|金额未知|无真实发放证据|账期登记不计入现金回款|版本：|含税·规则\/权益待确认|预计及达标预览不代表个人权益审批|提成口径与来源/);
+    expect(text()).not.toContain(version);
+    expect(container.querySelector("details")).toBeNull();
+  });
   it("shows the earned clarification only after help, with an accessible toggle", async () => {
     await renderResult();
     const phrase = "足额回款订单的提成预估，不代表已发放";

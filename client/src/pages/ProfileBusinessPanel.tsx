@@ -149,7 +149,7 @@ export default function ProfileBusinessPanel({ prefix, isCurrent }: {
             <BusinessFailure label="提成" retry={() => { void commissionQuery.refetch(); }} fetching={commissionQuery.isFetching} /> :
             commission?.status === "unavailable" ? <BusinessFailure label="提成" unavailable={commission} retry={() => { void commissionQuery.refetch(); }} fetching={commissionQuery.isFetching} /> :
             commission?.status === "available" ? <ProfileCommissionResults key={JSON.stringify([businessPrefix, merchantId, commissionToken])} result={commission} fetching={commissionQuery.isFetching} onPage={page => changePage("commission", page)} /> :
-            <div className="pc-state">暂无可核实的提成数据，发放来源未接通。</div>}
+            <div className="pc-state">暂无可核实的提成数据。</div>}
         </section>
       </>}
   </>;
