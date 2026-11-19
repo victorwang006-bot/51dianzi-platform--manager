@@ -126,6 +126,23 @@ const formalPayload = (entry: Awaited<ReturnType<typeof prepare>>["output"]["ent
 };
 
 describe("customer upload history: actual native helpers with isolated in-memory SQL", () => {
+  it("original inspection refusal rolls back before storage and permits a corrected request", async () => {
+    const requestId = randomUUID();
+    const invalid = { fileName: "synthetic-invalid.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", base64: Buffer.from("not a workbook").toString("base64") };
+    await expect(service.customerUploadOriginal(scope(), { ...expected(), customerId: 1, expectedCustomerVersion: 3, mode: "standard", file: invalid, requestId })).rejects.toMatchObject({ code: "BAD_REQUEST", message: expect.stringMatching(/^原文件未保存：/) });
+    expect(rollbacks).toBe(1); expect(commits).toBe(0); expect(files.size).toBe(0);
+    for (const table of ["customer_upload_histories", "customer_upload_files", "customer_upload_requests", "channel_inventory_upload_batches", "channel_inventory_materials"]) expect(count(table)).toBe(0);
+    const corrected = await original("standard", requestId);
+    expect(corrected.history.state).toBe("awaiting_confirmation"); expect(corrected.idempotent).toBe(false);
+    expect(count("customer_upload_histories")).toBe(1); expect(count("customer_upload_requests")).toBe(1);
+    expect(count("channel_inventory_materials")).toBe(0);
+  });
+  it("an unexpected post-inspection error is not advertised as a releasable original refusal", async () => {
+    failSql = /INSERT INTO customer_upload_files/;
+    await expect(original("standard")).rejects.toMatchObject({ code: "SERVICE_UNAVAILABLE", message: "文件历史操作未确认成功，请保留原请求号刷新重试" });
+    expect(rollbacks).toBe(1);
+    for (const table of ["customer_upload_histories", "customer_upload_files", "customer_upload_requests", "channel_inventory_materials"]) expect(count(table)).toBe(0);
+  });
   it("parse persists independent original/history; no source/batch/material and same request replay", async () => {
     const requestId = randomUUID(); const first = await original("parse", requestId); const replay = await original("parse", requestId); const second = await original("parse");
     expect(first.history.state).toBe("pending_parse"); expect(first.submissionMessage).toBe("已提交，等待解析"); expect(replay.history.historyId).toBe(first.history.historyId); expect(replay.idempotent).toBe(true);

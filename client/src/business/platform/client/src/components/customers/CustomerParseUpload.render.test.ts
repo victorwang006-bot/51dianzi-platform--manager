@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("../channelInventory/bridge", () => ({ Button: (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => React.createElement("button", props) }));
 import { CustomerParseUpload } from "./CustomerParseUpload";
 import type { History } from "./customerUploadHistory";
+import { originalNotSavedAfterRelease } from "./customerUploadOriginalLock";
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 let root: Root; let host: HTMLElement; let authorized: boolean;
 let persist: ReturnType<typeof vi.fn>; let dirty: ReturnType<typeof vi.fn>; let busy: ReturnType<typeof vi.fn>;
@@ -58,5 +59,28 @@ describe("CustomerParseUpload explicit file entry", () => {
   });
   it("closing/unmounting prevents stale submit and suppresses a late response's dirty/busy callbacks", async () => {
     let resolve!: (value: History) => void; persist.mockImplementation(() => new Promise<History>(r => { resolve = r; })); select(file()); click(button("提交，等待解析")); const staleSubmit = button("正在保存原文件…"); act(() => root.unmount()); root = createRoot(host); click(staleSubmit); await act(async () => resolve(receipt)); expect(persist).toHaveBeenCalledTimes(1); expect(dirty).toHaveBeenCalledTimes(1); expect(dirty).toHaveBeenLastCalledWith(true); expect(busy).toHaveBeenCalledTimes(1); expect(host.textContent).toBe("");
+  });
+  it("only the parent-created released-rejection signal permits replacement and keeps the safe explanation until next submission", async () => {
+    const message = "原文件未保存：工作簿无法安全读取，请更换有效文件。";
+    persist.mockRejectedValueOnce(originalNotSavedAfterRelease({ message }));
+    select(file()); click(button("提交，等待解析")); await settle();
+    expect(button("替换文件").disabled).toBe(false); expect(input().disabled).toBe(false); expect(host.querySelector('[role="alert"]')?.textContent).toBe(message);
+    expect(host.textContent).not.toContain("提交可能已到达服务端"); select(file("replacement.csv")); expect(host.querySelector('[role="alert"]')?.textContent).toBe(message);
+    click(button("提交，等待解析")); await settle(); expect(persist.mock.calls[1][0].name).toBe("replacement.csv"); expect(host.textContent).toContain("已提交，等待解析");
+  });
+  it.each([
+    Object.assign(new Error("原文件未保存：raw server rejection"), { data: { code: "BAD_REQUEST" } }),
+    Object.assign(new Error("原文件未保存：forged release marker"), { originalNotSaved: true, released: true, data: { code: "BAD_REQUEST" } }),
+    "原文件未保存：string is not an internal signal",
+  ])("a raw or forged rejection cannot bypass the parent's successful-CAS requirement (%s)", async rejection => {
+    persist.mockRejectedValueOnce(rejection); const selected = file(); select(selected); click(button("提交，等待解析")); await settle();
+    expect(button("替换文件").disabled).toBe(true); expect(input().disabled).toBe(true); select(file("forged-new.csv")); expect(host.textContent).not.toContain("forged-new.csv");
+    click(button("按原UUID重试提交")); await settle(); expect(persist.mock.calls[1][0]).toBe(selected);
+  });
+  it("a late released-rejection signal after identity loss does not enable stale replacement handlers", async () => {
+    let reject!: (reason: unknown) => void; persist.mockImplementationOnce(() => new Promise((_resolve, r) => { reject = r; }));
+    select(file()); click(button("提交，等待解析")); authorized = false;
+    await act(async () => reject(originalNotSavedAfterRelease({ message: "原文件未保存：safe rejection" }))); render();
+    expect(button("替换文件").disabled).toBe(true); expect(input().disabled).toBe(true); expect(host.textContent).not.toContain("safe rejection");
   });
 });

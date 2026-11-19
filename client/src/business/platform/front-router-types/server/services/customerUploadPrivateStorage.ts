@@ -178,9 +178,11 @@ function checkedZip(bytes: Buffer): Map<string, Buffer> {
       xlen = bytes.readUInt16LE(p + 30),
       clen = bytes.readUInt16LE(p + 32),
       start = bytes.readUInt32LE(p + 42);
+    // Bits 1/2 are valid compression options only for DEFLATE (method 8).
+    const allowedFlags = 0x0808 | (method === 8 ? 0x0006 : 0);
     if (
       bytes.readUInt16LE(p + 6) > 20 ||
-      flags & ~0x0808 ||
+      flags & ~allowedFlags ||
       (method !== 0 && method !== 8) ||
       bytes.readUInt16LE(p + 34) ||
       p + 46 + nlen + xlen + clen > end ||

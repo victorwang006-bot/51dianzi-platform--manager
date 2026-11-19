@@ -12,6 +12,7 @@ import type { ConfirmationEntry } from "../../../../shared/customerUploadHistory
 import type { ManagedBatchEntry } from "../channelInventory/management";
 import { CustomerParseUpload } from "./CustomerParseUpload";
 import { canonicalConfirmationPayload, confirmationIssueResolutions, fileInput, historySession, isUUID, originalReview, recoveryEntries, resultReview, uuid, type History, type HistoryDetail, type HistorySession, type ReviewRow, type Confirmation } from "./customerUploadHistory";
+import { clearOriginalLock, isOriginalNotSavedResponse, originalNotSavedAfterRelease, readOriginalLock, saveOriginalLock, type OriginalLockSnapshot } from "./customerUploadOriginalLock";
 import { CustomerSupplySingleEntry } from "./CustomerSupplySingleEntry";
 import "./CustomerSupplyUploadDialog.css";
 
@@ -185,10 +186,11 @@ function CustomerSupplyUploadSession(props: Props) {
     frozen.current = data; setSessionData(data); setConfirmedExisting(false); setMessage("");
   };
   const standardAttachment = useRef<{ history: History; sessionData: SessionData; file: File; rows?: { row: number; metadata: ReviewRow }[] } | null>(null);
-  const originalOperation = useRef<{ requestId: string; mode: "standard" | "parse"; file: Awaited<ReturnType<typeof fileInput>> } | null>(null);
+  const originalOperation = useRef<{ requestId: string; mode: "standard" | "parse"; file: Awaited<ReturnType<typeof fileInput>>; snapshot: OriginalLockSnapshot } | null>(null);
+  const originalInFlight = useRef<{ file: File; mode: "standard" | "parse"; promise: Promise<History> } | null>(null);
   const prepared = useRef<ManagedBatchEntry[] | undefined>(undefined);
   const canonicalEntries = useRef(new Map<string, ConfirmationEntry>(props.initialHistory?.confirmation?.entries.map(entry => [entry.rowRequestId, entry]) ?? []));
-  const persistOriginal = async (file: File, mode: "standard" | "parse"): Promise<History> => {
+  const sendOriginal = async (file: File, mode: "standard" | "parse"): Promise<History> => {
     const data = frozen.current;
     if (!current() || !data) throw new Error("客户上传会话已失效。");
     const encoded = await fileInput(file);
@@ -196,29 +198,64 @@ function CustomerSupplyUploadSession(props: Props) {
     const operationKey = `customer-upload-original:${customerSupplySessionSuffix(props.identity, props.customerId)}`;
     const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(encoded.base64)))).map(b => b.toString(16).padStart(2, "0")).join("");
     if (!current()) throw new Error("当前身份已变化。");
-    let requestId: string;
-    const stored = sessionStorage.getItem(operationKey);
+    const previous = originalOperation.current;
+    if (previous && (previous.file.base64 !== encoded.base64 || previous.file.fileName !== encoded.fileName || previous.mode !== mode || previous.snapshot.lock.customerVersion !== data.customerVersion)) throw new Error("原文件未知请求不能更换字节或UUID。");
+    let snapshot: OriginalLockSnapshot;
+    const stored = readOriginalLock(sessionStorage, operationKey);
     if (stored) {
-      const pending = JSON.parse(stored);
+      const pending = stored.lock;
       if (!isUUID(pending.requestId) || pending.hash !== hash || pending.mode !== mode || pending.fileName !== encoded.fileName || pending.customerVersion !== data.customerVersion) throw new Error("另一个原文件提交结果待确认，请恢复原文件/UUID或先核实服务端历史，不能重建上传。");
-      requestId = pending.requestId;
+      if (previous && (previous.requestId !== pending.requestId || previous.snapshot.raw !== stored.raw)) throw new Error("原文件恢复锁已变化，不能重建上传。");
+      snapshot = stored;
     } else {
-      requestId = uuid(); sessionStorage.setItem(operationKey, JSON.stringify({ requestId, hash, mode, fileName: encoded.fileName, customerVersion: data.customerVersion }));
+      if (previous) throw new Error("原文件恢复锁无法确认，请保留原UUID并核实服务端历史，不能重建上传。");
+      const lock = { requestId: uuid(), hash, mode, fileName: encoded.fileName, customerVersion: data.customerVersion };
+      // Retain even a pre-send UUID if persistence/verification fails. A missing
+      // lock on the next attempt is not permission to allocate another UUID.
+      snapshot = { lock, raw: JSON.stringify(lock) };
+      originalOperation.current = { requestId: lock.requestId, mode, file: encoded, snapshot };
+      snapshot = saveOriginalLock(sessionStorage, operationKey, lock);
     }
-    if (originalOperation.current && (originalOperation.current.requestId !== requestId || originalOperation.current.file.base64 !== encoded.base64)) throw new Error("原文件未知请求不能更换字节或UUID。");
-    originalOperation.current = { requestId, mode, file: encoded };
+    const requestId = snapshot.lock.requestId;
+    const operation = { requestId, mode, file: encoded, snapshot };
+    originalOperation.current = operation;
+    const ownsRequest = () => current() && frozen.current?.customerVersion === data.customerVersion
+      && contextRef.current?.customer.version === data.customerVersion && originalOperation.current === operation
+      && originalOperation.current.requestId === requestId;
+    const release = () => {
+      if (!clearOriginalLock(sessionStorage, operationKey, snapshot, ownsRequest)) return false;
+      originalOperation.current = null;
+      return true;
+    };
     const fresh = await readContext();
-    if (!current() || !contextAllowed(fresh)) throw new Error("客户版本、渠道或上传权限已变化。");
+    if (!ownsRequest() || !contextAllowed(fresh) || fresh.customer.version !== data.customerVersion) throw new Error("客户版本、渠道或上传权限已变化。");
     const abort = controller();
+    let history: History;
     try {
-      const result = await utils.client.channelInventory.customerUploadOriginal.mutate({ ...expected, customerId: props.customerId, expectedCustomerVersion: data.customerVersion, mode, file: encoded, requestId }, { signal: abort.signal });
-      if (!current()) throw new Error("提交结果待原身份核实，请保留原请求。");
-      if (result.history.customerId !== props.customerId || result.history.mode !== mode || !isUUID(result.history.historyId)) throw new Error("原文件任务回执身份不匹配。");
-      sessionStorage.removeItem(operationKey); originalOperation.current = null;
-      if (mode === "standard") { const next = { ...data, history: historySession(result.history) }; frozen.current = next; setSessionData(next); }
-      return result.history;
+      // Only a rejection of this mutation (not a local/context/manifest failure)
+      // may be interpreted as the server's transaction rollback contract.
+      try {
+        const result = await utils.client.channelInventory.customerUploadOriginal.mutate({ ...expected, customerId: props.customerId, expectedCustomerVersion: data.customerVersion, mode, file: encoded, requestId }, { signal: abort.signal });
+        history = result.history;
+      } catch (error) {
+        if (isOriginalNotSavedResponse(error) && release()) throw originalNotSavedAfterRelease(error);
+        throw error;
+      }
+      if (!ownsRequest()) throw new Error("提交结果待原身份核实，请保留原请求。");
+      if (history.customerId !== props.customerId || history.mode !== mode || !isUUID(history.historyId)) throw new Error("原文件任务回执身份不匹配。");
+      if (!release()) throw new Error("原文件恢复锁未能安全清理，请保留原文件和UUID核实，不能重建上传。");
+      if (mode === "standard") { const next = { ...data, history: historySession(history) }; frozen.current = next; setSessionData(next); }
+      return history;
     } catch (error) { if (current()) props.onAuthorizationError(error); throw error; }
     finally { requests.current.delete(abort); }
+  };
+  const persistOriginal = (file: File, mode: "standard" | "parse"): Promise<History> => {
+    const pending = originalInFlight.current;
+    if (pending) return pending.file === file && pending.mode === mode ? pending.promise : Promise.reject(new Error("原文件提交尚在进行，请保留原文件和UUID，不能并发更换上传。"));
+    const operation = { file, mode, promise: undefined as unknown as Promise<History> };
+    operation.promise = sendOriginal(file, mode).finally(() => { if (originalInFlight.current === operation) originalInFlight.current = null; });
+    originalInFlight.current = operation;
+    return operation.promise;
   };
   const reconcileQueue = async (entries: ManagedBatchEntry[]): Promise<ManagedBatchEntry[]> => {
     const data = frozen.current;
@@ -281,8 +318,12 @@ function CustomerSupplyUploadSession(props: Props) {
     sourceLabel={context.customer.name} fixedSource
     renderParseEntry={controls => <CustomerParseUpload {...controls} persistOriginal={persistOriginal} isCurrent={current} />}
     onOriginalFilePersist={async file => {
+      if (!current() || !frozen.current) throw new Error("客户上传会话已失效。");
       const attachment = standardAttachment.current;
-      const history = props.initialHistory && props.initialFile === file ? props.initialHistory.history : attachment && attachment.file === file && !attachment.rows ? attachment.history : await persistOriginal(file, "standard");
+      if (attachment?.file === file && attachment.sessionData.customerVersion !== frozen.current.customerVersion) throw new Error("客户版本已变化，不能复用原上传任务。");
+      if (attachment?.file === file && originalOperation.current) throw new Error("另一个原文件提交结果待确认，请保留原文件和UUID，不能更换上传。");
+      if (attachment?.file === file && attachment.rows) return { sessionData: frozen.current, rows: attachment.rows };
+      const history = props.initialHistory && props.initialFile === file ? props.initialHistory.history : attachment && attachment.file === file ? attachment.history : await persistOriginal(file, "standard");
       if (!attachment || attachment.history.historyId !== history.historyId) standardAttachment.current = { history, sessionData: frozen.current!, file };
       const abort = controller();
       try {

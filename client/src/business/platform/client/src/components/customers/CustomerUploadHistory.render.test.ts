@@ -17,6 +17,7 @@ import { CustomerUploadHistoryDialog } from "./CustomerUploadHistoryDialog";
 import { CustomerSupplyUploadDialog } from "./CustomerSupplyUploadDialog";
 import { CustomerParseUpload } from "./CustomerParseUpload";
 import type { History, HistoryDetail } from "./customerUploadHistory";
+import { customerSupplySessionSuffix } from "./customerSupply";
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 const identity = { enterpriseId: 31, actorUserId: 7, key: "verified-root" };
 const id = "11111111-1111-4111-8111-111111111111";
@@ -184,5 +185,182 @@ describe("version-source exclusions and explicit global evidence", () => {
     render(element()); await settle(); click(button("恢复原批次")); await settle();
     click(button("按原批次继续 / 重试")); await settle();
     expect(rt.prepare.mock.calls[1][0]).toEqual(input); expect(rt.create).not.toHaveBeenCalled(); expect(rt.batch).not.toHaveBeenCalled();
+  });
+});
+
+// Customer-only original lock regressions: real dialog, BatchUpload and parse
+// entry with the existing offline tRPC mocks. No network or database writes.
+type OriginalMode = "standard" | "parse";
+const notSaved = () => Object.assign(new Error("原文件未保存：表格格式无效，请更换有效文件。"), { data: { code: "BAD_REQUEST" } });
+function originalFile(text = "型号,品牌\nONE,TI", name = "same-original.csv") {
+  const bytes = new TextEncoder().encode(text); const file = new File([bytes], name);
+  Object.defineProperty(file, "arrayBuffer", { value: async () => bytes.buffer }); return file;
+}
+function supplyElement(initial: { initialFile?: File; initialHistory?: HistoryDetail } = {}) {
+  return React.createElement(CustomerSupplyUploadDialog, { ...initial, customerId: 801, identity, isCurrent: () => rt.current, onClose: rt.close, onComplete: rt.complete, onAuthorizationError: rt.auth });
+}
+async function openOriginal(mode: OriginalMode) { render(supplyElement()); await settle(); if (mode === "parse") click(button("解析上传")); }
+async function selectOriginal(file: File, mode: OriginalMode) {
+  const input = document.querySelector<HTMLInputElement>(`[aria-label="${mode === "parse" ? "上传待解析原表" : "上传库存表格"}"]`)!;
+  Object.defineProperty(input, "files", { value: [file], configurable: true });
+  await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise(resolve => setTimeout(resolve, 40)); });
+}
+async function submitOriginal(file: File, mode: OriginalMode) { await selectOriginal(file, mode); if (mode === "parse") { click(button("提交，等待解析")); await settle(); } }
+function originalKey() { return Array.from({ length: sessionStorage.length }, (_, i) => sessionStorage.key(i)!).find(key => key.startsWith("customer-upload-original:"))!; }
+function originalReceipt(mode: OriginalMode) { const h = history({ mode, ...(mode === "standard" ? { state: "awaiting_confirmation" } : {}) }); return { history: h, idempotent: true, duplicateWarning: false, submissionMessage: "已提交，等待解析" }; }
+
+describe("original upload exact rollback contract and CAS", () => {
+  it.each(["standard", "parse"] as const)("%s: deterministic rollback releases only its lock, keeps error and permits a different file/new UUID", async mode => {
+    rt.original.mockRejectedValueOnce(notSaved()).mockResolvedValueOnce(originalReceipt(mode));
+    await openOriginal(mode); await submitOriginal(originalFile(), mode);
+    const first = rt.original.mock.calls[0][0]; expect(originalKey()).toBeUndefined();
+    expect(document.body.textContent).toContain("原文件未保存：表格格式无效");
+    if (mode === "parse") { expect(button("替换文件").disabled).toBe(false); expect(document.body.textContent).not.toContain("提交可能已到达服务端"); }
+    const next = originalFile("型号,品牌\nTWO,ADI"); await selectOriginal(next, mode);
+    if (mode === "parse") { expect(document.body.textContent).toContain("原文件未保存：表格格式无效"); click(button("提交，等待解析")); await settle(); }
+    expect(rt.original).toHaveBeenCalledTimes(2); const second = rt.original.mock.calls[1][0];
+    expect(second.requestId).not.toBe(first.requestId); expect(second.file.fileName).toBe(first.file.fileName); expect(second.file.base64).not.toBe(first.file.base64);
+    expect(originalKey()).toBeUndefined(); expect(document.body.textContent).toContain(mode === "parse" ? "已提交，等待解析" : "预览并校验");
+    expect(rt.batch).not.toHaveBeenCalled(); expect(rt.create).not.toHaveBeenCalled();
+  });
+
+  const unknownErrors = [
+    ["timeout", () => new Error("timeout")],
+    ["500", () => Object.assign(new Error("原文件未保存：service failed"), { data: { code: "INTERNAL_SERVER_ERROR", httpStatus: 500 } })],
+    ["service-unknown", () => Object.assign(new Error("service unknown"), { data: { code: "SERVICE_UNAVAILABLE" } })],
+    ["text-only fake", () => new Error("BAD_REQUEST 原文件未保存：fake text")],
+    ["HTTP400-only fake", () => Object.assign(new Error("原文件未保存：fake HTTP"), { data: { httpStatus: 400 }, code: "BAD_REQUEST" })],
+    ["other BAD_REQUEST", () => Object.assign(new Error("权限或客户版本校验失败"), { data: { code: "BAD_REQUEST" } })],
+    ["embedded prefix", () => Object.assign(new Error("upstream 原文件未保存：not stable prefix"), { data: { code: "BAD_REQUEST" } })],
+    ["empty explanation", () => Object.assign(new Error("原文件未保存："), { data: { code: "BAD_REQUEST" } })],
+  ] as const;
+  it.each((["standard", "parse"] as const).flatMap(mode => unknownErrors.map(([name, error]) => [mode, name, error] as const)))("%s: %s remains locked and retries exact UUID/content", async (mode, _name, makeError) => {
+    rt.original.mockRejectedValueOnce(makeError()).mockResolvedValueOnce(originalReceipt(mode));
+    await openOriginal(mode); const file = originalFile(); await submitOriginal(file, mode);
+    const first = rt.original.mock.calls[0][0]; const key = originalKey(); const raw = sessionStorage.getItem(key);
+    expect(JSON.parse(raw!).requestId).toBe(first.requestId);
+    await selectOriginal(originalFile("型号,品牌\nDIFFERENT,TI"), mode);
+    expect(rt.original).toHaveBeenCalledTimes(1); expect(sessionStorage.getItem(key)).toBe(raw);
+    if (mode === "parse") { expect(button("替换文件").disabled).toBe(true); expect(document.body.textContent).toContain("提交可能已到达服务端"); click(button("按原UUID重试提交")); await settle(); }
+    else await selectOriginal(file, mode);
+    expect(rt.original.mock.calls[1][0]).toEqual(first); expect(originalKey()).toBeUndefined();
+  });
+
+  it.each(["success", "rejection"] as const)("late %s after current identity loss retains original lock and suppresses UI release", async outcome => {
+    let complete!: (value: any) => void; rt.original.mockImplementationOnce(() => new Promise((resolve, reject) => { complete = outcome === "success" ? resolve : reject; }));
+    await openOriginal("parse"); await submitOriginal(originalFile(), "parse"); const key = originalKey(); const raw = sessionStorage.getItem(key);
+    rt.current = false; await act(async () => complete(outcome === "success" ? originalReceipt("parse") : notSaved())); await settle();
+    expect(sessionStorage.getItem(key)).toBe(raw); expect(document.body.textContent).not.toContain("已提交，等待解析"); expect(rt.auth).not.toHaveBeenCalled();
+  });
+  it.each(["success", "rejection"] as const)("late %s after unmount aborts and does not delete a newer request lock", async outcome => {
+    let complete!: (value: any) => void; rt.original.mockImplementationOnce(() => new Promise((resolve, reject) => { complete = outcome === "success" ? resolve : reject; }));
+    await openOriginal("parse"); await submitOriginal(originalFile(), "parse"); const key = originalKey(); const next = { ...JSON.parse(sessionStorage.getItem(key)!), requestId: randomUUID() };
+    await act(async () => root?.unmount()); root = undefined; expect(rt.original.mock.calls[0][1].signal.aborted).toBe(true);
+    sessionStorage.setItem(key, JSON.stringify(next)); await act(async () => complete(outcome === "success" ? originalReceipt("parse") : notSaved())); await settle();
+    expect(JSON.parse(sessionStorage.getItem(key)!)).toEqual(next);
+  });
+  it.each((["success", "rejection"] as const).flatMap(outcome => ["requestId", "hash", "mode", "fileName", "customerVersion", "raw", "corrupt", "missing"].map(field => [outcome, field] as const)))("%s never clears a changed %s lock", async (outcome, field) => {
+    let complete!: (value: any) => void; rt.original.mockImplementationOnce(() => new Promise((resolve, reject) => { complete = outcome === "success" ? resolve : reject; }));
+    await openOriginal("parse"); await submitOriginal(originalFile(), "parse"); const key = originalKey(); const prior = JSON.parse(sessionStorage.getItem(key)!);
+    const changes: Record<string, unknown> = { requestId: randomUUID(), hash: "b".repeat(64), mode: "standard", fileName: "another.csv", customerVersion: 5 };
+    const changed = field === "raw" ? ` ${JSON.stringify(prior)}` : field === "corrupt" ? "{bad JSON" : JSON.stringify({ ...prior, [field]: changes[field] });
+    if (field === "missing") sessionStorage.removeItem(key); else sessionStorage.setItem(key, changed);
+    await act(async () => complete(outcome === "success" ? originalReceipt("parse") : notSaved())); await settle();
+    expect(sessionStorage.getItem(key)).toBe(field === "missing" ? null : changed); expect(button("替换文件").disabled).toBe(true);
+    // In-memory operation must not be recreated even if the external key vanished.
+    click(button("按原UUID重试提交")); await settle(); expect(rt.original).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["read", "write", "bad-json", "silent-write"] as const)("%s storage failure blocks the original mutation and does not announce release", async failure => {
+    await openOriginal("parse");
+    if (failure === "read") vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("storage read denied"); });
+    if (failure === "write") vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("storage quota denied"); });
+    if (failure === "silent-write") vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => undefined);
+    if (failure === "bad-json") sessionStorage.setItem(`customer-upload-original:${customerSupplySessionSuffix(identity, 801)}`, "not json");
+    await submitOriginal(originalFile(), "parse"); expect(rt.original).not.toHaveBeenCalled(); expect(button("替换文件").disabled).toBe(true);
+    expect(document.body.textContent).toContain("提交可能已到达服务端");
+  });
+  it.each((["success", "rejection"] as const).flatMap(outcome => ["read", "delete", "silent-delete"].map(failure => [outcome, failure] as const)))("%s plus cleanup %s failure stays fail-closed", async (outcome, failure) => {
+    let complete!: (value: any) => void; rt.original.mockImplementationOnce(() => new Promise((resolve, reject) => { complete = outcome === "success" ? resolve : reject; }));
+    await openOriginal("parse"); await submitOriginal(originalFile(), "parse"); const key = originalKey(); const raw = sessionStorage.getItem(key);
+    let spy: ReturnType<typeof vi.spyOn>;
+    if (failure === "read") spy = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("read denied"); });
+    else spy = vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => { if (failure === "delete") throw new Error("delete denied"); });
+    await act(async () => complete(outcome === "success" ? originalReceipt("parse") : notSaved())); await settle(); spy.mockRestore();
+    expect(sessionStorage.getItem(key)).toBe(raw); expect(button("替换文件").disabled).toBe(true); expect(document.body.textContent).not.toContain("已提交，等待解析");
+  });
+});
+
+describe("standard original acknowledged history reuse", () => {
+  it("original success plus historyGet failure retries only the manifest/history, not original", async () => {
+    rt.original.mockResolvedValue(originalReceipt("standard")); rt.get.mockRejectedValueOnce(new Error("history unavailable")).mockResolvedValueOnce(detail(originalReceipt("standard").history));
+    await openOriginal("standard"); await submitOriginal(originalFile(), "standard");
+    expect(rt.original).toHaveBeenCalledTimes(1); expect(document.body.textContent).toContain("history unavailable");
+    click(button("按原文件重试保存／读取")); await settle();
+    expect(rt.original).toHaveBeenCalledTimes(1); expect(rt.get).toHaveBeenCalledTimes(2); expect(rt.get.mock.calls[1][0]).toEqual(rt.get.mock.calls[0][0]);
+    expect(document.body.textContent).toContain("预览并校验");
+  });
+  it("same File with rows reuses the acknowledged history and row evidence even after local workbook read failure", async () => {
+    rt.original.mockResolvedValue(originalReceipt("standard"));
+    const bytes = new TextEncoder().encode("型号,品牌\nONE,TI"); const file = new File([bytes], "original.csv");
+    const read = vi.fn().mockResolvedValueOnce(bytes.buffer).mockRejectedValueOnce(new Error("local read lost after manifest")).mockResolvedValue(bytes.buffer);
+    Object.defineProperty(file, "arrayBuffer", { value: read }); await openOriginal("standard"); await submitOriginal(file, "standard");
+    expect(document.body.textContent).toContain("local read lost after manifest"); expect(rt.original).toHaveBeenCalledTimes(1); expect(rt.get).toHaveBeenCalledTimes(1);
+    click(button("按原文件重试保存／读取")); await settle(); expect(rt.original).toHaveBeenCalledTimes(1); expect(rt.get).toHaveBeenCalledTimes(1);
+    expect(document.body.textContent).toContain("预览并校验");
+  });
+  it("initialHistory plus exact initialFile never invokes customerUploadOriginal, including manifest retry", async () => {
+    const file = originalFile(); const d = detail(history({ mode: "standard", state: "awaiting_confirmation", capabilities: { ...history().capabilities, canConfirm: true } }));
+    rt.get.mockRejectedValueOnce(new Error("initial manifest unavailable")).mockResolvedValueOnce(d);
+    render(supplyElement({ initialFile: file, initialHistory: d })); await settle(); await settle();
+    expect(rt.original).not.toHaveBeenCalled(); expect(document.body.textContent).toContain("initial manifest unavailable"); click(button("按原文件重试保存／读取")); await settle();
+    expect(rt.original).not.toHaveBeenCalled(); expect(rt.get).toHaveBeenCalledTimes(2); expect(document.body.textContent).toContain("预览并校验");
+  });
+  it("a repeated synthetic same-File selection while in flight cannot produce a second request UUID/mutation", async () => {
+    let complete!: (value: any) => void; rt.original.mockImplementationOnce(() => new Promise(resolve => { complete = resolve; }));
+    await openOriginal("standard"); const file = originalFile(); await submitOriginal(file, "standard"); const key = originalKey(); const raw = sessionStorage.getItem(key);
+    await selectOriginal(file, "standard"); expect(rt.original).toHaveBeenCalledTimes(1); expect(sessionStorage.getItem(key)).toBe(raw);
+    await act(async () => complete(originalReceipt("standard"))); await settle(); expect(rt.original).toHaveBeenCalledTimes(1); expect(originalKey()).toBeUndefined();
+    expect(document.body.textContent).toContain("预览并校验");
+  });
+});
+
+describe("original fail-closed pre-send and cleanup boundaries", () => {
+  it.each(["throws", "silent"] as const)("storage write %s retains the allocated in-memory UUID and cannot recreate after storage recovery", async failure => {
+    await openOriginal("parse"); const ids = vi.spyOn(crypto, "randomUUID");
+    const write = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { if (failure === "throws") throw new Error("quota denied"); });
+    await submitOriginal(originalFile(), "parse"); expect(ids).toHaveBeenCalledTimes(1); expect(rt.original).not.toHaveBeenCalled(); write.mockRestore();
+    click(button("按原UUID重试提交")); await settle(); expect(ids).toHaveBeenCalledTimes(1); expect(rt.original).not.toHaveBeenCalled(); expect(originalKey()).toBeUndefined();
+    expect(button("替换文件").disabled).toBe(true);
+  });
+  it.each(["success", "rejection"] as const)("%s with post-delete verification read failure keeps memory locked and never announces release", async outcome => {
+    let complete!: (value: any) => void; rt.original.mockImplementationOnce(() => new Promise((resolve, reject) => { complete = outcome === "success" ? resolve : reject; }));
+    await openOriginal("parse"); await submitOriginal(originalFile(), "parse"); const key = originalKey();
+    const getItem = Storage.prototype.getItem;
+    const read = vi.spyOn(Storage.prototype, "getItem").mockImplementation(function (this: Storage, name: string) {
+      const value = getItem.call(this, name); if (name === key && value === null) throw new Error("verification denied"); return value;
+    });
+    await act(async () => complete(outcome === "success" ? originalReceipt("parse") : notSaved())); await settle(); read.mockRestore();
+    expect(sessionStorage.getItem(key)).toBeNull(); expect(button("替换文件").disabled).toBe(true); expect(document.body.textContent).not.toContain("已提交，等待解析");
+    click(button("按原UUID重试提交")); await settle(); expect(rt.original).toHaveBeenCalledTimes(1);
+  });
+  it("the same rollback-shaped error from customer context does not release original lock or notify parse as released", async () => {
+    await openOriginal("parse"); rt.context.mockRejectedValueOnce(notSaved()); await submitOriginal(originalFile(), "parse");
+    expect(rt.original).not.toHaveBeenCalled(); expect(originalKey()).toBeDefined(); expect(button("替换文件").disabled).toBe(true);
+    expect(document.body.textContent).toContain("提交可能已到达服务端");
+  });
+  it("a changed customer version before mutation retains its exact lock and prevents the write", async () => {
+    await openOriginal("parse"); rt.context.mockResolvedValueOnce({ customer: { id: 801, name: "授权客户", version: 5, industryCode: "electronic_components", archivedAt: null }, channel: null, canUpload: true, disabledReason: null });
+    await submitOriginal(originalFile(), "parse"); expect(rt.original).not.toHaveBeenCalled(); expect(JSON.parse(sessionStorage.getItem(originalKey())!).customerVersion).toBe(4);
+    expect(button("替换文件").disabled).toBe(true);
+  });
+  it("same-File concurrent selection already joins at the encoding stage before UUID allocation", async () => {
+    await openOriginal("standard"); rt.original.mockResolvedValue(originalReceipt("standard"));
+    const bytes = new TextEncoder().encode("型号,品牌\nONE,TI"); const file = new File([bytes], "original.csv"); let finish!: (bytes: ArrayBuffer) => void;
+    const read = vi.fn().mockImplementationOnce(() => new Promise<ArrayBuffer>(resolve => { finish = resolve; })).mockResolvedValue(bytes.buffer);
+    Object.defineProperty(file, "arrayBuffer", { value: read }); const ids = vi.spyOn(crypto, "randomUUID");
+    await selectOriginal(file, "standard"); await selectOriginal(file, "standard"); expect(read).toHaveBeenCalledTimes(1); expect(ids).not.toHaveBeenCalled(); expect(rt.original).not.toHaveBeenCalled();
+    await act(async () => { finish(bytes.buffer); await new Promise(resolve => setTimeout(resolve, 40)); });
+    expect(rt.original).toHaveBeenCalledTimes(1); expect(document.body.textContent).toContain("预览并校验");
   });
 });

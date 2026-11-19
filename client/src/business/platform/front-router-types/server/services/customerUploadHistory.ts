@@ -129,7 +129,19 @@ export function createCustomerUploadHistoryService(deps: CustomerUploadHistoryDe
   async function appendFile(tx: SqlExecutor, h: HistoryRow, kind: FileDto["kind"], input: FileInput, fileId = randomUUID()): Promise<FileRow> {
     const decoded = Buffer.from(input.base64, "base64");
     if (decoded.toString("base64") !== input.base64 || decoded.length < 1 || decoded.length > schemas.CUSTOMER_UPLOAD_FILE_BYTES_MAX) fail("BAD_REQUEST", "文件编码或大小无效");
-    try { inspectCustomerUploadFile(input); } catch { fail("BAD_REQUEST", "文件格式、工作簿结构或资源限制校验未通过，请使用无宏、无外部链接且未加密的有效表格"); }
+    try { inspectCustomerUploadFile(input); } catch (error) {
+      // This check precedes storage.put and the transaction must roll back before
+      // the client receives this refusal. Never expose arbitrary parser messages.
+      const reason = error instanceof Error ? error.message : "";
+      const hint = reason === "文件必须是有效 UTF-8 文本"
+        ? "CSV文本编码不支持，请另存为UTF-8 CSV。"
+        : /资源超限|超过 8MiB|超过 10MiB/.test(reason)
+          ? "表格行列、解压大小或原行证据超过安全限制，请拆分后上传。"
+          : /宏|外部|外链|加密/.test(reason) && reason !== "拒绝加密、Zip64 或不支持的 ZIP 条目"
+            ? "表格含不支持的宏、加密或外部引用，请移除后上传。"
+            : "表格格式或工作簿结构不兼容，请另存为无宏、无外部链接且未加密的有效表格。";
+      fail("BAD_REQUEST", `${kind === "original" ? "原文件未保存：" : ""}${hint}`);
+    }
     const stored = await deps.storage.put(input);
     if (stored.byteSize !== decoded.length || stored.sha256 !== hash(decoded)) throw new Error("STORAGE_INTEGRITY");
     if (stored.manifest && Buffer.byteLength(JSON.stringify(stored.manifest), "utf8") > 8 * 1024 * 1024) fail("BAD_REQUEST", "原表行证据超过8MiB安全上限");
