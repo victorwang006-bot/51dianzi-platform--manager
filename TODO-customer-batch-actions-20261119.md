@@ -74,3 +74,23 @@ R5 F1/F2独立窄审PASS_NARROW_FIX_ONLY，无新实质bug；AST/bytes仅两help
 真实R7完整捕获多次观测动态Node集合变化而拒绝；一次remoteexit0收件尾截断不当有效capture，client已只修EOF接收，最后一次仍DYNAMIC_NODE_SET_FINAL_DRIFT，已停止capture重试。30秒297身份样本未捕到额外Node，不反推此前漂移不存在，不猜触发者或退休。没有有效新fullMETA/完整包/全批批准，最后上线项保持未勾选；0attempt/window/activeAPIHTMLwrite/assetinstall/reload/DDL/物料写测/env改写，未暂停或kill其他服务。私有R5/R6/R7controller目录取证保留不覆写。
 
 后续须定向确认短生命周期Node来源/受控稳定窗口，fresh自身完整graph/META/六槽完整typed/retained证据，再现役APIHTML新包独立全审和窄发布，不移除集合守卫或用部分稳定样本代替成功capture。当前本轮只读全部结束，不在无稳定基线时强行开窗。详见deploy/customer-batch-actions-20261119/evidence/current-deployment-blocked-20261120.md。
+
+## 13:20恢复推进：不把blocked当任务终点
+
+用户13:02要求解释未上线却停止，后台已认责：停止失败重试不应变为停止查因与上线任务，原授权持续有效。13:04与原采样相同路径诊断已精确定位PID1.kernelLinkMeta.exe/cwd虚拟inode/初始化mtime/ctime重生成，实际两扫描15PID与完整entry identity/exe/cmdlineH一致；不能按错误label称该次Node增减，也不能倒推全部旧拒绝同原因。
+
+R8仅对准确cfg.proc/PID目录和exe/cwd虚拟entry作来源定义：剔除3个内核cache生成字段，保留dev/type/owner/group/size/nlink，目标readlink、PID/PPID/start/comm、整raw/cmdline/permission、真实源/CWD fullMETA全部保持。新pin586166f7ddf48235b6a28e2237d7b1f64cbf3709d1af484388a67b086f0ecaef，新R8scope；304controller/44preparer、28+2新增反例实际通过，不额外重测通过功能，修正留到最终唯一整包审中核验。
+
+13:14真实capture拒已知active别名逃逸，尚未准许任意跟随；同默认capture路径继续记录精确拒绝字段。13:17唯一诊断原路径109扫描全entry一致、无proc差异，但受临时90秒诊断时限截断；这不是新安全拒绝或正式capture。13:20已经移除仅诊断时限，保留原controller时效/全部守卫，完整原默认capture正在进行；同次失败留准确路径/entry差异，不再做旁路稳定采样或停止整个任务。0apply/业务写/reload，只有真实有效fullMETA与当前增量包最终独立批准后才能窄发布。与前台已重新协调，前台当前只离线处理自己的必要阻塞，不并发ECS管理读/写。
+
+## 14:55 当前接续点：未上线，已明确无开窗释放
+
+R9当前controller `2c7047701591af1ee2c21f93fe84593184ff0e6e3ed3d40ad2ee1d0f87dea0f8`，用户批准TTL3600/精确timer维护最长3600；参数8项和仅3个已审客户媒体包装的2行误拒修正8项通过。现役技术库STF407 revision2→9同参数/PDF变更已由用户明确采用；本任务原样保护37ddd当前wholeH/META，未写库，不伪称sourceVerifier通过。
+
+实际fresh `3c7cc226...`/83054记录/六Ready真，内容审复用；manifest `21b2e77f...`/review `0271f8a2...`完整机械绑定103包/33源已通过。源码已自然merge前台a647并push manager `bfb602c726e6c9250999fd1906e9431c61430f01`。仅私有16,183,338字节归档传输遇到SFTP停滞、scp120s超时、SSH stdin600s超时。**从未进入私有package安装/attempt/apply/pubwindow/生产替换/reload，不是已上线或已回滚。**
+
+14:48唯一精准检查证明服务器同一归档15,740,928字节/完整prefixH匹配，仍缺442,410字节。原所有partial保留，不删除或未经H信任。14:46原维护守护真实RESUME/exit0，supplier.timer恢复active+enabled，unitH不变（暂停未超过获批60m），后台全部SSH/作业/锁退出。既有真实capture/coord/保护图/来源/报告已私有附件交前台及协调任务，不新增扫描，不扩大source语义闭合主张。
+
+14:52明确无开窗释放，14:55总协调要求前台先行，后台保持0ECS连接/不install/apply/不暂停timer/不插队，不把该等待勾为任务完成。已离线备好10个块、每块最大48KiB（末块42B）的剩余字节计划，每块准确offset/before-prefixH/chunkH/after-prefixH，20s每块/180s全程，完整归档最终必须H `a0cc4d7a3797e55b93f012a04bd72a2a01e9ee7aed7e2f550af69d52dfeb71b2`。默认plan不联网；只有前台真实终态退出连接锁并重新协调后才能补这唯一suffix，不重传大包/不重建业务/不重审已过内容。
+
+后续实际当前META/coord/source binding须重新符合现场（原timer窗已结束、前台可能更改受保护静态集合），不得仅凭旧时效/nonce/报告复用为live准入，不能伪改捕获时间。继续既定窄scope流程，实际业务验收与verified持久闭窗/定时器恢复证明全部齐后，才勾选发布完成。
