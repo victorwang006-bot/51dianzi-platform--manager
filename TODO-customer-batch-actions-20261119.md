@@ -42,3 +42,11 @@ R4完整OWNER不变，SCOPE customer-batch-actions-20261120-6Lfttf6o-R4；当前
 独立fclone域审15限定JSON样本通过但3自有__proto__样本真实不等价，已增加递归域明确拒绝，不删env字段或洗bytes。preflight/apply前增加sixown Ready全部True零写gate，合法false仍可作capture诊断；正式审批仍须实际sixReady真、typed/fullretained byte witness，不拿域guard或纯样本反推daemon对象类型。domain段独立静态通过；aux采样末端两缺口已最小修复并9原stale接受反例全部拒绝，最终142 controller/36 preparer/6 JSON测试通过。全部历史与准确AST/source日志在evidence/r4-*，不重写业务。辅助采样是有限读，不声称内核原子或连续冻结。
 
 下一步在前台未占窗阶段只许可一次≤30s定向readiness/安全身份见证（无stage/capture/fullMETA/锁/写/reload/DB、只布尔/哈希/差异keyname），不可当审批；前台新的actualverifiedclosed+明确交接后才后台fresh14proc/fullMETA/两API/adminHTML/当前源字节重建、独立全pkg审和窄scope发布。source/mocked tests不是actualReady，全approve仍False；旧8a130/f893/旧seed/旧bf7或529pin不复用。
+
+## 11:13实际只读见证结果与当前等待边界
+
+前台明确许可一次≤30s只读六own准备形态与辅助身份probe，给实际Node fullSHA2684ed77513bdbfc63c92848877a4c43a8e50dd7df0f9896c1e0daf0d204c939。11:12:44 probe实际exit1并断开：Node/9生成源/31RPC源哈希门禁通过；随后/proc/2060125/stat返回ENOENT。六槽模型与env仅在内存读取，尚未输出见证结果，因此不能声称sixReady通过或失败；没有stage/capture/fullMETA/锁/API/写/reload/DB，私有环境未落盘/输出。2060126未继续读，不寻找替代PID或重试。
+
+此结果只说明旧PID2060125已不存，不能推断推荐worker故障或合法retired。当前R4固定旧PID保护不得用于发布；推荐Ops与childcwd全树保护继续保留，不删历史代码/目录。前台正向服务器任务询已有生命周期/owner来源记录、将在其static adapter中fresh核对动态actualnode/flockparent与knownbootstrap/cwd；不让服务器重scan或接管。明确暂不追加六RPC许可、不新增ECS连接，后台只离线等待新actual身份及前台列表+详情actualverifiedclosed/明确交接，再做必要护图调整和fresh全审。
+
+auxfix独立增量复核已静态PASS，原105top/Controller30/九pins/domain/pregate全字节保持，142/36/6日志一致；报告evidence/r4-independent-auxfix.md/.json。段静态PASS不是实际META/Ready见证或整体审批，所有审批仍False。
