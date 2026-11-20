@@ -1,0 +1,172 @@
+{
+  "actualAttemptExecuted": false,
+  "actualCaptureExecuted": false,
+  "actualReloadExecuted": false,
+  "actualSixReadyAllTrueVerified": false,
+  "actualSixSlotsRetainedForecastVerified": false,
+  "after": {
+    "README.md": {
+      "bytes": 22712,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/README.md",
+      "sha256": "6e21b9e17c5b4a85ce2556afa3a1ff8b2846900246ed783b23c87842fb4b5454"
+    },
+    "prepare-local.README.md": {
+      "bytes": 10330,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/prepare-local.README.md",
+      "sha256": "f5eaaeb278d9421523f2b9e5adbf5dce71baa24745af23116f24cdb830d3b6d7"
+    },
+    "prepare-local.py": {
+      "bytes": 22260,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/prepare-local.py",
+      "sha256": "5e5fac10ad7d762ed9002dad8847af2071d48d44ff4b9c28edda74b63c51ab9c"
+    },
+    "release.py": {
+      "bytes": 123290,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/release.py",
+      "sha256": "52908c3719ef8f00b974b432af10c889c01397094778be812cea69ae828ae72f"
+    },
+    "test_prepare_local.py": {
+      "bytes": 28905,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/test_prepare_local.py",
+      "sha256": "3f588fe155b0c717df3f8b9f00057a803548a4054d8b1c3651b026eea14ccc6f"
+    },
+    "test_release.py": {
+      "bytes": 116805,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/test_release.py",
+      "sha256": "dbf69aeacef81a3ba8d815fba6fede789740365274e9fa8b224440ab43a38a7d"
+    }
+  },
+  "before": {
+    "README.md": {
+      "bytes": 15830,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r4-domain-baseline-8dc/README.md",
+      "sha256": "3408f340b80c6e92dc307909b0395f6759b5ef3189330e221f0bffaa7d4a96a2"
+    },
+    "prepare-local.README.md": {
+      "bytes": 8403,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r4-domain-baseline-8dc/prepare-local.README.md",
+      "sha256": "e8420c7b3268fd692277d0e2c4e1d312cb077b834acf60e40c3f8d2fbb6a409d"
+    },
+    "prepare-local.py": {
+      "bytes": 22260,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r4-domain-baseline-8dc/prepare-local.py",
+      "sha256": "2b67639684de64a3ec308d6b9594b0b313de57837432e149244be42a19f73c24"
+    },
+    "release.py": {
+      "bytes": 121483,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r4-domain-baseline-8dc/release.py",
+      "sha256": "8dc23eb3865e65bfc0a60d8b20f3548dc1a087cf533478ad89cdae88c86766f0"
+    },
+    "test_prepare_local.py": {
+      "bytes": 28094,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r4-domain-baseline-8dc/test_prepare_local.py",
+      "sha256": "62b8f538b2327f4d0c64a05da452bd866027095b207bfb31840f52d850df2f5d"
+    },
+    "test_release.py": {
+      "bytes": 103191,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r4-domain-baseline-8dc/test_release.py",
+      "sha256": "c4c9b7b54c22b052dbc89bc0b12daac48d6cbd4458a63bfac3b58d034eee9f9e"
+    }
+  },
+  "businessTsJsBuilderChanged": false,
+  "controllerApproved": false,
+  "fcloneSourceSha256": "9b921f33e5d4e36dd030f5d2e736ea2af0c95f4fb795ada696160e2db7fe2fe6",
+  "finalDeployApproval": false,
+  "gitMcpSshServerCliExecuted": false,
+  "inputs": {
+    "/home/ubuntu/work/customer-batch/fclone-resolved-once/fclone.js": {
+      "bytes": 1239,
+      "path": "/home/ubuntu/work/customer-batch/fclone-resolved-once/fclone.js",
+      "sha256": "9b921f33e5d4e36dd030f5d2e736ea2af0c95f4fb795ada696160e2db7fe2fe6"
+    },
+    "/home/ubuntu/work/customer-batch/fclone-resolved-once/read-record.json": {
+      "bytes": 710,
+      "path": "/home/ubuntu/work/customer-batch/fclone-resolved-once/read-record.json",
+      "sha256": "d6c7d30385e379a15b0cceab0bbe8ed3e99da2fa15f21b1c67de359178d41ce0"
+    },
+    "/home/ubuntu/work/customer-batch/review-fclone-offline.json": {
+      "bytes": 79560,
+      "path": "/home/ubuntu/work/customer-batch/review-fclone-offline.json",
+      "sha256": "49e4ff056fb3758e04774e923ae8adf5e5e54f88dfc2cee3fc999ebbc11cb4d7"
+    },
+    "/home/ubuntu/work/customer-batch/review-fclone-offline.md": {
+      "bytes": 14681,
+      "path": "/home/ubuntu/work/customer-batch/review-fclone-offline.md",
+      "sha256": "b292b9a71074d2ce3cf708c91215b687b127d2c0f55b4d2591ceb6e885a6d931"
+    },
+    "/home/ubuntu/work/customer-batch/review-r3-offline.md": {
+      "bytes": 17181,
+      "path": "/home/ubuntu/work/customer-batch/review-r3-offline.md",
+      "sha256": "5b3d1da29f5bd9522d850b1a5c78b4b5f39e05c150dd08686e7b955c4b7ec681"
+    }
+  },
+  "logs": {
+    "r4-domain-baseline-finite-tests.txt": {
+      "bytes": 906,
+      "passed": true,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r4-domain-baseline-finite-tests.txt",
+      "sha256": "ab36567b74ef88771992c87875e0f9d1f2ce5eaca7f04d0ed132a3f8b2de6f2b",
+      "tests": 6
+    },
+    "r4-domain-baseline-prepare-tests.txt": {
+      "bytes": 4007,
+      "passed": true,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r4-domain-baseline-prepare-tests.txt",
+      "sha256": "25ec2b0951412bf3c78cc46b73c5b58fe7f68ad18702847bfa0a85b0fd23e1df",
+      "tests": 34
+    },
+    "r4-domain-baseline-release-tests.txt": {
+      "bytes": 17959,
+      "passed": true,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r4-domain-baseline-release-tests.txt",
+      "sha256": "8390ec17c5f930e9cf85a7db72682dfa4a03995cf25482b5ac4faeaea6e06b5e",
+      "tests": 121
+    },
+    "r4-domain-finite-tests.txt": {
+      "bytes": 906,
+      "passed": true,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r4-domain-finite-tests.txt",
+      "sha256": "ab36567b74ef88771992c87875e0f9d1f2ce5eaca7f04d0ed132a3f8b2de6f2b",
+      "tests": 6
+    },
+    "r4-domain-prepare-tests.txt": {
+      "bytes": 4309,
+      "passed": true,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r4-domain-prepare-tests.txt",
+      "sha256": "47f4ad810b36c0a957414046dae85c0cf9d659272af6a8ad492657a93f7ab433",
+      "tests": 36
+    },
+    "r4-domain-release-tests.txt": {
+      "bytes": 20557,
+      "passed": true,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r4-domain-release-tests.txt",
+      "sha256": "283e2a4d84cf2740ce1aa89449160c0871c293cd4009a457ff404de128981d5f",
+      "tests": 136
+    }
+  },
+  "mockDiagnosticCaptureExecuted": true,
+  "newPythonGuardSamples": 15,
+  "nodeFcloneExecutedThisTask": false,
+  "originalFcloneLegalJsonProtoCounterexamples": 3,
+  "originalFcloneOfflineSamples": 15,
+  "productionWrites": 0,
+  "releaseApproved": false,
+  "reloadApproved": false,
+  "remoteStageExecuted": false,
+  "scopeUnchangedFromNeverRemoteR4": true,
+  "status": "NOT_APPROVED",
+  "stillRequired": [
+    "actual fresh14proc",
+    "six own actual all-ready true",
+    "typed/fullSourceShape/actualfield",
+    "fullRetained/complete-byte witness",
+    "fresh fullMETA protected trees",
+    "new fullpackage/source/tool/owner/nonce/TTL/byte inverse",
+    "independent fullpackage approval"
+  ],
+  "unmodifiedFiniteJsonTests": {
+    "bytes": 2588,
+    "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/test_finite_json.py",
+    "sha256": "2963b03499f1aaffe95dc58fe87e01b110cbac5955c6592422a08ddcb8a42c5c"
+  }
+}

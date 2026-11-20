@@ -1,0 +1,1173 @@
+{
+  "status": "OFFLINE_CONDITIONAL_CLONE_EVIDENCE_ONLY_NOT_RELOAD_OR_RELEASE_APPROVAL",
+  "source": {
+    "path": "/home/ubuntu/work/customer-batch/fclone-resolved-once/fclone.js",
+    "bytes": 1239,
+    "sha256": "9b921f33e5d4e36dd030f5d2e736ea2af0c95f4fb795ada696160e2db7fe2fe6"
+  },
+  "sourceLogicalLines": 49,
+  "functionTextSha256": "ec723807670abcf33d3b5ad912fb978e751cf9bdd6d601a36f48f37db2eb2262",
+  "resolvedReadRecord": {
+    "path": "/home/ubuntu/work/customer-batch/fclone-resolved-once/read-record.json",
+    "bytes": 710,
+    "sha256": "d6c7d30385e379a15b0cceab0bbe8ed3e99da2fa15f21b1c67de359178d41ce0"
+  },
+  "resolvedReadRecordStatus": "EXACT_RESOLVED_SOURCE_ONLY_NOT_CAPTURE_OR_APPROVAL",
+  "previousResolutionNotRepeated": true,
+  "stableReference": {
+    "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r4-baseline-bf7ec85b/release.py",
+    "bytes": 114655,
+    "sha256": "bf7ec85b902ae2474ded779bfad110e7ac791e7d4c244d67ca6f912614d375ab"
+  },
+  "immutableEc2Reference": {
+    "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r3-f1-baseline-release.py",
+    "bytes": 114459,
+    "sha256": "ec2f541d4cee799a21a9b21633110a183c8efaf162451876ad5aea415359bde5"
+  },
+  "pm2RawBindingFunctionSha256": "cefe20459dba70b0d8f3329c6ab7ed8d155bc7b798b8262716c2393fd1801284",
+  "pm2RawBindingEc2AndBf7FunctionExactlyEqual": true,
+  "observedSourcePins": [
+    {
+      "path": "/home/ubuntu/work/customer-batch/pm2-live-source/lib/Utility.js",
+      "bytes": 8546,
+      "sha256": "66cd15711be69f40f6ee3c3f60adcf07e58d0bcdec9552ec5104530b22ba28f1"
+    },
+    {
+      "path": "/home/ubuntu/work/customer-batch/pm2-live-source/lib/God.js",
+      "bytes": 19018,
+      "sha256": "f598e5113890418827e31dd52fc3538e8f19287fad212cafd9388b0216fe500d"
+    },
+    {
+      "path": "/home/ubuntu/work/customer-batch/pm2-live-source/lib/God/Reload.js",
+      "bytes": 6229,
+      "sha256": "5e90112e447c4634009ea35005ffd477aab93064f55390288c56b51eee25992e"
+    },
+    {
+      "path": "/home/ubuntu/work/customer-batch/pm2-live-source/lib/God/Methods.js",
+      "bytes": 7129,
+      "sha256": "577a8505074225dfe73ce2c955c844662c6bc9d76c31d8102f809a1691262044"
+    },
+    {
+      "path": "/home/ubuntu/work/customer-batch/pm2-live-source/lib/God/ClusterMode.js",
+      "bytes": 2813,
+      "sha256": "b4a9304e12f468f87a039c174c6ea4a1001f21d9dd1f5317121ed217bc389119"
+    },
+    {
+      "path": "/home/ubuntu/work/customer-batch/pm2-live-source/lib/ProcessContainer.js",
+      "bytes": 8800,
+      "sha256": "712b414f248a460f58d4365898fa7b27d39bf7f571ac889359e3a7b6a32419d1"
+    },
+    {
+      "path": "/home/ubuntu/work/customer-batch/pm2-live-source/constants.js",
+      "bytes": 5149,
+      "sha256": "5a4adce0c3c277d4974c0ebdefb22d62ffcad74edcf910bfeeff287dacb8a853"
+    },
+    {
+      "path": "/home/ubuntu/work/customer-batch/fclone-resolved-once/fclone.js",
+      "bytes": 1239,
+      "sha256": "9b921f33e5d4e36dd030f5d2e736ea2af0c95f4fb795ada696160e2db7fe2fe6"
+    }
+  ],
+  "observedPinCount": 8,
+  "r4RequiredSourcePinCount": 9,
+  "ninePinSetCompleteVerifiedHere": false,
+  "script": {
+    "path": "/home/ubuntu/work/customer-batch/review-fclone-offline.py",
+    "sha256": "cd854bd729fcaa1e9cd26cc9fc041e006053877f69ba6efc57bb8dc10a06056b"
+  },
+  "comparisonLogEncoding": "UTF-8; ensure_ascii=True; sort_keys=True; separators=(comma,colon); one trailing LF",
+  "comparisonLogSha256": "055bfcf52ea5f201f52477dcdf9aece847e4ca56f015a2f9cc0d78e3c1cbf018",
+  "comparisonLogCanonical": "{\"comparisons\":[{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"conditional_domain\",\"inputWire\":\"null\",\"name\":\"null_root_fclone_only\",\"node\":{\"cloneJson\":\"null\",\"cloneRootKeys\":null,\"cloneRootPrototype\":null,\"freshContainers\":true,\"group\":\"conditional_domain\",\"name\":\"null_root_fclone_only\",\"originalJson\":\"null\",\"originalRootKeys\":null,\"originalUnchanged\":true,\"utilityJson\":\"{}\",\"utilityValueAndKeysAndPrototypePreserved\":false,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"null\",\"deepcopyJsonEnsureAsciiTrue\":\"null\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":null,\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":true,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":true},{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"conditional_domain\",\"inputWire\":\"[true,false]\",\"name\":\"booleans\",\"node\":{\"cloneJson\":\"[true,false]\",\"cloneRootKeys\":[\"0\",\"1\"],\"cloneRootPrototype\":\"Array.prototype\",\"freshContainers\":true,\"group\":\"conditional_domain\",\"name\":\"booleans\",\"originalJson\":\"[true,false]\",\"originalRootKeys\":[\"0\",\"1\"],\"originalUnchanged\":true,\"utilityJson\":\"[true,false]\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"[true,false]\",\"deepcopyJsonEnsureAsciiTrue\":\"[true,false]\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":null,\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":true,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":true},{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"conditional_domain\",\"inputWire\":\"\\\"\\\"\",\"name\":\"empty_string\",\"node\":{\"cloneJson\":\"\\\"\\\"\",\"cloneRootKeys\":null,\"cloneRootPrototype\":null,\"freshContainers\":true,\"group\":\"conditional_domain\",\"name\":\"empty_string\",\"originalJson\":\"\\\"\\\"\",\"originalRootKeys\":null,\"originalUnchanged\":true,\"utilityJson\":\"\\\"\\\"\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"\\\"\\\"\",\"deepcopyJsonEnsureAsciiTrue\":\"\\\"\\\"\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":null,\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":true,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":true},{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"conditional_domain\",\"inputWire\":\"{}\",\"name\":\"empty_object\",\"node\":{\"cloneJson\":\"{}\",\"cloneRootKeys\":[],\"cloneRootPrototype\":\"Object.prototype\",\"freshContainers\":true,\"group\":\"conditional_domain\",\"name\":\"empty_object\",\"originalJson\":\"{}\",\"originalRootKeys\":[],\"originalUnchanged\":true,\"utilityJson\":\"{}\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"{}\",\"deepcopyJsonEnsureAsciiTrue\":\"{}\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":[],\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":true,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":true},{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"conditional_domain\",\"inputWire\":\"[]\",\"name\":\"empty_array\",\"node\":{\"cloneJson\":\"[]\",\"cloneRootKeys\":[],\"cloneRootPrototype\":\"Array.prototype\",\"freshContainers\":true,\"group\":\"conditional_domain\",\"name\":\"empty_array\",\"originalJson\":\"[]\",\"originalRootKeys\":[],\"originalUnchanged\":true,\"utilityJson\":\"[]\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"[]\",\"deepcopyJsonEnsureAsciiTrue\":\"[]\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":null,\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":true,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":true},{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"conditional_domain\",\"inputWire\":\"[0,-0.0,1,-1,0.125,-0.125,1.0,1e-07,1e+20,5e-324,1.7976931348623157e+308,9007199254740991,-9007199254740991]\",\"name\":\"finite_numbers\",\"node\":{\"cloneJson\":\"[0,0,1,-1,0.125,-0.125,1,1e-7,100000000000000000000,5e-324,1.7976931348623157e+308,9007199254740991,-9007199254740991]\",\"cloneRootKeys\":[\"0\",\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"9\",\"10\",\"11\",\"12\"],\"cloneRootPrototype\":\"Array.prototype\",\"freshContainers\":true,\"group\":\"conditional_domain\",\"name\":\"finite_numbers\",\"originalJson\":\"[0,0,1,-1,0.125,-0.125,1,1e-7,100000000000000000000,5e-324,1.7976931348623157e+308,9007199254740991,-9007199254740991]\",\"originalRootKeys\":[\"0\",\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"9\",\"10\",\"11\",\"12\"],\"originalUnchanged\":true,\"utilityJson\":\"[0,0,1,-1,0.125,-0.125,1,1e-7,100000000000000000000,5e-324,1.7976931348623157e+308,9007199254740991,-9007199254740991]\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"[0,-0.0,1,-1,0.125,-0.125,1.0,1e-07,1e+20,5e-324,1.7976931348623157e+308,9007199254740991,-9007199254740991]\",\"deepcopyJsonEnsureAsciiTrue\":\"[0,-0.0,1,-1,0.125,-0.125,1.0,1e-07,1e+20,5e-324,1.7976931348623157e+308,9007199254740991,-9007199254740991]\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":null,\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":false,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":false},{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"conditional_domain\",\"inputWire\":\"{\\\"\\\\u503c\\\":\\\"\\\\u6c49\\\\u5b57\\\\ud842\\\\udfb7\\\\ud83d\\\\ude00\\\",\\\"escape\\\":\\\"quote\\\\\\\" slash/ backslash\\\\\\\\ line\\\\n tab\\\\t nul\\\\u0000\\\"}\",\"name\":\"cjk_supplementary_controls\",\"node\":{\"cloneJson\":\"{\\\"\\u503c\\\":\\\"\\u6c49\\u5b57\\ud842\\udfb7\\ud83d\\ude00\\\",\\\"escape\\\":\\\"quote\\\\\\\" slash/ backslash\\\\\\\\ line\\\\n tab\\\\t nul\\\\u0000\\\"}\",\"cloneRootKeys\":[\"\\u503c\",\"escape\"],\"cloneRootPrototype\":\"Object.prototype\",\"freshContainers\":true,\"group\":\"conditional_domain\",\"name\":\"cjk_supplementary_controls\",\"originalJson\":\"{\\\"\\u503c\\\":\\\"\\u6c49\\u5b57\\ud842\\udfb7\\ud83d\\ude00\\\",\\\"escape\\\":\\\"quote\\\\\\\" slash/ backslash\\\\\\\\ line\\\\n tab\\\\t nul\\\\u0000\\\"}\",\"originalRootKeys\":[\"\\u503c\",\"escape\"],\"originalUnchanged\":true,\"utilityJson\":\"{\\\"\\u503c\\\":\\\"\\u6c49\\u5b57\\ud842\\udfb7\\ud83d\\ude00\\\",\\\"escape\\\":\\\"quote\\\\\\\" slash/ backslash\\\\\\\\ line\\\\n tab\\\\t nul\\\\u0000\\\"}\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"{\\\"\\u503c\\\":\\\"\\u6c49\\u5b57\\ud842\\udfb7\\ud83d\\ude00\\\",\\\"escape\\\":\\\"quote\\\\\\\" slash/ backslash\\\\\\\\ line\\\\n tab\\\\t nul\\\\u0000\\\"}\",\"deepcopyJsonEnsureAsciiTrue\":\"{\\\"\\\\u503c\\\":\\\"\\\\u6c49\\\\u5b57\\\\ud842\\\\udfb7\\\\ud83d\\\\ude00\\\",\\\"escape\\\":\\\"quote\\\\\\\" slash/ backslash\\\\\\\\ line\\\\n tab\\\\t nul\\\\u0000\\\"}\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":[\"\\u503c\",\"escape\"],\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":false,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":true},{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"conditional_domain\",\"inputWire\":\"{\\\"high\\\":\\\"\\\\ud800\\\",\\\"low\\\":\\\"\\\\udfff\\\",\\\"pair\\\":\\\"\\\\ud83d\\\\ude00\\\"}\",\"name\":\"lone_surrogates\",\"node\":{\"cloneJson\":\"{\\\"high\\\":\\\"\\\\ud800\\\",\\\"low\\\":\\\"\\\\udfff\\\",\\\"pair\\\":\\\"\\ud83d\\ude00\\\"}\",\"cloneRootKeys\":[\"high\",\"low\",\"pair\"],\"cloneRootPrototype\":\"Object.prototype\",\"freshContainers\":true,\"group\":\"conditional_domain\",\"name\":\"lone_surrogates\",\"originalJson\":\"{\\\"high\\\":\\\"\\\\ud800\\\",\\\"low\\\":\\\"\\\\udfff\\\",\\\"pair\\\":\\\"\\ud83d\\ude00\\\"}\",\"originalRootKeys\":[\"high\",\"low\",\"pair\"],\"originalUnchanged\":true,\"utilityJson\":\"{\\\"high\\\":\\\"\\\\ud800\\\",\\\"low\\\":\\\"\\\\udfff\\\",\\\"pair\\\":\\\"\\ud83d\\ude00\\\"}\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"{\\\"high\\\":\\\"\\ud800\\\",\\\"low\\\":\\\"\\udfff\\\",\\\"pair\\\":\\\"\\ud83d\\ude00\\\"}\",\"deepcopyJsonEnsureAsciiTrue\":\"{\\\"high\\\":\\\"\\\\ud800\\\",\\\"low\\\":\\\"\\\\udfff\\\",\\\"pair\\\":\\\"\\\\ud83d\\\\ude00\\\"}\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":[\"high\",\"low\",\"pair\"],\"utf8EncodingError\":\"UnicodeEncodeError: lone surrogate is not strict UTF-8 encodable\",\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":false,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":false},{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"conditional_domain\",\"inputWire\":\"{\\\"z\\\":1,\\\"10\\\":10,\\\"2\\\":2,\\\"01\\\":1,\\\"4294967294\\\":4,\\\"4294967295\\\":5,\\\"0\\\":0,\\\"a\\\":2}\",\"name\":\"integer_key_order\",\"node\":{\"cloneJson\":\"{\\\"0\\\":0,\\\"2\\\":2,\\\"10\\\":10,\\\"4294967294\\\":4,\\\"z\\\":1,\\\"01\\\":1,\\\"4294967295\\\":5,\\\"a\\\":2}\",\"cloneRootKeys\":[\"0\",\"2\",\"10\",\"4294967294\",\"z\",\"01\",\"4294967295\",\"a\"],\"cloneRootPrototype\":\"Object.prototype\",\"freshContainers\":true,\"group\":\"conditional_domain\",\"name\":\"integer_key_order\",\"originalJson\":\"{\\\"0\\\":0,\\\"2\\\":2,\\\"10\\\":10,\\\"4294967294\\\":4,\\\"z\\\":1,\\\"01\\\":1,\\\"4294967295\\\":5,\\\"a\\\":2}\",\"originalRootKeys\":[\"0\",\"2\",\"10\",\"4294967294\",\"z\",\"01\",\"4294967295\",\"a\"],\"originalUnchanged\":true,\"utilityJson\":\"{\\\"0\\\":0,\\\"2\\\":2,\\\"10\\\":10,\\\"4294967294\\\":4,\\\"z\\\":1,\\\"01\\\":1,\\\"4294967295\\\":5,\\\"a\\\":2}\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"{\\\"z\\\":1,\\\"10\\\":10,\\\"2\\\":2,\\\"01\\\":1,\\\"4294967294\\\":4,\\\"4294967295\\\":5,\\\"0\\\":0,\\\"a\\\":2}\",\"deepcopyJsonEnsureAsciiTrue\":\"{\\\"z\\\":1,\\\"10\\\":10,\\\"2\\\":2,\\\"01\\\":1,\\\"4294967294\\\":4,\\\"4294967295\\\":5,\\\"0\\\":0,\\\"a\\\":2}\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":[\"z\",\"10\",\"2\",\"01\",\"4294967294\",\"4294967295\",\"0\",\"a\"],\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":false,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":false},{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"conditional_domain\",\"inputWire\":\"{\\\"x\\\":{\\\"b\\\":1,\\\"9\\\":9,\\\"1\\\":1},\\\"a\\\":[{\\\"4\\\":4,\\\"2\\\":2,\\\"c\\\":3}]}\",\"name\":\"nested_key_order\",\"node\":{\"cloneJson\":\"{\\\"x\\\":{\\\"1\\\":1,\\\"9\\\":9,\\\"b\\\":1},\\\"a\\\":[{\\\"2\\\":2,\\\"4\\\":4,\\\"c\\\":3}]}\",\"cloneRootKeys\":[\"x\",\"a\"],\"cloneRootPrototype\":\"Object.prototype\",\"freshContainers\":true,\"group\":\"conditional_domain\",\"name\":\"nested_key_order\",\"originalJson\":\"{\\\"x\\\":{\\\"1\\\":1,\\\"9\\\":9,\\\"b\\\":1},\\\"a\\\":[{\\\"2\\\":2,\\\"4\\\":4,\\\"c\\\":3}]}\",\"originalRootKeys\":[\"x\",\"a\"],\"originalUnchanged\":true,\"utilityJson\":\"{\\\"x\\\":{\\\"1\\\":1,\\\"9\\\":9,\\\"b\\\":1},\\\"a\\\":[{\\\"2\\\":2,\\\"4\\\":4,\\\"c\\\":3}]}\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"{\\\"x\\\":{\\\"b\\\":1,\\\"9\\\":9,\\\"1\\\":1},\\\"a\\\":[{\\\"4\\\":4,\\\"2\\\":2,\\\"c\\\":3}]}\",\"deepcopyJsonEnsureAsciiTrue\":\"{\\\"x\\\":{\\\"b\\\":1,\\\"9\\\":9,\\\"1\\\":1},\\\"a\\\":[{\\\"4\\\":4,\\\"2\\\":2,\\\"c\\\":3}]}\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":[\"x\",\"a\"],\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":false,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":false},{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"conditional_domain\",\"inputWire\":\"{\\\"a\\\":[1,null,false,{\\\"b\\\":[\\\"x\\\",{\\\"n\\\":-2.5}]}],\\\"empty\\\":{}}\",\"name\":\"nested_tree\",\"node\":{\"cloneJson\":\"{\\\"a\\\":[1,null,false,{\\\"b\\\":[\\\"x\\\",{\\\"n\\\":-2.5}]}],\\\"empty\\\":{}}\",\"cloneRootKeys\":[\"a\",\"empty\"],\"cloneRootPrototype\":\"Object.prototype\",\"freshContainers\":true,\"group\":\"conditional_domain\",\"name\":\"nested_tree\",\"originalJson\":\"{\\\"a\\\":[1,null,false,{\\\"b\\\":[\\\"x\\\",{\\\"n\\\":-2.5}]}],\\\"empty\\\":{}}\",\"originalRootKeys\":[\"a\",\"empty\"],\"originalUnchanged\":true,\"utilityJson\":\"{\\\"a\\\":[1,null,false,{\\\"b\\\":[\\\"x\\\",{\\\"n\\\":-2.5}]}],\\\"empty\\\":{}}\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"{\\\"a\\\":[1,null,false,{\\\"b\\\":[\\\"x\\\",{\\\"n\\\":-2.5}]}],\\\"empty\\\":{}}\",\"deepcopyJsonEnsureAsciiTrue\":\"{\\\"a\\\":[1,null,false,{\\\"b\\\":[\\\"x\\\",{\\\"n\\\":-2.5}]}],\\\"empty\\\":{}}\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":[\"a\",\"empty\"],\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":true,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":true},{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"conditional_domain\",\"inputWire\":\"{\\\"status\\\":\\\"online\\\",\\\"wait_ready\\\":false,\\\"restart_time\\\":7,\\\"env\\\":{\\\"FLAG\\\":true,\\\"PORT\\\":3000,\\\"EMPTY\\\":\\\"\\\",\\\"NULL\\\":null,\\\"nested\\\":{\\\"status\\\":\\\"launching\\\",\\\"axm_actions\\\":[]}},\\\"axm_options\\\":{\\\"enabled\\\":true}}\",\"name\":\"lifecycle_looking_fixture\",\"node\":{\"cloneJson\":\"{\\\"status\\\":\\\"online\\\",\\\"wait_ready\\\":false,\\\"restart_time\\\":7,\\\"env\\\":{\\\"FLAG\\\":true,\\\"PORT\\\":3000,\\\"EMPTY\\\":\\\"\\\",\\\"NULL\\\":null,\\\"nested\\\":{\\\"status\\\":\\\"launching\\\",\\\"axm_actions\\\":[]}},\\\"axm_options\\\":{\\\"enabled\\\":true}}\",\"cloneRootKeys\":[\"status\",\"wait_ready\",\"restart_time\",\"env\",\"axm_options\"],\"cloneRootPrototype\":\"Object.prototype\",\"freshContainers\":true,\"group\":\"conditional_domain\",\"name\":\"lifecycle_looking_fixture\",\"originalJson\":\"{\\\"status\\\":\\\"online\\\",\\\"wait_ready\\\":false,\\\"restart_time\\\":7,\\\"env\\\":{\\\"FLAG\\\":true,\\\"PORT\\\":3000,\\\"EMPTY\\\":\\\"\\\",\\\"NULL\\\":null,\\\"nested\\\":{\\\"status\\\":\\\"launching\\\",\\\"axm_actions\\\":[]}},\\\"axm_options\\\":{\\\"enabled\\\":true}}\",\"originalRootKeys\":[\"status\",\"wait_ready\",\"restart_time\",\"env\",\"axm_options\"],\"originalUnchanged\":true,\"utilityJson\":\"{\\\"status\\\":\\\"online\\\",\\\"wait_ready\\\":false,\\\"restart_time\\\":7,\\\"env\\\":{\\\"FLAG\\\":true,\\\"PORT\\\":3000,\\\"EMPTY\\\":\\\"\\\",\\\"NULL\\\":null,\\\"nested\\\":{\\\"status\\\":\\\"launching\\\",\\\"axm_actions\\\":[]}},\\\"axm_options\\\":{\\\"enabled\\\":true}}\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"{\\\"status\\\":\\\"online\\\",\\\"wait_ready\\\":false,\\\"restart_time\\\":7,\\\"env\\\":{\\\"FLAG\\\":true,\\\"PORT\\\":3000,\\\"EMPTY\\\":\\\"\\\",\\\"NULL\\\":null,\\\"nested\\\":{\\\"status\\\":\\\"launching\\\",\\\"axm_actions\\\":[]}},\\\"axm_options\\\":{\\\"enabled\\\":true}}\",\"deepcopyJsonEnsureAsciiTrue\":\"{\\\"status\\\":\\\"online\\\",\\\"wait_ready\\\":false,\\\"restart_time\\\":7,\\\"env\\\":{\\\"FLAG\\\":true,\\\"PORT\\\":3000,\\\"EMPTY\\\":\\\"\\\",\\\"NULL\\\":null,\\\"nested\\\":{\\\"status\\\":\\\"launching\\\",\\\"axm_actions\\\":[]}},\\\"axm_options\\\":{\\\"enabled\\\":true}}\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":[\"status\",\"wait_ready\",\"restart_time\",\"env\",\"axm_options\"],\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":true,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":true},{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"conditional_domain\",\"inputWire\":\"{\\\"0\\\":\\\"x\\\",\\\"length\\\":1,\\\"indexOf\\\":\\\"not-a-function\\\",\\\"extra\\\":true}\",\"name\":\"length_without_callable_indexOf\",\"node\":{\"cloneJson\":\"{\\\"0\\\":\\\"x\\\",\\\"length\\\":1,\\\"indexOf\\\":\\\"not-a-function\\\",\\\"extra\\\":true}\",\"cloneRootKeys\":[\"0\",\"length\",\"indexOf\",\"extra\"],\"cloneRootPrototype\":\"Object.prototype\",\"freshContainers\":true,\"group\":\"conditional_domain\",\"name\":\"length_without_callable_indexOf\",\"originalJson\":\"{\\\"0\\\":\\\"x\\\",\\\"length\\\":1,\\\"indexOf\\\":\\\"not-a-function\\\",\\\"extra\\\":true}\",\"originalRootKeys\":[\"0\",\"length\",\"indexOf\",\"extra\"],\"originalUnchanged\":true,\"utilityJson\":\"{\\\"0\\\":\\\"x\\\",\\\"length\\\":1,\\\"indexOf\\\":\\\"not-a-function\\\",\\\"extra\\\":true}\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"{\\\"0\\\":\\\"x\\\",\\\"length\\\":1,\\\"indexOf\\\":\\\"not-a-function\\\",\\\"extra\\\":true}\",\"deepcopyJsonEnsureAsciiTrue\":\"{\\\"0\\\":\\\"x\\\",\\\"length\\\":1,\\\"indexOf\\\":\\\"not-a-function\\\",\\\"extra\\\":true}\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":[\"0\",\"length\",\"indexOf\",\"extra\"],\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":true,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":true},{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"conditional_domain\",\"inputWire\":\"{\\\"constructor\\\":{\\\"prototype\\\":{\\\"safe\\\":1}},\\\"prototype\\\":\\\"data\\\",\\\"toString\\\":\\\"data\\\"}\",\"name\":\"ordinary_constructor_prototype_keys\",\"node\":{\"cloneJson\":\"{\\\"constructor\\\":{\\\"prototype\\\":{\\\"safe\\\":1}},\\\"prototype\\\":\\\"data\\\",\\\"toString\\\":\\\"data\\\"}\",\"cloneRootKeys\":[\"constructor\",\"prototype\",\"toString\"],\"cloneRootPrototype\":\"Object.prototype\",\"freshContainers\":true,\"group\":\"conditional_domain\",\"name\":\"ordinary_constructor_prototype_keys\",\"originalJson\":\"{\\\"constructor\\\":{\\\"prototype\\\":{\\\"safe\\\":1}},\\\"prototype\\\":\\\"data\\\",\\\"toString\\\":\\\"data\\\"}\",\"originalRootKeys\":[\"constructor\",\"prototype\",\"toString\"],\"originalUnchanged\":true,\"utilityJson\":\"{\\\"constructor\\\":{\\\"prototype\\\":{\\\"safe\\\":1}},\\\"prototype\\\":\\\"data\\\",\\\"toString\\\":\\\"data\\\"}\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"{\\\"constructor\\\":{\\\"prototype\\\":{\\\"safe\\\":1}},\\\"prototype\\\":\\\"data\\\",\\\"toString\\\":\\\"data\\\"}\",\"deepcopyJsonEnsureAsciiTrue\":\"{\\\"constructor\\\":{\\\"prototype\\\":{\\\"safe\\\":1}},\\\"prototype\\\":\\\"data\\\",\\\"toString\\\":\\\"data\\\"}\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":[\"constructor\",\"prototype\",\"toString\"],\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":true,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":true},{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"conditional_domain\",\"inputWire\":\"{\\\"a\\\":{\\\"v\\\":[1,2]},\\\"b\\\":{\\\"v\\\":[1,2]}}\",\"name\":\"repeated_values_not_shared_identity\",\"node\":{\"cloneJson\":\"{\\\"a\\\":{\\\"v\\\":[1,2]},\\\"b\\\":{\\\"v\\\":[1,2]}}\",\"cloneRootKeys\":[\"a\",\"b\"],\"cloneRootPrototype\":\"Object.prototype\",\"freshContainers\":true,\"group\":\"conditional_domain\",\"name\":\"repeated_values_not_shared_identity\",\"originalJson\":\"{\\\"a\\\":{\\\"v\\\":[1,2]},\\\"b\\\":{\\\"v\\\":[1,2]}}\",\"originalRootKeys\":[\"a\",\"b\"],\"originalUnchanged\":true,\"utilityJson\":\"{\\\"a\\\":{\\\"v\\\":[1,2]},\\\"b\\\":{\\\"v\\\":[1,2]}}\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"{\\\"a\\\":{\\\"v\\\":[1,2]},\\\"b\\\":{\\\"v\\\":[1,2]}}\",\"deepcopyJsonEnsureAsciiTrue\":\"{\\\"a\\\":{\\\"v\\\":[1,2]},\\\"b\\\":{\\\"v\\\":[1,2]}}\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":[\"a\",\"b\"],\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":true,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":true},{\"cloneDecodedJsonValuesEqual\":false,\"group\":\"legal_json_counterexample\",\"inputWire\":\"{\\\"__proto__\\\":{\\\"inherited\\\":\\\"x\\\"},\\\"own\\\":1}\",\"name\":\"own_proto_object\",\"node\":{\"cloneJson\":\"{\\\"own\\\":1}\",\"cloneRootKeys\":[\"own\"],\"cloneRootPrototype\":\"other\",\"freshContainers\":false,\"group\":\"legal_json_counterexample\",\"name\":\"own_proto_object\",\"originalJson\":\"{\\\"__proto__\\\":{\\\"inherited\\\":\\\"x\\\"},\\\"own\\\":1}\",\"originalRootKeys\":[\"__proto__\",\"own\"],\"originalUnchanged\":true,\"utilityJson\":\"{\\\"own\\\":1}\",\"utilityValueAndKeysAndPrototypePreserved\":false,\"valueAndKeysAndPrototypePreserved\":false},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"{\\\"__proto__\\\":{\\\"inherited\\\":\\\"x\\\"},\\\"own\\\":1}\",\"deepcopyJsonEnsureAsciiTrue\":\"{\\\"__proto__\\\":{\\\"inherited\\\":\\\"x\\\"},\\\"own\\\":1}\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":[\"__proto__\",\"own\"],\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":false,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":false},{\"cloneDecodedJsonValuesEqual\":false,\"group\":\"legal_json_counterexample\",\"inputWire\":\"{\\\"__proto__\\\":null}\",\"name\":\"own_proto_null\",\"node\":{\"cloneJson\":\"{}\",\"cloneRootKeys\":[],\"cloneRootPrototype\":\"null\",\"freshContainers\":false,\"group\":\"legal_json_counterexample\",\"name\":\"own_proto_null\",\"originalJson\":\"{\\\"__proto__\\\":null}\",\"originalRootKeys\":[\"__proto__\"],\"originalUnchanged\":true,\"utilityJson\":\"{}\",\"utilityValueAndKeysAndPrototypePreserved\":false,\"valueAndKeysAndPrototypePreserved\":false},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"{\\\"__proto__\\\":null}\",\"deepcopyJsonEnsureAsciiTrue\":\"{\\\"__proto__\\\":null}\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":[\"__proto__\"],\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":false,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":false},{\"cloneDecodedJsonValuesEqual\":false,\"group\":\"legal_json_counterexample\",\"inputWire\":\"{\\\"env\\\":{\\\"__proto__\\\":\\\"x\\\",\\\"ok\\\":true}}\",\"name\":\"nested_own_proto_primitive\",\"node\":{\"cloneJson\":\"{\\\"env\\\":{\\\"ok\\\":true}}\",\"cloneRootKeys\":[\"env\"],\"cloneRootPrototype\":\"Object.prototype\",\"freshContainers\":false,\"group\":\"legal_json_counterexample\",\"name\":\"nested_own_proto_primitive\",\"originalJson\":\"{\\\"env\\\":{\\\"__proto__\\\":\\\"x\\\",\\\"ok\\\":true}}\",\"originalRootKeys\":[\"env\"],\"originalUnchanged\":true,\"utilityJson\":\"{\\\"env\\\":{\\\"ok\\\":true}}\",\"utilityValueAndKeysAndPrototypePreserved\":false,\"valueAndKeysAndPrototypePreserved\":false},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"{\\\"env\\\":{\\\"__proto__\\\":\\\"x\\\",\\\"ok\\\":true}}\",\"deepcopyJsonEnsureAsciiTrue\":\"{\\\"env\\\":{\\\"__proto__\\\":\\\"x\\\",\\\"ok\\\":true}}\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":[\"env\"],\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":false,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":false},{\"cloneDecodedJsonValuesEqual\":false,\"group\":\"transport_boundary\",\"inputWire\":\"{\\\"n\\\":9007199254740993}\",\"name\":\"outside_safe_integer_transport\",\"node\":{\"cloneJson\":\"{\\\"n\\\":9007199254740992}\",\"cloneRootKeys\":[\"n\"],\"cloneRootPrototype\":\"Object.prototype\",\"freshContainers\":true,\"group\":\"transport_boundary\",\"name\":\"outside_safe_integer_transport\",\"originalJson\":\"{\\\"n\\\":9007199254740992}\",\"originalRootKeys\":[\"n\"],\"originalUnchanged\":true,\"utilityJson\":\"{\\\"n\\\":9007199254740992}\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":false,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"{\\\"n\\\":9007199254740993}\",\"deepcopyJsonEnsureAsciiTrue\":\"{\\\"n\\\":9007199254740993}\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":[\"n\"],\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":false,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":false},{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"transport_boundary\",\"inputWire\":\"{\\\"n\\\":1.0}\",\"name\":\"float_one_bytes\",\"node\":{\"cloneJson\":\"{\\\"n\\\":1}\",\"cloneRootKeys\":[\"n\"],\"cloneRootPrototype\":\"Object.prototype\",\"freshContainers\":true,\"group\":\"transport_boundary\",\"name\":\"float_one_bytes\",\"originalJson\":\"{\\\"n\\\":1}\",\"originalRootKeys\":[\"n\"],\"originalUnchanged\":true,\"utilityJson\":\"{\\\"n\\\":1}\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"{\\\"n\\\":1.0}\",\"deepcopyJsonEnsureAsciiTrue\":\"{\\\"n\\\":1.0}\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":[\"n\"],\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":false,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":false},{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"transport_boundary\",\"inputWire\":\"{\\\"n\\\":-0.0}\",\"name\":\"negative_zero_bytes\",\"node\":{\"cloneJson\":\"{\\\"n\\\":0}\",\"cloneRootKeys\":[\"n\"],\"cloneRootPrototype\":\"Object.prototype\",\"freshContainers\":true,\"group\":\"transport_boundary\",\"name\":\"negative_zero_bytes\",\"originalJson\":\"{\\\"n\\\":0}\",\"originalRootKeys\":[\"n\"],\"originalUnchanged\":true,\"utilityJson\":\"{\\\"n\\\":0}\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"{\\\"n\\\":-0.0}\",\"deepcopyJsonEnsureAsciiTrue\":\"{\\\"n\\\":-0.0}\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":[\"n\"],\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":false,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":false},{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"transport_boundary\",\"inputWire\":\"{\\\"n\\\":1e20,\\\"small\\\":1e-7}\",\"name\":\"exponent_bytes\",\"node\":{\"cloneJson\":\"{\\\"n\\\":100000000000000000000,\\\"small\\\":1e-7}\",\"cloneRootKeys\":[\"n\",\"small\"],\"cloneRootPrototype\":\"Object.prototype\",\"freshContainers\":true,\"group\":\"transport_boundary\",\"name\":\"exponent_bytes\",\"originalJson\":\"{\\\"n\\\":100000000000000000000,\\\"small\\\":1e-7}\",\"originalRootKeys\":[\"n\",\"small\"],\"originalUnchanged\":true,\"utilityJson\":\"{\\\"n\\\":100000000000000000000,\\\"small\\\":1e-7}\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"{\\\"n\\\":1e+20,\\\"small\\\":1e-07}\",\"deepcopyJsonEnsureAsciiTrue\":\"{\\\"n\\\":1e+20,\\\"small\\\":1e-07}\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":[\"n\",\"small\"],\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":false,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":false},{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"transport_boundary\",\"inputWire\":\"{\\\"s\\\":\\\"\\\\u6c49\\\\u5b57\\\"}\",\"name\":\"cjk_escape_bytes\",\"node\":{\"cloneJson\":\"{\\\"s\\\":\\\"\\u6c49\\u5b57\\\"}\",\"cloneRootKeys\":[\"s\"],\"cloneRootPrototype\":\"Object.prototype\",\"freshContainers\":true,\"group\":\"transport_boundary\",\"name\":\"cjk_escape_bytes\",\"originalJson\":\"{\\\"s\\\":\\\"\\u6c49\\u5b57\\\"}\",\"originalRootKeys\":[\"s\"],\"originalUnchanged\":true,\"utilityJson\":\"{\\\"s\\\":\\\"\\u6c49\\u5b57\\\"}\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"{\\\"s\\\":\\\"\\u6c49\\u5b57\\\"}\",\"deepcopyJsonEnsureAsciiTrue\":\"{\\\"s\\\":\\\"\\\\u6c49\\\\u5b57\\\"}\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":[\"s\"],\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":false,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":true},{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"transport_boundary\",\"inputWire\":\"{\\\"z\\\":1,\\\"10\\\":10,\\\"2\\\":2,\\\"a\\\":0}\",\"name\":\"integer_order_bytes\",\"node\":{\"cloneJson\":\"{\\\"2\\\":2,\\\"10\\\":10,\\\"z\\\":1,\\\"a\\\":0}\",\"cloneRootKeys\":[\"2\",\"10\",\"z\",\"a\"],\"cloneRootPrototype\":\"Object.prototype\",\"freshContainers\":true,\"group\":\"transport_boundary\",\"name\":\"integer_order_bytes\",\"originalJson\":\"{\\\"2\\\":2,\\\"10\\\":10,\\\"z\\\":1,\\\"a\\\":0}\",\"originalRootKeys\":[\"2\",\"10\",\"z\",\"a\"],\"originalUnchanged\":true,\"utilityJson\":\"{\\\"2\\\":2,\\\"10\\\":10,\\\"z\\\":1,\\\"a\\\":0}\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"{\\\"z\\\":1,\\\"10\\\":10,\\\"2\\\":2,\\\"a\\\":0}\",\"deepcopyJsonEnsureAsciiTrue\":\"{\\\"z\\\":1,\\\"10\\\":10,\\\"2\\\":2,\\\"a\\\":0}\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":[\"z\",\"10\",\"2\",\"a\"],\"utf8EncodingError\":null,\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":false,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":false},{\"cloneDecodedJsonValuesEqual\":true,\"group\":\"transport_boundary\",\"inputWire\":\"{\\\"s\\\":\\\"\\\\ud800\\\"}\",\"name\":\"lone_surrogate_utf8_gate\",\"node\":{\"cloneJson\":\"{\\\"s\\\":\\\"\\\\ud800\\\"}\",\"cloneRootKeys\":[\"s\"],\"cloneRootPrototype\":\"Object.prototype\",\"freshContainers\":true,\"group\":\"transport_boundary\",\"name\":\"lone_surrogate_utf8_gate\",\"originalJson\":\"{\\\"s\\\":\\\"\\\\ud800\\\"}\",\"originalRootKeys\":[\"s\"],\"originalUnchanged\":true,\"utilityJson\":\"{\\\"s\\\":\\\"\\\\ud800\\\"}\",\"utilityValueAndKeysAndPrototypePreserved\":true,\"valueAndKeysAndPrototypePreserved\":true},\"parsedInputValuesRepresentableEqually\":true,\"python\":{\"deepcopyJsonEnsureAsciiFalse\":\"{\\\"s\\\":\\\"\\ud800\\\"}\",\"deepcopyJsonEnsureAsciiTrue\":\"{\\\"s\\\":\\\"\\\\ud800\\\"}\",\"freshContainers\":true,\"originalUnchanged\":true,\"rootKeys\":[\"s\"],\"utf8EncodingError\":\"UnicodeEncodeError: lone surrogate is not strict UTF-8 encodable\",\"valueAndKeysPreserved\":true},\"pythonAsciiVsNodeCloneJsonBytesEqual\":true,\"pythonStrictUtf8VsNodeCloneJsonBytesEqual\":false}],\"nodeExecutable\":\"/home/ubuntu/.nvm/versions/node/v22.23.4/bin/node\",\"nodeVersion\":\"v22.23.4\",\"outOfDomainSyntheticExamples\":{\"arrayCycleJson\":\"[\\\"[Circular]\\\"]\",\"arrayLikeJson\":\"[\\\"x\\\"]\",\"objectCycleJson\":\"{\\\"self\\\":\\\"[Circular]\\\"}\",\"sourceAliasOriginalUnchanged\":true,\"sourceAliasPreservedByFclone\":false,\"sourceAliasPreservedByPythonDeepcopy\":true},\"pythonVersion\":\"3.12.3\"}\n",
+  "comparisonLog": {
+    "nodeVersion": "v22.23.4",
+    "nodeExecutable": "/home/ubuntu/.nvm/versions/node/v22.23.4/bin/node",
+    "pythonVersion": "3.12.3",
+    "comparisons": [
+      {
+        "group": "conditional_domain",
+        "name": "null_root_fclone_only",
+        "inputWire": "null",
+        "node": {
+          "group": "conditional_domain",
+          "name": "null_root_fclone_only",
+          "originalJson": "null",
+          "cloneJson": "null",
+          "utilityJson": "{}",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": false,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": null,
+          "cloneRootKeys": null,
+          "cloneRootPrototype": null
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "null",
+          "deepcopyJsonEnsureAsciiTrue": "null",
+          "rootKeys": null,
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": true,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": true
+      },
+      {
+        "group": "conditional_domain",
+        "name": "booleans",
+        "inputWire": "[true,false]",
+        "node": {
+          "group": "conditional_domain",
+          "name": "booleans",
+          "originalJson": "[true,false]",
+          "cloneJson": "[true,false]",
+          "utilityJson": "[true,false]",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": [
+            "0",
+            "1"
+          ],
+          "cloneRootKeys": [
+            "0",
+            "1"
+          ],
+          "cloneRootPrototype": "Array.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "[true,false]",
+          "deepcopyJsonEnsureAsciiTrue": "[true,false]",
+          "rootKeys": null,
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": true,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": true
+      },
+      {
+        "group": "conditional_domain",
+        "name": "empty_string",
+        "inputWire": "\"\"",
+        "node": {
+          "group": "conditional_domain",
+          "name": "empty_string",
+          "originalJson": "\"\"",
+          "cloneJson": "\"\"",
+          "utilityJson": "\"\"",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": null,
+          "cloneRootKeys": null,
+          "cloneRootPrototype": null
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "\"\"",
+          "deepcopyJsonEnsureAsciiTrue": "\"\"",
+          "rootKeys": null,
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": true,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": true
+      },
+      {
+        "group": "conditional_domain",
+        "name": "empty_object",
+        "inputWire": "{}",
+        "node": {
+          "group": "conditional_domain",
+          "name": "empty_object",
+          "originalJson": "{}",
+          "cloneJson": "{}",
+          "utilityJson": "{}",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": [],
+          "cloneRootKeys": [],
+          "cloneRootPrototype": "Object.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "{}",
+          "deepcopyJsonEnsureAsciiTrue": "{}",
+          "rootKeys": [],
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": true,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": true
+      },
+      {
+        "group": "conditional_domain",
+        "name": "empty_array",
+        "inputWire": "[]",
+        "node": {
+          "group": "conditional_domain",
+          "name": "empty_array",
+          "originalJson": "[]",
+          "cloneJson": "[]",
+          "utilityJson": "[]",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": [],
+          "cloneRootKeys": [],
+          "cloneRootPrototype": "Array.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "[]",
+          "deepcopyJsonEnsureAsciiTrue": "[]",
+          "rootKeys": null,
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": true,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": true
+      },
+      {
+        "group": "conditional_domain",
+        "name": "finite_numbers",
+        "inputWire": "[0,-0.0,1,-1,0.125,-0.125,1.0,1e-07,1e+20,5e-324,1.7976931348623157e+308,9007199254740991,-9007199254740991]",
+        "node": {
+          "group": "conditional_domain",
+          "name": "finite_numbers",
+          "originalJson": "[0,0,1,-1,0.125,-0.125,1,1e-7,100000000000000000000,5e-324,1.7976931348623157e+308,9007199254740991,-9007199254740991]",
+          "cloneJson": "[0,0,1,-1,0.125,-0.125,1,1e-7,100000000000000000000,5e-324,1.7976931348623157e+308,9007199254740991,-9007199254740991]",
+          "utilityJson": "[0,0,1,-1,0.125,-0.125,1,1e-7,100000000000000000000,5e-324,1.7976931348623157e+308,9007199254740991,-9007199254740991]",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": [
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "11",
+            "12"
+          ],
+          "cloneRootKeys": [
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "11",
+            "12"
+          ],
+          "cloneRootPrototype": "Array.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "[0,-0.0,1,-1,0.125,-0.125,1.0,1e-07,1e+20,5e-324,1.7976931348623157e+308,9007199254740991,-9007199254740991]",
+          "deepcopyJsonEnsureAsciiTrue": "[0,-0.0,1,-1,0.125,-0.125,1.0,1e-07,1e+20,5e-324,1.7976931348623157e+308,9007199254740991,-9007199254740991]",
+          "rootKeys": null,
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": false,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": false
+      },
+      {
+        "group": "conditional_domain",
+        "name": "cjk_supplementary_controls",
+        "inputWire": "{\"\\u503c\":\"\\u6c49\\u5b57\\ud842\\udfb7\\ud83d\\ude00\",\"escape\":\"quote\\\" slash/ backslash\\\\ line\\n tab\\t nul\\u0000\"}",
+        "node": {
+          "group": "conditional_domain",
+          "name": "cjk_supplementary_controls",
+          "originalJson": "{\"\u503c\":\"\u6c49\u5b57\ud842\udfb7\ud83d\ude00\",\"escape\":\"quote\\\" slash/ backslash\\\\ line\\n tab\\t nul\\u0000\"}",
+          "cloneJson": "{\"\u503c\":\"\u6c49\u5b57\ud842\udfb7\ud83d\ude00\",\"escape\":\"quote\\\" slash/ backslash\\\\ line\\n tab\\t nul\\u0000\"}",
+          "utilityJson": "{\"\u503c\":\"\u6c49\u5b57\ud842\udfb7\ud83d\ude00\",\"escape\":\"quote\\\" slash/ backslash\\\\ line\\n tab\\t nul\\u0000\"}",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": [
+            "\u503c",
+            "escape"
+          ],
+          "cloneRootKeys": [
+            "\u503c",
+            "escape"
+          ],
+          "cloneRootPrototype": "Object.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "{\"\u503c\":\"\u6c49\u5b57\ud842\udfb7\ud83d\ude00\",\"escape\":\"quote\\\" slash/ backslash\\\\ line\\n tab\\t nul\\u0000\"}",
+          "deepcopyJsonEnsureAsciiTrue": "{\"\\u503c\":\"\\u6c49\\u5b57\\ud842\\udfb7\\ud83d\\ude00\",\"escape\":\"quote\\\" slash/ backslash\\\\ line\\n tab\\t nul\\u0000\"}",
+          "rootKeys": [
+            "\u503c",
+            "escape"
+          ],
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": true,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": false
+      },
+      {
+        "group": "conditional_domain",
+        "name": "lone_surrogates",
+        "inputWire": "{\"high\":\"\\ud800\",\"low\":\"\\udfff\",\"pair\":\"\\ud83d\\ude00\"}",
+        "node": {
+          "group": "conditional_domain",
+          "name": "lone_surrogates",
+          "originalJson": "{\"high\":\"\\ud800\",\"low\":\"\\udfff\",\"pair\":\"\ud83d\ude00\"}",
+          "cloneJson": "{\"high\":\"\\ud800\",\"low\":\"\\udfff\",\"pair\":\"\ud83d\ude00\"}",
+          "utilityJson": "{\"high\":\"\\ud800\",\"low\":\"\\udfff\",\"pair\":\"\ud83d\ude00\"}",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": [
+            "high",
+            "low",
+            "pair"
+          ],
+          "cloneRootKeys": [
+            "high",
+            "low",
+            "pair"
+          ],
+          "cloneRootPrototype": "Object.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "{\"high\":\"\ud800\",\"low\":\"\udfff\",\"pair\":\"\ud83d\ude00\"}",
+          "deepcopyJsonEnsureAsciiTrue": "{\"high\":\"\\ud800\",\"low\":\"\\udfff\",\"pair\":\"\\ud83d\\ude00\"}",
+          "rootKeys": [
+            "high",
+            "low",
+            "pair"
+          ],
+          "utf8EncodingError": "UnicodeEncodeError: lone surrogate is not strict UTF-8 encodable"
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": false,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": false
+      },
+      {
+        "group": "conditional_domain",
+        "name": "integer_key_order",
+        "inputWire": "{\"z\":1,\"10\":10,\"2\":2,\"01\":1,\"4294967294\":4,\"4294967295\":5,\"0\":0,\"a\":2}",
+        "node": {
+          "group": "conditional_domain",
+          "name": "integer_key_order",
+          "originalJson": "{\"0\":0,\"2\":2,\"10\":10,\"4294967294\":4,\"z\":1,\"01\":1,\"4294967295\":5,\"a\":2}",
+          "cloneJson": "{\"0\":0,\"2\":2,\"10\":10,\"4294967294\":4,\"z\":1,\"01\":1,\"4294967295\":5,\"a\":2}",
+          "utilityJson": "{\"0\":0,\"2\":2,\"10\":10,\"4294967294\":4,\"z\":1,\"01\":1,\"4294967295\":5,\"a\":2}",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": [
+            "0",
+            "2",
+            "10",
+            "4294967294",
+            "z",
+            "01",
+            "4294967295",
+            "a"
+          ],
+          "cloneRootKeys": [
+            "0",
+            "2",
+            "10",
+            "4294967294",
+            "z",
+            "01",
+            "4294967295",
+            "a"
+          ],
+          "cloneRootPrototype": "Object.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "{\"z\":1,\"10\":10,\"2\":2,\"01\":1,\"4294967294\":4,\"4294967295\":5,\"0\":0,\"a\":2}",
+          "deepcopyJsonEnsureAsciiTrue": "{\"z\":1,\"10\":10,\"2\":2,\"01\":1,\"4294967294\":4,\"4294967295\":5,\"0\":0,\"a\":2}",
+          "rootKeys": [
+            "z",
+            "10",
+            "2",
+            "01",
+            "4294967294",
+            "4294967295",
+            "0",
+            "a"
+          ],
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": false,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": false
+      },
+      {
+        "group": "conditional_domain",
+        "name": "nested_key_order",
+        "inputWire": "{\"x\":{\"b\":1,\"9\":9,\"1\":1},\"a\":[{\"4\":4,\"2\":2,\"c\":3}]}",
+        "node": {
+          "group": "conditional_domain",
+          "name": "nested_key_order",
+          "originalJson": "{\"x\":{\"1\":1,\"9\":9,\"b\":1},\"a\":[{\"2\":2,\"4\":4,\"c\":3}]}",
+          "cloneJson": "{\"x\":{\"1\":1,\"9\":9,\"b\":1},\"a\":[{\"2\":2,\"4\":4,\"c\":3}]}",
+          "utilityJson": "{\"x\":{\"1\":1,\"9\":9,\"b\":1},\"a\":[{\"2\":2,\"4\":4,\"c\":3}]}",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": [
+            "x",
+            "a"
+          ],
+          "cloneRootKeys": [
+            "x",
+            "a"
+          ],
+          "cloneRootPrototype": "Object.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "{\"x\":{\"b\":1,\"9\":9,\"1\":1},\"a\":[{\"4\":4,\"2\":2,\"c\":3}]}",
+          "deepcopyJsonEnsureAsciiTrue": "{\"x\":{\"b\":1,\"9\":9,\"1\":1},\"a\":[{\"4\":4,\"2\":2,\"c\":3}]}",
+          "rootKeys": [
+            "x",
+            "a"
+          ],
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": false,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": false
+      },
+      {
+        "group": "conditional_domain",
+        "name": "nested_tree",
+        "inputWire": "{\"a\":[1,null,false,{\"b\":[\"x\",{\"n\":-2.5}]}],\"empty\":{}}",
+        "node": {
+          "group": "conditional_domain",
+          "name": "nested_tree",
+          "originalJson": "{\"a\":[1,null,false,{\"b\":[\"x\",{\"n\":-2.5}]}],\"empty\":{}}",
+          "cloneJson": "{\"a\":[1,null,false,{\"b\":[\"x\",{\"n\":-2.5}]}],\"empty\":{}}",
+          "utilityJson": "{\"a\":[1,null,false,{\"b\":[\"x\",{\"n\":-2.5}]}],\"empty\":{}}",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": [
+            "a",
+            "empty"
+          ],
+          "cloneRootKeys": [
+            "a",
+            "empty"
+          ],
+          "cloneRootPrototype": "Object.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "{\"a\":[1,null,false,{\"b\":[\"x\",{\"n\":-2.5}]}],\"empty\":{}}",
+          "deepcopyJsonEnsureAsciiTrue": "{\"a\":[1,null,false,{\"b\":[\"x\",{\"n\":-2.5}]}],\"empty\":{}}",
+          "rootKeys": [
+            "a",
+            "empty"
+          ],
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": true,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": true
+      },
+      {
+        "group": "conditional_domain",
+        "name": "lifecycle_looking_fixture",
+        "inputWire": "{\"status\":\"online\",\"wait_ready\":false,\"restart_time\":7,\"env\":{\"FLAG\":true,\"PORT\":3000,\"EMPTY\":\"\",\"NULL\":null,\"nested\":{\"status\":\"launching\",\"axm_actions\":[]}},\"axm_options\":{\"enabled\":true}}",
+        "node": {
+          "group": "conditional_domain",
+          "name": "lifecycle_looking_fixture",
+          "originalJson": "{\"status\":\"online\",\"wait_ready\":false,\"restart_time\":7,\"env\":{\"FLAG\":true,\"PORT\":3000,\"EMPTY\":\"\",\"NULL\":null,\"nested\":{\"status\":\"launching\",\"axm_actions\":[]}},\"axm_options\":{\"enabled\":true}}",
+          "cloneJson": "{\"status\":\"online\",\"wait_ready\":false,\"restart_time\":7,\"env\":{\"FLAG\":true,\"PORT\":3000,\"EMPTY\":\"\",\"NULL\":null,\"nested\":{\"status\":\"launching\",\"axm_actions\":[]}},\"axm_options\":{\"enabled\":true}}",
+          "utilityJson": "{\"status\":\"online\",\"wait_ready\":false,\"restart_time\":7,\"env\":{\"FLAG\":true,\"PORT\":3000,\"EMPTY\":\"\",\"NULL\":null,\"nested\":{\"status\":\"launching\",\"axm_actions\":[]}},\"axm_options\":{\"enabled\":true}}",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": [
+            "status",
+            "wait_ready",
+            "restart_time",
+            "env",
+            "axm_options"
+          ],
+          "cloneRootKeys": [
+            "status",
+            "wait_ready",
+            "restart_time",
+            "env",
+            "axm_options"
+          ],
+          "cloneRootPrototype": "Object.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "{\"status\":\"online\",\"wait_ready\":false,\"restart_time\":7,\"env\":{\"FLAG\":true,\"PORT\":3000,\"EMPTY\":\"\",\"NULL\":null,\"nested\":{\"status\":\"launching\",\"axm_actions\":[]}},\"axm_options\":{\"enabled\":true}}",
+          "deepcopyJsonEnsureAsciiTrue": "{\"status\":\"online\",\"wait_ready\":false,\"restart_time\":7,\"env\":{\"FLAG\":true,\"PORT\":3000,\"EMPTY\":\"\",\"NULL\":null,\"nested\":{\"status\":\"launching\",\"axm_actions\":[]}},\"axm_options\":{\"enabled\":true}}",
+          "rootKeys": [
+            "status",
+            "wait_ready",
+            "restart_time",
+            "env",
+            "axm_options"
+          ],
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": true,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": true
+      },
+      {
+        "group": "conditional_domain",
+        "name": "length_without_callable_indexOf",
+        "inputWire": "{\"0\":\"x\",\"length\":1,\"indexOf\":\"not-a-function\",\"extra\":true}",
+        "node": {
+          "group": "conditional_domain",
+          "name": "length_without_callable_indexOf",
+          "originalJson": "{\"0\":\"x\",\"length\":1,\"indexOf\":\"not-a-function\",\"extra\":true}",
+          "cloneJson": "{\"0\":\"x\",\"length\":1,\"indexOf\":\"not-a-function\",\"extra\":true}",
+          "utilityJson": "{\"0\":\"x\",\"length\":1,\"indexOf\":\"not-a-function\",\"extra\":true}",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": [
+            "0",
+            "length",
+            "indexOf",
+            "extra"
+          ],
+          "cloneRootKeys": [
+            "0",
+            "length",
+            "indexOf",
+            "extra"
+          ],
+          "cloneRootPrototype": "Object.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "{\"0\":\"x\",\"length\":1,\"indexOf\":\"not-a-function\",\"extra\":true}",
+          "deepcopyJsonEnsureAsciiTrue": "{\"0\":\"x\",\"length\":1,\"indexOf\":\"not-a-function\",\"extra\":true}",
+          "rootKeys": [
+            "0",
+            "length",
+            "indexOf",
+            "extra"
+          ],
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": true,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": true
+      },
+      {
+        "group": "conditional_domain",
+        "name": "ordinary_constructor_prototype_keys",
+        "inputWire": "{\"constructor\":{\"prototype\":{\"safe\":1}},\"prototype\":\"data\",\"toString\":\"data\"}",
+        "node": {
+          "group": "conditional_domain",
+          "name": "ordinary_constructor_prototype_keys",
+          "originalJson": "{\"constructor\":{\"prototype\":{\"safe\":1}},\"prototype\":\"data\",\"toString\":\"data\"}",
+          "cloneJson": "{\"constructor\":{\"prototype\":{\"safe\":1}},\"prototype\":\"data\",\"toString\":\"data\"}",
+          "utilityJson": "{\"constructor\":{\"prototype\":{\"safe\":1}},\"prototype\":\"data\",\"toString\":\"data\"}",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": [
+            "constructor",
+            "prototype",
+            "toString"
+          ],
+          "cloneRootKeys": [
+            "constructor",
+            "prototype",
+            "toString"
+          ],
+          "cloneRootPrototype": "Object.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "{\"constructor\":{\"prototype\":{\"safe\":1}},\"prototype\":\"data\",\"toString\":\"data\"}",
+          "deepcopyJsonEnsureAsciiTrue": "{\"constructor\":{\"prototype\":{\"safe\":1}},\"prototype\":\"data\",\"toString\":\"data\"}",
+          "rootKeys": [
+            "constructor",
+            "prototype",
+            "toString"
+          ],
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": true,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": true
+      },
+      {
+        "group": "conditional_domain",
+        "name": "repeated_values_not_shared_identity",
+        "inputWire": "{\"a\":{\"v\":[1,2]},\"b\":{\"v\":[1,2]}}",
+        "node": {
+          "group": "conditional_domain",
+          "name": "repeated_values_not_shared_identity",
+          "originalJson": "{\"a\":{\"v\":[1,2]},\"b\":{\"v\":[1,2]}}",
+          "cloneJson": "{\"a\":{\"v\":[1,2]},\"b\":{\"v\":[1,2]}}",
+          "utilityJson": "{\"a\":{\"v\":[1,2]},\"b\":{\"v\":[1,2]}}",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": [
+            "a",
+            "b"
+          ],
+          "cloneRootKeys": [
+            "a",
+            "b"
+          ],
+          "cloneRootPrototype": "Object.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "{\"a\":{\"v\":[1,2]},\"b\":{\"v\":[1,2]}}",
+          "deepcopyJsonEnsureAsciiTrue": "{\"a\":{\"v\":[1,2]},\"b\":{\"v\":[1,2]}}",
+          "rootKeys": [
+            "a",
+            "b"
+          ],
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": true,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": true
+      },
+      {
+        "group": "legal_json_counterexample",
+        "name": "own_proto_object",
+        "inputWire": "{\"__proto__\":{\"inherited\":\"x\"},\"own\":1}",
+        "node": {
+          "group": "legal_json_counterexample",
+          "name": "own_proto_object",
+          "originalJson": "{\"__proto__\":{\"inherited\":\"x\"},\"own\":1}",
+          "cloneJson": "{\"own\":1}",
+          "utilityJson": "{\"own\":1}",
+          "valueAndKeysAndPrototypePreserved": false,
+          "utilityValueAndKeysAndPrototypePreserved": false,
+          "originalUnchanged": true,
+          "freshContainers": false,
+          "originalRootKeys": [
+            "__proto__",
+            "own"
+          ],
+          "cloneRootKeys": [
+            "own"
+          ],
+          "cloneRootPrototype": "other"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "{\"__proto__\":{\"inherited\":\"x\"},\"own\":1}",
+          "deepcopyJsonEnsureAsciiTrue": "{\"__proto__\":{\"inherited\":\"x\"},\"own\":1}",
+          "rootKeys": [
+            "__proto__",
+            "own"
+          ],
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": false,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": false,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": false
+      },
+      {
+        "group": "legal_json_counterexample",
+        "name": "own_proto_null",
+        "inputWire": "{\"__proto__\":null}",
+        "node": {
+          "group": "legal_json_counterexample",
+          "name": "own_proto_null",
+          "originalJson": "{\"__proto__\":null}",
+          "cloneJson": "{}",
+          "utilityJson": "{}",
+          "valueAndKeysAndPrototypePreserved": false,
+          "utilityValueAndKeysAndPrototypePreserved": false,
+          "originalUnchanged": true,
+          "freshContainers": false,
+          "originalRootKeys": [
+            "__proto__"
+          ],
+          "cloneRootKeys": [],
+          "cloneRootPrototype": "null"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "{\"__proto__\":null}",
+          "deepcopyJsonEnsureAsciiTrue": "{\"__proto__\":null}",
+          "rootKeys": [
+            "__proto__"
+          ],
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": false,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": false,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": false
+      },
+      {
+        "group": "legal_json_counterexample",
+        "name": "nested_own_proto_primitive",
+        "inputWire": "{\"env\":{\"__proto__\":\"x\",\"ok\":true}}",
+        "node": {
+          "group": "legal_json_counterexample",
+          "name": "nested_own_proto_primitive",
+          "originalJson": "{\"env\":{\"__proto__\":\"x\",\"ok\":true}}",
+          "cloneJson": "{\"env\":{\"ok\":true}}",
+          "utilityJson": "{\"env\":{\"ok\":true}}",
+          "valueAndKeysAndPrototypePreserved": false,
+          "utilityValueAndKeysAndPrototypePreserved": false,
+          "originalUnchanged": true,
+          "freshContainers": false,
+          "originalRootKeys": [
+            "env"
+          ],
+          "cloneRootKeys": [
+            "env"
+          ],
+          "cloneRootPrototype": "Object.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "{\"env\":{\"__proto__\":\"x\",\"ok\":true}}",
+          "deepcopyJsonEnsureAsciiTrue": "{\"env\":{\"__proto__\":\"x\",\"ok\":true}}",
+          "rootKeys": [
+            "env"
+          ],
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": false,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": false,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": false
+      },
+      {
+        "group": "transport_boundary",
+        "name": "outside_safe_integer_transport",
+        "inputWire": "{\"n\":9007199254740993}",
+        "node": {
+          "group": "transport_boundary",
+          "name": "outside_safe_integer_transport",
+          "originalJson": "{\"n\":9007199254740992}",
+          "cloneJson": "{\"n\":9007199254740992}",
+          "utilityJson": "{\"n\":9007199254740992}",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": [
+            "n"
+          ],
+          "cloneRootKeys": [
+            "n"
+          ],
+          "cloneRootPrototype": "Object.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "{\"n\":9007199254740993}",
+          "deepcopyJsonEnsureAsciiTrue": "{\"n\":9007199254740993}",
+          "rootKeys": [
+            "n"
+          ],
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": false,
+        "cloneDecodedJsonValuesEqual": false,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": false,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": false
+      },
+      {
+        "group": "transport_boundary",
+        "name": "float_one_bytes",
+        "inputWire": "{\"n\":1.0}",
+        "node": {
+          "group": "transport_boundary",
+          "name": "float_one_bytes",
+          "originalJson": "{\"n\":1}",
+          "cloneJson": "{\"n\":1}",
+          "utilityJson": "{\"n\":1}",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": [
+            "n"
+          ],
+          "cloneRootKeys": [
+            "n"
+          ],
+          "cloneRootPrototype": "Object.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "{\"n\":1.0}",
+          "deepcopyJsonEnsureAsciiTrue": "{\"n\":1.0}",
+          "rootKeys": [
+            "n"
+          ],
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": false,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": false
+      },
+      {
+        "group": "transport_boundary",
+        "name": "negative_zero_bytes",
+        "inputWire": "{\"n\":-0.0}",
+        "node": {
+          "group": "transport_boundary",
+          "name": "negative_zero_bytes",
+          "originalJson": "{\"n\":0}",
+          "cloneJson": "{\"n\":0}",
+          "utilityJson": "{\"n\":0}",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": [
+            "n"
+          ],
+          "cloneRootKeys": [
+            "n"
+          ],
+          "cloneRootPrototype": "Object.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "{\"n\":-0.0}",
+          "deepcopyJsonEnsureAsciiTrue": "{\"n\":-0.0}",
+          "rootKeys": [
+            "n"
+          ],
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": false,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": false
+      },
+      {
+        "group": "transport_boundary",
+        "name": "exponent_bytes",
+        "inputWire": "{\"n\":1e20,\"small\":1e-7}",
+        "node": {
+          "group": "transport_boundary",
+          "name": "exponent_bytes",
+          "originalJson": "{\"n\":100000000000000000000,\"small\":1e-7}",
+          "cloneJson": "{\"n\":100000000000000000000,\"small\":1e-7}",
+          "utilityJson": "{\"n\":100000000000000000000,\"small\":1e-7}",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": [
+            "n",
+            "small"
+          ],
+          "cloneRootKeys": [
+            "n",
+            "small"
+          ],
+          "cloneRootPrototype": "Object.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "{\"n\":1e+20,\"small\":1e-07}",
+          "deepcopyJsonEnsureAsciiTrue": "{\"n\":1e+20,\"small\":1e-07}",
+          "rootKeys": [
+            "n",
+            "small"
+          ],
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": false,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": false
+      },
+      {
+        "group": "transport_boundary",
+        "name": "cjk_escape_bytes",
+        "inputWire": "{\"s\":\"\\u6c49\\u5b57\"}",
+        "node": {
+          "group": "transport_boundary",
+          "name": "cjk_escape_bytes",
+          "originalJson": "{\"s\":\"\u6c49\u5b57\"}",
+          "cloneJson": "{\"s\":\"\u6c49\u5b57\"}",
+          "utilityJson": "{\"s\":\"\u6c49\u5b57\"}",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": [
+            "s"
+          ],
+          "cloneRootKeys": [
+            "s"
+          ],
+          "cloneRootPrototype": "Object.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "{\"s\":\"\u6c49\u5b57\"}",
+          "deepcopyJsonEnsureAsciiTrue": "{\"s\":\"\\u6c49\\u5b57\"}",
+          "rootKeys": [
+            "s"
+          ],
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": true,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": false
+      },
+      {
+        "group": "transport_boundary",
+        "name": "integer_order_bytes",
+        "inputWire": "{\"z\":1,\"10\":10,\"2\":2,\"a\":0}",
+        "node": {
+          "group": "transport_boundary",
+          "name": "integer_order_bytes",
+          "originalJson": "{\"2\":2,\"10\":10,\"z\":1,\"a\":0}",
+          "cloneJson": "{\"2\":2,\"10\":10,\"z\":1,\"a\":0}",
+          "utilityJson": "{\"2\":2,\"10\":10,\"z\":1,\"a\":0}",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": [
+            "2",
+            "10",
+            "z",
+            "a"
+          ],
+          "cloneRootKeys": [
+            "2",
+            "10",
+            "z",
+            "a"
+          ],
+          "cloneRootPrototype": "Object.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "{\"z\":1,\"10\":10,\"2\":2,\"a\":0}",
+          "deepcopyJsonEnsureAsciiTrue": "{\"z\":1,\"10\":10,\"2\":2,\"a\":0}",
+          "rootKeys": [
+            "z",
+            "10",
+            "2",
+            "a"
+          ],
+          "utf8EncodingError": null
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": false,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": false
+      },
+      {
+        "group": "transport_boundary",
+        "name": "lone_surrogate_utf8_gate",
+        "inputWire": "{\"s\":\"\\ud800\"}",
+        "node": {
+          "group": "transport_boundary",
+          "name": "lone_surrogate_utf8_gate",
+          "originalJson": "{\"s\":\"\\ud800\"}",
+          "cloneJson": "{\"s\":\"\\ud800\"}",
+          "utilityJson": "{\"s\":\"\\ud800\"}",
+          "valueAndKeysAndPrototypePreserved": true,
+          "utilityValueAndKeysAndPrototypePreserved": true,
+          "originalUnchanged": true,
+          "freshContainers": true,
+          "originalRootKeys": [
+            "s"
+          ],
+          "cloneRootKeys": [
+            "s"
+          ],
+          "cloneRootPrototype": "Object.prototype"
+        },
+        "python": {
+          "originalUnchanged": true,
+          "valueAndKeysPreserved": true,
+          "freshContainers": true,
+          "deepcopyJsonEnsureAsciiFalse": "{\"s\":\"\ud800\"}",
+          "deepcopyJsonEnsureAsciiTrue": "{\"s\":\"\\ud800\"}",
+          "rootKeys": [
+            "s"
+          ],
+          "utf8EncodingError": "UnicodeEncodeError: lone surrogate is not strict UTF-8 encodable"
+        },
+        "parsedInputValuesRepresentableEqually": true,
+        "cloneDecodedJsonValuesEqual": true,
+        "pythonStrictUtf8VsNodeCloneJsonBytesEqual": false,
+        "pythonAsciiVsNodeCloneJsonBytesEqual": true
+      }
+    ],
+    "outOfDomainSyntheticExamples": {
+      "objectCycleJson": "{\"self\":\"[Circular]\"}",
+      "arrayCycleJson": "[\"[Circular]\"]",
+      "sourceAliasPreservedByFclone": false,
+      "sourceAliasOriginalUnchanged": true,
+      "arrayLikeJson": "[\"x\"]",
+      "sourceAliasPreservedByPythonDeepcopy": true
+    }
+  },
+  "summary": {
+    "conditionalDomainSamples": 15,
+    "conditionalDomainSamplesPassed": 15,
+    "legalJsonProtoCounterexamples": 3,
+    "transportBoundarySamples": 7,
+    "utilityNullRootEquivalent": false,
+    "arbitraryLegalJsonTreeEquivalent": false,
+    "sourceObjectNonMutationInAllJsonSamples": true,
+    "conditionalDomainByteMismatches": [
+      "finite_numbers",
+      "lone_surrogates",
+      "integer_key_order",
+      "nested_key_order"
+    ]
+  },
+  "conditionsForLocalEquivalence": [
+    "Finite, acyclic, nonshared tree; dense native arrays without holes/extra properties; ordinary Object.prototype objects with own enumerable string-key data properties only; JSON primitives with finite numbers.",
+    "No own __proto__ key anywhere in the tree, including nested objects. Legal JSON alone does not exclude this counterexample.",
+    "No custom prototypes, getters/setters, inherited/symbol/nonenumerable properties, functions, undefined, special objects, array-like impostors, cycles or alias graphs.",
+    "Python representation must faithfully match JS binary64 numbers and UTF-16 string/key units; do not infer numeric fidelity merely from successful json.loads.",
+    "For Utility.clone equivalence root must be non-null and not undefined; nested null is retained. fclone itself preserves a null root.",
+    "Object.keys order is retained by fclone within JS; dict key order is retained by deepcopy within Python. Cross-runtime integer-index order and JSON serialization bytes require a separate exact witness."
+  ],
+  "remainingBlockers": [
+    "No actual daemon typed/fullSourceShape/actual-field witness was acquired; RPC JSON values cannot by themselves establish the source object domain.",
+    "No actual six-slot retained forecast or fullRetained/complete-byte witness was acquired or approved. No readiness assertion about actual slots is made.",
+    "JSON escaping, float formatting, integer-key enumeration and lone-surrogate UTF-8 rejection remain byte-gate concerns; mismatch blocks R3 forecast, never a semantic exception.",
+    "R4 nine-source pin set, external flock/Node/root protections, full package, fresh14proc, all six Ready=True, complete-byte witness and independent approval remain required and not verified here.",
+    "The ninth member of the required nine-pin set was not identified/verified in this limited review; eight observed pins are not represented as a complete nine-pin set."
+  ],
+  "scope": {
+    "network": false,
+    "ssh": false,
+    "mcp": false,
+    "git": false,
+    "productionAccess": false,
+    "locks": false,
+    "applicationCli": false,
+    "fullReviewedModuleLoaded": false,
+    "sourceModified": false,
+    "serverCapture": false,
+    "reload": false,
+    "pub": false,
+    "testData": "Synthetic local fixtures only; not actualfield/fullRetained evidence"
+  },
+  "controllerApproved": false,
+  "releaseApproved": false,
+  "finalDeployApproval": false,
+  "reloadApproved": false,
+  "actualSixSlotsRetainedForecastPassed": false,
+  "actualSixSlotsRetainedForecastVerified": false
+}

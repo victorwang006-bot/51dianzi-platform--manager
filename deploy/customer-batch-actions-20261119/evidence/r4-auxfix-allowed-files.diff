@@ -1,0 +1,244 @@
+--- 52908c/release.py
++++ auxfix/release.py
+@@ -701,7 +701,8 @@
+          and meta(proc) == proc_record
+          and all(external_proc_link(cfg, pid, name) == path
+                  for name, path in (('exe', exe), ('cwd', current_cwd)))
+-         and {name: meta(proc / name) for name in ('exe', 'cwd')} == link_meta,
++         and {name: meta(proc / name) for name in ('exe', 'cwd')} == link_meta
++         and describe(current_cwd) == cwd_record,
+          'EXTERNAL_PROC_IDENTITY_READ_RACE')
+     return record
+ 
+@@ -717,6 +718,15 @@
+     source_meta = {str(p): external_source(p) for p in sorted(files)}
+     need(source_meta[child['exe']]['sha256'] == source_meta[str(cfg.node)]['sha256'],
+          'EXTERNAL_NODE_FULL_SHA_BINDING')
++    need({str(p): describe(p) for p in (ops, cwd)} == roots,
++         'EXTERNAL_ROOT_META_READ_RACE')
++    # Finite phase checks of observed records, not an atomic proc/source freeze.
++    parent_final = external_proc_sample(cfg, EXTERNAL_PARENT_PID, 'flock')
++    child_final = external_proc_sample(cfg, EXTERNAL_CHILD_PID, 'node-22', script, cwd)
++    need(parent_final == parent and child_final == child,
++         'EXTERNAL_PROC_PAIR_READ_RACE')
++    need({str(p): external_source(p) for p in sorted(files)} == source_meta,
++         'EXTERNAL_SOURCE_META_READ_RACE')
+     need({str(p): describe(p) for p in (ops, cwd)} == roots,
+          'EXTERNAL_ROOT_META_READ_RACE')
+     return dict(fixtureOnly=cfg.mock, processes=[parent, child],
+--- 52908c/test_release.py
++++ auxfix/test_release.py
+@@ -1637,6 +1637,139 @@
+         target.unlink()
+         with self.assertRaises(FileNotFoundError):r.transport(self.cfg)
+ 
++class R4AuxFixTests(unittest.TestCase):
++    """Finite observed-phase checks only; no atomic or post-return guarantee."""
++    setUp = R4ExternalTests.setUp
++    collect = R4ExternalTests.collect
++
++    def test_stable_complete_records_fixed_pid_args_and_finite_rereads_pass(self):
++        proc_sample = r.external_proc_sample; source = r.external_source
++        with patch.object(r, 'external_proc_sample', wraps=proc_sample) as reads, \
++             patch.object(r, 'external_source', wraps=source) as sources:
++            result = self.collect()
++        expected = [(self.cfg, 2060125, 'flock'),
++                    (self.cfg, 2060126, 'node-22', self.fixture['script'], self.fixture['cwd'])]
++        self.assertEqual([call.args for call in reads.call_args_list], expected * 4)
++        files = sorted({Path(row['exe']) for row in result['processes']} |
++                       {self.cfg.node, self.fixture['script']})
++        self.assertEqual([call.args[0] for call in sources.call_args_list], files * 4)
++        self.assertEqual(result['processes'], [proc_sample(*args) for args in expected])
++        self.assertEqual(result['fullSourceMeta'], {str(p): source(p) for p in files})
++        self.assertEqual(result['rootMeta'], {str(self.fixture[k]): r.describe(self.fixture[k])
++                                            for k in ('ops', 'cwd')})
++        self.assertEqual(set(result), {'fixtureOnly', 'processes', 'sources', 'fullSourceMeta', 'rootMeta'})
++        self.assertEqual(set(result['processes'][0]), {'pid', 'ppid', 'startTicks', 'nameSha256',
++            'exeName', 'exe', 'cwd', 'knownScript', 'rawSha256', 'cmdlineSha256',
++            'permissionsSha256', 'procMeta', 'kernelLinkMeta', 'cwdMeta'})
++        self.assertTrue(result['fixtureOnly'])
++
++    def test_second_pair_parent_cmdline_phase_shallow_cwd_mtime_ctime_rejected(self):
++        parentcwd = self.root/'external-parent-cwd'; target = self.cfg.proc/'2060125/cmdline'
++        real_pair = r.external_protection_sample; real_read = Path.read_bytes; real_describe = r.describe
++        # Count pairs explicitly: the new intra-pair final read must not move this
++        # old second-pair counterexample into a different sampling phase.
++        for fields in (('mtimeNs',), ('ctimeNs',), ('mtimeNs', 'ctimeNs')):
++            state = dict(pair=0, parentCmdReads=0, drift=False)
++            def pair(*args):
++                state['pair'] += 1
++                return real_pair(*args)
++            def read(path):
++                data = real_read(path)
++                if path == target:
++                    state['parentCmdReads'] += 1
++                    if state['pair'] == 2: state['drift'] = True
++                return data
++            def describe(path):
++                value = real_describe(path)
++                if Path(path) == parentcwd and state['drift']:
++                    value = dict(value, **{key: value[key] + 1 for key in fields})
++                return value
++            with self.subTest(fields=fields), \
++                 patch.object(r, 'external_protection_sample', side_effect=pair), \
++                 patch.object(Path, 'read_bytes', read), patch.object(r, 'describe', side_effect=describe), \
++                 self.assertRaisesRegex(r.ReleaseError, '^EXTERNAL_PROC_IDENTITY_READ_RACE$'):
++                self.collect()
++            self.assertTrue(state['drift']); self.assertEqual(state['pair'], 2)
++            self.assertEqual(state['parentCmdReads'], 3)  # one early + final, then second early
++
++    def pair_parent_drift(self, stage, field):
++        real_pair = r.external_protection_sample; real_source = r.external_source
++        real_read = Path.read_bytes; real_describe = r.describe
++        parent = self.cfg.proc/'2060125'
++        state = dict(pair=0, sources=0, drift=False, parentCmdReads=0)
++        def pair(*args):
++            state['pair'] += 1; state['sources'] = 0
++            return real_pair(*args)
++        def source(path):
++            value = real_source(path); state['sources'] += 1
++            if stage == 'source' and state['pair'] == 2 and state['sources'] == 4:
++                state['drift'] = True  # last of the same four known sources
++            return value
++        def describe(path):
++            value = real_describe(path)
++            if stage == 'root' and state['pair'] == 2 and state['sources'] == 4 \
++                    and Path(path) == self.fixture['cwd']:
++                state['drift'] = True  # final root record has already been obtained
++            return value
++        def read(path):
++            data = real_read(path)
++            if path == parent/'cmdline': state['parentCmdReads'] += 1
++            if state['drift']:
++                if field == 'startTicks' and path == parent/'stat':
++                    data = r4_stat(2060125, 1234, 51002, 'flock')
++                elif field == 'rawenv' and path == parent/'environ':
++                    data = data.replace(b'NODE_UNIQUE_ID=17', b'NODE_UNIQUE_ID=19')
++                elif field == 'cmdline' and path == parent/'cmdline':
++                    data = data.replace(b'parent-arg', b'parent-drift')
++                elif field == 'permissions' and path == parent/'status':
++                    data = data.replace(b'0022', b'0077')
++            return data
++        with patch.object(r, 'external_protection_sample', side_effect=pair), \
++             patch.object(r, 'external_source', side_effect=source), \
++             patch.object(r, 'describe', side_effect=describe), patch.object(Path, 'read_bytes', read), \
++             self.assertRaisesRegex(r.ReleaseError, '^EXTERNAL_PROC_PAIR_READ_RACE$'):
++            self.collect()
++        self.assertTrue(state['drift']); self.assertEqual(state['pair'], 2)
++        self.assertEqual(state['parentCmdReads'], 4)  # full final reread, not identity-only
++
++    def test_second_pair_source_close_parent_start_env_cmd_permissions_rejected(self):
++        for field in ('startTicks', 'rawenv', 'cmdline', 'permissions'):
++            with self.subTest(field=field): self.pair_parent_drift('source', field)
++
++    def test_second_pair_root_close_parent_start_env_cmd_permissions_rejected(self):
++        for field in ('startTicks', 'rawenv', 'cmdline', 'permissions'):
++            with self.subTest(field=field): self.pair_parent_drift('root', field)
++
++    def final_proc_meta_drift(self, target, error):
++        real_pair = r.external_protection_sample; real_read = Path.read_bytes; real_describe = r.describe
++        cmd = self.cfg.proc/'2060126/cmdline'; state = dict(pair=0, childCmdReads=0, drift=False)
++        def pair(*args):
++            state['pair'] += 1; state['childCmdReads'] = 0
++            return real_pair(*args)
++        def read(path):
++            data = real_read(path)
++            if path == cmd:
++                state['childCmdReads'] += 1
++                if state['pair'] == 2 and state['childCmdReads'] == 2: state['drift'] = True
++            return data
++        def describe(path):
++            value = real_describe(path)
++            if Path(path) == target and state['drift']:
++                value = dict(value, mtimeNs=value['mtimeNs'] + 1, ctimeNs=value['ctimeNs'] + 1)
++            return value
++        with patch.object(r, 'external_protection_sample', side_effect=pair), \
++             patch.object(Path, 'read_bytes', read), patch.object(r, 'describe', side_effect=describe), \
++             self.assertRaisesRegex(r.ReleaseError, '^' + error + '$'):
++            self.collect()
++        self.assertTrue(state['drift']); self.assertEqual(state['pair'], 2)
++        self.assertEqual(state['childCmdReads'], 2)
++
++    def test_source_fullmeta_drift_during_final_proc_read_rejected_same_bytes(self):
++        self.final_proc_meta_drift(self.root/'external-bin/flock', 'EXTERNAL_SOURCE_META_READ_RACE')
++
++    def test_root_fullmeta_drift_during_final_proc_read_rejected(self):
++        self.final_proc_meta_drift(self.fixture['ops'], 'EXTERNAL_ROOT_META_READ_RACE')
++
+ class R4ProtectedGraphTests(unittest.TestCase):
+     def fixture(self):
+         case=SafetyTests('test_new_identity_and_fixed_boundary'); case.setUp(); self.addCleanup(case.doCleanups)
+--- 52908c/prepare-local.py
++++ auxfix/prepare-local.py
+@@ -15,7 +15,7 @@
+ HERE = Path(__file__).absolute().parent
+ REPO = HERE.parent.parent
+ WORK = Path('/home/ubuntu/work/customer-batch')
+-CONTROLLER_SHA = '52908c3719ef8f00b974b432af10c889c01397094778be812cea69ae828ae72f'
++CONTROLLER_SHA = '4fe2ad8a49982a2395a38254da473ebc958cd1ce9bc45310dba1481621fdc121'
+ NODE = '/usr/bin/node'
+ # Exactly backend-builder.compile's transform options, but read original files twice.
+ BACKEND_HASH_CHECK = """
+--- 52908c/README.md
++++ auxfix/README.md
+@@ -1,10 +1,22 @@
+-# 客户批次发布控制器：R4 JSON-domain 与零写发布 pre-gate
++# 客户批次发布控制器：R4 aux 采样闭合、JSON-domain 与零写发布 pre-gate
+ 
+ ## 当前状态：NOT_APPROVED（2026-11-20）
+ 
+-当前 controller SHA256 **`52908c3719ef8f00b974b432af10c889c01397094778be812cea69ae828ae72f`**，preparer 固定 `CONTROLLER_SHA` 已同步。准确增量基线为 **`8dc23eb3865e65bfc0a60d8b20f3548dc1a087cf533478ad89cdae88c86766f0`**，六文件先保存到 `evidence/r4-domain-baseline-8dc/`，基线哈希见 `evidence/r4-domain-baseline-sha256.txt`。OWNER `6Lfttf6oVWJ8YS69o5FkXQ`、SCOPE `customer-batch-actions-20261120-6Lfttf6o-R4` 不变；R4 从未 remote/stage/capture/attempt，本增量只静态更新 pin，不迭代 scope，不重用旧 pin capture。
++当前 controller SHA256 **`4fe2ad8a49982a2395a38254da473ebc958cd1ce9bc45310dba1481621fdc121`**，preparer 固定 `CONTROLLER_SHA` 已同步。本次 auxfix 准确基线为 **`52908c3719ef8f00b974b432af10c889c01397094778be812cea69ae828ae72f`**，修改前六文件（含未改的 test_prepare_local.py）保存到 `evidence/r4-auxfix-baseline-52908c/`，哈希见该目录 `SHA256SUMS`。上一 domain 增量的 8dc 六文件基线及全部日志仍保留在 `evidence/r4-domain-*`。OWNER `6Lfttf6oVWJ8YS69o5FkXQ`、SCOPE `customer-batch-actions-20261120-6Lfttf6o-R4` 不变；R4 从未 remote/stage/capture/attempt，本增量只静态更新 pin，不迭代 scope，不重用旧 pin capture。
+ 
+-本增量仅六个许可 Python/测试/README 文件及 `evidence/r4-domain-*`。没有 Git/MCP/SSH/server/业务/TS/JS builder、真实 Node/模块执行、实际 capture、CLI 或 reload。测试中 capture/preflight/apply/恢复/锁/CAS 均为唯一 TemporaryDirectory 与 mock，诊断 capture 不写 capture 文件，不能视为 actual witness。
++本次 auxfix 仅修改 release.py/test_release.py/prepare-local.py/两 README 及 `evidence/r4-auxfix-*`；test_prepare_local.py 原字节不变。没有 Git/MCP/SSH/server/业务/TS/JS builder、真实 Node/模块执行、实际 capture、CLI 或 reload。既有回归中的 capture/preflight/apply/恢复/锁/CAS 均为唯一 TemporaryDirectory 与 mock，诊断 capture 不写 capture 文件，不能视为 actual witness。
++
++## R4-AUX-01：已观测阶段的最窄一致性补闭合
++
++读取独立本地 `review-r4-aux-offline.md/.json` 的 Medium 两 accepted 反例。release 仅改 `external_proc_sample` 与 `external_protection_sample`：单 proc 末端新增 `describe(current_cwd) == cwd_record`；pair 的既有 source/root 收尾后，对同一固定 parent/child PID、同一 expected exe/script/cwd 再完整调用 proc helper，与早先两条**完整记录** exact equality；这两次 final 读取之后再核原四 known source 的完整 META 和原两个 root META equality。parent cwd 仍只浅 META，不递归；保护根、source 集合、whole opaque env/cmd SHA、permissions/identity/PPID/startTicks/META 政策均不放宽。
++
++这是固定有限 phase 的已观测记录复查，**不是内核原子冻结、连续监控、返回后持续稳定或零 TOCTOU 保证**。不增加循环、进程搜索、扫描域、未知 parentcwd 保护或预算。成功的两 pair 合计固定八次 proc helper、`4 × len(files)` 次 known-source helper（原四类 source 角色仍按路径去重；本 mock 四独立路径为十六次，实际最多十六次，提前拒绝可更少）；完整 Controller 类及 30 方法（含 baseline_guard 新 gate 与其余 29 方法）、domain/raw、八加第九 generation pins、RPC、budget/journal/schema 全 AST 与原源码 bytes 保持；preparer 源码唯一改动为 pin。
++
++修改前 **136/36/6** 通过；修复后 **142/142 controller（原 136 + 新增 6）、36/36 preparer、6/6 finite JSON**，另独立新增六方法 **6/6** 通过。阶段 fixture 明确在第二 pair 的早 parent cmdline 时改变 shallow cwd 的 mtime/ctime（单独及一起），在第二 pair 最后 source/root 收尾后改变 parent startTicks/whole rawenv/cmdline/permissions；均拒绝。final proc 读取期同 bytes 的 source META 或 root META 漂移也拒绝，完整 stable record 正常通过。调用计数按 early/final 与 pair 显式区分，不删除或放宽原反例；旧 136 方法无需改源码。
++
++同一纯 TemporaryDirectory/mock replay 在保存的 52908c 基线上复现九个 stale accepted 实例，修复后九个全部 rejected；不替换整个 proc helper，不作 Linux 实际时序推断。详见 `evidence/r4-auxfix-counterexamples.json`、`r4-auxfix-release-tests.txt`、`r4-auxfix-prepare-tests.txt`、`r4-auxfix-finite-tests.txt`、`r4-auxfix-new-tests.txt`。精确 AST/source bytes、controller/许可文件 diff、pin/日志全 SHA 与说明见 `r4-auxfix-ast-diff.json`、`r4-auxfix-controller.diff`、`r4-auxfix-allowed-files.diff`、`r4-auxfix-source-and-safety.json`、`r4-auxfix-report.md`；原中间日志/独立审查均保留。
++
++前台列表与详情优先工作**仍未 closed**；本轮无任何服务器操作，只有离线修复，不是 final approval。actual fresh14proc/current full sources META、cloneTypedRetainedWitness、six actual Ready all literal true、fresh fullpkg 审查和明确部署许可仍全部待主任务；首次实际 flock 身份及未知依赖语义也未获批准。
+ 
+ ## 递归 clone JSON 域：拒绝，不清洗
+ 
+@@ -24,11 +36,11 @@
+ 
+ ## 限定回归与精确差量
+ 
+-修改前 **121/34/6** 基线重新通过；新增后 **136/136 controller、36/36 preparer、6/6 finite JSON** 通过。原全部测试方法保留，仅一个旧 __proto__ override 预期接受更早 domain 拒绝；原 late direct reload 测试仍手工开 mock window 并验证单槽 guard。新增 root/env/nested opaque/list 的 model/raw __proto__ 反例证明 input/env 不清洗、forecast 未执行；有限域/UTF-8/safe JSON、普通 constructor、all-false/mixed pub 拒绝全覆盖。四个 pub 反例逐项断言 attempt/exclusive/new receipt/window/immutable assets/API CAS/intent/adapter/RPC 全 0、整个临时树 bytes/full META 完全不变；mock capture 返回 false/identity 接受和手工恢复 false journal 也通过。
++上一 domain 阶段修改前 **121/34/6** 基线重新通过；新增后 **136/136 controller、36/36 preparer、6/6 finite JSON** 通过，本次 auxfix 完整保留。原全部测试方法保留，仅上一阶段一个旧 __proto__ override 预期接受更早 domain 拒绝；原 late direct reload 测试仍手工开 mock window 并验证单槽 guard。新增 root/env/nested opaque/list 的 model/raw __proto__ 反例证明 input/env 不清洗、forecast 未执行；有限域/UTF-8/safe JSON、普通 constructor、all-false/mixed pub 拒绝全覆盖。四个 pub 反例逐项断言 attempt/exclusive/new receipt/window/immutable assets/API CAS/intent/adapter/RPC 全 0、整个临时树 bytes/full META 完全不变；mock capture 返回 false/identity 接受和手工恢复 false journal 也通过。
+ 
+ 完整日志 `evidence/r4-domain-release-tests.txt`、`r4-domain-prepare-tests.txt`、`r4-domain-finite-tests.txt`；首轮测试 fixture 重复 opaque key 的错误日志保留为 `r4-domain-release-tests-initial.txt`，只改测试新增键为 domainWitness，没有放宽 duplicate-key 或生产政策。source SHA、日志 SHA、准确 AST/逐函数全文 bytes 比较、完整六文件 diff 与报告见 `evidence/r4-domain-source-and-safety.json`、`r4-domain-ast-diff.json`、`r4-domain-controller.diff`、`r4-domain-allowed-files.diff`、`r4-domain-report.md`。
+ 
+-对 8dc：仅新增 `pm2_json_domain` / `pm2_publish_ready` 两纯 helper，改 `pm2_raw_binding` 两行调用及 `Controller.baseline_guard` 一行；不是修改全部 Controller。原 OWNER/SCOPE/extraProtect、九 generation pins、RPC、外部辅助 protection/transport/root 以及其它 Controller 方法全文 bytes/AST 不变。preparer 源码仅固定 pin 一项 AST 改动。
++上一 domain 对 8dc 差量：仅新增 `pm2_json_domain` / `pm2_publish_ready` 两纯 helper，改 `pm2_raw_binding` 两行调用及 `Controller.baseline_guard` 一行；不是修改全部 Controller。该阶段原 OWNER/SCOPE/extraProtect、九 generation pins、RPC、外部辅助 protection/transport/root 以及其它 Controller 方法全文 bytes/AST 不变。本次对 52908c 的唯一 helper 差量见上方 auxfix 小节；preparer 源码仍仅固定 pin 一项 AST 改动。
+ 
+ ## 剩余 hold：必要门槛不是实际 true，更不是批准
+ 
+--- 52908c/prepare-local.README.md
++++ auxfix/prepare-local.README.md
+@@ -5,12 +5,16 @@
+ 本轮 preparer 的唯一源码 AST 差量为固定 `CONTROLLER_SHA` 更新；其它 AST 不变。当前固定 SHA 为：
+ 
+ ```text
+-52908c3719ef8f00b974b432af10c889c01397094778be812cea69ae828ae72f
++4fe2ad8a49982a2395a38254da473ebc958cd1ce9bc45310dba1481621fdc121
+ ```
+ 
+ R3/bf7/8dc 基线仅用于差异审计，不重用其 capture。只有 pin 改动，preparer 所有方法/schema AST 与原字节不变；scope 直接引用 release.SCOPE。仅接受 **`customer-batch-actions-20261120-6Lfttf6o-R4`**、完整 OWNER `6Lfttf6oVWJ8YS69o5FkXQ`、当前 controller SHA 与完整 Config 的当次 fresh capture。R2 scope/d6 capture、历史旧 scope/7fc capture、丢失 JSON 均不可重用。Config 保留两个 env 和 `/var/lib/dianzi51-private`，R4 追加准确 `/opt/ops/dianzi51-recommendation` 与 `/opt/releases/20261009T170014Z-memory-isolation/dianzi51-platform` 完整保护树；对象-only union 检查不能漏掉任一精确根。R3 原 process rows 的 `pm2RawMeta` 和 `pm2ReloadReady`，原样由当前 controller 的严格 schema/identity 验证，外部两进程只在 transport.externalProtection 中保护，不放入 PM2 processes；不从布尔 ready 或 mock 通过制造发布批准。
+ 
+-R2 已由独立审确认不能上线，R4 仍 **NOT_APPROVED**。本轮只执行本地隔离测试、内存编译与 AST/SHA 核对；不修改/执行 JS builder、业务或 UI，不运行本脚本的真实 prepare，不用 Git/SSH/MCP，不访问生产，不执行 capture/preflight/apply/verify/rollback CLI。控制器 R4 的源码限定转换、source/loader pins 与剩余证据阻碍详见 `README.md`、`evidence/r4-domain-controller.diff` 和 `evidence/r4-domain-report.md`。
++R2 已由独立审确认不能上线，R4 仍 **NOT_APPROVED**。本轮只执行本地隔离测试、内存编译与 AST/SHA 核对；不修改/执行 JS builder、业务或 UI，不运行本脚本的真实 prepare，不用 Git/SSH/MCP，不访问生产，不执行 capture/preflight/apply/verify/rollback CLI。控制器 R4 的源码限定转换、source/loader pins 与剩余证据阻碍详见 `README.md`、`evidence/r4-domain-controller.diff` 和 `evidence/r4-domain-report.md`，本次 aux 最窄增量见 `evidence/r4-auxfix-controller.diff` 与 `evidence/r4-auxfix-report.md`。
++
++本次修改前先保存 52908c 当前六文件到 `evidence/r4-auxfix-baseline-52908c/`（含 test_prepare_local.py，原源码不改）。release 仅两个 aux helpers 补 shallow cwd META 末端 equality、source/root 后固定 parent/child 完整复读 equality，并在 final proc 读取后再查原 known source/root META；Controller/domain/raw/RPC/budget/schema/policy 全保留。固定有限采样只验证已观测阶段，不是原子冻结或持续稳定保证。原 136 controller、36 preparer、6 finite 方法全部保留并通过，新增六 auxfix 方法通过，总计 142/36/6；preparer 仍只改 pin，无新增输入、override 或审批行为。
++
++前台列表+详情优先仍未 closed，R4 未 remote/stage/capture/attempt。本轮无任何服务器操作，也无 final approval；actual fresh14proc/current full sources META、cloneTypedRetainedWitness、six actual Ready all literal true、fresh fullpkg 独立审批及明确部署许可仍待主任务。旧审查与中间日志全部保留；current pin 不允许挪用任何历史 capture/witness。
+ 
+ ## 输入和路径约束
+ 

@@ -1,0 +1,75 @@
+--- 8dc/release.py
++++ current/release.py
+@@ -470,6 +470,40 @@
+         text = text[:a] + '0' + text[b:]
+     return text.encode('utf8')
+ 
++def pm2_json_domain(value):
++    """Pure model/serialized JSON-tree guard, not original daemon typed evidence.
++    fclone assigns into {}, so any own __proto__ key is outside its proof domain.
++    Never strip, normalize, replace Unicode or infer hidden source object shape.
++    """
++    seen = set()
++    def walk(v):
++        t = type(v)
++        if v is None or t is bool:
++            return
++        if t is str:
++            v.encode('utf8', 'strict')
++        elif t is int:
++            need(-(2**53) < v < 2**53, 'PM2_JSON_DOMAIN_UNSAFE_INTEGER')
++        elif t is float:
++            need(math.isfinite(v), 'PM2_JSON_DOMAIN_NONFINITE')
++        elif t in (dict, list):
++            need(id(v) not in seen, 'PM2_JSON_DOMAIN_TREE_REQUIRED')
++            seen.add(id(v))
++            if t is dict:
++                for k, x in v.items():
++                    need(type(k) is str, 'PM2_JSON_DOMAIN_STRING_KEY')
++                    need(k != '__proto__', 'PM2_JSON_DOMAIN_PROTO_KEY')
++                    walk(k); walk(x)
++            else:
++                for x in v:
++                    walk(x)
++        else:
++            raise ReleaseError('PM2_JSON_DOMAIN_TYPE')
++    try:
++        walk(value)
++    except (UnicodeError, RecursionError) as exc:
++        raise ReleaseError('PM2_JSON_DOMAIN_UTF8_OR_DEPTH') from exc
++
+ def pm2_raw_binding(raw, model):
+     """Source-defined narrow proof; unresolved monitor/fork bytes yield not-ready.
+     No new/deleted top field, application escape or opaque byte gets an exception.
+@@ -480,6 +514,8 @@
+     e = model['pm2_env']
+     need(isinstance(e, dict) and isinstance(e.get('env'), dict)
+          and isinstance(value.get('env'), dict), 'PM2_ENV_OBJECT_REQUIRED')
++    pm2_json_domain(e)
++    pm2_json_domain(value)
+     bindings = {'name': model['name'], 'pm_id': model['pm_id'],
+                 'pm_exec_path': e['pm_exec_path'], 'pm_cwd': e['pm_cwd'],
+                 'exec_mode': 'cluster_mode', '_pm2_version': '7.0.3'}
+@@ -824,6 +860,14 @@
+          'OWN_NODE_UNIQUE_ID_COLLISION')
+     need(len(set(ids)) == 6, 'EXACT_SIX_OWN_SLOTS')
+     return ids
++
++def pm2_publish_ready(rows, ids):
++    """Only the identity-bound six OWN_CAP slots; not capture or recovery policy."""
++    own = [row for row in rows if row['id'] in ids]
++    need(len(ids) == len(set(ids)) == len(own) == 6
++         and {row['id'] for row in own} == set(ids)
++         and all(row['pm2ReloadReady'] is True for row in own),
++         'PM2_SIX_OWN_NOT_ALL_READY_NO_ATTEMPT_NO_PUBLISH')
+ 
+ def get_http(cfg, host, relative):
+     need(host in ('admin.51dianzi.com', '51dianzi.com'), 'FIXED_HTTPS_HOST')
+@@ -1370,6 +1414,7 @@
+         return b
+ 
+     def baseline_guard(self, b):
++        pm2_publish_ready(b['c']['processes'], b['ids'])
+         paths = tuple(Path(p) for p in b['c']['protectionUnion']['paths'])
+         links = {Path(a):Path(t) for a,t in b['c']['protectionUnion']['links'].items()}
+         snap = self.snapshot(b['c']['transport'], paths, links)

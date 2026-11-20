@@ -1,0 +1,28 @@
+--- 52908c/release.py
++++ auxfix/release.py
+@@ -701,7 +701,8 @@
+          and meta(proc) == proc_record
+          and all(external_proc_link(cfg, pid, name) == path
+                  for name, path in (('exe', exe), ('cwd', current_cwd)))
+-         and {name: meta(proc / name) for name in ('exe', 'cwd')} == link_meta,
++         and {name: meta(proc / name) for name in ('exe', 'cwd')} == link_meta
++         and describe(current_cwd) == cwd_record,
+          'EXTERNAL_PROC_IDENTITY_READ_RACE')
+     return record
+ 
+@@ -717,6 +718,15 @@
+     source_meta = {str(p): external_source(p) for p in sorted(files)}
+     need(source_meta[child['exe']]['sha256'] == source_meta[str(cfg.node)]['sha256'],
+          'EXTERNAL_NODE_FULL_SHA_BINDING')
++    need({str(p): describe(p) for p in (ops, cwd)} == roots,
++         'EXTERNAL_ROOT_META_READ_RACE')
++    # Finite phase checks of observed records, not an atomic proc/source freeze.
++    parent_final = external_proc_sample(cfg, EXTERNAL_PARENT_PID, 'flock')
++    child_final = external_proc_sample(cfg, EXTERNAL_CHILD_PID, 'node-22', script, cwd)
++    need(parent_final == parent and child_final == child,
++         'EXTERNAL_PROC_PAIR_READ_RACE')
++    need({str(p): external_source(p) for p in sorted(files)} == source_meta,
++         'EXTERNAL_SOURCE_META_READ_RACE')
+     need({str(p): describe(p) for p in (ops, cwd)} == roots,
+          'EXTERNAL_ROOT_META_READ_RACE')
+     return dict(fixtureOnly=cfg.mock, processes=[parent, child],

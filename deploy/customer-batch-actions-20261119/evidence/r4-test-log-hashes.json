@@ -1,0 +1,14 @@
+{
+  "r4-finite-tests.txt": {
+    "bytes": 906,
+    "sha256": "ab36567b74ef88771992c87875e0f9d1f2ce5eaca7f04d0ed132a3f8b2de6f2b"
+  },
+  "r4-prepare-tests.txt": {
+    "bytes": 4007,
+    "sha256": "7473c23bfacf88b188704333dfa6649b381bdf30766be77dbf431c60aa03657f"
+  },
+  "r4-release-tests.txt": {
+    "bytes": 17959,
+    "sha256": "67a768651d2e4c7b2bc146571c469b292855ff7f4620bc42a7500c9e847fcd66"
+  }
+}

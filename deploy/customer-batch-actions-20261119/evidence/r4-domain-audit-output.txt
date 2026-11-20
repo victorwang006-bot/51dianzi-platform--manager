@@ -1,0 +1,57 @@
+{
+  "baselineGuardCallers": [
+    "apply",
+    "preflight"
+  ],
+  "controllerMethodChanged": [
+    "baseline_guard"
+  ],
+  "controllerMethodUnchangedCount": 29,
+  "controllerSha256": "52908c3719ef8f00b974b432af10c889c01397094778be812cea69ae828ae72f",
+  "logs": {
+    "r4-domain-baseline-finite-tests.txt": {
+      "passed": true,
+      "sha256": "ab36567b74ef88771992c87875e0f9d1f2ce5eaca7f04d0ed132a3f8b2de6f2b",
+      "tests": 6
+    },
+    "r4-domain-baseline-prepare-tests.txt": {
+      "passed": true,
+      "sha256": "25ec2b0951412bf3c78cc46b73c5b58fe7f68ad18702847bfa0a85b0fd23e1df",
+      "tests": 34
+    },
+    "r4-domain-baseline-release-tests.txt": {
+      "passed": true,
+      "sha256": "8390ec17c5f930e9cf85a7db72682dfa4a03995cf25482b5ac4faeaea6e06b5e",
+      "tests": 121
+    },
+    "r4-domain-finite-tests.txt": {
+      "passed": true,
+      "sha256": "ab36567b74ef88771992c87875e0f9d1f2ce5eaca7f04d0ed132a3f8b2de6f2b",
+      "tests": 6
+    },
+    "r4-domain-prepare-tests.txt": {
+      "passed": true,
+      "sha256": "47f4ad810b36c0a957414046dae85c0cf9d659272af6a8ad492657a93f7ab433",
+      "tests": 36
+    },
+    "r4-domain-release-tests.txt": {
+      "passed": true,
+      "sha256": "283e2a4d84cf2740ce1aa89449160c0871c293cd4009a457ff404de128981d5f",
+      "tests": 136
+    }
+  },
+  "preparerChanged": [
+    "CONTROLLER_SHA"
+  ],
+  "rpcSha256": "089d6af98a983ecc11e6feb1c0cd909c5aafba627fd7856eadd9935fec5da0c3",
+  "status": "NOT_APPROVED",
+  "topAdded": [
+    "pm2_json_domain",
+    "pm2_publish_ready"
+  ],
+  "topChanged": [
+    "Controller",
+    "pm2_raw_binding"
+  ],
+  "topUnchangedCount": 103
+}

@@ -1,0 +1,5069 @@
+{
+  "baselineGuardCallers": [
+    "apply",
+    "preflight"
+  ],
+  "baselineGuardFirstStatement": "pm2_publish_ready(b['c']['processes'], b['ids'])",
+  "configWholeSourceUnchanged": true,
+  "controller": {
+    "added": [
+      "pm2_json_domain",
+      "pm2_publish_ready"
+    ],
+    "changed": [
+      "Controller",
+      "pm2_raw_binding"
+    ],
+    "removed": [],
+    "sourceRecords": {
+      "ACTIVE_LOCKS": {
+        "afterLines": [
+          38,
+          38
+        ],
+        "afterSha256": "c6aacaf81c1e0ac3b16b68ccf7a8bd9eacb275ff76c5eeaa4c9b796879406234",
+        "astEqual": true,
+        "beforeLines": [
+          38,
+          38
+        ],
+        "beforeSha256": "c6aacaf81c1e0ac3b16b68ccf7a8bd9eacb275ff76c5eeaa4c9b796879406234",
+        "fullSourceBytesEqual": true
+      },
+      "ADMIN_API": {
+        "afterLines": [
+          31,
+          31
+        ],
+        "afterSha256": "96eeb14a7ec7994cce30816fdb2314ca1e615b6fb5ba129411598cbf5dd15a47",
+        "astEqual": true,
+        "beforeLines": [
+          31,
+          31
+        ],
+        "beforeSha256": "96eeb14a7ec7994cce30816fdb2314ca1e615b6fb5ba129411598cbf5dd15a47",
+        "fullSourceBytesEqual": true
+      },
+      "API_BASE": {
+        "afterLines": [
+          29,
+          29
+        ],
+        "afterSha256": "9a8987aa99c9a2fc60f326a54a87bb9889ea6e6900741b1e4e464a006627182f",
+        "astEqual": true,
+        "beforeLines": [
+          29,
+          29
+        ],
+        "beforeSha256": "9a8987aa99c9a2fc60f326a54a87bb9889ea6e6900741b1e4e464a006627182f",
+        "fullSourceBytesEqual": true
+      },
+      "API_PATCH_NAMES": {
+        "afterLines": [
+          936,
+          949
+        ],
+        "afterSha256": "c75b3be6482d3e6292edc08ade36a15331bab099b6bf7ac6ba0b42e9ba7b3a38",
+        "astEqual": true,
+        "beforeLines": [
+          892,
+          905
+        ],
+        "beforeSha256": "c75b3be6482d3e6292edc08ade36a15331bab099b6bf7ac6ba0b42e9ba7b3a38",
+        "fullSourceBytesEqual": true
+      },
+      "BINDING_SCHEMAS": {
+        "afterLines": [
+          951,
+          955
+        ],
+        "afterSha256": "954f5904552f4a7d28fa2814c3d191d36f8775b02f1a6f7b19b63925847e8e94",
+        "astEqual": true,
+        "beforeLines": [
+          907,
+          911
+        ],
+        "beforeSha256": "954f5904552f4a7d28fa2814c3d191d36f8775b02f1a6f7b19b63925847e8e94",
+        "fullSourceBytesEqual": true
+      },
+      "Config": {
+        "afterLines": [
+          201,
+          252
+        ],
+        "afterSha256": "9a996f8168c859abfbddaddb99f40c720670ea54c7856021f668e79c949f933a",
+        "astEqual": true,
+        "beforeLines": [
+          201,
+          252
+        ],
+        "beforeSha256": "9a996f8168c859abfbddaddb99f40c720670ea54c7856021f668e79c949f933a",
+        "fullSourceBytesEqual": true
+      },
+      "Controller": {
+        "afterLines": [
+          1315,
+          2064
+        ],
+        "afterSha256": "64592b06f7ff5f41c42e9e80ecc20ab166e6d023e3231ff8f4078b0783d75b64",
+        "astEqual": false,
+        "beforeLines": [
+          1271,
+          2019
+        ],
+        "beforeSha256": "28005d5c756791aeeb00766699f89bf57d9dc162c4b9625a2e42c08c4b422ffe",
+        "fullSourceBytesEqual": false
+      },
+      "EXTERNAL_CHILD_PID": {
+        "afterLines": [
+          635,
+          635
+        ],
+        "afterSha256": "8f06b87c3e9b31cb6db04b37c4e950574b3a8c9f62bdbd197051676257f3eb1e",
+        "astEqual": true,
+        "beforeLines": [
+          599,
+          599
+        ],
+        "beforeSha256": "8f06b87c3e9b31cb6db04b37c4e950574b3a8c9f62bdbd197051676257f3eb1e",
+        "fullSourceBytesEqual": true
+      },
+      "EXTERNAL_CWD": {
+        "afterLines": [
+          637,
+          637
+        ],
+        "afterSha256": "5ee7040a0d4143f1cdfc0af5760beccead9e8b6a3434cd3f8664b7334e17d78e",
+        "astEqual": true,
+        "beforeLines": [
+          601,
+          601
+        ],
+        "beforeSha256": "5ee7040a0d4143f1cdfc0af5760beccead9e8b6a3434cd3f8664b7334e17d78e",
+        "fullSourceBytesEqual": true
+      },
+      "EXTERNAL_OPS": {
+        "afterLines": [
+          636,
+          636
+        ],
+        "afterSha256": "cd6dfa4d0c47dfc5941e750b5a13dc355960fc0a62f51cb8df44a092f4e3e2af",
+        "astEqual": true,
+        "beforeLines": [
+          600,
+          600
+        ],
+        "beforeSha256": "cd6dfa4d0c47dfc5941e750b5a13dc355960fc0a62f51cb8df44a092f4e3e2af",
+        "fullSourceBytesEqual": true
+      },
+      "EXTERNAL_PARENT_PID": {
+        "afterLines": [
+          634,
+          634
+        ],
+        "afterSha256": "14c183e63fec9858eb59204cdfd0c6bb4b85b586f8760ec9c976c22043a1d9df",
+        "astEqual": true,
+        "beforeLines": [
+          598,
+          598
+        ],
+        "beforeSha256": "14c183e63fec9858eb59204cdfd0c6bb4b85b586f8760ec9c976c22043a1d9df",
+        "fullSourceBytesEqual": true
+      },
+      "EXTERNAL_SCRIPT": {
+        "afterLines": [
+          638,
+          638
+        ],
+        "afterSha256": "511ab9ef3519d93d49621d3624bba15caf36d1562e810412e40853f4e6565553",
+        "astEqual": true,
+        "beforeLines": [
+          602,
+          602
+        ],
+        "beforeSha256": "511ab9ef3519d93d49621d3624bba15caf36d1562e810412e40853f4e6565553",
+        "fullSourceBytesEqual": true
+      },
+      "Expr:0": {
+        "afterLines": [
+          2,
+          6
+        ],
+        "afterSha256": "03d1326828a3da42b7043ff6996f105bdaf9e4adc1fb438795a078d7493b715a",
+        "astEqual": true,
+        "beforeLines": [
+          2,
+          6
+        ],
+        "beforeSha256": "03d1326828a3da42b7043ff6996f105bdaf9e4adc1fb438795a078d7493b715a",
+        "fullSourceBytesEqual": true
+      },
+      "FACADE_SCHEMAS": {
+        "afterLines": [
+          956,
+          959
+        ],
+        "afterSha256": "709a2108895e60c9cdd647bbb7a2f46b648f80e7e8ea68388dda844eb1831225",
+        "astEqual": true,
+        "beforeLines": [
+          912,
+          915
+        ],
+        "beforeSha256": "709a2108895e60c9cdd647bbb7a2f46b648f80e7e8ea68388dda844eb1831225",
+        "fullSourceBytesEqual": true
+      },
+      "FRONT_API": {
+        "afterLines": [
+          30,
+          30
+        ],
+        "afterSha256": "c75ca34252bb0bf4dc213bb1f585f035902cbed97ba2c4f44e5024293a8322a3",
+        "astEqual": true,
+        "beforeLines": [
+          30,
+          30
+        ],
+        "beforeSha256": "c75ca34252bb0bf4dc213bb1f585f035902cbed97ba2c4f44e5024293a8322a3",
+        "fullSourceBytesEqual": true
+      },
+      "H": {
+        "afterLines": [
+          47,
+          48
+        ],
+        "afterSha256": "a64e4bc4ec4ad512ace1259d30772257e1e0af8e6088c0774fd2619de21049b9",
+        "astEqual": true,
+        "beforeLines": [
+          47,
+          48
+        ],
+        "beforeSha256": "a64e4bc4ec4ad512ace1259d30772257e1e0af8e6088c0774fd2619de21049b9",
+        "fullSourceBytesEqual": true
+      },
+      "HEX": {
+        "afterLines": [
+          34,
+          34
+        ],
+        "afterSha256": "af1a0704c0cabceb4af2c0ea11d8dc16c40d0b85d29f3da8f59e4111817a7738",
+        "astEqual": true,
+        "beforeLines": [
+          34,
+          34
+        ],
+        "beforeSha256": "af1a0704c0cabceb4af2c0ea11d8dc16c40d0b85d29f3da8f59e4111817a7738",
+        "fullSourceBytesEqual": true
+      },
+      "If:__name__ == '__main__'": {
+        "afterLines": [
+          2121,
+          2126
+        ],
+        "afterSha256": "82f96b91e214a42d60a042eb7109a9365bea626263ebf625de5f2008d1883698",
+        "astEqual": true,
+        "beforeLines": [
+          2076,
+          2081
+        ],
+        "beforeSha256": "82f96b91e214a42d60a042eb7109a9365bea626263ebf625de5f2008d1883698",
+        "fullSourceBytesEqual": true
+      },
+      "LEAVES": {
+        "afterLines": [
+          1037,
+          1039
+        ],
+        "afterSha256": "3a9d1ada46b1a7924930ae83fb456d80cfcc60a439545ba4b0906a717eae618e",
+        "astEqual": true,
+        "beforeLines": [
+          993,
+          995
+        ],
+        "beforeSha256": "3a9d1ada46b1a7924930ae83fb456d80cfcc60a439545ba4b0906a717eae618e",
+        "fullSourceBytesEqual": true
+      },
+      "LIFECYCLE": {
+        "afterLines": [
+          35,
+          37
+        ],
+        "afterSha256": "c7f677edcd82a169ebbb3b07df817b97d25320259f74719e073489ac6804ae99",
+        "astEqual": true,
+        "beforeLines": [
+          35,
+          37
+        ],
+        "beforeSha256": "c7f677edcd82a169ebbb3b07df817b97d25320259f74719e073489ac6804ae99",
+        "fullSourceBytesEqual": true
+      },
+      "OWNER": {
+        "afterLines": [
+          27,
+          27
+        ],
+        "afterSha256": "2070d804d5d91761dfbc7de31f23c339b923c41954a709202f7aaedecb02cfd9",
+        "astEqual": true,
+        "beforeLines": [
+          27,
+          27
+        ],
+        "beforeSha256": "2070d804d5d91761dfbc7de31f23c339b923c41954a709202f7aaedecb02cfd9",
+        "fullSourceBytesEqual": true
+      },
+      "PM2_GENERATION_PINS": {
+        "afterLines": [
+          392,
+          402
+        ],
+        "afterSha256": "8c19ca502275246545b17fb98b0c96212849157574c2f5b0b2e4858f7cff244b",
+        "astEqual": true,
+        "beforeLines": [
+          392,
+          402
+        ],
+        "beforeSha256": "8c19ca502275246545b17fb98b0c96212849157574c2f5b0b2e4858f7cff244b",
+        "fullSourceBytesEqual": true
+      },
+      "PM2_RAW_GENERATED": {
+        "afterLines": [
+          403,
+          404
+        ],
+        "afterSha256": "5e042880469566e79f51e18bcac6ae9bde98c5ee73f56b8a4f4c60c196904f95",
+        "astEqual": true,
+        "beforeLines": [
+          403,
+          404
+        ],
+        "beforeSha256": "5e042880469566e79f51e18bcac6ae9bde98c5ee73f56b8a4f4c60c196904f95",
+        "fullSourceBytesEqual": true
+      },
+      "PUBLIC": {
+        "afterLines": [
+          32,
+          32
+        ],
+        "afterSha256": "3ed4abb795537058e99836fcbe484454f58101b52dd86e0e35c7e334f28086d3",
+        "astEqual": true,
+        "beforeLines": [
+          32,
+          32
+        ],
+        "beforeSha256": "3ed4abb795537058e99836fcbe484454f58101b52dd86e0e35c7e334f28086d3",
+        "fullSourceBytesEqual": true
+      },
+      "RPC": {
+        "afterLines": [
+          589,
+          599
+        ],
+        "afterSha256": "6c8b4b65f99f60f66fe3acc40df1ef1e560615e5d837af594c7d9c940b463ee3",
+        "astEqual": true,
+        "beforeLines": [
+          553,
+          563
+        ],
+        "beforeSha256": "6c8b4b65f99f60f66fe3acc40df1ef1e560615e5d837af594c7d9c940b463ee3",
+        "fullSourceBytesEqual": true
+      },
+      "ReleaseError": {
+        "afterLines": [
+          40,
+          41
+        ],
+        "afterSha256": "e7898158d75a789bac93dddfd3b749d504a4dddec8cf6b1bded664ee2a347232",
+        "astEqual": true,
+        "beforeLines": [
+          40,
+          41
+        ],
+        "beforeSha256": "e7898158d75a789bac93dddfd3b749d504a4dddec8cf6b1bded664ee2a347232",
+        "fullSourceBytesEqual": true
+      },
+      "SCOPE": {
+        "afterLines": [
+          28,
+          28
+        ],
+        "afterSha256": "c278cf1e5422036a8fc1c03dd91dc16e595778dab25fccba1c25e1544d785515",
+        "astEqual": true,
+        "beforeLines": [
+          28,
+          28
+        ],
+        "beforeSha256": "c278cf1e5422036a8fc1c03dd91dc16e595778dab25fccba1c25e1544d785515",
+        "fullSourceBytesEqual": true
+      },
+      "TTL": {
+        "afterLines": [
+          33,
+          33
+        ],
+        "afterSha256": "4554b94b6cca4bdb85057b37a9461b42ceb0e1933569d14600d312a67b309418",
+        "astEqual": true,
+        "beforeLines": [
+          33,
+          33
+        ],
+        "beforeSha256": "4554b94b6cca4bdb85057b37a9461b42ceb0e1933569d14600d312a67b309418",
+        "fullSourceBytesEqual": true
+      },
+      "adapter_files": {
+        "afterLines": [
+          601,
+          631
+        ],
+        "afterSha256": "2a721d606d059ddb83095481bf271322b3e857a48d115cc685b6ec72bb978d0b",
+        "astEqual": true,
+        "beforeLines": [
+          565,
+          595
+        ],
+        "beforeSha256": "2a721d606d059ddb83095481bf271322b3e857a48d115cc685b6ec72bb978d0b",
+        "fullSourceBytesEqual": true
+      },
+      "cas": {
+        "afterLines": [
+          175,
+          198
+        ],
+        "afterSha256": "53a8c41db1aa70cfc7ecff0f108987bf2bf3c02b1a046d7321f7cf20ab858260",
+        "astEqual": true,
+        "beforeLines": [
+          175,
+          198
+        ],
+        "beforeSha256": "53a8c41db1aa70cfc7ecff0f108987bf2bf3c02b1a046d7321f7cf20ab858260",
+        "fullSourceBytesEqual": true
+      },
+      "check_locks": {
+        "afterLines": [
+          158,
+          160
+        ],
+        "afterSha256": "74960f94364f70b95b4ca2f1530b94e05fd57669f033242cb92407b31c5b3660",
+        "astEqual": true,
+        "beforeLines": [
+          158,
+          160
+        ],
+        "beforeSha256": "74960f94364f70b95b4ca2f1530b94e05fd57669f033242cb92407b31c5b3660",
+        "fullSourceBytesEqual": true
+      },
+      "config_binding": {
+        "afterLines": [
+          1178,
+          1183
+        ],
+        "afterSha256": "6930f294a9c040a58290d0eb163f676e1973bc2d6679afe51d1b11b761bb096c",
+        "astEqual": true,
+        "beforeLines": [
+          1134,
+          1139
+        ],
+        "beforeSha256": "6930f294a9c040a58290d0eb163f676e1973bc2d6679afe51d1b11b761bb096c",
+        "fullSourceBytesEqual": true
+      },
+      "coord_closed": {
+        "afterLines": [
+          282,
+          295
+        ],
+        "afterSha256": "767e0805bc6ddeb8dd18efa8129765f74504cdc02d2443bb4de7083bf60a9d4e",
+        "astEqual": true,
+        "beforeLines": [
+          282,
+          295
+        ],
+        "beforeSha256": "767e0805bc6ddeb8dd18efa8129765f74504cdc02d2443bb4de7083bf60a9d4e",
+        "fullSourceBytesEqual": true
+      },
+      "decode": {
+        "afterLines": [
+          54,
+          70
+        ],
+        "afterSha256": "a3d950f81a706b128b4cf182e0723fd59cbd627bb932eb6f3be1f5a016dc094e",
+        "astEqual": true,
+        "beforeLines": [
+          54,
+          70
+        ],
+        "beforeSha256": "a3d950f81a706b128b4cf182e0723fd59cbd627bb932eb6f3be1f5a016dc094e",
+        "fullSourceBytesEqual": true
+      },
+      "describe": {
+        "afterLines": [
+          129,
+          143
+        ],
+        "afterSha256": "b3062110bd9743b6dbdffef95dd59f3c91e09caabda5b1cd0744d4c51adf0cfc",
+        "astEqual": true,
+        "beforeLines": [
+          129,
+          143
+        ],
+        "beforeSha256": "b3062110bd9743b6dbdffef95dd59f3c91e09caabda5b1cd0744d4c51adf0cfc",
+        "fullSourceBytesEqual": true
+      },
+      "encode": {
+        "afterLines": [
+          50,
+          52
+        ],
+        "afterSha256": "d37ae94f3274d03eeb8e38f765bec408ef6c57c148f0ec44ecf3379a737887c2",
+        "astEqual": true,
+        "beforeLines": [
+          50,
+          52
+        ],
+        "beforeSha256": "d37ae94f3274d03eeb8e38f765bec408ef6c57c148f0ec44ecf3379a737887c2",
+        "fullSourceBytesEqual": true
+      },
+      "exact": {
+        "afterLines": [
+          72,
+          73
+        ],
+        "afterSha256": "4c912d898ed67c63390b7b2bab724e94846234ed4dce9649ad69c35733f602b2",
+        "astEqual": true,
+        "beforeLines": [
+          72,
+          73
+        ],
+        "beforeSha256": "4c912d898ed67c63390b7b2bab724e94846234ed4dce9649ad69c35733f602b2",
+        "fullSourceBytesEqual": true
+      },
+      "exclusive": {
+        "afterLines": [
+          162,
+          173
+        ],
+        "afterSha256": "0558702dd647df033a4fc1d8af4867bfe7fd25f6c5e0157e32cd42fbdd9df7c6",
+        "astEqual": true,
+        "beforeLines": [
+          162,
+          173
+        ],
+        "beforeSha256": "0558702dd647df033a4fc1d8af4867bfe7fd25f6c5e0157e32cd42fbdd9df7c6",
+        "fullSourceBytesEqual": true
+      },
+      "external_proc_identity": {
+        "afterLines": [
+          640,
+          652
+        ],
+        "afterSha256": "9cae7a73e966a59e0475cc593f63db5e3832fd192a65a91629a9b28201b90463",
+        "astEqual": true,
+        "beforeLines": [
+          604,
+          616
+        ],
+        "beforeSha256": "9cae7a73e966a59e0475cc593f63db5e3832fd192a65a91629a9b28201b90463",
+        "fullSourceBytesEqual": true
+      },
+      "external_proc_link": {
+        "afterLines": [
+          654,
+          660
+        ],
+        "afterSha256": "3c10a7cc153bceeb356db9789c9e654ecc0562ff7e141015983e7b05c212f54d",
+        "astEqual": true,
+        "beforeLines": [
+          618,
+          624
+        ],
+        "beforeSha256": "3c10a7cc153bceeb356db9789c9e654ecc0562ff7e141015983e7b05c212f54d",
+        "fullSourceBytesEqual": true
+      },
+      "external_proc_sample": {
+        "afterLines": [
+          669,
+          706
+        ],
+        "afterSha256": "f6e5b30eb270fe59d9736839c71400f486c4be926ed754900dee650a9cc7be70",
+        "astEqual": true,
+        "beforeLines": [
+          633,
+          670
+        ],
+        "beforeSha256": "f6e5b30eb270fe59d9736839c71400f486c4be926ed754900dee650a9cc7be70",
+        "fullSourceBytesEqual": true
+      },
+      "external_protection": {
+        "afterLines": [
+          726,
+          745
+        ],
+        "afterSha256": "87e73ea1c0812c213f5a4e4be777c13f33be67ed69e55db3b1754cb00ddf9b73",
+        "astEqual": true,
+        "beforeLines": [
+          690,
+          709
+        ],
+        "beforeSha256": "87e73ea1c0812c213f5a4e4be777c13f33be67ed69e55db3b1754cb00ddf9b73",
+        "fullSourceBytesEqual": true
+      },
+      "external_protection_sample": {
+        "afterLines": [
+          708,
+          724
+        ],
+        "afterSha256": "ba822886eb7a6d71906e9c36ad560dc78c2cb6911909942e03002c1e1abe23af",
+        "astEqual": true,
+        "beforeLines": [
+          672,
+          688
+        ],
+        "beforeSha256": "ba822886eb7a6d71906e9c36ad560dc78c2cb6911909942e03002c1e1abe23af",
+        "fullSourceBytesEqual": true
+      },
+      "external_source": {
+        "afterLines": [
+          662,
+          667
+        ],
+        "afterSha256": "cfed0513bd481c3b60ad36b4dcb2157c53abd06422193af23949916306784297",
+        "astEqual": true,
+        "beforeLines": [
+          626,
+          631
+        ],
+        "beforeSha256": "cfed0513bd481c3b60ad36b4dcb2157c53abd06422193af23949916306784297",
+        "fullSourceBytesEqual": true
+      },
+      "file_pin": {
+        "afterLines": [
+          1079,
+          1080
+        ],
+        "afterSha256": "6f744375f419ff58e1fede47cbbbb0e5b30bb11a00eef6b320195c628b56cacc",
+        "astEqual": true,
+        "beforeLines": [
+          1035,
+          1036
+        ],
+        "beforeSha256": "6f744375f419ff58e1fede47cbbbb0e5b30bb11a00eef6b320195c628b56cacc",
+        "fullSourceBytesEqual": true
+      },
+      "fresh": {
+        "afterLines": [
+          85,
+          92
+        ],
+        "afterSha256": "5d3999f3032399929f85f8f5e1ed6e7f69fe322c92ffcef51248429808082168",
+        "astEqual": true,
+        "beforeLines": [
+          85,
+          92
+        ],
+        "beforeSha256": "5d3999f3032399929f85f8f5e1ed6e7f69fe322c92ffcef51248429808082168",
+        "fullSourceBytesEqual": true
+      },
+      "fsync_dir": {
+        "afterLines": [
+          151,
+          156
+        ],
+        "afterSha256": "07157008f866df5f675c40a107eb74824ecd79b3e27bc6ee4b9c93fbdd28b71b",
+        "astEqual": true,
+        "beforeLines": [
+          151,
+          156
+        ],
+        "beforeSha256": "07157008f866df5f675c40a107eb74824ecd79b3e27bc6ee4b9c93fbdd28b71b",
+        "fullSourceBytesEqual": true
+      },
+      "get_http": {
+        "afterLines": [
+          872,
+          880
+        ],
+        "afterSha256": "c885d6f970eb2880129e17cea12509fec2af4781e09f31a21f07afa8894928ea",
+        "astEqual": true,
+        "beforeLines": [
+          828,
+          836
+        ],
+        "beforeSha256": "c885d6f970eb2880129e17cea12509fec2af4781e09f31a21f07afa8894928ea",
+        "fullSourceBytesEqual": true
+      },
+      "identity": {
+        "afterLines": [
+          833,
+          862
+        ],
+        "afterSha256": "bb42b3fd63787bc7c2dbe0859937ddc4573fcca8d6072156aea6ac7f9b5f7f72",
+        "astEqual": true,
+        "beforeLines": [
+          797,
+          826
+        ],
+        "beforeSha256": "bb42b3fd63787bc7c2dbe0859937ddc4573fcca8d6072156aea6ac7f9b5f7f72",
+        "fullSourceBytesEqual": true
+      },
+      "import:from contextlib import contextmanager": {
+        "afterLines": [
+          24,
+          24
+        ],
+        "afterSha256": "6059afacb69bc73adea9bd2a8cd99b6bc4e746f6c9cadecae1eda078ed22c4a3",
+        "astEqual": true,
+        "beforeLines": [
+          24,
+          24
+        ],
+        "beforeSha256": "6059afacb69bc73adea9bd2a8cd99b6bc4e746f6c9cadecae1eda078ed22c4a3",
+        "fullSourceBytesEqual": true
+      },
+      "import:from dataclasses import dataclass": {
+        "afterLines": [
+          25,
+          25
+        ],
+        "afterSha256": "07ac27eea41ef7e0d14eeb4cc65ebf0beaa2041ad913826ebdf97d56d6febd5f",
+        "astEqual": true,
+        "beforeLines": [
+          25,
+          25
+        ],
+        "beforeSha256": "07ac27eea41ef7e0d14eeb4cc65ebf0beaa2041ad913826ebdf97d56d6febd5f",
+        "fullSourceBytesEqual": true
+      },
+      "import:from pathlib import Path": {
+        "afterLines": [
+          17,
+          17
+        ],
+        "afterSha256": "3cb9ffccba5146b2dd177a30c3057a4395ebd5c745d0789d2ed95d0cf4afe271",
+        "astEqual": true,
+        "beforeLines": [
+          17,
+          17
+        ],
+        "beforeSha256": "3cb9ffccba5146b2dd177a30c3057a4395ebd5c745d0789d2ed95d0cf4afe271",
+        "fullSourceBytesEqual": true
+      },
+      "import:import argparse": {
+        "afterLines": [
+          7,
+          7
+        ],
+        "afterSha256": "b53e5a5286172fb0a4772843ba3ed62331687bcb9939ec9c49e9066d4ee4272d",
+        "astEqual": true,
+        "beforeLines": [
+          7,
+          7
+        ],
+        "beforeSha256": "b53e5a5286172fb0a4772843ba3ed62331687bcb9939ec9c49e9066d4ee4272d",
+        "fullSourceBytesEqual": true
+      },
+      "import:import base64": {
+        "afterLines": [
+          8,
+          8
+        ],
+        "afterSha256": "0bd0be6193903c571f3df2f9b88bc11e59075ab18a246347a35c85c7d25aa5fd",
+        "astEqual": true,
+        "beforeLines": [
+          8,
+          8
+        ],
+        "beforeSha256": "0bd0be6193903c571f3df2f9b88bc11e59075ab18a246347a35c85c7d25aa5fd",
+        "fullSourceBytesEqual": true
+      },
+      "import:import copy": {
+        "afterLines": [
+          9,
+          9
+        ],
+        "afterSha256": "01185d20d26568a358ea5c862ad992fbed2b4c0a68684d42477f0920b7be3e7f",
+        "astEqual": true,
+        "beforeLines": [
+          9,
+          9
+        ],
+        "beforeSha256": "01185d20d26568a358ea5c862ad992fbed2b4c0a68684d42477f0920b7be3e7f",
+        "fullSourceBytesEqual": true
+      },
+      "import:import datetime as dt": {
+        "afterLines": [
+          10,
+          10
+        ],
+        "afterSha256": "598ee9f6e020b77e941072ad80a4f8d4ee5974ee3792eaf5546f1decfbfe21d2",
+        "astEqual": true,
+        "beforeLines": [
+          10,
+          10
+        ],
+        "beforeSha256": "598ee9f6e020b77e941072ad80a4f8d4ee5974ee3792eaf5546f1decfbfe21d2",
+        "fullSourceBytesEqual": true
+      },
+      "import:import fcntl": {
+        "afterLines": [
+          11,
+          11
+        ],
+        "afterSha256": "a6376be6019df1a360639f7128c0c495434a974383c73550009806b9a6622779",
+        "astEqual": true,
+        "beforeLines": [
+          11,
+          11
+        ],
+        "beforeSha256": "a6376be6019df1a360639f7128c0c495434a974383c73550009806b9a6622779",
+        "fullSourceBytesEqual": true
+      },
+      "import:import hashlib": {
+        "afterLines": [
+          12,
+          12
+        ],
+        "afterSha256": "3b3ea3cdc7068a9e97cfcddbcd9d8e0c54fe4d068347b80b158fdd8b14676e3b",
+        "astEqual": true,
+        "beforeLines": [
+          12,
+          12
+        ],
+        "beforeSha256": "3b3ea3cdc7068a9e97cfcddbcd9d8e0c54fe4d068347b80b158fdd8b14676e3b",
+        "fullSourceBytesEqual": true
+      },
+      "import:import http.client": {
+        "afterLines": [
+          13,
+          13
+        ],
+        "afterSha256": "37674a8689828de5054669d2d644dd23c74db30c5b92d3fb94ba450315d866ac",
+        "astEqual": true,
+        "beforeLines": [
+          13,
+          13
+        ],
+        "beforeSha256": "37674a8689828de5054669d2d644dd23c74db30c5b92d3fb94ba450315d866ac",
+        "fullSourceBytesEqual": true
+      },
+      "import:import json": {
+        "afterLines": [
+          14,
+          14
+        ],
+        "afterSha256": "261a9112a2918e2aba03e19a2f221a027ab4b6f9e946a6c39814f54e18e07dfc",
+        "astEqual": true,
+        "beforeLines": [
+          14,
+          14
+        ],
+        "beforeSha256": "261a9112a2918e2aba03e19a2f221a027ab4b6f9e946a6c39814f54e18e07dfc",
+        "fullSourceBytesEqual": true
+      },
+      "import:import math": {
+        "afterLines": [
+          15,
+          15
+        ],
+        "afterSha256": "085ea91d7cfeb4f5695793f882c7463cbfdf7be9f98e6c5133847a245bbea366",
+        "astEqual": true,
+        "beforeLines": [
+          15,
+          15
+        ],
+        "beforeSha256": "085ea91d7cfeb4f5695793f882c7463cbfdf7be9f98e6c5133847a245bbea366",
+        "fullSourceBytesEqual": true
+      },
+      "import:import os": {
+        "afterLines": [
+          16,
+          16
+        ],
+        "afterSha256": "3727adff524e0616022eadd8f4af21a0778b29fc4c77bdfefd1afce2cbf5e4b7",
+        "astEqual": true,
+        "beforeLines": [
+          16,
+          16
+        ],
+        "beforeSha256": "3727adff524e0616022eadd8f4af21a0778b29fc4c77bdfefd1afce2cbf5e4b7",
+        "fullSourceBytesEqual": true
+      },
+      "import:import re": {
+        "afterLines": [
+          18,
+          18
+        ],
+        "afterSha256": "a830333312c4c9c2233bb02762bd498203b1c3bf0527614735693b4b79f6d167",
+        "astEqual": true,
+        "beforeLines": [
+          18,
+          18
+        ],
+        "beforeSha256": "a830333312c4c9c2233bb02762bd498203b1c3bf0527614735693b4b79f6d167",
+        "fullSourceBytesEqual": true
+      },
+      "import:import socket": {
+        "afterLines": [
+          19,
+          19
+        ],
+        "afterSha256": "463c91f978872b1fca29c26ced25889f263486b9186c4654129dd2f9ddb8c6b3",
+        "astEqual": true,
+        "beforeLines": [
+          19,
+          19
+        ],
+        "beforeSha256": "463c91f978872b1fca29c26ced25889f263486b9186c4654129dd2f9ddb8c6b3",
+        "fullSourceBytesEqual": true
+      },
+      "import:import stat": {
+        "afterLines": [
+          20,
+          20
+        ],
+        "afterSha256": "1fd20c880d3cde1a258aa761090aabc445918b6cf2b91712928debfc04392cff",
+        "astEqual": true,
+        "beforeLines": [
+          20,
+          20
+        ],
+        "beforeSha256": "1fd20c880d3cde1a258aa761090aabc445918b6cf2b91712928debfc04392cff",
+        "fullSourceBytesEqual": true
+      },
+      "import:import subprocess": {
+        "afterLines": [
+          21,
+          21
+        ],
+        "afterSha256": "17ea74bb79ba96edc39a8382a97f22993b80cc4088b3e2717a98917c60c1dd5a",
+        "astEqual": true,
+        "beforeLines": [
+          21,
+          21
+        ],
+        "beforeSha256": "17ea74bb79ba96edc39a8382a97f22993b80cc4088b3e2717a98917c60c1dd5a",
+        "fullSourceBytesEqual": true
+      },
+      "import:import sys": {
+        "afterLines": [
+          22,
+          22
+        ],
+        "afterSha256": "c517577851c489e45abae2591256c40404a05c6d19cd4d5ae7fd22b0084cec6c",
+        "astEqual": true,
+        "beforeLines": [
+          22,
+          22
+        ],
+        "beforeSha256": "c517577851c489e45abae2591256c40404a05c6d19cd4d5ae7fd22b0084cec6c",
+        "fullSourceBytesEqual": true
+      },
+      "import:import uuid": {
+        "afterLines": [
+          23,
+          23
+        ],
+        "afterSha256": "ab270e34de38d99f0364043ca1808983f498a9e3943133071931657340b5bc95",
+        "astEqual": true,
+        "beforeLines": [
+          23,
+          23
+        ],
+        "beforeSha256": "ab270e34de38d99f0364043ca1808983f498a9e3943133071931657340b5bc95",
+        "fullSourceBytesEqual": true
+      },
+      "integer": {
+        "afterLines": [
+          79,
+          80
+        ],
+        "afterSha256": "663749b45f874bed847c76d76063a01a4ce9e7c149a3bf70ba41c19dbf236c69",
+        "astEqual": true,
+        "beforeLines": [
+          79,
+          80
+        ],
+        "beforeSha256": "663749b45f874bed847c76d76063a01a4ce9e7c149a3bf70ba41c19dbf236c69",
+        "fullSourceBytesEqual": true
+      },
+      "inventory": {
+        "afterLines": [
+          339,
+          383
+        ],
+        "afterSha256": "42b616372a6e8917596df343f41f7ac36cee4ca064b55447d26f75cdbaf9e924",
+        "astEqual": true,
+        "beforeLines": [
+          339,
+          383
+        ],
+        "beforeSha256": "42b616372a6e8917596df343f41f7ac36cee4ca064b55447d26f75cdbaf9e924",
+        "fullSourceBytesEqual": true
+      },
+      "inverse_patches": {
+        "afterLines": [
+          897,
+          934
+        ],
+        "afterSha256": "18e51834f31c5cefbdacde38b9d677fbb5fdc3eff93f5859fa897dfef43f2a86",
+        "astEqual": true,
+        "beforeLines": [
+          853,
+          890
+        ],
+        "beforeSha256": "18e51834f31c5cefbdacde38b9d677fbb5fdc3eff93f5859fa897dfef43f2a86",
+        "fullSourceBytesEqual": true
+      },
+      "listener": {
+        "afterLines": [
+          882,
+          892
+        ],
+        "afterSha256": "352e0ca261ab8387c6210cfcb56ed8b0ea95e81432495bca3f26ef66cb0e7040",
+        "astEqual": true,
+        "beforeLines": [
+          838,
+          848
+        ],
+        "beforeSha256": "352e0ca261ab8387c6210cfcb56ed8b0ea95e81432495bca3f26ef66cb0e7040",
+        "fullSourceBytesEqual": true
+      },
+      "locked": {
+        "afterLines": [
+          255,
+          280
+        ],
+        "afterSha256": "7dca0432c5584131e6906f2d9373c2b8e74c4cefa73f9ef087c84f3f594ce703",
+        "astEqual": true,
+        "beforeLines": [
+          255,
+          280
+        ],
+        "beforeSha256": "7dca0432c5584131e6906f2d9373c2b8e74c4cefa73f9ef087c84f3f594ce703",
+        "fullSourceBytesEqual": true
+      },
+      "main": {
+        "afterLines": [
+          2083,
+          2119
+        ],
+        "afterSha256": "e3e5fd22009d75f6f8f219239c26678c240f760c6fe80547eb7cc2f330597994",
+        "astEqual": true,
+        "beforeLines": [
+          2038,
+          2074
+        ],
+        "beforeSha256": "e3e5fd22009d75f6f8f219239c26678c240f760c6fe80547eb7cc2f330597994",
+        "fullSourceBytesEqual": true
+      },
+      "manifest_bindings": {
+        "afterLines": [
+          1093,
+          1094
+        ],
+        "afterSha256": "94c55e4a3708a1483a07146884171788d5363388deb24badc3612e34652c5117",
+        "astEqual": true,
+        "beforeLines": [
+          1049,
+          1050
+        ],
+        "beforeSha256": "94c55e4a3708a1483a07146884171788d5363388deb24badc3612e34652c5117",
+        "fullSourceBytesEqual": true
+      },
+      "meta": {
+        "afterLines": [
+          106,
+          110
+        ],
+        "afterSha256": "4159550537474685c68ccf097c0141e574ac7aa7bda40dade607eb2a8d30d23a",
+        "astEqual": true,
+        "beforeLines": [
+          106,
+          110
+        ],
+        "beforeSha256": "4159550537474685c68ccf097c0141e574ac7aa7bda40dade607eb2a8d30d23a",
+        "fullSourceBytesEqual": true
+      },
+      "native_api": {
+        "afterLines": [
+          1007,
+          1035
+        ],
+        "afterSha256": "b94f4af469d7dbdf5213752f8abbc7bd9f0076691ba4ce6e8c731a271ebda2f7",
+        "astEqual": true,
+        "beforeLines": [
+          963,
+          991
+        ],
+        "beforeSha256": "b94f4af469d7dbdf5213752f8abbc7bd9f0076691ba4ce6e8c731a271ebda2f7",
+        "fullSourceBytesEqual": true
+      },
+      "need": {
+        "afterLines": [
+          43,
+          45
+        ],
+        "afterSha256": "b5c51a5454354ec1022a3ba8ad60fd7efc75cf0d2ad2fcc007a18fbd627c1c81",
+        "astEqual": true,
+        "beforeLines": [
+          43,
+          45
+        ],
+        "beforeSha256": "b5c51a5454354ec1022a3ba8ad60fd7efc75cf0d2ad2fcc007a18fbd627c1c81",
+        "fullSourceBytesEqual": true
+      },
+      "no_link": {
+        "afterLines": [
+          99,
+          104
+        ],
+        "afterSha256": "3f6822c3afaad194409218b0b1258fe3c3d3cc8e4f17cdfc84705f2758bcb1fd",
+        "astEqual": true,
+        "beforeLines": [
+          99,
+          104
+        ],
+        "beforeSha256": "3f6822c3afaad194409218b0b1258fe3c3d3cc8e4f17cdfc84705f2758bcb1fd",
+        "fullSourceBytesEqual": true
+      },
+      "now": {
+        "afterLines": [
+          82,
+          83
+        ],
+        "afterSha256": "bc3d8c35e4817461025279aa997673a085da5f1800da10b2e2cd38454cfc84e8",
+        "astEqual": true,
+        "beforeLines": [
+          82,
+          83
+        ],
+        "beforeSha256": "bc3d8c35e4817461025279aa997673a085da5f1800da10b2e2cd38454cfc84e8",
+        "fullSourceBytesEqual": true
+      },
+      "permissions": {
+        "afterLines": [
+          579,
+          587
+        ],
+        "afterSha256": "d228ef89d11bc1db5ccf6470649bd1d032020df1ce4c48086579985e019a4740",
+        "astEqual": true,
+        "beforeLines": [
+          543,
+          551
+        ],
+        "beforeSha256": "d228ef89d11bc1db5ccf6470649bd1d032020df1ce4c48086579985e019a4740",
+        "fullSourceBytesEqual": true
+      },
+      "pin": {
+        "afterLines": [
+          75,
+          77
+        ],
+        "afterSha256": "2401667ab2c9420d0ea3c384fa9c20fba98273122bc5875fa53b5569dc3ce32d",
+        "astEqual": true,
+        "beforeLines": [
+          75,
+          77
+        ],
+        "beforeSha256": "2401667ab2c9420d0ea3c384fa9c20fba98273122bc5875fa53b5569dc3ce32d",
+        "fullSourceBytesEqual": true
+      },
+      "pm2_meta_transition": {
+        "afterLines": [
+          566,
+          576
+        ],
+        "afterSha256": "d45618d6be171b7e5a1730cde18b3f0b19bd88b498d3540ee741dee9dd702e0f",
+        "astEqual": true,
+        "beforeLines": [
+          530,
+          540
+        ],
+        "beforeSha256": "d45618d6be171b7e5a1730cde18b3f0b19bd88b498d3540ee741dee9dd702e0f",
+        "fullSourceBytesEqual": true
+      },
+      "pm2_project": {
+        "afterLines": [
+          460,
+          471
+        ],
+        "afterSha256": "70dfc77feb70eb554d6020cdef52f2642ce5cd806ead0fc3d9f8ca39a70f63c3",
+        "astEqual": true,
+        "beforeLines": [
+          460,
+          471
+        ],
+        "beforeSha256": "70dfc77feb70eb554d6020cdef52f2642ce5cd806ead0fc3d9f8ca39a70f63c3",
+        "fullSourceBytesEqual": true
+      },
+      "pm2_raw_binding": {
+        "afterLines": [
+          507,
+          564
+        ],
+        "afterSha256": "281967c143f6b1e41a88e8884bb56fad703cbd353a151d3d85a5653ea9f80e86",
+        "astEqual": false,
+        "beforeLines": [
+          473,
+          528
+        ],
+        "beforeSha256": "3a42987bd1ebd0c297e21a42102185e320d9dda8e5c089ac0bb83b348e190226",
+        "fullSourceBytesEqual": false
+      },
+      "pm2_top_tokens": {
+        "afterLines": [
+          430,
+          458
+        ],
+        "afterSha256": "0841fcd0767f8056dbf2be21dc1f5b2bd243f46695f2b1c07c4da83397742617",
+        "astEqual": true,
+        "beforeLines": [
+          430,
+          458
+        ],
+        "beforeSha256": "0841fcd0767f8056dbf2be21dc1f5b2bd243f46695f2b1c07c4da83397742617",
+        "fullSourceBytesEqual": true
+      },
+      "private": {
+        "afterLines": [
+          145,
+          149
+        ],
+        "afterSha256": "84021590b7c1e1ea1322e075ca9c61420c56d2b916f460eb70ce332ba9a2ec6d",
+        "astEqual": true,
+        "beforeLines": [
+          145,
+          149
+        ],
+        "beforeSha256": "84021590b7c1e1ea1322e075ca9c61420c56d2b916f460eb70ce332ba9a2ec6d",
+        "fullSourceBytesEqual": true
+      },
+      "production_reload": {
+        "afterLines": [
+          2066,
+          2081
+        ],
+        "afterSha256": "cd9f42acd1e1c1057327d7b8a1d736e33fdcb398cd8f8ea2897b5305ca177651",
+        "astEqual": true,
+        "beforeLines": [
+          2021,
+          2036
+        ],
+        "beforeSha256": "cd9f42acd1e1c1057327d7b8a1d736e33fdcb398cd8f8ea2897b5305ca177651",
+        "fullSourceBytesEqual": true
+      },
+      "raw_semantics": {
+        "afterLines": [
+          416,
+          428
+        ],
+        "afterSha256": "3804cbda8ad73191c883cbb73749b7c3ea96b8925ccbef971c844b98eb12ffc6",
+        "astEqual": true,
+        "beforeLines": [
+          416,
+          428
+        ],
+        "beforeSha256": "3804cbda8ad73191c883cbb73749b7c3ea96b8925ccbef971c844b98eb12ffc6",
+        "fullSourceBytesEqual": true
+      },
+      "raw_values": {
+        "afterLines": [
+          406,
+          414
+        ],
+        "afterSha256": "6a501e64c4b324ec385ac17b6bd99b667b4fa9b8a612de0158f45f6339961c39",
+        "astEqual": true,
+        "beforeLines": [
+          406,
+          414
+        ],
+        "beforeSha256": "6a501e64c4b324ec385ac17b6bd99b667b4fa9b8a612de0158f45f6339961c39",
+        "fullSourceBytesEqual": true
+      },
+      "regular": {
+        "afterLines": [
+          112,
+          127
+        ],
+        "afterSha256": "ebb4fab5ed6246915f4e49a32796166c2a389661a4648e022262517756fd364d",
+        "astEqual": true,
+        "beforeLines": [
+          112,
+          127
+        ],
+        "beforeSha256": "ebb4fab5ed6246915f4e49a32796166c2a389661a4648e022262517756fd364d",
+        "fullSourceBytesEqual": true
+      },
+      "rel": {
+        "afterLines": [
+          94,
+          97
+        ],
+        "afterSha256": "9f68b3afbf2f08a78891a879eb48a02347f2087017ef029e3c8834b850d64b5f",
+        "astEqual": true,
+        "beforeLines": [
+          94,
+          97
+        ],
+        "beforeSha256": "9f68b3afbf2f08a78891a879eb48a02347f2087017ef029e3c8834b850d64b5f",
+        "fullSourceBytesEqual": true
+      },
+      "rpc": {
+        "afterLines": [
+          787,
+          804
+        ],
+        "afterSha256": "976e1423d3fe4eada436a554d70412ff85909056fd7c6f71166b4158fec0a469",
+        "astEqual": true,
+        "beforeLines": [
+          751,
+          768
+        ],
+        "beforeSha256": "976e1423d3fe4eada436a554d70412ff85909056fd7c6f71166b4158fec0a469",
+        "fullSourceBytesEqual": true
+      },
+      "seal_candidate": {
+        "afterLines": [
+          1111,
+          1176
+        ],
+        "afterSha256": "e275e0c4aaef62dedf2ced75750ce9c45e527462e7f0c95024ca6f6259d37bd6",
+        "astEqual": true,
+        "beforeLines": [
+          1067,
+          1132
+        ],
+        "beforeSha256": "e275e0c4aaef62dedf2ced75750ce9c45e527462e7f0c95024ca6f6259d37bd6",
+        "fullSourceBytesEqual": true
+      },
+      "shallow_pm2": {
+        "afterLines": [
+          385,
+          388
+        ],
+        "afterSha256": "5ea1b56c0f92c16cf446307ecaece0fba6cdffa552351f2e909fbd9833fce46c",
+        "astEqual": true,
+        "beforeLines": [
+          385,
+          388
+        ],
+        "beforeSha256": "5ea1b56c0f92c16cf446307ecaece0fba6cdffa552351f2e909fbd9833fce46c",
+        "fullSourceBytesEqual": true
+      },
+      "snapshot_rows": {
+        "afterLines": [
+          806,
+          831
+        ],
+        "afterSha256": "c8944c7a4f453dbef9a4352edd858f7d292f9ebbaff9c9924183b5006c3180a6",
+        "astEqual": true,
+        "beforeLines": [
+          770,
+          795
+        ],
+        "beforeSha256": "c8944c7a4f453dbef9a4352edd858f7d292f9ebbaff9c9924183b5006c3180a6",
+        "fullSourceBytesEqual": true
+      },
+      "transport": {
+        "afterLines": [
+          747,
+          785
+        ],
+        "afterSha256": "6afa6e06f830ce4f47908d149cd95ff0ada382053389daf15499be5776d8df9d",
+        "astEqual": true,
+        "beforeLines": [
+          711,
+          749
+        ],
+        "beforeSha256": "6afa6e06f830ce4f47908d149cd95ff0ada382053389daf15499be5776d8df9d",
+        "fullSourceBytesEqual": true
+      },
+      "tree_files": {
+        "afterLines": [
+          1082,
+          1091
+        ],
+        "afterSha256": "84684c74c56d4ecf78750730b3a7082707b61b4310dfe28ce0c35796437d59e3",
+        "astEqual": true,
+        "beforeLines": [
+          1038,
+          1047
+        ],
+        "beforeSha256": "84684c74c56d4ecf78750730b3a7082707b61b4310dfe28ce0c35796437d59e3",
+        "fullSourceBytesEqual": true
+      },
+      "ui_inverse": {
+        "afterLines": [
+          1048,
+          1077
+        ],
+        "afterSha256": "b987054eec14a529209256128e3620cda5ad9359321f76ac7250be23a7fb1051",
+        "astEqual": true,
+        "beforeLines": [
+          1004,
+          1033
+        ],
+        "beforeSha256": "b987054eec14a529209256128e3620cda5ad9359321f76ac7250be23a7fb1051",
+        "fullSourceBytesEqual": true
+      },
+      "unb64": {
+        "afterLines": [
+          1041,
+          1046
+        ],
+        "afterSha256": "7341243c660a378d042e8ca6254f69745815ede13bd6e100d16a75ef57ac56dc",
+        "astEqual": true,
+        "beforeLines": [
+          997,
+          1002
+        ],
+        "beforeSha256": "7341243c660a378d042e8ca6254f69745815ede13bd6e100d16a75ef57ac56dc",
+        "fullSourceBytesEqual": true
+      },
+      "union": {
+        "afterLines": [
+          297,
+          337
+        ],
+        "afterSha256": "8745569f288041fa7dde63a096d49316cb777228945c1b86ac5b09c02169be24",
+        "astEqual": true,
+        "beforeLines": [
+          297,
+          337
+        ],
+        "beforeSha256": "8745569f288041fa7dde63a096d49316cb777228945c1b86ac5b09c02169be24",
+        "fullSourceBytesEqual": true
+      },
+      "utf16_offset": {
+        "afterLines": [
+          894,
+          895
+        ],
+        "afterSha256": "7c84c98d0f0494a05ae2a45764af141f13efd867c32809144e569f7200fe44c7",
+        "astEqual": true,
+        "beforeLines": [
+          850,
+          851
+        ],
+        "beforeSha256": "7c84c98d0f0494a05ae2a45764af141f13efd867c32809144e569f7200fe44c7",
+        "fullSourceBytesEqual": true
+      },
+      "validate_api_source": {
+        "afterLines": [
+          961,
+          1005
+        ],
+        "afterSha256": "c2d1d87d6887459100829314c1eee8764aa2a4ec24edfe23940f869552ee23b4",
+        "astEqual": true,
+        "beforeLines": [
+          917,
+          961
+        ],
+        "beforeSha256": "c2d1d87d6887459100829314c1eee8764aa2a4ec24edfe23940f869552ee23b4",
+        "fullSourceBytesEqual": true
+      },
+      "validate_payload": {
+        "afterLines": [
+          1185,
+          1313
+        ],
+        "afterSha256": "b8e7ab6ed2200f802892170efe0328732633e13466ca4a9aa4819c6f5dec24e3",
+        "astEqual": true,
+        "beforeLines": [
+          1141,
+          1269
+        ],
+        "beforeSha256": "b8e7ab6ed2200f802892170efe0328732633e13466ca4a9aa4819c6f5dec24e3",
+        "fullSourceBytesEqual": true
+      },
+      "validate_review": {
+        "afterLines": [
+          1096,
+          1109
+        ],
+        "afterSha256": "d8e1cb518122b6999ab627eb2aba4c8c995757cdedd025fd9279ae9ce768b347",
+        "astEqual": true,
+        "beforeLines": [
+          1052,
+          1065
+        ],
+        "beforeSha256": "d8e1cb518122b6999ab627eb2aba4c8c995757cdedd025fd9279ae9ce768b347",
+        "fullSourceBytesEqual": true
+      }
+    },
+    "unchanged": [
+      "ACTIVE_LOCKS",
+      "ADMIN_API",
+      "API_BASE",
+      "API_PATCH_NAMES",
+      "BINDING_SCHEMAS",
+      "Config",
+      "EXTERNAL_CHILD_PID",
+      "EXTERNAL_CWD",
+      "EXTERNAL_OPS",
+      "EXTERNAL_PARENT_PID",
+      "EXTERNAL_SCRIPT",
+      "Expr:0",
+      "FACADE_SCHEMAS",
+      "FRONT_API",
+      "H",
+      "HEX",
+      "If:__name__ == '__main__'",
+      "LEAVES",
+      "LIFECYCLE",
+      "OWNER",
+      "PM2_GENERATION_PINS",
+      "PM2_RAW_GENERATED",
+      "PUBLIC",
+      "RPC",
+      "ReleaseError",
+      "SCOPE",
+      "TTL",
+      "adapter_files",
+      "cas",
+      "check_locks",
+      "config_binding",
+      "coord_closed",
+      "decode",
+      "describe",
+      "encode",
+      "exact",
+      "exclusive",
+      "external_proc_identity",
+      "external_proc_link",
+      "external_proc_sample",
+      "external_protection",
+      "external_protection_sample",
+      "external_source",
+      "file_pin",
+      "fresh",
+      "fsync_dir",
+      "get_http",
+      "identity",
+      "import:from contextlib import contextmanager",
+      "import:from dataclasses import dataclass",
+      "import:from pathlib import Path",
+      "import:import argparse",
+      "import:import base64",
+      "import:import copy",
+      "import:import datetime as dt",
+      "import:import fcntl",
+      "import:import hashlib",
+      "import:import http.client",
+      "import:import json",
+      "import:import math",
+      "import:import os",
+      "import:import re",
+      "import:import socket",
+      "import:import stat",
+      "import:import subprocess",
+      "import:import sys",
+      "import:import uuid",
+      "integer",
+      "inventory",
+      "inverse_patches",
+      "listener",
+      "locked",
+      "main",
+      "manifest_bindings",
+      "meta",
+      "native_api",
+      "need",
+      "no_link",
+      "now",
+      "permissions",
+      "pin",
+      "pm2_meta_transition",
+      "pm2_project",
+      "pm2_top_tokens",
+      "private",
+      "production_reload",
+      "raw_semantics",
+      "raw_values",
+      "regular",
+      "rel",
+      "rpc",
+      "seal_candidate",
+      "shallow_pm2",
+      "snapshot_rows",
+      "transport",
+      "tree_files",
+      "ui_inverse",
+      "unb64",
+      "union",
+      "utf16_offset",
+      "validate_api_source",
+      "validate_payload",
+      "validate_review"
+    ]
+  },
+  "controllerMethods": {
+    "added": [],
+    "changed": [
+      "baseline_guard"
+    ],
+    "removed": [],
+    "sourceRecords": {
+      "__init__": {
+        "afterLines": [
+          1316,
+          1335
+        ],
+        "afterSha256": "74e612a5a06e947d8d1157b20e8511a040b166bedfdd90d5ee108ad1eeb7a057",
+        "astEqual": true,
+        "beforeLines": [
+          1272,
+          1291
+        ],
+        "beforeSha256": "74e612a5a06e947d8d1157b20e8511a040b166bedfdd90d5ee108ad1eeb7a057",
+        "fullSourceBytesEqual": true
+      },
+      "_verify": {
+        "afterLines": [
+          1978,
+          1999
+        ],
+        "afterSha256": "cb64275986f11b553ff87b0820af5f2f311eda853026fd980a7ea67afba239e0",
+        "astEqual": true,
+        "beforeLines": [
+          1933,
+          1954
+        ],
+        "beforeSha256": "cb64275986f11b553ff87b0820af5f2f311eda853026fd980a7ea67afba239e0",
+        "fullSourceBytesEqual": true
+      },
+      "add_asset": {
+        "afterLines": [
+          1753,
+          1768
+        ],
+        "afterSha256": "40420a0989bc0c0324ee1f21ad147caec362aa0827b7eb6dbfe82259293cfd50",
+        "astEqual": true,
+        "beforeLines": [
+          1708,
+          1723
+        ],
+        "beforeSha256": "40420a0989bc0c0324ee1f21ad147caec362aa0827b7eb6dbfe82259293cfd50",
+        "fullSourceBytesEqual": true
+      },
+      "apply": {
+        "afterLines": [
+          1863,
+          1919
+        ],
+        "afterSha256": "33b7a1a8dc11b5411bbfd096e6a22cd46bc18fa98d40208f75b5e36f96d9edf5",
+        "astEqual": true,
+        "beforeLines": [
+          1818,
+          1874
+        ],
+        "beforeSha256": "33b7a1a8dc11b5411bbfd096e6a22cd46bc18fa98d40208f75b5e36f96d9edf5",
+        "fullSourceBytesEqual": true
+      },
+      "baseline_guard": {
+        "afterLines": [
+          1416,
+          1423
+        ],
+        "afterSha256": "6c0a36a582183e96b543a60fa3296ab439d5157fc3f6f8b31d1b321a28052e5c",
+        "astEqual": false,
+        "beforeLines": [
+          1372,
+          1378
+        ],
+        "beforeSha256": "df6282bccbc526904b6d72176cb0520de82e7f47746eb00b5c4751ba967bf3af",
+        "fullSourceBytesEqual": false
+      },
+      "bundle": {
+        "afterLines": [
+          1384,
+          1414
+        ],
+        "afterSha256": "3f3b928bd1acd6cca47d70249528e02dc00d48d95a370e5fe2b9fb45f1d8bd55",
+        "astEqual": true,
+        "beforeLines": [
+          1340,
+          1370
+        ],
+        "beforeSha256": "3f3b928bd1acd6cca47d70249528e02dc00d48d95a370e5fe2b9fb45f1d8bd55",
+        "fullSourceBytesEqual": true
+      },
+      "capture": {
+        "afterLines": [
+          1363,
+          1382
+        ],
+        "afterSha256": "5cc8190d59dc50379446b7126b35e74c27494b891f15c234d9c14799fd20e8d6",
+        "astEqual": true,
+        "beforeLines": [
+          1319,
+          1338
+        ],
+        "beforeSha256": "5cc8190d59dc50379446b7126b35e74c27494b891f15c234d9c14799fd20e8d6",
+        "fullSourceBytesEqual": true
+      },
+      "change_coord": {
+        "afterLines": [
+          1645,
+          1653
+        ],
+        "afterSha256": "35013426b02a75950e59165f054a18f5c653b48dda4a056472e77ef7b9fd3aa8",
+        "astEqual": true,
+        "beforeLines": [
+          1600,
+          1608
+        ],
+        "beforeSha256": "35013426b02a75950e59165f054a18f5c653b48dda4a056472e77ef7b9fd3aa8",
+        "fullSourceBytesEqual": true
+      },
+      "change_file": {
+        "afterLines": [
+          1627,
+          1643
+        ],
+        "afterSha256": "554162e3b3531ba5c15333c2cc6125c98eb1ede2691a9739f2aa2178bab51072",
+        "astEqual": true,
+        "beforeLines": [
+          1582,
+          1598
+        ],
+        "beforeSha256": "554162e3b3531ba5c15333c2cc6125c98eb1ede2691a9739f2aa2178bab51072",
+        "fullSourceBytesEqual": true
+      },
+      "checkpoint": {
+        "afterLines": [
+          1602,
+          1617
+        ],
+        "afterSha256": "1e1177313e700b03bf6113aa51038aa1748540b97eca8928b9799a702ca4d3b4",
+        "astEqual": true,
+        "beforeLines": [
+          1557,
+          1572
+        ],
+        "beforeSha256": "1e1177313e700b03bf6113aa51038aa1748540b97eca8928b9799a702ca4d3b4",
+        "fullSourceBytesEqual": true
+      },
+      "close": {
+        "afterLines": [
+          1666,
+          1675
+        ],
+        "afterSha256": "41e52c65095579138f0ffee5bb6b94576699599db5320051e3a5ad3fb1d62a40",
+        "astEqual": true,
+        "beforeLines": [
+          1621,
+          1630
+        ],
+        "beforeSha256": "41e52c65095579138f0ffee5bb6b94576699599db5320051e3a5ad3fb1d62a40",
+        "fullSourceBytesEqual": true
+      },
+      "common": {
+        "afterLines": [
+          1596,
+          1600
+        ],
+        "afterSha256": "8eabc862499422d67e31a14bc79df11fd06d96ac1e8096db96e4b9d786994104",
+        "astEqual": true,
+        "beforeLines": [
+          1551,
+          1555
+        ],
+        "beforeSha256": "8eabc862499422d67e31a14bc79df11fd06d96ac1e8096db96e4b9d786994104",
+        "fullSourceBytesEqual": true
+      },
+      "current_snapshot": {
+        "afterLines": [
+          1572,
+          1575
+        ],
+        "afterSha256": "b4876c0c01869af092e30ae900e1b139dc9f5b22109965dbdb4d7697823fd611",
+        "astEqual": true,
+        "beforeLines": [
+          1527,
+          1530
+        ],
+        "beforeSha256": "b4876c0c01869af092e30ae900e1b139dc9f5b22109965dbdb4d7697823fd611",
+        "fullSourceBytesEqual": true
+      },
+      "durable_success": {
+        "afterLines": [
+          1722,
+          1728
+        ],
+        "afterSha256": "68fc79c21cae3f616b77b183e5ca049aa111f7d9e036eb8cb35b5c3a0a1b1ad2",
+        "astEqual": true,
+        "beforeLines": [
+          1677,
+          1683
+        ],
+        "beforeSha256": "68fc79c21cae3f616b77b183e5ca049aa111f7d9e036eb8cb35b5c3a0a1b1ad2",
+        "fullSourceBytesEqual": true
+      },
+      "fail": {
+        "afterLines": [
+          1838,
+          1861
+        ],
+        "afterSha256": "cdec51fd9b90de8ee205fe5b633b5f3911a4d64bf19bf795b0bffbed51a7a2ac",
+        "astEqual": true,
+        "beforeLines": [
+          1793,
+          1816
+        ],
+        "beforeSha256": "cdec51fd9b90de8ee205fe5b633b5f3911a4d64bf19bf795b0bffbed51a7a2ac",
+        "fullSourceBytesEqual": true
+      },
+      "guard": {
+        "afterLines": [
+          1577,
+          1594
+        ],
+        "afterSha256": "1a7b9c089b6f0923bc340642dfbf626bdd7ff759458db0985c5c81388a27ba86",
+        "astEqual": true,
+        "beforeLines": [
+          1532,
+          1549
+        ],
+        "beforeSha256": "1a7b9c089b6f0923bc340642dfbf626bdd7ff759458db0985c5c81388a27ba86",
+        "fullSourceBytesEqual": true
+      },
+      "health": {
+        "afterLines": [
+          1349,
+          1361
+        ],
+        "afterSha256": "20bc06b90763537f679be90478a41b0e91e57bd68f8341ef4e63da0534c249a8",
+        "astEqual": true,
+        "beforeLines": [
+          1305,
+          1317
+        ],
+        "beforeSha256": "20bc06b90763537f679be90478a41b0e91e57bd68f8341ef4e63da0534c249a8",
+        "fullSourceBytesEqual": true
+      },
+      "no_replay": {
+        "afterLines": [
+          1337,
+          1339
+        ],
+        "afterSha256": "f117cd22001d4412f18ade9cf866523c4bd6abcf442f96587824f5244f237799",
+        "astEqual": true,
+        "beforeLines": [
+          1293,
+          1295
+        ],
+        "beforeSha256": "f117cd22001d4412f18ade9cf866523c4bd6abcf442f96587824f5244f237799",
+        "fullSourceBytesEqual": true
+      },
+      "owned_window": {
+        "afterLines": [
+          1655,
+          1664
+        ],
+        "afterSha256": "a1428efe95ded6ab5508912852e79c02c75d3de79272af412331e040e1ecaa98",
+        "astEqual": true,
+        "beforeLines": [
+          1610,
+          1619
+        ],
+        "beforeSha256": "a1428efe95ded6ab5508912852e79c02c75d3de79272af412331e040e1ecaa98",
+        "fullSourceBytesEqual": true
+      },
+      "preflight": {
+        "afterLines": [
+          1425,
+          1439
+        ],
+        "afterSha256": "f772e136b988b8641fe00292e346dd8ebff1f8246d5aafedc1c4011b2cbe39bd",
+        "astEqual": true,
+        "beforeLines": [
+          1380,
+          1394
+        ],
+        "beforeSha256": "f772e136b988b8641fe00292e346dd8ebff1f8246d5aafedc1c4011b2cbe39bd",
+        "fullSourceBytesEqual": true
+      },
+      "receipt_proof": {
+        "afterLines": [
+          1677,
+          1720
+        ],
+        "afterSha256": "f6a3939a75bf0b42a452ffbb5ef25a2ddc78ae67e88a0bbccf4f183361fa4b1f",
+        "astEqual": true,
+        "beforeLines": [
+          1632,
+          1675
+        ],
+        "beforeSha256": "f6a3939a75bf0b42a452ffbb5ef25a2ddc78ae67e88a0bbccf4f183361fa4b1f",
+        "fullSourceBytesEqual": true
+      },
+      "reload_one": {
+        "afterLines": [
+          1770,
+          1836
+        ],
+        "afterSha256": "9818dc910be1792ad462199cea85bb2eaa6ce1cea9aeaab05e12ee8fac392bd1",
+        "astEqual": true,
+        "beforeLines": [
+          1725,
+          1791
+        ],
+        "beforeSha256": "9818dc910be1792ad462199cea85bb2eaa6ce1cea9aeaab05e12ee8fac392bd1",
+        "fullSourceBytesEqual": true
+      },
+      "restore_journal": {
+        "afterLines": [
+          1921,
+          1969
+        ],
+        "afterSha256": "d8e04241ec2a09af93ab5fdb9529ef7d00c41c07ec3f130c4721e2750710a1d2",
+        "astEqual": true,
+        "beforeLines": [
+          1876,
+          1924
+        ],
+        "beforeSha256": "d8e04241ec2a09af93ab5fdb9529ef7d00c41c07ec3f130c4721e2750710a1d2",
+        "fullSourceBytesEqual": true
+      },
+      "retain_owned_hold": {
+        "afterLines": [
+          1730,
+          1751
+        ],
+        "afterSha256": "a5ac24f3967f8cc61f435bc34086c3e507d10af52d4cb7ad9a2ac24c2fd214b6",
+        "astEqual": true,
+        "beforeLines": [
+          1685,
+          1706
+        ],
+        "beforeSha256": "a5ac24f3967f8cc61f435bc34086c3e507d10af52d4cb7ad9a2ac24c2fd214b6",
+        "fullSourceBytesEqual": true
+      },
+      "rollback": {
+        "afterLines": [
+          2001,
+          2064
+        ],
+        "afterSha256": "9ce1f2520709f6507a4c85e70467c4ef02445a6a41f685839e547038dc8dc652",
+        "astEqual": true,
+        "beforeLines": [
+          1956,
+          2019
+        ],
+        "beforeSha256": "9ce1f2520709f6507a4c85e70467c4ef02445a6a41f685839e547038dc8dc652",
+        "fullSourceBytesEqual": true
+      },
+      "sealed_guard": {
+        "afterLines": [
+          1441,
+          1457
+        ],
+        "afterSha256": "e1df831b906bd812d38aa942a1016a3ec744270e10df31e7673ee81607148b24",
+        "astEqual": true,
+        "beforeLines": [
+          1396,
+          1412
+        ],
+        "beforeSha256": "e1df831b906bd812d38aa942a1016a3ec744270e10df31e7673ee81607148b24",
+        "fullSourceBytesEqual": true
+      },
+      "set_parent": {
+        "afterLines": [
+          1619,
+          1625
+        ],
+        "afterSha256": "256b2b82e78a5f8013926483c549e9753d2e630de7f837ddc042adabec968320",
+        "astEqual": true,
+        "beforeLines": [
+          1574,
+          1580
+        ],
+        "beforeSha256": "256b2b82e78a5f8013926483c549e9753d2e630de7f837ddc042adabec968320",
+        "fullSourceBytesEqual": true
+      },
+      "snapshot": {
+        "afterLines": [
+          1341,
+          1347
+        ],
+        "afterSha256": "f26c4d45e363fa1d5616341844ad63c4f36120f2b259121e5c45219edb0d4fb4",
+        "astEqual": true,
+        "beforeLines": [
+          1297,
+          1303
+        ],
+        "beforeSha256": "f26c4d45e363fa1d5616341844ad63c4f36120f2b259121e5c45219edb0d4fb4",
+        "fullSourceBytesEqual": true
+      },
+      "state_invariants": {
+        "afterLines": [
+          1459,
+          1570
+        ],
+        "afterSha256": "99cf7c8da6e368ef03f6e8c65da25e85d0ba5b052758bcd8239b12243ca3e4a9",
+        "astEqual": true,
+        "beforeLines": [
+          1414,
+          1525
+        ],
+        "beforeSha256": "99cf7c8da6e368ef03f6e8c65da25e85d0ba5b052758bcd8239b12243ca3e4a9",
+        "fullSourceBytesEqual": true
+      },
+      "verify": {
+        "afterLines": [
+          1971,
+          1976
+        ],
+        "afterSha256": "e312df001034863229bbededd0930106b1ab441929a8e35c83bc5bf9f8179a83",
+        "astEqual": true,
+        "beforeLines": [
+          1926,
+          1931
+        ],
+        "beforeSha256": "e312df001034863229bbededd0930106b1ab441929a8e35c83bc5bf9f8179a83",
+        "fullSourceBytesEqual": true
+      }
+    },
+    "unchanged": [
+      "__init__",
+      "_verify",
+      "add_asset",
+      "apply",
+      "bundle",
+      "capture",
+      "change_coord",
+      "change_file",
+      "checkpoint",
+      "close",
+      "common",
+      "current_snapshot",
+      "durable_success",
+      "fail",
+      "guard",
+      "health",
+      "no_replay",
+      "owned_window",
+      "preflight",
+      "receipt_proof",
+      "reload_one",
+      "restore_journal",
+      "retain_owned_hold",
+      "rollback",
+      "sealed_guard",
+      "set_parent",
+      "snapshot",
+      "state_invariants",
+      "verify"
+    ]
+  },
+  "existingUnitTestsAllRetained": true,
+  "generationPins": {
+    "constants.js": "5a4adce0c3c277d4974c0ebdefb22d62ffcad74edcf910bfeeff287dacb8a853",
+    "lib/God.js": "f598e5113890418827e31dd52fc3538e8f19287fad212cafd9388b0216fe500d",
+    "lib/God/ClusterMode.js": "b4a9304e12f468f87a039c174c6ea4a1001f21d9dd1f5317121ed217bc389119",
+    "lib/God/Methods.js": "577a8505074225dfe73ce2c955c844662c6bc9d76c31d8102f809a1691262044",
+    "lib/God/Reload.js": "5e90112e447c4634009ea35005ffd477aab93064f55390288c56b51eee25992e",
+    "lib/ProcessContainer.js": "712b414f248a460f58d4365898fa7b27d39bf7f571ac889359e3a7b6a32419d1",
+    "lib/Utility.js": "66cd15711be69f40f6ee3c3f60adcf07e58d0bcdec9552ec5104530b22ba28f1",
+    "modules/fclone.js": "9b921f33e5d4e36dd030f5d2e736ea2af0c95f4fb795ada696160e2db7fe2fe6",
+    "package.json": "f2819cffb2aae16bb813596575410877570a253be11949260caa33c8038788d6"
+  },
+  "memoryCompileOnly": true,
+  "ownerScopeUnchanged": true,
+  "pm2RawBindingOnlyAddedCalls": [
+    "pm2_json_domain(e)",
+    "pm2_json_domain(value)"
+  ],
+  "preparer": {
+    "added": [],
+    "changed": [
+      "CONTROLLER_SHA"
+    ],
+    "removed": [],
+    "sourceRecords": {
+      "BACKEND_HASH_CHECK": {
+        "afterLines": [
+          21,
+          29
+        ],
+        "afterSha256": "1a61abc22f89ad569d19d9f6b282d3bd95ac7249b9e434c5fddfc67ca0435fdd",
+        "astEqual": true,
+        "beforeLines": [
+          21,
+          29
+        ],
+        "beforeSha256": "1a61abc22f89ad569d19d9f6b282d3bd95ac7249b9e434c5fddfc67ca0435fdd",
+        "fullSourceBytesEqual": true
+      },
+      "CONTROLLER_SHA": {
+        "afterLines": [
+          18,
+          18
+        ],
+        "afterSha256": "26c0493e3374bfa2343d0ba9cf55ebd4a4ff3c8c8a0bd54eb555cb37c70093db",
+        "astEqual": false,
+        "beforeLines": [
+          18,
+          18
+        ],
+        "beforeSha256": "60b7f96cd3e156b889d4558aad604aa1dc1550da18bd44309079e2d4d9bafa4f",
+        "fullSourceBytesEqual": false
+      },
+      "Expr:0": {
+        "afterLines": [
+          2,
+          2
+        ],
+        "afterSha256": "10ebb2f34bc9cdcb987348e7c71ade909bbfecfefbf89b118e4f0b8300ab94eb",
+        "astEqual": true,
+        "beforeLines": [
+          2,
+          2
+        ],
+        "beforeSha256": "10ebb2f34bc9cdcb987348e7c71ade909bbfecfefbf89b118e4f0b8300ab94eb",
+        "fullSourceBytesEqual": true
+      },
+      "FLAGS": {
+        "afterLines": [
+          40,
+          44
+        ],
+        "afterSha256": "c3bbc96ef2c560ac23ae1a222c4d79c89a0c8f8ede5218968ae3fff0ba3d5a3f",
+        "astEqual": true,
+        "beforeLines": [
+          40,
+          44
+        ],
+        "beforeSha256": "c3bbc96ef2c560ac23ae1a222c4d79c89a0c8f8ede5218968ae3fff0ba3d5a3f",
+        "fullSourceBytesEqual": true
+      },
+      "HERE": {
+        "afterLines": [
+          15,
+          15
+        ],
+        "afterSha256": "be54330429c0667b693d707b13a509ffd783fd5391370bef5d9b14e3d646be3a",
+        "astEqual": true,
+        "beforeLines": [
+          15,
+          15
+        ],
+        "beforeSha256": "be54330429c0667b693d707b13a509ffd783fd5391370bef5d9b14e3d646be3a",
+        "fullSourceBytesEqual": true
+      },
+      "If:__name__ == '__main__'": {
+        "afterLines": [
+          400,
+          402
+        ],
+        "afterSha256": "1995bac1eaa1c1dd7ba61b70cfc4add5194196e439681857019ea3e3c1470231",
+        "astEqual": true,
+        "beforeLines": [
+          400,
+          402
+        ],
+        "beforeSha256": "1995bac1eaa1c1dd7ba61b70cfc4add5194196e439681857019ea3e3c1470231",
+        "fullSourceBytesEqual": true
+      },
+      "NODE": {
+        "afterLines": [
+          19,
+          19
+        ],
+        "afterSha256": "5e03fcd250b337779cf2d76dda372ef89d7eb17c355a5d533c7c74c5f8a87295",
+        "astEqual": true,
+        "beforeLines": [
+          19,
+          19
+        ],
+        "beforeSha256": "5e03fcd250b337779cf2d76dda372ef89d7eb17c355a5d533c7c74c5f8a87295",
+        "fullSourceBytesEqual": true
+      },
+      "PrepareError": {
+        "afterLines": [
+          47,
+          48
+        ],
+        "afterSha256": "4f973c8f1587b599f482cdd1e321c858aa92e652a50af73ea7afde4b971aca31",
+        "astEqual": true,
+        "beforeLines": [
+          47,
+          48
+        ],
+        "beforeSha256": "4f973c8f1587b599f482cdd1e321c858aa92e652a50af73ea7afde4b971aca31",
+        "fullSourceBytesEqual": true
+      },
+      "REPO": {
+        "afterLines": [
+          16,
+          16
+        ],
+        "afterSha256": "6cf666bd7000c1c3e41bebc2b8bc5145553e3305355dc61beafbcffad1350c05",
+        "astEqual": true,
+        "beforeLines": [
+          16,
+          16
+        ],
+        "beforeSha256": "6cf666bd7000c1c3e41bebc2b8bc5145553e3305355dc61beafbcffad1350c05",
+        "fullSourceBytesEqual": true
+      },
+      "TOOLS": {
+        "afterLines": [
+          30,
+          39
+        ],
+        "afterSha256": "b86b84ff6a9694f3e1bcbd3d52740ac2b88a8bb68807729e4096ccb7a5229bf5",
+        "astEqual": true,
+        "beforeLines": [
+          30,
+          39
+        ],
+        "beforeSha256": "b86b84ff6a9694f3e1bcbd3d52740ac2b88a8bb68807729e4096ccb7a5229bf5",
+        "fullSourceBytesEqual": true
+      },
+      "WORK": {
+        "afterLines": [
+          17,
+          17
+        ],
+        "afterSha256": "8f521e055c6744216dec82eb677315b38e14aa6f8d87c8cf1ab21c228b1159e0",
+        "astEqual": true,
+        "beforeLines": [
+          17,
+          17
+        ],
+        "beforeSha256": "8f521e055c6744216dec82eb677315b38e14aa6f8d87c8cf1ab21c228b1159e0",
+        "fullSourceBytesEqual": true
+      },
+      "check_backend_compilation": {
+        "afterLines": [
+          290,
+          301
+        ],
+        "afterSha256": "3ceab7c36eb38c634730ce95b7abbc734f8fbda720e782d4d6c2138fc8d1620a",
+        "astEqual": true,
+        "beforeLines": [
+          290,
+          301
+        ],
+        "beforeSha256": "3ceab7c36eb38c634730ce95b7abbc734f8fbda720e782d4d6c2138fc8d1620a",
+        "fullSourceBytesEqual": true
+      },
+      "check_native": {
+        "afterLines": [
+          260,
+          287
+        ],
+        "afterSha256": "647a51fa8ddbfab9ee8e1a778cb966f13e2e4efba3e734fd19fa950c65fb3ebf",
+        "astEqual": true,
+        "beforeLines": [
+          260,
+          287
+        ],
+        "beforeSha256": "647a51fa8ddbfab9ee8e1a778cb966f13e2e4efba3e734fd19fa950c65fb3ebf",
+        "fullSourceBytesEqual": true
+      },
+      "collect_sources": {
+        "afterLines": [
+          233,
+          257
+        ],
+        "afterSha256": "43066546b837b293e7bdfbd50d7a72f54dfa4ac7f4cdb60c168f00b5259d8f52",
+        "astEqual": true,
+        "beforeLines": [
+          233,
+          257
+        ],
+        "beforeSha256": "43066546b837b293e7bdfbd50d7a72f54dfa4ac7f4cdb60c168f00b5259d8f52",
+        "fullSourceBytesEqual": true
+      },
+      "import:from pathlib import Path": {
+        "afterLines": [
+          9,
+          9
+        ],
+        "afterSha256": "3cb9ffccba5146b2dd177a30c3057a4395ebd5c745d0789d2ed95d0cf4afe271",
+        "astEqual": true,
+        "beforeLines": [
+          9,
+          9
+        ],
+        "beforeSha256": "3cb9ffccba5146b2dd177a30c3057a4395ebd5c745d0789d2ed95d0cf4afe271",
+        "fullSourceBytesEqual": true
+      },
+      "import:import argparse": {
+        "afterLines": [
+          3,
+          3
+        ],
+        "afterSha256": "b53e5a5286172fb0a4772843ba3ed62331687bcb9939ec9c49e9066d4ee4272d",
+        "astEqual": true,
+        "beforeLines": [
+          3,
+          3
+        ],
+        "beforeSha256": "b53e5a5286172fb0a4772843ba3ed62331687bcb9939ec9c49e9066d4ee4272d",
+        "fullSourceBytesEqual": true
+      },
+      "import:import base64": {
+        "afterLines": [
+          4,
+          4
+        ],
+        "afterSha256": "0bd0be6193903c571f3df2f9b88bc11e59075ab18a246347a35c85c7d25aa5fd",
+        "astEqual": true,
+        "beforeLines": [
+          4,
+          4
+        ],
+        "beforeSha256": "0bd0be6193903c571f3df2f9b88bc11e59075ab18a246347a35c85c7d25aa5fd",
+        "fullSourceBytesEqual": true
+      },
+      "import:import hashlib": {
+        "afterLines": [
+          5,
+          5
+        ],
+        "afterSha256": "3b3ea3cdc7068a9e97cfcddbcd9d8e0c54fe4d068347b80b158fdd8b14676e3b",
+        "astEqual": true,
+        "beforeLines": [
+          5,
+          5
+        ],
+        "beforeSha256": "3b3ea3cdc7068a9e97cfcddbcd9d8e0c54fe4d068347b80b158fdd8b14676e3b",
+        "fullSourceBytesEqual": true
+      },
+      "import:import importlib.util": {
+        "afterLines": [
+          6,
+          6
+        ],
+        "afterSha256": "786ac52e942c0dd6126225bf477e4536f68ec6c7ddb2aac0f289a96b5b1c90fc",
+        "astEqual": true,
+        "beforeLines": [
+          6,
+          6
+        ],
+        "beforeSha256": "786ac52e942c0dd6126225bf477e4536f68ec6c7ddb2aac0f289a96b5b1c90fc",
+        "fullSourceBytesEqual": true
+      },
+      "import:import json": {
+        "afterLines": [
+          7,
+          7
+        ],
+        "afterSha256": "261a9112a2918e2aba03e19a2f221a027ab4b6f9e946a6c39814f54e18e07dfc",
+        "astEqual": true,
+        "beforeLines": [
+          7,
+          7
+        ],
+        "beforeSha256": "261a9112a2918e2aba03e19a2f221a027ab4b6f9e946a6c39814f54e18e07dfc",
+        "fullSourceBytesEqual": true
+      },
+      "import:import os": {
+        "afterLines": [
+          8,
+          8
+        ],
+        "afterSha256": "3727adff524e0616022eadd8f4af21a0778b29fc4c77bdfefd1afce2cbf5e4b7",
+        "astEqual": true,
+        "beforeLines": [
+          8,
+          8
+        ],
+        "beforeSha256": "3727adff524e0616022eadd8f4af21a0778b29fc4c77bdfefd1afce2cbf5e4b7",
+        "fullSourceBytesEqual": true
+      },
+      "import:import re": {
+        "afterLines": [
+          10,
+          10
+        ],
+        "afterSha256": "a830333312c4c9c2233bb02762bd498203b1c3bf0527614735693b4b79f6d167",
+        "astEqual": true,
+        "beforeLines": [
+          10,
+          10
+        ],
+        "beforeSha256": "a830333312c4c9c2233bb02762bd498203b1c3bf0527614735693b4b79f6d167",
+        "fullSourceBytesEqual": true
+      },
+      "import:import stat": {
+        "afterLines": [
+          11,
+          11
+        ],
+        "afterSha256": "1fd20c880d3cde1a258aa761090aabc445918b6cf2b91712928debfc04392cff",
+        "astEqual": true,
+        "beforeLines": [
+          11,
+          11
+        ],
+        "beforeSha256": "1fd20c880d3cde1a258aa761090aabc445918b6cf2b91712928debfc04392cff",
+        "fullSourceBytesEqual": true
+      },
+      "import:import subprocess": {
+        "afterLines": [
+          12,
+          12
+        ],
+        "afterSha256": "17ea74bb79ba96edc39a8382a97f22993b80cc4088b3e2717a98917c60c1dd5a",
+        "astEqual": true,
+        "beforeLines": [
+          12,
+          12
+        ],
+        "beforeSha256": "17ea74bb79ba96edc39a8382a97f22993b80cc4088b3e2717a98917c60c1dd5a",
+        "fullSourceBytesEqual": true
+      },
+      "import:import sys": {
+        "afterLines": [
+          13,
+          13
+        ],
+        "afterSha256": "c517577851c489e45abae2591256c40404a05c6d19cd4d5ae7fd22b0084cec6c",
+        "astEqual": true,
+        "beforeLines": [
+          13,
+          13
+        ],
+        "beforeSha256": "c517577851c489e45abae2591256c40404a05c6d19cd4d5ae7fd22b0084cec6c",
+        "fullSourceBytesEqual": true
+      },
+      "in_work": {
+        "afterLines": [
+          69,
+          72
+        ],
+        "afterSha256": "d2a0e4b63de707955a35f1ff9cd9d8813a3f254633ddb54ff039d86bbe62da26",
+        "astEqual": true,
+        "beforeLines": [
+          69,
+          72
+        ],
+        "beforeSha256": "d2a0e4b63de707955a35f1ff9cd9d8813a3f254633ddb54ff039d86bbe62da26",
+        "fullSourceBytesEqual": true
+      },
+      "inputs": {
+        "afterLines": [
+          146,
+          205
+        ],
+        "afterSha256": "5641dc896c69f2ababf13feae13f86d5e4f6bbf797020bfe3de4bb0a38560430",
+        "astEqual": true,
+        "beforeLines": [
+          146,
+          205
+        ],
+        "beforeSha256": "5641dc896c69f2ababf13feae13f86d5e4f6bbf797020bfe3de4bb0a38560430",
+        "fullSourceBytesEqual": true
+      },
+      "load_release": {
+        "afterLines": [
+          104,
+          112
+        ],
+        "afterSha256": "a6f77a8be292100675c8c500d8d24635a7696ffe9135885a372fcb846fedaa5b",
+        "astEqual": true,
+        "beforeLines": [
+          104,
+          112
+        ],
+        "beforeSha256": "a6f77a8be292100675c8c500d8d24635a7696ffe9135885a372fcb846fedaa5b",
+        "fullSourceBytesEqual": true
+      },
+      "main": {
+        "afterLines": [
+          388,
+          397
+        ],
+        "afterSha256": "3a88742b2a1388abac85ae229a239b10a0c66bb5e0ccd30d1699f234603f79f8",
+        "astEqual": true,
+        "beforeLines": [
+          388,
+          397
+        ],
+        "beforeSha256": "3a88742b2a1388abac85ae229a239b10a0c66bb5e0ccd30d1699f234603f79f8",
+        "fullSourceBytesEqual": true
+      },
+      "need": {
+        "afterLines": [
+          51,
+          53
+        ],
+        "afterSha256": "a84fbc2b95a151cbbb96b6fe300bfd48fe903649d05458585f1c23cfce09ab4f",
+        "astEqual": true,
+        "beforeLines": [
+          51,
+          53
+        ],
+        "beforeSha256": "a84fbc2b95a151cbbb96b6fe300bfd48fe903649d05458585f1c23cfce09ab4f",
+        "fullSourceBytesEqual": true
+      },
+      "no_link": {
+        "afterLines": [
+          60,
+          66
+        ],
+        "afterSha256": "e7c4e606241afd2a33e56c125515ad3a9146761f04f87d0f4f3d39d0a9894b6d",
+        "astEqual": true,
+        "beforeLines": [
+          60,
+          66
+        ],
+        "beforeSha256": "e7c4e606241afd2a33e56c125515ad3a9146761f04f87d0f4f3d39d0a9894b6d",
+        "fullSourceBytesEqual": true
+      },
+      "parser": {
+        "afterLines": [
+          135,
+          143
+        ],
+        "afterSha256": "36e84f9332669778bf1b8aec3d7e6442fa7cd7f8a63a4436a468dbca9adf1f0e",
+        "astEqual": true,
+        "beforeLines": [
+          135,
+          143
+        ],
+        "beforeSha256": "36e84f9332669778bf1b8aec3d7e6442fa7cd7f8a63a4436a468dbca9adf1f0e",
+        "fullSourceBytesEqual": true
+      },
+      "prepare": {
+        "afterLines": [
+          304,
+          385
+        ],
+        "afterSha256": "18a0ab04ca91f472e307b6a0c7be67222a678c9b4e1103079a6460752858ebac",
+        "astEqual": true,
+        "beforeLines": [
+          304,
+          385
+        ],
+        "beforeSha256": "18a0ab04ca91f472e307b6a0c7be67222a678c9b4e1103079a6460752858ebac",
+        "fullSourceBytesEqual": true
+      },
+      "private_tree": {
+        "afterLines": [
+          221,
+          230
+        ],
+        "afterSha256": "d99561f982af40a38ab294cc8b460cd0885ed9c21265e4601a5ffc7ba5989fcf",
+        "astEqual": true,
+        "beforeLines": [
+          221,
+          230
+        ],
+        "beforeSha256": "d99561f982af40a38ab294cc8b460cd0885ed9c21265e4601a5ffc7ba5989fcf",
+        "fullSourceBytesEqual": true
+      },
+      "put": {
+        "afterLines": [
+          92,
+          96
+        ],
+        "afterSha256": "40aa4315a12954110e614151c7cfe74bdd94686ca6e0fd64bf584fc1b381904d",
+        "astEqual": true,
+        "beforeLines": [
+          92,
+          96
+        ],
+        "beforeSha256": "40aa4315a12954110e614151c7cfe74bdd94686ca6e0fd64bf584fc1b381904d",
+        "fullSourceBytesEqual": true
+      },
+      "put_json": {
+        "afterLines": [
+          99,
+          101
+        ],
+        "afterSha256": "077a352a3935d49cf2c919c2273757ab10b4915a83fce75127edcf573e0d2bcb",
+        "astEqual": true,
+        "beforeLines": [
+          99,
+          101
+        ],
+        "beforeSha256": "077a352a3935d49cf2c919c2273757ab10b4915a83fce75127edcf573e0d2bcb",
+        "fullSourceBytesEqual": true
+      },
+      "read": {
+        "afterLines": [
+          75,
+          89
+        ],
+        "afterSha256": "0773066859f3c4e38d163e8250b5bfa95ffba8efdc9f17dc74b47ab4a36049fd",
+        "astEqual": true,
+        "beforeLines": [
+          75,
+          89
+        ],
+        "beforeSha256": "0773066859f3c4e38d163e8250b5bfa95ffba8efdc9f17dc74b47ab4a36049fd",
+        "fullSourceBytesEqual": true
+      },
+      "run": {
+        "afterLines": [
+          208,
+          218
+        ],
+        "afterSha256": "f001b880320c05813bc0ed8842550d7d3e16fe7ab8e31ce6310e89bf7d6cb5a3",
+        "astEqual": true,
+        "beforeLines": [
+          208,
+          218
+        ],
+        "beforeSha256": "f001b880320c05813bc0ed8842550d7d3e16fe7ab8e31ce6310e89bf7d6cb5a3",
+        "fullSourceBytesEqual": true
+      },
+      "sha": {
+        "afterLines": [
+          56,
+          57
+        ],
+        "afterSha256": "4e627faf4b903521e935f7c6f3ae93545856f821d0e2565ba7ea6cf97d3d0e6c",
+        "astEqual": true,
+        "beforeLines": [
+          56,
+          57
+        ],
+        "beforeSha256": "4e627faf4b903521e935f7c6f3ae93545856f821d0e2565ba7ea6cf97d3d0e6c",
+        "fullSourceBytesEqual": true
+      },
+      "source_names": {
+        "afterLines": [
+          115,
+          132
+        ],
+        "afterSha256": "a9c94c7c6bea8e383bcf562d13c8bee5e5d42a071725f15d115ea3cadd017145",
+        "astEqual": true,
+        "beforeLines": [
+          115,
+          132
+        ],
+        "beforeSha256": "a9c94c7c6bea8e383bcf562d13c8bee5e5d42a071725f15d115ea3cadd017145",
+        "fullSourceBytesEqual": true
+      }
+    },
+    "unchanged": [
+      "BACKEND_HASH_CHECK",
+      "Expr:0",
+      "FLAGS",
+      "HERE",
+      "If:__name__ == '__main__'",
+      "NODE",
+      "PrepareError",
+      "REPO",
+      "TOOLS",
+      "WORK",
+      "check_backend_compilation",
+      "check_native",
+      "collect_sources",
+      "import:from pathlib import Path",
+      "import:import argparse",
+      "import:import base64",
+      "import:import hashlib",
+      "import:import importlib.util",
+      "import:import json",
+      "import:import os",
+      "import:import re",
+      "import:import stat",
+      "import:import subprocess",
+      "import:import sys",
+      "in_work",
+      "inputs",
+      "load_release",
+      "main",
+      "need",
+      "no_link",
+      "parser",
+      "prepare",
+      "private_tree",
+      "put",
+      "put_json",
+      "read",
+      "run",
+      "sha",
+      "source_names"
+    ]
+  },
+  "rpcFullLiteralUtf8Sha256": "089d6af98a983ecc11e6feb1c0cd909c5aafba627fd7856eadd9935fec5da0c3",
+  "rpcFullSourceUnchanged": true,
+  "status": "OFFLINE_NOT_APPROVED",
+  "testMethods": {
+    "test_prepare_local.py": {
+      "added": [
+        "LocalTests.test_r4_domain_false_readiness_diagnostic_inputs_not_publication_approval",
+        "LocalTests.test_r4_domain_old_8dc_capture_pin_not_reusable"
+      ],
+      "baselineCount": 34,
+      "changed": [],
+      "currentCount": 36,
+      "removed": [],
+      "sourceRecords": {
+        "LocalTests.test_builder_source_bytes_pin_refused": {
+          "afterLines": [
+            259,
+            263
+          ],
+          "afterSha256": "9bd6ee186418934db6bbb64c6635f08274c516315bb89b045cdc9a4ab2006b23",
+          "astEqual": true,
+          "beforeLines": [
+            259,
+            263
+          ],
+          "beforeSha256": "9bd6ee186418934db6bbb64c6635f08274c516315bb89b045cdc9a4ab2006b23",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_capture_config_and_meta_mismatch_refused": {
+          "afterLines": [
+            375,
+            383
+          ],
+          "afterSha256": "96acff1f34c54e990938a548fc9503e4380b027b90064307fe042a202fda27ea",
+          "astEqual": true,
+          "beforeLines": [
+            375,
+            383
+          ],
+          "beforeSha256": "96acff1f34c54e990938a548fc9503e4380b027b90064307fe042a202fda27ea",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_capture_expired_refused": {
+          "afterLines": [
+            368,
+            373
+          ],
+          "afterSha256": "9d3ddf005932a96b335d83aae7bad0b4d172e6699c51713a46015b7e7700caf2",
+          "astEqual": true,
+          "beforeLines": [
+            368,
+            373
+          ],
+          "beforeSha256": "9d3ddf005932a96b335d83aae7bad0b4d172e6699c51713a46015b7e7700caf2",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_current_baseline_hash_mismatch_refused": {
+          "afterLines": [
+            385,
+            389
+          ],
+          "afterSha256": "1fab773cfcd359b3d0de672f727e4f79660d425cd47c2893329d7b30bb805a66",
+          "astEqual": true,
+          "beforeLines": [
+            385,
+            389
+          ],
+          "beforeSha256": "1fab773cfcd359b3d0de672f727e4f79660d425cd47c2893329d7b30bb805a66",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_empty_and_missing_report_hash_refused": {
+          "afterLines": [
+            358,
+            366
+          ],
+          "afterSha256": "556af0d4699498ce00916c283db7e068bb775d9bb03958da0fadcaeb35c6b92a",
+          "astEqual": true,
+          "beforeLines": [
+            358,
+            366
+          ],
+          "beforeSha256": "556af0d4699498ce00916c283db7e068bb775d9bb03958da0fadcaeb35c6b92a",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_existing_file_is_not_overwritten": {
+          "afterLines": [
+            287,
+            291
+          ],
+          "afterSha256": "29ad839290218b0d4366ccc15fa1e16438d797d427a3efeb1d883e568e22c801",
+          "astEqual": true,
+          "beforeLines": [
+            287,
+            291
+          ],
+          "beforeSha256": "29ad839290218b0d4366ccc15fa1e16438d797d427a3efeb1d883e568e22c801",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_foreign_open_capture_coord_refused": {
+          "afterLines": [
+            397,
+            403
+          ],
+          "afterSha256": "ac60351e35488c4ba201b1fec10fe4eb3fe9c7ee6e343dd58c0909bf99145fd1",
+          "astEqual": true,
+          "beforeLines": [
+            397,
+            403
+          ],
+          "beforeSha256": "ac60351e35488c4ba201b1fec10fe4eb3fe9c7ee6e343dd58c0909bf99145fd1",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_freeze_source_inventory_mismatch_refused": {
+          "afterLines": [
+            247,
+            251
+          ],
+          "afterSha256": "c1d8c00ad3a986c0c066753665808efd93b5dd125e4fd622acadebad68a0ffaf",
+          "astEqual": true,
+          "beforeLines": [
+            247,
+            251
+          ],
+          "beforeSha256": "c1d8c00ad3a986c0c066753665808efd93b5dd125e4fd622acadebad68a0ffaf",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_freeze_source_path_escape_refused": {
+          "afterLines": [
+            241,
+            245
+          ],
+          "afterSha256": "068dd9cf49feaf4e7d83fa24ffca894781ee0e9e51f15dbaf11200a801acadc3",
+          "astEqual": true,
+          "beforeLines": [
+            241,
+            245
+          ],
+          "beforeSha256": "068dd9cf49feaf4e7d83fa24ffca894781ee0e9e51f15dbaf11200a801acadc3",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_frozen_compiled_output_drift_refused": {
+          "afterLines": [
+            265,
+            269
+          ],
+          "afterSha256": "4a627683f545e8cdb275c832d2d086aec5e543653fdd9aac33f27ea8f7c17aca",
+          "astEqual": true,
+          "beforeLines": [
+            265,
+            269
+          ],
+          "beforeSha256": "4a627683f545e8cdb275c832d2d086aec5e543653fdd9aac33f27ea8f7c17aca",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_missing_baseline_refused": {
+          "afterLines": [
+            391,
+            395
+          ],
+          "afterSha256": "5e3cdb50b28387b47d6ca5507570a0e6f78c5bf2753f11da06b45425cb72349e",
+          "astEqual": true,
+          "beforeLines": [
+            391,
+            395
+          ],
+          "beforeSha256": "5e3cdb50b28387b47d6ca5507570a0e6f78c5bf2753f11da06b45425cb72349e",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_no_replay_existing_directory_before_subprocess": {
+          "afterLines": [
+            271,
+            275
+          ],
+          "afterSha256": "93e36b97ce7900b63e32567ec298af6e6d0fc194e65187426e298317dece0305",
+          "astEqual": true,
+          "beforeLines": [
+            271,
+            275
+          ],
+          "beforeSha256": "93e36b97ce7900b63e32567ec298af6e6d0fc194e65187426e298317dece0305",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_no_replay_partial_failure": {
+          "afterLines": [
+            277,
+            285
+          ],
+          "afterSha256": "5e9cfc542829bacf07a7ae42693e533158e4669cd8a32a108ac8942a3eb2c6e9",
+          "astEqual": true,
+          "beforeLines": [
+            277,
+            285
+          ],
+          "beforeSha256": "5e9cfc542829bacf07a7ae42693e533158e4669cd8a32a108ac8942a3eb2c6e9",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_old_7fc9_controller_capture_is_not_reusable": {
+          "afterLines": [
+            450,
+            456
+          ],
+          "afterSha256": "364cf1a5228aa90fa975b0579771df67c4c8891c991e1884d95b7f6dbd20416a",
+          "astEqual": true,
+          "beforeLines": [
+            450,
+            456
+          ],
+          "beforeSha256": "364cf1a5228aa90fa975b0579771df67c4c8891c991e1884d95b7f6dbd20416a",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_old_failed_stage_scope_capture_is_not_reusable": {
+          "afterLines": [
+            442,
+            448
+          ],
+          "afterSha256": "11bcff0488073a04c5832279ee09566290b5207e0716c9307498f4ac56e32760",
+          "astEqual": true,
+          "beforeLines": [
+            442,
+            448
+          ],
+          "beforeSha256": "11bcff0488073a04c5832279ee09566290b5207e0716c9307498f4ac56e32760",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_original_controller_pin_refused": {
+          "afterLines": [
+            422,
+            425
+          ],
+          "afterSha256": "af8d3f2e2d13b43dc83b3c5c8fbc06d44bcfe636246fcd5053c7d34f944b0b38",
+          "astEqual": true,
+          "beforeLines": [
+            422,
+            425
+          ],
+          "beforeSha256": "af8d3f2e2d13b43dc83b3c5c8fbc06d44bcfe636246fcd5053c7d34f944b0b38",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_original_source_and_compilation_drifts_refused": {
+          "afterLines": [
+            405,
+            416
+          ],
+          "afterSha256": "4a074dd29564bb0380afa58aaf4ea61449ef50ff0d539a0875e6bf278c62ac2b",
+          "astEqual": true,
+          "beforeLines": [
+            405,
+            416
+          ],
+          "beforeSha256": "4a074dd29564bb0380afa58aaf4ea61449ef50ff0d539a0875e6bf278c62ac2b",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_paths_and_argument_rejection": {
+          "afterLines": [
+            307,
+            314
+          ],
+          "afterSha256": "7a224083fc119355a950b3113b847f029def49165c07ba5f3a62203a222820b0",
+          "astEqual": true,
+          "beforeLines": [
+            307,
+            314
+          ],
+          "beforeSha256": "7a224083fc119355a950b3113b847f029def49165c07ba5f3a62203a222820b0",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_private_nonce_required": {
+          "afterLines": [
+            316,
+            320
+          ],
+          "afterSha256": "1082ea52b063b8ac3a0515126a75c9e459043dd9a73a1ad49a01250c54958772",
+          "astEqual": true,
+          "beforeLines": [
+            316,
+            320
+          ],
+          "beforeSha256": "1082ea52b063b8ac3a0515126a75c9e459043dd9a73a1ad49a01250c54958772",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_public_helpers_reject_fake_native_records": {
+          "afterLines": [
+            427,
+            434
+          ],
+          "afterSha256": "3deef9b4702a4ae12e7266bcd95f9091cbd2894da6086f3fab167a8b5cd8e741",
+          "astEqual": true,
+          "beforeLines": [
+            427,
+            434
+          ],
+          "beforeSha256": "3deef9b4702a4ae12e7266bcd95f9091cbd2894da6086f3fab167a8b5cd8e741",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_r2_scope_and_d6_controller_capture_not_reusable_in_r3": {
+          "afterLines": [
+            459,
+            466
+          ],
+          "afterSha256": "c23e36ab21b93e1e98b76392ad56d5c6fe1e479d7b5e78cc202f73e864aec9e2",
+          "astEqual": true,
+          "beforeLines": [
+            459,
+            466
+          ],
+          "beforeSha256": "c23e36ab21b93e1e98b76392ad56d5c6fe1e479d7b5e78cc202f73e864aec9e2",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_r3_current_controller_sha_and_scope_fixed": {
+          "afterLines": [
+            436,
+            440
+          ],
+          "afterSha256": "f601942e4deb98ca14902bc2e1698424d1021ae86be801b1361d839203a8b85a",
+          "astEqual": true,
+          "beforeLines": [
+            436,
+            440
+          ],
+          "beforeSha256": "f601942e4deb98ca14902bc2e1698424d1021ae86be801b1361d839203a8b85a",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_r3_private_root_union_cannot_be_omitted_from_capture": {
+          "afterLines": [
+            468,
+            473
+          ],
+          "afterSha256": "33f692a6ee14cc6ce32e9974313f8a0b27180f243eca86fe1a5b57265bcd72fe",
+          "astEqual": true,
+          "beforeLines": [
+            468,
+            473
+          ],
+          "beforeSha256": "33f692a6ee14cc6ce32e9974313f8a0b27180f243eca86fe1a5b57265bcd72fe",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_r3_scope_and_bf7_capture_not_reusable_in_r4": {
+          "afterLines": [
+            475,
+            482
+          ],
+          "afterSha256": "d959dc68cb49f7362dd445ec8f5921a3d906ba9f4024197f49d5cf30777da5f2",
+          "astEqual": true,
+          "beforeLines": [
+            475,
+            482
+          ],
+          "beforeSha256": "d959dc68cb49f7362dd445ec8f5921a3d906ba9f4024197f49d5cf30777da5f2",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_r4_both_external_exact_roots_cannot_be_omitted": {
+          "afterLines": [
+            484,
+            492
+          ],
+          "afterSha256": "af98d4d00f2e5080cb37628f8f2e3c791fa625ad706d9ff94e09657c73f83927",
+          "astEqual": true,
+          "beforeLines": [
+            484,
+            492
+          ],
+          "beforeSha256": "af98d4d00f2e5080cb37628f8f2e3c791fa625ad706d9ff94e09657c73f83927",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_report_hash_mismatch": {
+          "afterLines": [
+            351,
+            356
+          ],
+          "afterSha256": "22bd09f1140a6d263295a789e46dd1be232a4109a6fcdcf641c4b5f15e8b06e3",
+          "astEqual": true,
+          "beforeLines": [
+            351,
+            356
+          ],
+          "beforeSha256": "22bd09f1140a6d263295a789e46dd1be232a4109a6fcdcf641c4b5f15e8b06e3",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_report_input_does_not_implicitly_seal": {
+          "afterLines": [
+            334,
+            339
+          ],
+          "afterSha256": "441d21a0c3ebc75dfa4575a62e92498211c9486ba988ad79c670e5d731a11532",
+          "astEqual": true,
+          "beforeLines": [
+            334,
+            339
+          ],
+          "beforeSha256": "441d21a0c3ebc75dfa4575a62e92498211c9486ba988ad79c670e5d731a11532",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_seal_calls_only_candidate_with_hash_bound_external_input": {
+          "afterLines": [
+            341,
+            349
+          ],
+          "afterSha256": "cb5b73493436491038dec348da06d0ea2101f4b7108d846cc869b732dc610125",
+          "astEqual": true,
+          "beforeLines": [
+            341,
+            349
+          ],
+          "beforeSha256": "cb5b73493436491038dec348da06d0ea2101f4b7108d846cc869b732dc610125",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_seal_without_report_is_refused_before_build": {
+          "afterLines": [
+            322,
+            326
+          ],
+          "afterSha256": "db2cfbb39004ae229315bf6043e686110795a92f2bc8ca20abab03cd8cc1d36a",
+          "astEqual": true,
+          "beforeLines": [
+            322,
+            326
+          ],
+          "beforeSha256": "db2cfbb39004ae229315bf6043e686110795a92f2bc8ca20abab03cd8cc1d36a",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_source_inventory_parser_refuses_dynamic_expressions": {
+          "afterLines": [
+            418,
+            420
+          ],
+          "afterSha256": "5aba204fbbf595434afadcacd6678528a3014c53dc46d1dfa1f6365f93027e79",
+          "astEqual": true,
+          "beforeLines": [
+            418,
+            420
+          ],
+          "beforeSha256": "5aba204fbbf595434afadcacd6678528a3014c53dc46d1dfa1f6365f93027e79",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_spec_sources_evidence_and_no_production_alias": {
+          "afterLines": [
+            209,
+            232
+          ],
+          "afterSha256": "75cbd63bd235e975648a4146bc6a7577415fba8b35dbfd68bfc064830cdb02ec",
+          "astEqual": true,
+          "beforeLines": [
+            209,
+            232
+          ],
+          "beforeSha256": "75cbd63bd235e975648a4146bc6a7577415fba8b35dbfd68bfc064830cdb02ec",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_symlink_input_refused": {
+          "afterLines": [
+            299,
+            305
+          ],
+          "afterSha256": "02ccb40037073f6b802d66f96be8a9db36f03859bdfd9932ba93f4f299d0d4a7",
+          "astEqual": true,
+          "beforeLines": [
+            299,
+            305
+          ],
+          "beforeSha256": "02ccb40037073f6b802d66f96be8a9db36f03859bdfd9932ba93f4f299d0d4a7",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_symlink_output_refused": {
+          "afterLines": [
+            293,
+            297
+          ],
+          "afterSha256": "192e3b8310e87a53a4acdb95ba85c6cb82a2360e979403d9f032b912f6279dc5",
+          "astEqual": true,
+          "beforeLines": [
+            293,
+            297
+          ],
+          "beforeSha256": "192e3b8310e87a53a4acdb95ba85c6cb82a2360e979403d9f032b912f6279dc5",
+          "fullSourceBytesEqual": true
+        },
+        "LocalTests.test_ui_compiler_source_pin_refused": {
+          "afterLines": [
+            253,
+            257
+          ],
+          "afterSha256": "9e8d481414a5edcd7449033f2e01d7d1679041cba51562f78cc13057705d8c71",
+          "astEqual": true,
+          "beforeLines": [
+            253,
+            257
+          ],
+          "beforeSha256": "9e8d481414a5edcd7449033f2e01d7d1679041cba51562f78cc13057705d8c71",
+          "fullSourceBytesEqual": true
+        }
+      },
+      "unchanged": [
+        "LocalTests.test_builder_source_bytes_pin_refused",
+        "LocalTests.test_capture_config_and_meta_mismatch_refused",
+        "LocalTests.test_capture_expired_refused",
+        "LocalTests.test_current_baseline_hash_mismatch_refused",
+        "LocalTests.test_empty_and_missing_report_hash_refused",
+        "LocalTests.test_existing_file_is_not_overwritten",
+        "LocalTests.test_foreign_open_capture_coord_refused",
+        "LocalTests.test_freeze_source_inventory_mismatch_refused",
+        "LocalTests.test_freeze_source_path_escape_refused",
+        "LocalTests.test_frozen_compiled_output_drift_refused",
+        "LocalTests.test_missing_baseline_refused",
+        "LocalTests.test_no_replay_existing_directory_before_subprocess",
+        "LocalTests.test_no_replay_partial_failure",
+        "LocalTests.test_old_7fc9_controller_capture_is_not_reusable",
+        "LocalTests.test_old_failed_stage_scope_capture_is_not_reusable",
+        "LocalTests.test_original_controller_pin_refused",
+        "LocalTests.test_original_source_and_compilation_drifts_refused",
+        "LocalTests.test_paths_and_argument_rejection",
+        "LocalTests.test_private_nonce_required",
+        "LocalTests.test_public_helpers_reject_fake_native_records",
+        "LocalTests.test_r2_scope_and_d6_controller_capture_not_reusable_in_r3",
+        "LocalTests.test_r3_current_controller_sha_and_scope_fixed",
+        "LocalTests.test_r3_private_root_union_cannot_be_omitted_from_capture",
+        "LocalTests.test_r3_scope_and_bf7_capture_not_reusable_in_r4",
+        "LocalTests.test_r4_both_external_exact_roots_cannot_be_omitted",
+        "LocalTests.test_report_hash_mismatch",
+        "LocalTests.test_report_input_does_not_implicitly_seal",
+        "LocalTests.test_seal_calls_only_candidate_with_hash_bound_external_input",
+        "LocalTests.test_seal_without_report_is_refused_before_build",
+        "LocalTests.test_source_inventory_parser_refuses_dynamic_expressions",
+        "LocalTests.test_spec_sources_evidence_and_no_production_alias",
+        "LocalTests.test_symlink_input_refused",
+        "LocalTests.test_symlink_output_refused",
+        "LocalTests.test_ui_compiler_source_pin_refused"
+      ]
+    },
+    "test_release.py": {
+      "added": [
+        "R4DomainTests.test_cycles_and_shared_python_containers_not_json_trees",
+        "R4DomainTests.test_fifteen_finite_utf8_json_guard_samples_keep_values_keys_and_deepcopy",
+        "R4DomainTests.test_lone_surrogates_refused_no_replacement_decode_policy_unchanged",
+        "R4DomainTests.test_nonfinite_and_unsafe_integer_domain_both_inputs_refused",
+        "R4DomainTests.test_nonjson_types_nonstring_keys_and_python_special_subclasses_refused",
+        "R4DomainTests.test_ordinary_constructor_prototype_keys_and_opaque_string_preserved_in_binding",
+        "R4DomainTests.test_proto_root_env_nestedopaque_list_in_model_and_actual_refused_without_cleaning",
+        "R4PublishGateTests.test_allfalse_apply_zero_attempt_receipt_window_assets_api_intent_rpc_fullbefore",
+        "R4PublishGateTests.test_allfalse_preflight_zero_attempt_receipt_window_assets_api_intent_rpc_fullbefore",
+        "R4PublishGateTests.test_allready_own_only_unowned_none_accepted_not_approval",
+        "R4PublishGateTests.test_capture_snapshot_diagnostic_false_still_returns_identity_accepts",
+        "R4PublishGateTests.test_false_diagnostic_baseline_can_still_restore_manually_opened_journal",
+        "R4PublishGateTests.test_mixed_fronttrue_adminfalse_apply_zero_writes_fullbefore",
+        "R4PublishGateTests.test_mixed_fronttrue_adminfalse_preflight_zero_writes_fullbefore",
+        "R4PublishGateTests.test_ready_requires_literal_true_and_exact_six_only"
+      ],
+      "baselineCount": 121,
+      "changed": [
+        "R3RawTests.test_generation_override_and_container_override_ambiguity_refused"
+      ],
+      "currentCount": 136,
+      "removed": [],
+      "sourceRecords": {
+        "AdapterFilesTests.test_enumeration_race_refused": {
+          "afterLines": [
+            992,
+            1000
+          ],
+          "afterSha256": "55497c47abb19cef58eedf1fcc0f1fdc7aec8db05f7f5a655520b47d932381dc",
+          "astEqual": true,
+          "beforeLines": [
+            991,
+            999
+          ],
+          "beforeSha256": "55497c47abb19cef58eedf1fcc0f1fdc7aec8db05f7f5a655520b47d932381dc",
+          "fullSourceBytesEqual": true
+        },
+        "AdapterFilesTests.test_failed_resolve_has_no_npm_or_other_fallback": {
+          "afterLines": [
+            1031,
+            1036
+          ],
+          "afterSha256": "9778ad096f77e917550095d77ad19fc99b67f8289e19da92afaa7237b359044f",
+          "astEqual": true,
+          "beforeLines": [
+            1030,
+            1035
+          ],
+          "beforeSha256": "9778ad096f77e917550095d77ad19fc99b67f8289e19da92afaa7237b359044f",
+          "fullSourceBytesEqual": true
+        },
+        "AdapterFilesTests.test_file_and_empty_directory_set_changes_bound": {
+          "afterLines": [
+            946,
+            951
+          ],
+          "afterSha256": "7f5b903d9f08b72c6ac46a18e34e702205d35c73463a1cbf46bb004a556857cb",
+          "astEqual": true,
+          "beforeLines": [
+            945,
+            950
+          ],
+          "beforeSha256": "7f5b903d9f08b72c6ac46a18e34e702205d35c73463a1cbf46bb004a556857cb",
+          "fullSourceBytesEqual": true
+        },
+        "AdapterFilesTests.test_full_vendor_files_dirs_meta_and_root_package_pins": {
+          "afterLines": [
+            930,
+            944
+          ],
+          "afterSha256": "b917646b2ba543af9c3c0e4fea5e6265c2ff6b9a195e7c0889a950ceaf1b15b3",
+          "astEqual": true,
+          "beforeLines": [
+            929,
+            943
+          ],
+          "beforeSha256": "b917646b2ba543af9c3c0e4fea5e6265c2ff6b9a195e7c0889a950ceaf1b15b3",
+          "fullSourceBytesEqual": true
+        },
+        "AdapterFilesTests.test_hardlink_dependency_escape_refused": {
+          "afterLines": [
+            1010,
+            1014
+          ],
+          "afterSha256": "957b2f38b279b3f5bcc7c52e4013ab7a603ad1657181c2c73cc6de3e71e4b23e",
+          "astEqual": true,
+          "beforeLines": [
+            1009,
+            1013
+          ],
+          "beforeSha256": "957b2f38b279b3f5bcc7c52e4013ab7a603ad1657181c2c73cc6de3e71e4b23e",
+          "fullSourceBytesEqual": true
+        },
+        "AdapterFilesTests.test_late_directory_addition_refused": {
+          "afterLines": [
+            982,
+            985
+          ],
+          "afterSha256": "b960d1bfaa6f78f733b64e8dc97b7eb244b2cfcde3b1263a2f0a4bfc533bff63",
+          "astEqual": true,
+          "beforeLines": [
+            981,
+            984
+          ],
+          "beforeSha256": "b960d1bfaa6f78f733b64e8dc97b7eb244b2cfcde3b1263a2f0a4bfc533bff63",
+          "fullSourceBytesEqual": true
+        },
+        "AdapterFilesTests.test_late_file_deletion_refused": {
+          "afterLines": [
+            987,
+            990
+          ],
+          "afterSha256": "dc635da379570b8d94dd255184c8a908e86e46bb3add7c32677095e5cf0e7ffd",
+          "astEqual": true,
+          "beforeLines": [
+            986,
+            989
+          ],
+          "beforeSha256": "dc635da379570b8d94dd255184c8a908e86e46bb3add7c32677095e5cf0e7ffd",
+          "fullSourceBytesEqual": true
+        },
+        "AdapterFilesTests.test_late_file_meta_change_refused": {
+          "afterLines": [
+            977,
+            980
+          ],
+          "afterSha256": "36e4f0db84ec44bca210ba4d09e32b8ccb30698c7e0c91b56cbad9b9445f3072",
+          "astEqual": true,
+          "beforeLines": [
+            976,
+            979
+          ],
+          "beforeSha256": "36e4f0db84ec44bca210ba4d09e32b8ccb30698c7e0c91b56cbad9b9445f3072",
+          "fullSourceBytesEqual": true
+        },
+        "AdapterFilesTests.test_late_source_change_refused": {
+          "afterLines": [
+            972,
+            975
+          ],
+          "afterSha256": "4493c3aefdecd6c00680466fa8e8c14f379e246571e335a3c61a394affe04c84",
+          "astEqual": true,
+          "beforeLines": [
+            971,
+            974
+          ],
+          "beforeSha256": "4493c3aefdecd6c00680466fa8e8c14f379e246571e335a3c61a394affe04c84",
+          "fullSourceBytesEqual": true
+        },
+        "AdapterFilesTests.test_missing_index_is_refused": {
+          "afterLines": [
+            1044,
+            1047
+          ],
+          "afterSha256": "5f6c57c288569328da684f8b17c7f466dc29e3580617253c0269b46a73931b50",
+          "astEqual": true,
+          "beforeLines": [
+            1043,
+            1046
+          ],
+          "beforeSha256": "5f6c57c288569328da684f8b17c7f466dc29e3580617253c0269b46a73931b50",
+          "fullSourceBytesEqual": true
+        },
+        "AdapterFilesTests.test_missing_root_package_never_drops_pin_or_falls_back": {
+          "afterLines": [
+            1038,
+            1042
+          ],
+          "afterSha256": "92f6797b9d59b6d68f9c41294f6411c902adf59c72afd4a4de337fca5165771d",
+          "astEqual": true,
+          "beforeLines": [
+            1037,
+            1041
+          ],
+          "beforeSha256": "92f6797b9d59b6d68f9c41294f6411c902adf59c72afd4a4de337fca5165771d",
+          "fullSourceBytesEqual": true
+        },
+        "AdapterFilesTests.test_rpc_arguments_keep_original_specifiers_and_all_source_pins": {
+          "afterLines": [
+            1049,
+            1065
+          ],
+          "afterSha256": "9b3e220b92fbcf37b0efdfcb949706e6791e419619b1500745c89daeaa59b63f",
+          "astEqual": true,
+          "beforeLines": [
+            1048,
+            1064
+          ],
+          "beforeSha256": "9b3e220b92fbcf37b0efdfcb949706e6791e419619b1500745c89daeaa59b63f",
+          "fullSourceBytesEqual": true
+        },
+        "AdapterFilesTests.test_same_bytes_metadata_change_bound": {
+          "afterLines": [
+            953,
+            959
+          ],
+          "afterSha256": "5fb24e3d0d0fb138fc2547e073b48af133277aff7403b6313ae3d3751d5708ea",
+          "astEqual": true,
+          "beforeLines": [
+            952,
+            958
+          ],
+          "beforeSha256": "5fb24e3d0d0fb138fc2547e073b48af133277aff7403b6313ae3d3751d5708ea",
+          "fullSourceBytesEqual": true
+        },
+        "AdapterFilesTests.test_source_change_between_snapshot_and_pins_refused": {
+          "afterLines": [
+            961,
+            970
+          ],
+          "afterSha256": "4046fb9fe1aa61c054528f8e4f12a6d638aaec67a9a9a831b5f9f2284ea2e623",
+          "astEqual": true,
+          "beforeLines": [
+            960,
+            969
+          ],
+          "beforeSha256": "4046fb9fe1aa61c054528f8e4f12a6d638aaec67a9a9a831b5f9f2284ea2e623",
+          "fullSourceBytesEqual": true
+        },
+        "AdapterFilesTests.test_special_unknown_entry_refused": {
+          "afterLines": [
+            1016,
+            1019
+          ],
+          "afterSha256": "9f339719582f7812df7aa9120e12ef8bc9e4637f72b3da6f12f3fb573321dc1f",
+          "astEqual": true,
+          "beforeLines": [
+            1015,
+            1018
+          ],
+          "beforeSha256": "9f339719582f7812df7aa9120e12ef8bc9e4637f72b3da6f12f3fb573321dc1f",
+          "fullSourceBytesEqual": true
+        },
+        "AdapterFilesTests.test_symlink_file_and_directory_dependency_escape_refused": {
+          "afterLines": [
+            1002,
+            1008
+          ],
+          "afterSha256": "a8cc568b762ec0c58208dbb97bbbaf4a752cb8241463fe2499ea727eff8ba31c",
+          "astEqual": true,
+          "beforeLines": [
+            1001,
+            1007
+          ],
+          "beforeSha256": "a8cc568b762ec0c58208dbb97bbbaf4a752cb8241463fe2499ea727eff8ba31c",
+          "fullSourceBytesEqual": true
+        },
+        "AdapterFilesTests.test_wrong_resolved_entries_and_npm_fallback_refused": {
+          "afterLines": [
+            1021,
+            1029
+          ],
+          "afterSha256": "ddc1054f99dfb92983cf5d99dfdbef81487cbc22f50ee93e4bf468a5de5926e5",
+          "astEqual": true,
+          "beforeLines": [
+            1020,
+            1028
+          ],
+          "beforeSha256": "ddc1054f99dfb92983cf5d99dfdbef81487cbc22f50ee93e4bf468a5de5926e5",
+          "fullSourceBytesEqual": true
+        },
+        "R3ProtocolTests.test_exact_default_private_root_keeps_all_prior_protection": {
+          "afterLines": [
+            1334,
+            1340
+          ],
+          "afterSha256": "b3132da2dfcd5495edc22c2e037fcd536d1be6a92133fc5c9a9005016cd848ab",
+          "astEqual": true,
+          "beforeLines": [
+            1333,
+            1339
+          ],
+          "beforeSha256": "b3132da2dfcd5495edc22c2e037fcd536d1be6a92133fc5c9a9005016cd848ab",
+          "fullSourceBytesEqual": true
+        },
+        "R3ProtocolTests.test_illegal_observation_leaves_only_intent_never_loaded_or_unlock": {
+          "afterLines": [
+            1239,
+            1256
+          ],
+          "afterSha256": "8690dd9e813e5d7c62faede8f7b4f23c283eff4ee9489b9f5347c0133b9dcdaf",
+          "astEqual": true,
+          "beforeLines": [
+            1238,
+            1255
+          ],
+          "beforeSha256": "8690dd9e813e5d7c62faede8f7b4f23c283eff4ee9489b9f5347c0133b9dcdaf",
+          "fullSourceBytesEqual": true
+        },
+        "R3ProtocolTests.test_multiple_slot_unique_collision_and_unrolled_raw_are_rejected": {
+          "afterLines": [
+            1306,
+            1322
+          ],
+          "afterSha256": "1df6a0d25cad13700d2e0d943728463dea894e12d2ceee328005fe20a60eaa0d",
+          "astEqual": true,
+          "beforeLines": [
+            1305,
+            1321
+          ],
+          "beforeSha256": "1df6a0d25cad13700d2e0d943728463dea894e12d2ceee328005fe20a60eaa0d",
+          "fullSourceBytesEqual": true
+        },
+        "R3ProtocolTests.test_no_reload_intent_when_current_model_forecast_unproved": {
+          "afterLines": [
+            1230,
+            1237
+          ],
+          "afterSha256": "11ae68cce26d49861777ca239794da660eaedbf7cb3abcd507f99fecd580367e",
+          "astEqual": true,
+          "beforeLines": [
+            1229,
+            1236
+          ],
+          "beforeSha256": "11ae68cce26d49861777ca239794da660eaedbf7cb3abcd507f99fecd580367e",
+          "fullSourceBytesEqual": true
+        },
+        "R3ProtocolTests.test_observation_checkpoint_failure_keeps_memory_and_durable_intent_uncertain": {
+          "afterLines": [
+            1275,
+            1292
+          ],
+          "afterSha256": "97c5d50412dacc1e42eea8c123467a7b344294aded3df4a5968e1afcd35189c4",
+          "astEqual": true,
+          "beforeLines": [
+            1274,
+            1291
+          ],
+          "beforeSha256": "97c5d50412dacc1e42eea8c123467a7b344294aded3df4a5968e1afcd35189c4",
+          "fullSourceBytesEqual": true
+        },
+        "R3ProtocolTests.test_observed_source_drift_rejected_before_event_is_recorded": {
+          "afterLines": [
+            1324,
+            1332
+          ],
+          "afterSha256": "dd32272ef92133a5198af1f0cfd24d8b7eb991e81da475b60a5120881298eb6f",
+          "astEqual": true,
+          "beforeLines": [
+            1323,
+            1331
+          ],
+          "beforeSha256": "dd32272ef92133a5198af1f0cfd24d8b7eb991e81da475b60a5120881298eb6f",
+          "fullSourceBytesEqual": true
+        },
+        "R3ProtocolTests.test_partial_journal_intent_cannot_forge_observed_transition": {
+          "afterLines": [
+            1294,
+            1304
+          ],
+          "afterSha256": "7f552577de80d0e1c4269ccad988663dfe71f7a0ceae3b17b1cd9fd3e8dcc6e2",
+          "astEqual": true,
+          "beforeLines": [
+            1293,
+            1303
+          ],
+          "beforeSha256": "7f552577de80d0e1c4269ccad988663dfe71f7a0ceae3b17b1cd9fd3e8dcc6e2",
+          "fullSourceBytesEqual": true
+        },
+        "R3ProtocolTests.test_private_root_full_files_emptydirs_meta_set_and_existing_union": {
+          "afterLines": [
+            1342,
+            1357
+          ],
+          "afterSha256": "b4109f678132e908905ecf5391c16b07276bcf47255e9ebd1b7517f0dbcccada",
+          "astEqual": true,
+          "beforeLines": [
+            1341,
+            1356
+          ],
+          "beforeSha256": "b4109f678132e908905ecf5391c16b07276bcf47255e9ebd1b7517f0dbcccada",
+          "fullSourceBytesEqual": true
+        },
+        "R3ProtocolTests.test_private_root_special_entry_fail_closed": {
+          "afterLines": [
+            1359,
+            1362
+          ],
+          "afterSha256": "eb6b6e0fa2e243644151ad9a284d45eaa6c7bb50ba24f4ab1a2af2596420a03c",
+          "astEqual": true,
+          "beforeLines": [
+            1358,
+            1361
+          ],
+          "beforeSha256": "eb6b6e0fa2e243644151ad9a284d45eaa6c7bb50ba24f4ab1a2af2596420a03c",
+          "fullSourceBytesEqual": true
+        },
+        "R3ProtocolTests.test_uncertain_adapter_error_keeps_only_proved_observation_then_recovery": {
+          "afterLines": [
+            1258,
+            1273
+          ],
+          "afterSha256": "c32a8dac55563b7b51a863b288a95ed4c9718e6aaedf84abb3eed0d1b960427c",
+          "astEqual": true,
+          "beforeLines": [
+            1257,
+            1272
+          ],
+          "beforeSha256": "c32a8dac55563b7b51a863b288a95ed4c9718e6aaedf84abb3eed0d1b960427c",
+          "fullSourceBytesEqual": true
+        },
+        "R3RawTests.test_application_escape_bytes_not_recursive_canonicalized": {
+          "afterLines": [
+            1136,
+            1145
+          ],
+          "afterSha256": "82e67d721f28bf795c7a14bcb799eba3505ab1141106a0da667206923eae23d7",
+          "astEqual": true,
+          "beforeLines": [
+            1135,
+            1144
+          ],
+          "beforeSha256": "82e67d721f28bf795c7a14bcb799eba3505ab1141106a0da667206923eae23d7",
+          "fullSourceBytesEqual": true
+        },
+        "R3RawTests.test_current_model_generated_relation_required": {
+          "afterLines": [
+            1188,
+            1192
+          ],
+          "afterSha256": "b2288b62a665306b3e9c3045bfa0bede7ba53386687ce8284f690e1061148a95",
+          "astEqual": true,
+          "beforeLines": [
+            1187,
+            1191
+          ],
+          "beforeSha256": "b2288b62a665306b3e9c3045bfa0bede7ba53386687ce8284f690e1061148a95",
+          "fullSourceBytesEqual": true
+        },
+        "R3RawTests.test_duplicate_keys_at_top_env_nested_and_escaped_alias_rejected": {
+          "afterLines": [
+            1156,
+            1161
+          ],
+          "afterSha256": "37788b2f7e48accc467a69c277e6b7219ab8a36bf6ee9a0d6659237be574b352",
+          "astEqual": true,
+          "beforeLines": [
+            1155,
+            1160
+          ],
+          "beforeSha256": "37788b2f7e48accc467a69c277e6b7219ab8a36bf6ee9a0d6659237be574b352",
+          "fullSourceBytesEqual": true
+        },
+        "R3RawTests.test_env_lifecycle_values_not_deleted_even_when_monitor_strip_would": {
+          "afterLines": [
+            1113,
+            1125
+          ],
+          "afterSha256": "110d34a029b5e1dbfdfa0fc554f78aed416066b7fa55effc203cdc0eb5e7313d",
+          "astEqual": true,
+          "beforeLines": [
+            1112,
+            1124
+          ],
+          "beforeSha256": "110d34a029b5e1dbfdfa0fc554f78aed416066b7fa55effc203cdc0eb5e7313d",
+          "fullSourceBytesEqual": true
+        },
+        "R3RawTests.test_every_outer_lifecycle_looking_application_value_is_byte_exact": {
+          "afterLines": [
+            1106,
+            1111
+          ],
+          "afterSha256": "c83e970ded0f5479a75808afe1a2c80eec93d5d71cfc288d585a609fb0f111d1",
+          "astEqual": true,
+          "beforeLines": [
+            1105,
+            1110
+          ],
+          "beforeSha256": "c83e970ded0f5479a75808afe1a2c80eec93d5d71cfc288d585a609fb0f111d1",
+          "fullSourceBytesEqual": true
+        },
+        "R3RawTests.test_exact_source_generated_projection_preserves_all_retained_bytes": {
+          "afterLines": [
+            1093,
+            1104
+          ],
+          "afterSha256": "5e9fa43b25f654aea7e758927676cba3a28935729445ac4d4b09f9e744220cdf",
+          "astEqual": true,
+          "beforeLines": [
+            1092,
+            1103
+          ],
+          "beforeSha256": "5e9fa43b25f654aea7e758927676cba3a28935729445ac4d4b09f9e744220cdf",
+          "fullSourceBytesEqual": true
+        },
+        "R3RawTests.test_generated_integer_types_and_noncanonical_tokens_refused": {
+          "afterLines": [
+            1163,
+            1172
+          ],
+          "afterSha256": "b36e92d24e69cdd252d3be8b934571fc4fe8fde980a56f80444563a70242156d",
+          "astEqual": true,
+          "beforeLines": [
+            1162,
+            1171
+          ],
+          "beforeSha256": "b36e92d24e69cdd252d3be8b934571fc4fe8fde980a56f80444563a70242156d",
+          "fullSourceBytesEqual": true
+        },
+        "R3RawTests.test_generation_override_and_container_override_ambiguity_refused": {
+          "afterLines": [
+            1194,
+            1199
+          ],
+          "afterSha256": "b687497c39ed1a81eeb8bf13b3202d52d06428872ab8ac3641693eb3f946c314",
+          "astEqual": false,
+          "beforeLines": [
+            1193,
+            1198
+          ],
+          "beforeSha256": "33e9b9aad50687a82bd9d387b031f335117bb45d8b48d75b67666bb58f210bdb",
+          "fullSourceBytesEqual": false
+        },
+        "R3RawTests.test_merge_object_coercion_ambiguity_refused": {
+          "afterLines": [
+            1208,
+            1213
+          ],
+          "afterSha256": "56e775515b6b94365745082ee91439b64d8fc571578c38fa89684d5c10c0d4fe",
+          "astEqual": true,
+          "beforeLines": [
+            1207,
+            1212
+          ],
+          "beforeSha256": "56e775515b6b94365745082ee91439b64d8fc571578c38fa89684d5c10c0d4fe",
+          "fullSourceBytesEqual": true
+        },
+        "R3RawTests.test_monitor_added_field_is_not_proven_reload_ready": {
+          "afterLines": [
+            1201,
+            1206
+          ],
+          "afterSha256": "27d822ef1c9207324c25a8cbd5b1dbe6f2d2800a747fab92825eb69345182886",
+          "astEqual": true,
+          "beforeLines": [
+            1200,
+            1205
+          ],
+          "beforeSha256": "27d822ef1c9207324c25a8cbd5b1dbe6f2d2800a747fab92825eb69345182886",
+          "fullSourceBytesEqual": true
+        },
+        "R3RawTests.test_nested_life_values_and_nested_unique_never_transform": {
+          "afterLines": [
+            1127,
+            1134
+          ],
+          "afterSha256": "eace7d0f6fab0824c8c357b53ba2cedb73867eee872844d4637f8d251c4c301a",
+          "astEqual": true,
+          "beforeLines": [
+            1126,
+            1133
+          ],
+          "beforeSha256": "eace7d0f6fab0824c8c357b53ba2cedb73867eee872844d4637f8d251c4c301a",
+          "fullSourceBytesEqual": true
+        },
+        "R3RawTests.test_restart_time_reset_and_time_window_are_exact_not_whitelisted": {
+          "afterLines": [
+            1215,
+            1222
+          ],
+          "afterSha256": "449f704a21f17f6963833dd0162cabe05398cf83365d4c974c58ba3c07de3a44",
+          "astEqual": true,
+          "beforeLines": [
+            1214,
+            1221
+          ],
+          "beforeSha256": "449f704a21f17f6963833dd0162cabe05398cf83365d4c974c58ba3c07de3a44",
+          "fullSourceBytesEqual": true
+        },
+        "R3RawTests.test_stable_identity_and_wrong_container_types_rejected": {
+          "afterLines": [
+            1180,
+            1186
+          ],
+          "afterSha256": "69167dfbaf86f606209bf261ef3b51621e16e90aac1c41371fdda29baf9ea086",
+          "astEqual": true,
+          "beforeLines": [
+            1179,
+            1185
+          ],
+          "beforeSha256": "69167dfbaf86f606209bf261ef3b51621e16e90aac1c41371fdda29baf9ea086",
+          "fullSourceBytesEqual": true
+        },
+        "R3RawTests.test_top_order_whitespace_and_unproved_field_exact": {
+          "afterLines": [
+            1147,
+            1154
+          ],
+          "afterSha256": "e015f8fc1f92c003b6615287d78e06d6046ee66d405f925ccafca280305d7887",
+          "astEqual": true,
+          "beforeLines": [
+            1146,
+            1153
+          ],
+          "beforeSha256": "e015f8fc1f92c003b6615287d78e06d6046ee66d405f925ccafca280305d7887",
+          "fullSourceBytesEqual": true
+        },
+        "R3RawTests.test_wait_ready_truthiness_type_ambiguity_refused": {
+          "afterLines": [
+            1174,
+            1178
+          ],
+          "afterSha256": "4b2e6218f237f45b647ead07a10c690e9923cf344f1c45b4da7d00e1b23be29f",
+          "astEqual": true,
+          "beforeLines": [
+            1173,
+            1177
+          ],
+          "beforeSha256": "4b2e6218f237f45b647ead07a10c690e9923cf344f1c45b4da7d00e1b23be29f",
+          "fullSourceBytesEqual": true
+        },
+        "R3SourcePinTests.test_absent_and_empty_loader_env_allowed_only_with_mock_node": {
+          "afterLines": [
+            1383,
+            1388
+          ],
+          "afterSha256": "074abbb1668bae23d416d3c0aba805afb775983ad5fa4a5fddbb69fcd4fa37e3",
+          "astEqual": true,
+          "beforeLines": [
+            1382,
+            1387
+          ],
+          "beforeSha256": "074abbb1668bae23d416d3c0aba805afb775983ad5fa4a5fddbb69fcd4fa37e3",
+          "fullSourceBytesEqual": true
+        },
+        "R3SourcePinTests.test_each_generating_source_drift_fail_closed": {
+          "afterLines": [
+            1390,
+            1395
+          ],
+          "afterSha256": "58123cc05d79c7fc5db373ae83461afbc70b05327d59d3462de27744621caf7e",
+          "astEqual": true,
+          "beforeLines": [
+            1389,
+            1394
+          ],
+          "beforeSha256": "58123cc05d79c7fc5db373ae83461afbc70b05327d59d3462de27744621caf7e",
+          "fullSourceBytesEqual": true
+        },
+        "R3SourcePinTests.test_generation_pins_all_measured_exact_no_missing_sources": {
+          "afterLines": [
+            1367,
+            1373
+          ],
+          "afterSha256": "180179870b115f7ee7f56112e99072d9274a66f14c143bf1dae5a0a78192ecc7",
+          "astEqual": true,
+          "beforeLines": [
+            1366,
+            1372
+          ],
+          "beforeSha256": "180179870b115f7ee7f56112e99072d9274a66f14c143bf1dae5a0a78192ecc7",
+          "fullSourceBytesEqual": true
+        },
+        "R3SourcePinTests.test_loader_env_refused_before_any_node_probe_without_unsetting": {
+          "afterLines": [
+            1375,
+            1381
+          ],
+          "afterSha256": "61c9d0258cbb7a6ababcdb8c1d81bd6ea50cf5e110ea01ae5174915e1605e319",
+          "astEqual": true,
+          "beforeLines": [
+            1374,
+            1380
+          ],
+          "beforeSha256": "61c9d0258cbb7a6ababcdb8c1d81bd6ea50cf5e110ea01ae5174915e1605e319",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_actual_flock_path_is_kernel_observed_and_sticky": {
+          "afterLines": [
+            1558,
+            1563
+          ],
+          "afterSha256": "15a72d426bce12bacdcb899fb5e826fd0978759b446ab46baea2528e803929cd",
+          "astEqual": true,
+          "beforeLines": [
+            1557,
+            1562
+          ],
+          "beforeSha256": "15a72d426bce12bacdcb899fb5e826fd0978759b446ab46baea2528e803929cd",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_child_cwd_exact_not_a_normalized_or_guessed_path": {
+          "afterLines": [
+            1550,
+            1552
+          ],
+          "afterSha256": "2a820e8cd95ec36d7053f0a63d9e9edf5448c5f9643b474b3980afc768975891",
+          "astEqual": true,
+          "beforeLines": [
+            1549,
+            1551
+          ],
+          "beforeSha256": "2a820e8cd95ec36d7053f0a63d9e9edf5448c5f9643b474b3980afc768975891",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_child_startticks_cannot_precede_bound_parent": {
+          "afterLines": [
+            1501,
+            1503
+          ],
+          "afterSha256": "6d977f2dbab7a2d960681b4f44e194a1d7ed12adfb7d3bd57a1097d21dcb80c1",
+          "astEqual": true,
+          "beforeLines": [
+            1500,
+            1502
+          ],
+          "beforeSha256": "6d977f2dbab7a2d960681b4f44e194a1d7ed12adfb7d3bd57a1097d21dcb80c1",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_deleted_actual_exe_and_unsupported_source_links_fail_closed": {
+          "afterLines": [
+            1586,
+            1592
+          ],
+          "afterSha256": "e13b55fbd5ce946ab313deb9d97b4814f21e955ec9554aba20cfa3421b91e1e9",
+          "astEqual": true,
+          "beforeLines": [
+            1585,
+            1591
+          ],
+          "beforeSha256": "e13b55fbd5ce946ab313deb9d97b4814f21e955ec9554aba20cfa3421b91e1e9",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_exact_script_and_no_unknown_child_loader_flags": {
+          "afterLines": [
+            1543,
+            1548
+          ],
+          "afterSha256": "9fa2a4271789aa9aceee18f8392375d7b4802645b25737baeb9cbcf51724bd6b",
+          "astEqual": true,
+          "beforeLines": [
+            1542,
+            1547
+          ],
+          "beforeSha256": "9fa2a4271789aa9aceee18f8392375d7b4802645b25737baeb9cbcf51724bd6b",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_executable_source_full_meta_drift_even_same_hash_is_rejected": {
+          "afterLines": [
+            1568,
+            1569
+          ],
+          "afterSha256": "323fae3b5abf64bb9080e43d05fa94154edefc17b02a3307cab2be8c739cf1c2",
+          "astEqual": true,
+          "beforeLines": [
+            1567,
+            1568
+          ],
+          "beforeSha256": "323fae3b5abf64bb9080e43d05fa94154edefc17b02a3307cab2be8c739cf1c2",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_fixed_two_nonpm2_identities_whole_opaque_hashes_and_full_file_meta": {
+          "afterLines": [
+            1452,
+            1474
+          ],
+          "afterSha256": "311e975155777838bd3ade2d0968b506e5e3cf9ead899a36e58f5aed8610bb53",
+          "astEqual": true,
+          "beforeLines": [
+            1451,
+            1473
+          ],
+          "beforeSha256": "311e975155777838bd3ade2d0968b506e5e3cf9ead899a36e58f5aed8610bb53",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_fixture_only_skip_is_explicit_never_a_production_override": {
+          "afterLines": [
+            1476,
+            1483
+          ],
+          "afterSha256": "8b471bc85b54889ab9a54f8256c441c54a0059d3b08191df85120721db8de79b",
+          "astEqual": true,
+          "beforeLines": [
+            1475,
+            1482
+          ],
+          "beforeSha256": "8b471bc85b54889ab9a54f8256c441c54a0059d3b08191df85120721db8de79b",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_hardlinked_exe_or_bootstrap_not_widened": {
+          "afterLines": [
+            1594,
+            1598
+          ],
+          "afterSha256": "4986e8408240de7f03379d01a493014a64b4667ff0f7e4676f92938486692274",
+          "astEqual": true,
+          "beforeLines": [
+            1593,
+            1597
+          ],
+          "beforeSha256": "4986e8408240de7f03379d01a493014a64b4667ff0f7e4676f92938486692274",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_invalid_stat_identity_or_dead_pid_is_rejected": {
+          "afterLines": [
+            1523,
+            1529
+          ],
+          "afterSha256": "e5c77ad2337cc8b76779d2358172b2de62bddf20ab75308a41474959c7ed07bc",
+          "astEqual": true,
+          "beforeLines": [
+            1522,
+            1528
+          ],
+          "beforeSha256": "e5c77ad2337cc8b76779d2358172b2de62bddf20ab75308a41474959c7ed07bc",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_missing_either_proc_has_no_pid_search_or_fallback": {
+          "afterLines": [
+            1505,
+            1509
+          ],
+          "afterSha256": "d8469cd83adfa90865abded64015f7dc9a5bdc4c68292d6d32809624082bedbf",
+          "astEqual": true,
+          "beforeLines": [
+            1504,
+            1508
+          ],
+          "beforeSha256": "d8469cd83adfa90865abded64015f7dc9a5bdc4c68292d6d32809624082bedbf",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_missing_exact_protection_roots_not_replaced_by_ancestor": {
+          "afterLines": [
+            1600,
+            1604
+          ],
+          "afterSha256": "dd948ac1ca7631c5dcff232001e833b923e963d5333ec47242dbb4ac0e35f6ab",
+          "astEqual": true,
+          "beforeLines": [
+            1599,
+            1603
+          ],
+          "beforeSha256": "dd948ac1ca7631c5dcff232001e833b923e963d5333ec47242dbb4ac0e35f6ab",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_node_full_executable_sha_bound_not_name_only": {
+          "afterLines": [
+            1554,
+            1556
+          ],
+          "afterSha256": "8217962db9cd2b86fa524f8679b6747b53e99bbfb3ba5ddf682e0cc6a81122ad",
+          "astEqual": true,
+          "beforeLines": [
+            1553,
+            1555
+          ],
+          "beforeSha256": "8217962db9cd2b86fa524f8679b6747b53e99bbfb3ba5ddf682e0cc6a81122ad",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_parent_cmdline_drift_is_opaque_no_normalization": {
+          "afterLines": [
+            1531,
+            1533
+          ],
+          "afterSha256": "b2656a5ca3194a02ce46f8266d894583242f0e1b7cef6624b03d837f950c8a19",
+          "astEqual": true,
+          "beforeLines": [
+            1530,
+            1532
+          ],
+          "beforeSha256": "b2656a5ca3194a02ce46f8266d894583242f0e1b7cef6624b03d837f950c8a19",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_parent_cwd_is_shallow_unknown_not_recursive_root_protection": {
+          "afterLines": [
+            1580,
+            1584
+          ],
+          "afterSha256": "58cb75ee6fb1d2d04579f7217745ef95afcaec7546c92683f76421e74bc95c92",
+          "astEqual": true,
+          "beforeLines": [
+            1579,
+            1583
+          ],
+          "beforeSha256": "58cb75ee6fb1d2d04579f7217745ef95afcaec7546c92683f76421e74bc95c92",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_parent_is_flock_not_another_node": {
+          "afterLines": [
+            1485,
+            1487
+          ],
+          "afterSha256": "0bd021ea653fd5b3daf90c7e19e890bc886dcce059529c2b81a74ab73ff8a121",
+          "astEqual": true,
+          "beforeLines": [
+            1484,
+            1486
+          ],
+          "beforeSha256": "0bd021ea653fd5b3daf90c7e19e890bc886dcce059529c2b81a74ab73ff8a121",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_permissions_drift_between_samples_is_rejected": {
+          "afterLines": [
+            1539,
+            1541
+          ],
+          "afterSha256": "8fca8d6f2ab8e08770e907979764fc306e4a0b6dc9574651e5348587b6c84dfe",
+          "astEqual": true,
+          "beforeLines": [
+            1538,
+            1540
+          ],
+          "beforeSha256": "8fca8d6f2ab8e08770e907979764fc306e4a0b6dc9574651e5348587b6c84dfe",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_pid_reuse_inside_single_proc_sample_is_rejected": {
+          "afterLines": [
+            1514,
+            1521
+          ],
+          "afterSha256": "7c65f85e9773fc596bb775e271d3c711c47f3ee1e195182e8133f1f125138518",
+          "astEqual": true,
+          "beforeLines": [
+            1513,
+            1520
+          ],
+          "beforeSha256": "7c65f85e9773fc596bb775e271d3c711c47f3ee1e195182e8133f1f125138518",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_pid_reuse_startticks_between_complete_samples_is_rejected": {
+          "afterLines": [
+            1511,
+            1512
+          ],
+          "afterSha256": "8f65d3ff99d29b349bdb5571e5d1a513f54bc0972ceeff0be684872c248275b3",
+          "astEqual": true,
+          "beforeLines": [
+            1510,
+            1511
+          ],
+          "beforeSha256": "8f65d3ff99d29b349bdb5571e5d1a513f54bc0972ceeff0be684872c248275b3",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_proc_directory_meta_drift_is_rejected": {
+          "afterLines": [
+            1574,
+            1575
+          ],
+          "afterSha256": "c5512b22bc1a64e6d2f52bbc2d496391e9cd3a00a00417977d2670e04f4ab761",
+          "astEqual": true,
+          "beforeLines": [
+            1573,
+            1574
+          ],
+          "beforeSha256": "c5512b22bc1a64e6d2f52bbc2d496391e9cd3a00a00417977d2670e04f4ab761",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_root_meta_drift_is_rejected": {
+          "afterLines": [
+            1577,
+            1578
+          ],
+          "afterSha256": "e2fec3c8467f7918c9aaee36b3cd1dc61ad70472a4ecdb00d6455b166b98cd05",
+          "astEqual": true,
+          "beforeLines": [
+            1576,
+            1577
+          ],
+          "beforeSha256": "e2fec3c8467f7918c9aaee36b3cd1dc61ad70472a4ecdb00d6455b166b98cd05",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_script_full_meta_drift_even_same_hash_is_rejected": {
+          "afterLines": [
+            1571,
+            1572
+          ],
+          "afterSha256": "0e87fc252f56a501e4801433d45fa33cafb0b568e1fd75376727b949c512c690",
+          "astEqual": true,
+          "beforeLines": [
+            1570,
+            1571
+          ],
+          "beforeSha256": "0e87fc252f56a501e4801433d45fa33cafb0b568e1fd75376727b949c512c690",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_source_script_full_bytes_drift_is_rejected": {
+          "afterLines": [
+            1565,
+            1566
+          ],
+          "afterSha256": "642d008f3c503c636b12ec177c5bf6e6b4bbff263496b55c28a403dfa44febbb",
+          "astEqual": true,
+          "beforeLines": [
+            1564,
+            1565
+          ],
+          "beforeSha256": "642d008f3c503c636b12ec177c5bf6e6b4bbff263496b55c28a403dfa44febbb",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_whole_environment_drift_has_no_nodeunique_or_pm2_exception": {
+          "afterLines": [
+            1535,
+            1537
+          ],
+          "afterSha256": "1c18f0cccf25c3905f3fb92aad63480c5b950c7cf9dad73d8a0c208d74111fe8",
+          "astEqual": true,
+          "beforeLines": [
+            1534,
+            1536
+          ],
+          "beforeSha256": "1c18f0cccf25c3905f3fb92aad63480c5b950c7cf9dad73d8a0c208d74111fe8",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_wrong_child_exe_and_argv0_fail_closed": {
+          "afterLines": [
+            1489,
+            1491
+          ],
+          "afterSha256": "e90d84718d0f73228ccfbcab9f663a8d4666a8d885659599b15d4956f22fdda9",
+          "astEqual": true,
+          "beforeLines": [
+            1488,
+            1490
+          ],
+          "beforeSha256": "e90d84718d0f73228ccfbcab9f663a8d4666a8d885659599b15d4956f22fdda9",
+          "fullSourceBytesEqual": true
+        },
+        "R4ExternalTests.test_wrong_ppid_and_parent_cycle_are_rejected": {
+          "afterLines": [
+            1493,
+            1499
+          ],
+          "afterSha256": "ebb19787db339ebb08a5d3d2cf99264c1078a95c46c9ca1e5379df460ec34a7d",
+          "astEqual": true,
+          "beforeLines": [
+            1492,
+            1498
+          ],
+          "beforeSha256": "ebb19787db339ebb08a5d3d2cf99264c1078a95c46c9ca1e5379df460ec34a7d",
+          "fullSourceBytesEqual": true
+        },
+        "R4ProtectedGraphTests.test_both_complete_extra_trees_files_dirs_emptydirs_and_set_not_only_pm2": {
+          "afterLines": [
+            1652,
+            1662
+          ],
+          "afterSha256": "88002036a71857aff246772bc6eb26810c69db2ca8b989a23a38537f1fd616a4",
+          "astEqual": true,
+          "beforeLines": [
+            1651,
+            1661
+          ],
+          "beforeSha256": "88002036a71857aff246772bc6eb26810c69db2ca8b989a23a38537f1fd616a4",
+          "fullSourceBytesEqual": true
+        },
+        "R4ProtectedGraphTests.test_default_exact_roots_no_parentcwd_or_root_recursion": {
+          "afterLines": [
+            1670,
+            1674
+          ],
+          "afterSha256": "e107a96d35b6ea7c31739ffc4f8af9aecbec1ed6d38873e9ce900c142043ce63",
+          "astEqual": true,
+          "beforeLines": [
+            1669,
+            1673
+          ],
+          "beforeSha256": "e107a96d35b6ea7c31739ffc4f8af9aecbec1ed6d38873e9ce900c142043ce63",
+          "fullSourceBytesEqual": true
+        },
+        "R4ProtectedGraphTests.test_original_controller_guard_binds_external_opaque_identity_without_schema_change": {
+          "afterLines": [
+            1664,
+            1668
+          ],
+          "afterSha256": "992450ba8aa991a69e1b338fa24e7b757e9ace67f0b4fbba034dd72eecec7cd8",
+          "astEqual": true,
+          "beforeLines": [
+            1663,
+            1667
+          ],
+          "beforeSha256": "992450ba8aa991a69e1b338fa24e7b757e9ace67f0b4fbba034dd72eecec7cd8",
+          "fullSourceBytesEqual": true
+        },
+        "R4TransportTests.test_external_drift_during_mock_node_probe_rejected_before_transport_returns": {
+          "afterLines": [
+            1629,
+            1632
+          ],
+          "afterSha256": "a64fedeca0d3c67cbdf2c21f94a81f5ff6165da2439726e88346f6962720c494",
+          "astEqual": true,
+          "beforeLines": [
+            1628,
+            1631
+          ],
+          "beforeSha256": "a64fedeca0d3c67cbdf2c21f94a81f5ff6165da2439726e88346f6962720c494",
+          "fullSourceBytesEqual": true
+        },
+        "R4TransportTests.test_fclone_fixed_source_missing_and_drift_are_failclosed": {
+          "afterLines": [
+            1634,
+            1638
+          ],
+          "afterSha256": "601bcda7da6b862a5893c478d6f14ba984e7501828fd78e4dd82314bffb89fec",
+          "astEqual": true,
+          "beforeLines": [
+            1633,
+            1637
+          ],
+          "beforeSha256": "601bcda7da6b862a5893c478d6f14ba984e7501828fd78e4dd82314bffb89fec",
+          "fullSourceBytesEqual": true
+        },
+        "R4TransportTests.test_transport_includes_actual_exe_script_sources_and_fullmeta_with_original_pins": {
+          "afterLines": [
+            1617,
+            1627
+          ],
+          "afterSha256": "50c1c0d95c2fd47e9c34fd45d7ba5f207066c243744e2ec19f5fc8ca30c3086a",
+          "astEqual": true,
+          "beforeLines": [
+            1616,
+            1626
+          ],
+          "beforeSha256": "50c1c0d95c2fd47e9c34fd45d7ba5f207066c243744e2ec19f5fc8ca30c3086a",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_candidate_wrong_controller_pin_creates_no_output": {
+          "afterLines": [
+            675,
+            679
+          ],
+          "afterSha256": "d5d82b47b8e93ecdb8e00d63742754d9b4da1a21c4d4462cff78bbd2bd37e31b",
+          "astEqual": true,
+          "beforeLines": [
+            674,
+            678
+          ],
+          "beforeSha256": "d5d82b47b8e93ecdb8e00d63742754d9b4da1a21c4d4462cff78bbd2bd37e31b",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_capture_ttl_forward_only_and_fresh_recovery_approval": {
+          "afterLines": [
+            409,
+            426
+          ],
+          "afterSha256": "faaa261f43242a94aaae16c502ffb65f03a50a79c841630ad273db0c0e15e152",
+          "astEqual": true,
+          "beforeLines": [
+            408,
+            425
+          ],
+          "beforeSha256": "faaa261f43242a94aaae16c502ffb65f03a50a79c841630ad273db0c0e15e152",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_cas_last_race_never_overwrites_foreign_bytes": {
+          "afterLines": [
+            524,
+            535
+          ],
+          "afterSha256": "cb9ed4cb896edc512674b873f0e0bc9dc7da25817f0a0eeeb8eb991c0ab33643",
+          "astEqual": true,
+          "beforeLines": [
+            523,
+            534
+          ],
+          "beforeSha256": "cb9ed4cb896edc512674b873f0e0bc9dc7da25817f0a0eeeb8eb991c0ab33643",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_cas_remember_precedes_target_dir_fsync_failure_and_is_recoverable": {
+          "afterLines": [
+            537,
+            552
+          ],
+          "afterSha256": "d013bf8901bab460de389744553dd305d46f7b6ff98d2e24bbabfc892d9f793f",
+          "astEqual": true,
+          "beforeLines": [
+            536,
+            551
+          ],
+          "beforeSha256": "d013bf8901bab460de389744553dd305d46f7b6ff98d2e24bbabfc892d9f793f",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_change_coord_journal_failure_remembers_owned_raw_immediately": {
+          "afterLines": [
+            808,
+            823
+          ],
+          "afterSha256": "ed99805ceffcf7659b31b50440d62e40e6311e2a550a25f2307eca4cce620b3a",
+          "astEqual": true,
+          "beforeLines": [
+            807,
+            822
+          ],
+          "beforeSha256": "ed99805ceffcf7659b31b50440d62e40e6311e2a550a25f2307eca4cce620b3a",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_change_file_journal_failure_after_rename_tracks_memory_no_replay": {
+          "afterLines": [
+            554,
+            571
+          ],
+          "afterSha256": "29f1f459d1095fc4fd812a070d3f48cd748a4e46868ce31cd6c138a6b69902dd",
+          "astEqual": true,
+          "beforeLines": [
+            553,
+            570
+          ],
+          "beforeSha256": "29f1f459d1095fc4fd812a070d3f48cd748a4e46868ce31cd6c138a6b69902dd",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_checkpoint_dir_fsync_fault_never_claims_durable_or_replays": {
+          "afterLines": [
+            573,
+            586
+          ],
+          "afterSha256": "cec101a854bb43eef03295c427763cbb8401154d507ba30b796110dcc1775140",
+          "astEqual": true,
+          "beforeLines": [
+            572,
+            585
+          ],
+          "beforeSha256": "cec101a854bb43eef03295c427763cbb8401154d507ba30b796110dcc1775140",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_coord_history_protection_union_preserves_counts_and_extensions": {
+          "afterLines": [
+            454,
+            463
+          ],
+          "afterSha256": "d0c2034e49af409afb73abd05962081de29ffd7792cf3da4099568ce4a9578e5",
+          "astEqual": true,
+          "beforeLines": [
+            453,
+            462
+          ],
+          "beforeSha256": "d0c2034e49af409afb73abd05962081de29ffd7792cf3da4099568ce4a9578e5",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_coord_missing_closed_proof_or_history_and_replay_refused": {
+          "afterLines": [
+            446,
+            452
+          ],
+          "afterSha256": "d576ec2f577a66d6983f498dc97274c904095e2a33d93ed9215ba8baf376332c",
+          "astEqual": true,
+          "beforeLines": [
+            445,
+            451
+          ],
+          "beforeSha256": "d576ec2f577a66d6983f498dc97274c904095e2a33d93ed9215ba8baf376332c",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_durable_success_requires_actual_closed_raw_and_latest_state": {
+          "afterLines": [
+            639,
+            650
+          ],
+          "afterSha256": "60f24d4f7d190ed5f6ddbe09eed424e79b0c87f55b66de0140d15d3801ae19bc",
+          "astEqual": true,
+          "beforeLines": [
+            638,
+            649
+          ],
+          "beforeSha256": "60f24d4f7d190ed5f6ddbe09eed424e79b0c87f55b66de0140d15d3801ae19bc",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_fail_after_close_retains_owned_recovery_hold_and_history": {
+          "afterLines": [
+            613,
+            626
+          ],
+          "afterSha256": "a9106de67bde2fc36b55bf0d55c9688878f0c4dfed2362a0a9c1cbe5522aed0d",
+          "astEqual": true,
+          "beforeLines": [
+            612,
+            625
+          ],
+          "beforeSha256": "a9106de67bde2fc36b55bf0d55c9688878f0c4dfed2362a0a9c1cbe5522aed0d",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_fail_foreign_coord_never_changes_foreign_bytes_or_external_lock": {
+          "afterLines": [
+            601,
+            611
+          ],
+          "afterSha256": "3810ce7bce7e0d21ebfb097ad301aa913c6fa09191c54a3ea5d64daad0186751",
+          "astEqual": true,
+          "beforeLines": [
+            600,
+            610
+          ],
+          "beforeSha256": "3810ce7bce7e0d21ebfb097ad301aa913c6fa09191c54a3ea5d64daad0186751",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_foreign_dual_lock_busy_preserves_inode_and_held_external_lock": {
+          "afterLines": [
+            385,
+            397
+          ],
+          "afterSha256": "1334eb6b4c60d13f455fc1e550bcbf38b32d3a28180db73c0caa310fecb98e9a",
+          "astEqual": true,
+          "beforeLines": [
+            384,
+            396
+          ],
+          "beforeSha256": "1334eb6b4c60d13f455fc1e550bcbf38b32d3a28180db73c0caa310fecb98e9a",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_foreign_recovery_busy_rejected_without_write": {
+          "afterLines": [
+            372,
+            383
+          ],
+          "afterSha256": "da707b0fd60335a61310c821dcda4d896df0482758fbb8a880a2c22f6032bae9",
+          "astEqual": true,
+          "beforeLines": [
+            371,
+            382
+          ],
+          "beforeSha256": "da707b0fd60335a61310c821dcda4d896df0482758fbb8a880a2c22f6032bae9",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_full_coord_close_preserves_opaque_foreign_and_all_history": {
+          "afterLines": [
+            428,
+            444
+          ],
+          "afterSha256": "aa2b8e703f8671a58925faa44231b996db95b773e20fbf76b5b47e9534c5d89a",
+          "astEqual": true,
+          "beforeLines": [
+            427,
+            443
+          ],
+          "beforeSha256": "aa2b8e703f8671a58925faa44231b996db95b773e20fbf76b5b47e9534c5d89a",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_json_duplicate_nonfinite_and_relative_escape_refused": {
+          "afterLines": [
+            681,
+            687
+          ],
+          "afterSha256": "bb10a5f3f2a254a20a4571c7b1a10cfcda9f9c756302e6f7cb60ac4ea1a8d365",
+          "astEqual": true,
+          "beforeLines": [
+            680,
+            686
+          ],
+          "beforeSha256": "bb10a5f3f2a254a20a4571c7b1a10cfcda9f9c756302e6f7cb60ac4ea1a8d365",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_manifest_source_scope_and_nonce_seals": {
+          "afterLines": [
+            310,
+            317
+          ],
+          "afterSha256": "7fde643db04077957f27f1c05d0ea541676b532d1a06e55b035f9cbdcbd205d3",
+          "astEqual": true,
+          "beforeLines": [
+            309,
+            316
+          ],
+          "beforeSha256": "7fde643db04077957f27f1c05d0ea541676b532d1a06e55b035f9cbdcbd205d3",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_new_identity_and_fixed_boundary": {
+          "afterLines": [
+            295,
+            302
+          ],
+          "afterSha256": "e4bdca94298d1ead019a68032401127538b35ba7d91f882bca083afd2a266ab4",
+          "astEqual": true,
+          "beforeLines": [
+            294,
+            301
+          ],
+          "beforeSha256": "e4bdca94298d1ead019a68032401127538b35ba7d91f882bca083afd2a266ab4",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_payload_drift_and_unknown_files_are_rejected": {
+          "afterLines": [
+            319,
+            327
+          ],
+          "afterSha256": "fd0ee2ca2c265cb73d031e5a48cae6da29d481e54b364a9615fb22300f568d37",
+          "astEqual": true,
+          "beforeLines": [
+            318,
+            326
+          ],
+          "beforeSha256": "fd0ee2ca2c265cb73d031e5a48cae6da29d481e54b364a9615fb22300f568d37",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_preflight_readonly_no_attempt_no_reload_no_production_write": {
+          "afterLines": [
+            361,
+            370
+          ],
+          "afterSha256": "0d77eaeca1cb0697d7088489543af744da6c04dd792b7d8b394010e24d5f3870",
+          "astEqual": true,
+          "beforeLines": [
+            360,
+            369
+          ],
+          "beforeSha256": "0d77eaeca1cb0697d7088489543af744da6c04dd792b7d8b394010e24d5f3870",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_preflight_refuses_foreign_worker_drift_without_writes": {
+          "afterLines": [
+            835,
+            842
+          ],
+          "afterSha256": "89403d8c234323ab45f0fea421599b4c0bf3f6fcb91cd25eadb29b9d78374781",
+          "astEqual": true,
+          "beforeLines": [
+            834,
+            841
+          ],
+          "beforeSha256": "89403d8c234323ab45f0fea421599b4c0bf3f6fcb91cd25eadb29b9d78374781",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_preflight_refuses_missing_fixed_alias_without_write": {
+          "afterLines": [
+            844,
+            851
+          ],
+          "afterSha256": "79fe8eb462efbcb47523852cf3bea2c094312de2d0ac38a3a69b7fb78497da8c",
+          "astEqual": true,
+          "beforeLines": [
+            843,
+            850
+          ],
+          "beforeSha256": "79fe8eb462efbcb47523852cf3bea2c094312de2d0ac38a3a69b7fb78497da8c",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_public_apply_failure_receipt_io_failure_is_explicit_recovery": {
+          "afterLines": [
+            795,
+            806
+          ],
+          "afterSha256": "2ac6732c27af63f03fc021672d21c73c2a2306a0fa263055e6a3639698a45ec6",
+          "astEqual": true,
+          "beforeLines": [
+            794,
+            805
+          ],
+          "beforeSha256": "2ac6732c27af63f03fc021672d21c73c2a2306a0fa263055e6a3639698a45ec6",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_public_apply_proof_failure_after_close_has_no_success_and_keeps_owned_hold": {
+          "afterLines": [
+            781,
+            793
+          ],
+          "afterSha256": "2c0c07d9920eab84f195381d8eb882c7bcb72f71670e2f41695f7c337b68b1bb",
+          "astEqual": true,
+          "beforeLines": [
+            780,
+            792
+          ],
+          "beforeSha256": "2c0c07d9920eab84f195381d8eb882c7bcb72f71670e2f41695f7c337b68b1bb",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_public_rollback_baseline_only_expired_capture_fresh_approval": {
+          "afterLines": [
+            745,
+            754
+          ],
+          "afterSha256": "3cb9ae620cd14bacb47feb57094b0b38f652d984ef9f10da57acd165af687ecc",
+          "astEqual": true,
+          "beforeLines": [
+            744,
+            753
+          ],
+          "beforeSha256": "3cb9ae620cd14bacb47feb57094b0b38f652d984ef9f10da57acd165af687ecc",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_public_rollback_requires_fresh_fields_and_independent_exact_binding": {
+          "afterLines": [
+            731,
+            743
+          ],
+          "afterSha256": "6870bac4229a538edf3b2606786f2679bb3a2f129016c6215423627bac349171",
+          "astEqual": true,
+          "beforeLines": [
+            730,
+            742
+          ],
+          "beforeSha256": "6870bac4229a538edf3b2606786f2679bb3a2f129016c6215423627bac349171",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_public_rollback_stale_or_future_approval_refused_without_new_attempt": {
+          "afterLines": [
+            718,
+            729
+          ],
+          "afterSha256": "959cb41cc77b802c43aefc47e0dddbff5b34c3d34a0e0c1a166ea70c3715939f",
+          "astEqual": true,
+          "beforeLines": [
+            717,
+            728
+          ],
+          "beforeSha256": "959cb41cc77b802c43aefc47e0dddbff5b34c3d34a0e0c1a166ea70c3715939f",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_public_verify_status_only_is_explicit_readonly_recovery_failure": {
+          "afterLines": [
+            771,
+            779
+          ],
+          "afterSha256": "c8aaab2abd7b04ed039834654770574b984a8d1183cfb4c74f970e1105354006",
+          "astEqual": true,
+          "beforeLines": [
+            770,
+            778
+          ],
+          "beforeSha256": "c8aaab2abd7b04ed039834654770574b984a8d1183cfb4c74f970e1105354006",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_public_verify_synthetic_receipt_is_actual_raw_bound": {
+          "afterLines": [
+            853,
+            868
+          ],
+          "afterSha256": "bcac7360932b4d5ccec37488d39bbd5b3510e91b75d626d7518efdc3d2d1910f",
+          "astEqual": true,
+          "beforeLines": [
+            852,
+            867
+          ],
+          "beforeSha256": "bcac7360932b4d5ccec37488d39bbd5b3510e91b75d626d7518efdc3d2d1910f",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_raw_drift_without_reload_is_rejected_even_unique_exception": {
+          "afterLines": [
+            480,
+            485
+          ],
+          "afterSha256": "b50ec735082c61974c0f5caecc552ffd8c90e3d95dd99beaebff56959b4c901b",
+          "astEqual": true,
+          "beforeLines": [
+            479,
+            484
+          ],
+          "beforeSha256": "b50ec735082c61974c0f5caecc552ffd8c90e3d95dd99beaebff56959b4c901b",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_raw_malformed_duplicate_and_nondeci_unique_refused": {
+          "afterLines": [
+            354,
+            359
+          ],
+          "afterSha256": "37f7f9f71d95451645ddbc5be996dc9b53191e1bec9975264b9a16bf04899f7f",
+          "astEqual": true,
+          "beforeLines": [
+            353,
+            358
+          ],
+          "beforeSha256": "37f7f9f71d95451645ddbc5be996dc9b53191e1bec9975264b9a16bf04899f7f",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_raw_only_one_outer_unique_id_is_exception": {
+          "afterLines": [
+            340,
+            352
+          ],
+          "afterSha256": "de97f886cec0044a3433f0b9a078e41da863b5e4fb93d71d49b517ab50d4c404",
+          "astEqual": true,
+          "beforeLines": [
+            339,
+            351
+          ],
+          "beforeSha256": "de97f886cec0044a3433f0b9a078e41da863b5e4fb93d71d49b517ab50d4c404",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_receipt_fsync_failure_never_returns_success_and_can_keep_owned_hold": {
+          "afterLines": [
+            662,
+            673
+          ],
+          "afterSha256": "6057593b68f710893c37b259225aaa015fefea6164ce812611c80c1980837eeb",
+          "astEqual": true,
+          "beforeLines": [
+            661,
+            672
+          ],
+          "beforeSha256": "6057593b68f710893c37b259225aaa015fefea6164ce812611c80c1980837eeb",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_recovery_approval_file_and_report_are_rechecked_by_guard": {
+          "afterLines": [
+            756,
+            769
+          ],
+          "afterSha256": "90d8f3bfeb1700c4f42eedae6ae2924ae80588bec20733f4d011c61703bf037e",
+          "astEqual": true,
+          "beforeLines": [
+            755,
+            768
+          ],
+          "beforeSha256": "90d8f3bfeb1700c4f42eedae6ae2924ae80588bec20733f4d011c61703bf037e",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_reload_refuses_env_permissions_and_other_slot_drift": {
+          "afterLines": [
+            498,
+            522
+          ],
+          "afterSha256": "fc7b431ea768105c58c36321c98e6cc8f1d83807457e53aeb4a07861d5046c6d",
+          "astEqual": true,
+          "beforeLines": [
+            497,
+            521
+          ],
+          "beforeSha256": "fc7b431ea768105c58c36321c98e6cc8f1d83807457e53aeb4a07861d5046c6d",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_reload_single_mock_slot_accepts_unique_only_and_preserves_other_eleven": {
+          "afterLines": [
+            487,
+            496
+          ],
+          "afterSha256": "62c81f2e2bd8cdbeb3b23c75c7ec5506df4915759d1460eec29434a5a27619de",
+          "astEqual": true,
+          "beforeLines": [
+            486,
+            495
+          ],
+          "beforeSha256": "62c81f2e2bd8cdbeb3b23c75c7ec5506df4915759d1460eec29434a5a27619de",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_replay_rejected_for_empty_receipt_failed_attempt_and_symlink": {
+          "afterLines": [
+            399,
+            407
+          ],
+          "afterSha256": "98c8def076f90a947741cffbfe2dbb7b2272d528f784e08a582625abbc806910",
+          "astEqual": true,
+          "beforeLines": [
+            398,
+            406
+          ],
+          "beforeSha256": "98c8def076f90a947741cffbfe2dbb7b2272d528f784e08a582625abbc806910",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_restore_journal_latest_pin_and_hashchain_no_stale_replay": {
+          "afterLines": [
+            588,
+            599
+          ],
+          "afterSha256": "3339fd216567b0edf374101943be1e8fa7aaa38fc608c42dd297d17dfeeae8b1",
+          "astEqual": true,
+          "beforeLines": [
+            587,
+            598
+          ],
+          "beforeSha256": "3339fd216567b0edf374101943be1e8fa7aaa38fc608c42dd297d17dfeeae8b1",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_review_is_independent_manifest_and_report_bound": {
+          "afterLines": [
+            329,
+            338
+          ],
+          "afterSha256": "8ed2dcb9e0b0febec8f16b5edb1f7601ca5f80b027b2bdd11f9591cf70a830e0",
+          "astEqual": true,
+          "beforeLines": [
+            328,
+            337
+          ],
+          "beforeSha256": "8ed2dcb9e0b0febec8f16b5edb1f7601ca5f80b027b2bdd11f9591cf70a830e0",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_sealed_guard_checks_payload_mode_and_controller_source_hash": {
+          "afterLines": [
+            825,
+            833
+          ],
+          "afterSha256": "994164a3a790c7a1e706fa04dfada779f21f72b0943e65d7d3885964a1e26386",
+          "astEqual": true,
+          "beforeLines": [
+            824,
+            832
+          ],
+          "beforeSha256": "994164a3a790c7a1e706fa04dfada779f21f72b0943e65d7d3885964a1e26386",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_state_invariants_refuse_foreign_fields_and_history_rewrite": {
+          "afterLines": [
+            465,
+            478
+          ],
+          "afterSha256": "e372a2f71f15d0294b8db3ed10bc82d69b6fdfb7feeb41e8b5115e6e57670e55",
+          "astEqual": true,
+          "beforeLines": [
+            464,
+            477
+          ],
+          "beforeSha256": "e372a2f71f15d0294b8db3ed10bc82d69b6fdfb7feeb41e8b5115e6e57670e55",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_status_only_closed_coord_is_not_success_receipt": {
+          "afterLines": [
+            652,
+            660
+          ],
+          "afterSha256": "0d57956b7396069837d845ce66d1b4c9a7217110d9593b83a0451326fac7c6d0",
+          "astEqual": true,
+          "beforeLines": [
+            651,
+            659
+          ],
+          "beforeSha256": "0d57956b7396069837d845ce66d1b4c9a7217110d9593b83a0451326fac7c6d0",
+          "fullSourceBytesEqual": true
+        },
+        "SafetyTests.test_synthetic_sealed_bundle_validates_without_bypassing_payload": {
+          "afterLines": [
+            304,
+            308
+          ],
+          "afterSha256": "e670391ab0d820c2f27cc9b956fc8d1b4cb964de00bd6fdc43ec5eb2960a72ff",
+          "astEqual": true,
+          "beforeLines": [
+            303,
+            307
+          ],
+          "beforeSha256": "e670391ab0d820c2f27cc9b956fc8d1b4cb964de00bd6fdc43ec5eb2960a72ff",
+          "fullSourceBytesEqual": true
+        }
+      },
+      "unchanged": [
+        "AdapterFilesTests.test_enumeration_race_refused",
+        "AdapterFilesTests.test_failed_resolve_has_no_npm_or_other_fallback",
+        "AdapterFilesTests.test_file_and_empty_directory_set_changes_bound",
+        "AdapterFilesTests.test_full_vendor_files_dirs_meta_and_root_package_pins",
+        "AdapterFilesTests.test_hardlink_dependency_escape_refused",
+        "AdapterFilesTests.test_late_directory_addition_refused",
+        "AdapterFilesTests.test_late_file_deletion_refused",
+        "AdapterFilesTests.test_late_file_meta_change_refused",
+        "AdapterFilesTests.test_late_source_change_refused",
+        "AdapterFilesTests.test_missing_index_is_refused",
+        "AdapterFilesTests.test_missing_root_package_never_drops_pin_or_falls_back",
+        "AdapterFilesTests.test_rpc_arguments_keep_original_specifiers_and_all_source_pins",
+        "AdapterFilesTests.test_same_bytes_metadata_change_bound",
+        "AdapterFilesTests.test_source_change_between_snapshot_and_pins_refused",
+        "AdapterFilesTests.test_special_unknown_entry_refused",
+        "AdapterFilesTests.test_symlink_file_and_directory_dependency_escape_refused",
+        "AdapterFilesTests.test_wrong_resolved_entries_and_npm_fallback_refused",
+        "R3ProtocolTests.test_exact_default_private_root_keeps_all_prior_protection",
+        "R3ProtocolTests.test_illegal_observation_leaves_only_intent_never_loaded_or_unlock",
+        "R3ProtocolTests.test_multiple_slot_unique_collision_and_unrolled_raw_are_rejected",
+        "R3ProtocolTests.test_no_reload_intent_when_current_model_forecast_unproved",
+        "R3ProtocolTests.test_observation_checkpoint_failure_keeps_memory_and_durable_intent_uncertain",
+        "R3ProtocolTests.test_observed_source_drift_rejected_before_event_is_recorded",
+        "R3ProtocolTests.test_partial_journal_intent_cannot_forge_observed_transition",
+        "R3ProtocolTests.test_private_root_full_files_emptydirs_meta_set_and_existing_union",
+        "R3ProtocolTests.test_private_root_special_entry_fail_closed",
+        "R3ProtocolTests.test_uncertain_adapter_error_keeps_only_proved_observation_then_recovery",
+        "R3RawTests.test_application_escape_bytes_not_recursive_canonicalized",
+        "R3RawTests.test_current_model_generated_relation_required",
+        "R3RawTests.test_duplicate_keys_at_top_env_nested_and_escaped_alias_rejected",
+        "R3RawTests.test_env_lifecycle_values_not_deleted_even_when_monitor_strip_would",
+        "R3RawTests.test_every_outer_lifecycle_looking_application_value_is_byte_exact",
+        "R3RawTests.test_exact_source_generated_projection_preserves_all_retained_bytes",
+        "R3RawTests.test_generated_integer_types_and_noncanonical_tokens_refused",
+        "R3RawTests.test_merge_object_coercion_ambiguity_refused",
+        "R3RawTests.test_monitor_added_field_is_not_proven_reload_ready",
+        "R3RawTests.test_nested_life_values_and_nested_unique_never_transform",
+        "R3RawTests.test_restart_time_reset_and_time_window_are_exact_not_whitelisted",
+        "R3RawTests.test_stable_identity_and_wrong_container_types_rejected",
+        "R3RawTests.test_top_order_whitespace_and_unproved_field_exact",
+        "R3RawTests.test_wait_ready_truthiness_type_ambiguity_refused",
+        "R3SourcePinTests.test_absent_and_empty_loader_env_allowed_only_with_mock_node",
+        "R3SourcePinTests.test_each_generating_source_drift_fail_closed",
+        "R3SourcePinTests.test_generation_pins_all_measured_exact_no_missing_sources",
+        "R3SourcePinTests.test_loader_env_refused_before_any_node_probe_without_unsetting",
+        "R4ExternalTests.test_actual_flock_path_is_kernel_observed_and_sticky",
+        "R4ExternalTests.test_child_cwd_exact_not_a_normalized_or_guessed_path",
+        "R4ExternalTests.test_child_startticks_cannot_precede_bound_parent",
+        "R4ExternalTests.test_deleted_actual_exe_and_unsupported_source_links_fail_closed",
+        "R4ExternalTests.test_exact_script_and_no_unknown_child_loader_flags",
+        "R4ExternalTests.test_executable_source_full_meta_drift_even_same_hash_is_rejected",
+        "R4ExternalTests.test_fixed_two_nonpm2_identities_whole_opaque_hashes_and_full_file_meta",
+        "R4ExternalTests.test_fixture_only_skip_is_explicit_never_a_production_override",
+        "R4ExternalTests.test_hardlinked_exe_or_bootstrap_not_widened",
+        "R4ExternalTests.test_invalid_stat_identity_or_dead_pid_is_rejected",
+        "R4ExternalTests.test_missing_either_proc_has_no_pid_search_or_fallback",
+        "R4ExternalTests.test_missing_exact_protection_roots_not_replaced_by_ancestor",
+        "R4ExternalTests.test_node_full_executable_sha_bound_not_name_only",
+        "R4ExternalTests.test_parent_cmdline_drift_is_opaque_no_normalization",
+        "R4ExternalTests.test_parent_cwd_is_shallow_unknown_not_recursive_root_protection",
+        "R4ExternalTests.test_parent_is_flock_not_another_node",
+        "R4ExternalTests.test_permissions_drift_between_samples_is_rejected",
+        "R4ExternalTests.test_pid_reuse_inside_single_proc_sample_is_rejected",
+        "R4ExternalTests.test_pid_reuse_startticks_between_complete_samples_is_rejected",
+        "R4ExternalTests.test_proc_directory_meta_drift_is_rejected",
+        "R4ExternalTests.test_root_meta_drift_is_rejected",
+        "R4ExternalTests.test_script_full_meta_drift_even_same_hash_is_rejected",
+        "R4ExternalTests.test_source_script_full_bytes_drift_is_rejected",
+        "R4ExternalTests.test_whole_environment_drift_has_no_nodeunique_or_pm2_exception",
+        "R4ExternalTests.test_wrong_child_exe_and_argv0_fail_closed",
+        "R4ExternalTests.test_wrong_ppid_and_parent_cycle_are_rejected",
+        "R4ProtectedGraphTests.test_both_complete_extra_trees_files_dirs_emptydirs_and_set_not_only_pm2",
+        "R4ProtectedGraphTests.test_default_exact_roots_no_parentcwd_or_root_recursion",
+        "R4ProtectedGraphTests.test_original_controller_guard_binds_external_opaque_identity_without_schema_change",
+        "R4TransportTests.test_external_drift_during_mock_node_probe_rejected_before_transport_returns",
+        "R4TransportTests.test_fclone_fixed_source_missing_and_drift_are_failclosed",
+        "R4TransportTests.test_transport_includes_actual_exe_script_sources_and_fullmeta_with_original_pins",
+        "SafetyTests.test_candidate_wrong_controller_pin_creates_no_output",
+        "SafetyTests.test_capture_ttl_forward_only_and_fresh_recovery_approval",
+        "SafetyTests.test_cas_last_race_never_overwrites_foreign_bytes",
+        "SafetyTests.test_cas_remember_precedes_target_dir_fsync_failure_and_is_recoverable",
+        "SafetyTests.test_change_coord_journal_failure_remembers_owned_raw_immediately",
+        "SafetyTests.test_change_file_journal_failure_after_rename_tracks_memory_no_replay",
+        "SafetyTests.test_checkpoint_dir_fsync_fault_never_claims_durable_or_replays",
+        "SafetyTests.test_coord_history_protection_union_preserves_counts_and_extensions",
+        "SafetyTests.test_coord_missing_closed_proof_or_history_and_replay_refused",
+        "SafetyTests.test_durable_success_requires_actual_closed_raw_and_latest_state",
+        "SafetyTests.test_fail_after_close_retains_owned_recovery_hold_and_history",
+        "SafetyTests.test_fail_foreign_coord_never_changes_foreign_bytes_or_external_lock",
+        "SafetyTests.test_foreign_dual_lock_busy_preserves_inode_and_held_external_lock",
+        "SafetyTests.test_foreign_recovery_busy_rejected_without_write",
+        "SafetyTests.test_full_coord_close_preserves_opaque_foreign_and_all_history",
+        "SafetyTests.test_json_duplicate_nonfinite_and_relative_escape_refused",
+        "SafetyTests.test_manifest_source_scope_and_nonce_seals",
+        "SafetyTests.test_new_identity_and_fixed_boundary",
+        "SafetyTests.test_payload_drift_and_unknown_files_are_rejected",
+        "SafetyTests.test_preflight_readonly_no_attempt_no_reload_no_production_write",
+        "SafetyTests.test_preflight_refuses_foreign_worker_drift_without_writes",
+        "SafetyTests.test_preflight_refuses_missing_fixed_alias_without_write",
+        "SafetyTests.test_public_apply_failure_receipt_io_failure_is_explicit_recovery",
+        "SafetyTests.test_public_apply_proof_failure_after_close_has_no_success_and_keeps_owned_hold",
+        "SafetyTests.test_public_rollback_baseline_only_expired_capture_fresh_approval",
+        "SafetyTests.test_public_rollback_requires_fresh_fields_and_independent_exact_binding",
+        "SafetyTests.test_public_rollback_stale_or_future_approval_refused_without_new_attempt",
+        "SafetyTests.test_public_verify_status_only_is_explicit_readonly_recovery_failure",
+        "SafetyTests.test_public_verify_synthetic_receipt_is_actual_raw_bound",
+        "SafetyTests.test_raw_drift_without_reload_is_rejected_even_unique_exception",
+        "SafetyTests.test_raw_malformed_duplicate_and_nondeci_unique_refused",
+        "SafetyTests.test_raw_only_one_outer_unique_id_is_exception",
+        "SafetyTests.test_receipt_fsync_failure_never_returns_success_and_can_keep_owned_hold",
+        "SafetyTests.test_recovery_approval_file_and_report_are_rechecked_by_guard",
+        "SafetyTests.test_reload_refuses_env_permissions_and_other_slot_drift",
+        "SafetyTests.test_reload_single_mock_slot_accepts_unique_only_and_preserves_other_eleven",
+        "SafetyTests.test_replay_rejected_for_empty_receipt_failed_attempt_and_symlink",
+        "SafetyTests.test_restore_journal_latest_pin_and_hashchain_no_stale_replay",
+        "SafetyTests.test_review_is_independent_manifest_and_report_bound",
+        "SafetyTests.test_sealed_guard_checks_payload_mode_and_controller_source_hash",
+        "SafetyTests.test_state_invariants_refuse_foreign_fields_and_history_rewrite",
+        "SafetyTests.test_status_only_closed_coord_is_not_success_receipt",
+        "SafetyTests.test_synthetic_sealed_bundle_validates_without_bypassing_payload"
+      ]
+    }
+  },
+  "unchangedAuxNames": [
+    "EXTERNAL_CHILD_PID",
+    "EXTERNAL_CWD",
+    "EXTERNAL_OPS",
+    "EXTERNAL_PARENT_PID",
+    "EXTERNAL_SCRIPT",
+    "external_proc_identity",
+    "external_proc_link",
+    "external_proc_sample",
+    "external_protection",
+    "external_protection_sample",
+    "external_source"
+  ]
+}

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Isolated synthetic unit tests, NOT a production/full-builder release test.
-No capture() invocation. All mutable fixtures live in a unique TemporaryDirectory.
+No production capture; diagnostic capture() is temp/mock only, with no capture file.
+All mutable fixtures live in a unique TemporaryDirectory.
 Production subprocess, HTTP and RPC adapters are blocked/replaced before use.
 Run: PYTHONDONTWRITEBYTECODE=1 python3 -B test_release.py -v
 """
@@ -294,7 +295,7 @@ class SafetyTests(unittest.TestCase):
     def test_new_identity_and_fixed_boundary(self):
         cfg = r.Config()
         self.assertEqual(r.OWNER, '6Lfttf6oVWJ8YS69o5FkXQ')
-        self.assertEqual(str(cfg.stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R3')
+        self.assertEqual(str(cfg.stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R4')
         self.assertEqual(len(cfg.aliases), 7)
         self.assertEqual(r.identity(self.cfg,self.cap['processes']), list(range(6)))
         with self.assertRaisesRegex(r.ReleaseError,'PRODUCTION_ADAPTER_INJECTION_REFUSED'):
@@ -897,7 +898,9 @@ class AdapterFilesTests(unittest.TestCase):
         measured = Path('/home/ubuntu/work/customer-batch/pm2-live-source')
         for name, digest in r.PM2_GENERATION_PINS.items():
             file = self.cfg.pm2_base/name; file.parent.mkdir(parents=True, exist_ok=True)
-            data = (measured/name).read_bytes(); self.assertEqual(r.H(data), digest)
+            source = (Path('/home/ubuntu/work/customer-batch/fclone-resolved-once/fclone.js')
+                      if name == 'modules/fclone.js' else measured/name)
+            data = source.read_bytes(); self.assertEqual(r.H(data), digest)
             file.write_bytes(data)  # measured source bytes pinned, never evaluated/imported
         (self.cfg.pm2_base/'lib/Daemon.js').write_bytes(b'synthetic Daemon source')
         self.calls = []
@@ -1192,7 +1195,7 @@ class R3RawTests(unittest.TestCase):
         for key in set(r.PM2_RAW_GENERATED)|{'pm_id','name','pm2_env','__proto__','pm_exec_path'}:
             value=copy.deepcopy(self.v); model=copy.deepcopy(self.model)
             model['pm2_env']['env'][key]=value['env'][key]='app'
-            with self.subTest(key=key),self.assertRaisesRegex(r.ReleaseError,'OVERRIDE_AMBIGUITY'):
+            with self.subTest(key=key),self.assertRaisesRegex(r.ReleaseError,'OVERRIDE_AMBIGUITY|PM2_JSON_DOMAIN_PROTO_KEY'):
                 self.semantic(self.bytes(value),model)
 
     def test_monitor_added_field_is_not_proven_reload_ready(self):
@@ -1331,7 +1334,8 @@ class R3ProtocolTests(unittest.TestCase):
     def test_exact_default_private_root_keeps_all_prior_protection(self):
         cfg=r.Config()
         self.assertEqual(cfg.extra_protected,(Path('/opt/config/dianzi51-admin/runtime.env'),
-            Path('/opt/config/dianzi51/runtime.env'),Path('/var/lib/dianzi51-private')))
+            Path('/opt/config/dianzi51/runtime.env'),Path('/var/lib/dianzi51-private'),
+            r.EXTERNAL_OPS,r.EXTERNAL_CWD))
         self.assertNotIn(Path('/var/lib'),cfg.extra_protected)
         self.assertEqual(len(cfg.aliases),7)
 
@@ -1389,6 +1393,629 @@ class R3SourcePinTests(unittest.TestCase):
             with self.subTest(name=name),self.assertRaisesRegex(r.ReleaseError,'GENERATION_SOURCE_PIN_DRIFT'):
                 r.transport(self.cfg)
             path.write_bytes(original)
+
+
+
+def r4_stat(pid, ppid, ticks, name):
+    fields = ['S', str(ppid), *(['0'] * 17), str(ticks), '0']
+    return str(pid).encode() + b' (' + name.encode() + b') ' + ' '.join(fields).encode() + b'\n'
+
+def r4_external_fixture(root, cfg):
+    """Fake proc links/files only in a unique caller-owned TemporaryDirectory."""
+    ops = root/'external-ops'; cwd = root/'external-child-cwd'; parentcwd = root/'external-parent-cwd'
+    script = ops/'releases/20261112-forum12-1255b7b84aa3adac09cb8c05/worker-runtime-bootstrap.mjs'
+    script.parent.mkdir(parents=True); script.write_bytes(b'// synthetic bootstrap, never imported\n')
+    cwd.mkdir(); parentcwd.mkdir(); (cwd/'empty').mkdir()
+    (cwd/'dep.txt').write_bytes(b'synthetic full protected dependency')
+    (ops/'empty').mkdir(); (ops/'retained.data').write_bytes(b'synthetic retained Ops file')
+    binary = root/'external-bin'; binary.mkdir()
+    flock = binary/'flock'; node = binary/'node-22'
+    flock.write_bytes(b'synthetic flock, never executed'); node.write_bytes(cfg.node.read_bytes())
+    for pid, ppid, ticks, exe, work in [(2060125, 1234, 51001, flock, parentcwd),
+                                       (2060126, 2060125, 51002, node, cwd)]:
+        proc = cfg.proc/str(pid); proc.mkdir(parents=True)
+        (proc/'stat').write_bytes(r4_stat(pid,ppid,ticks,exe.name))
+        (proc/'exe').symlink_to(exe); (proc/'cwd').symlink_to(work, target_is_directory=True)
+        (proc/'status').write_bytes(b'Uid:\t1000 1000 1000 1000\nGid:\t1000 1000 1000 1000\nGroups:\t1000\nUmask:\t0022\n')
+        cmd = os.fsencode(exe) + b'\0'
+        if pid == 2060126: cmd += os.fsencode(script) + b'\0'
+        else: cmd += b'-n\0SYNTHETIC-opaque-parent-arg\0'
+        (proc/'cmdline').write_bytes(cmd)
+        (proc/'environ').write_bytes(b'PRIVATE_SENTINEL_DO_NOT_EXPORT=synthetic-secret\0NODE_UNIQUE_ID=17\0pm_uptime=opaque-app\0')
+    cfg = replace(cfg, extra_protected=(*cfg.extra_protected,ops,cwd))
+    return cfg, dict(ops=ops,cwd=cwd,script=script)
+
+class R4ExternalTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(prefix='r4-external-only-')
+        self.addCleanup(self.tmp.cleanup); self.root = Path(self.tmp.name)
+        node = self.root/'node-22'; node.write_bytes(b'synthetic node binary')
+        self.cfg,self.fixture = r4_external_fixture(self.root,r.Config(proc=self.root/'proc',node=node,
+                                                           extra_protected=(),mock=True))
+        for obj,name in [(r.subprocess,'run'),(r.os,'kill'),(r.socket,'socket'),(r.fcntl,'flock')]:
+            guard=patch.object(obj,name,side_effect=AssertionError('PURE_READONLY_EXTERNAL_REQUIRED'))
+            guard.start(); self.addCleanup(guard.stop)
+
+    def collect(self):
+        return r.external_protection(self.cfg,self.fixture)
+
+    def mutate_second(self, change, error='EXTERNAL_TWO_SAMPLE_DRIFT'):
+        real=r.external_protection_sample; count=[]
+        def sample(*args):
+            count.append(1)
+            if len(count)==2:change()
+            return real(*args)
+        with patch.object(r,'external_protection_sample',side_effect=sample),self.assertRaisesRegex(r.ReleaseError,error):
+            self.collect()
+        self.assertEqual(len(count),2)
+
+    def test_fixed_two_nonpm2_identities_whole_opaque_hashes_and_full_file_meta(self):
+        real=r.external_protection_sample
+        with patch.object(r,'external_protection_sample',wraps=real) as samples:
+            result=self.collect()
+        self.assertEqual(samples.call_count,2)
+        parent,child=result['processes']
+        self.assertEqual((parent['pid'],child['pid'],child['ppid']),(2060125,2060126,2060125))
+        self.assertEqual((parent['exeName'],child['exeName']),('flock','node-22'))
+        self.assertEqual((parent['startTicks'],child['startTicks']),(51001,51002))
+        self.assertEqual(child['knownScript'],str(self.fixture['script']))
+        self.assertEqual(child['cwd'],str(self.fixture['cwd']))
+        for row in (parent,child):
+            proc=self.cfg.proc/str(row['pid'])
+            self.assertEqual(row['rawSha256'],r.H((proc/'environ').read_bytes()))
+            self.assertEqual(row['cmdlineSha256'],r.H((proc/'cmdline').read_bytes()))
+            self.assertEqual(row['permissionsSha256'],r.permissions(self.cfg,row['pid']))
+            self.assertEqual(result['fullSourceMeta'][row['exe']],r.describe(row['exe']))
+        self.assertEqual(result['fullSourceMeta'][str(self.fixture['script'])],r.describe(self.fixture['script']))
+        self.assertEqual(result['sources'][child['exe']],result['sources'][str(self.cfg.node)])
+        self.assertNotIn(b'PRIVATE_SENTINEL',r.encode(result))
+        self.assertNotIn(b'synthetic-secret',r.encode(result))
+        self.assertNotIn(b'SYNTHETIC-opaque-parent-arg',r.encode(result))
+        self.assertTrue(result['fixtureOnly'])
+
+    def test_fixture_only_skip_is_explicit_never_a_production_override(self):
+        with patch.object(Path,'read_bytes',side_effect=AssertionError('NO_PROC_READ_FOR_FIXTURE_SKIP')):
+            empty=r.external_protection(self.cfg)
+            self.assertEqual(empty,dict(fixtureOnly=True,processes=[],sources={},fullSourceMeta={},rootMeta={}))
+            with self.assertRaisesRegex(r.ReleaseError,'NO_PRODUCTION_OVERRIDE'):
+                r.external_protection(replace(self.cfg,mock=False),self.fixture)
+            with self.assertRaisesRegex(r.ReleaseError,'FIXED_PRODUCTION_PROC'):
+                r.external_protection(replace(self.cfg,mock=False))
+
+    def test_parent_is_flock_not_another_node(self):
+        link=self.cfg.proc/'2060125/exe'; link.unlink(); link.symlink_to(self.root/'external-bin/node-22')
+        with self.assertRaisesRegex(r.ReleaseError,'ACTUAL_EXE_NAME'):self.collect()
+
+    def test_wrong_child_exe_and_argv0_fail_closed(self):
+        path=self.cfg.proc/'2060126/cmdline'; path.write_bytes(b'other-node\0'+os.fsencode(self.fixture['script'])+b'\0')
+        with self.assertRaisesRegex(r.ReleaseError,'CMDLINE_EXE_BINDING'):self.collect()
+
+    def test_wrong_ppid_and_parent_cycle_are_rejected(self):
+        for pid,ppid,name in [(2060126,1234,'node-22'),(2060125,2060126,'flock'),
+                              (2060125,2060125,'flock'),(2060125,0,'flock')]:
+            path=self.cfg.proc/str(pid)/'stat'; old=path.read_bytes()
+            path.write_bytes(r4_stat(pid,ppid,51001 if pid==2060125 else 51002,name))
+            with self.subTest(pid=pid,ppid=ppid),self.assertRaisesRegex(r.ReleaseError,'EXACT_PARENT_CHILD'):self.collect()
+            path.write_bytes(old)
+
+    def test_child_startticks_cannot_precede_bound_parent(self):
+        (self.cfg.proc/'2060126/stat').write_bytes(r4_stat(2060126,2060125,51000,'node-22'))
+        with self.assertRaisesRegex(r.ReleaseError,'EXACT_PARENT_CHILD'):self.collect()
+
+    def test_missing_either_proc_has_no_pid_search_or_fallback(self):
+        for pid in (2060125,2060126):
+            path=self.cfg.proc/str(pid)/'stat'; old=path.read_bytes(); path.unlink()
+            with self.subTest(pid=pid),self.assertRaises(FileNotFoundError):self.collect()
+            path.write_bytes(old)
+
+    def test_pid_reuse_startticks_between_complete_samples_is_rejected(self):
+        self.mutate_second(lambda:(self.cfg.proc/'2060126/stat').write_bytes(r4_stat(2060126,2060125,999999,'node-22')))
+
+    def test_pid_reuse_inside_single_proc_sample_is_rejected(self):
+        real=Path.read_bytes; seen=[]; target=self.cfg.proc/'2060125/stat'
+        def read(path):
+            if path==target:
+                seen.append(1)
+                if len(seen)==2:target.write_bytes(r4_stat(2060125,1234,999999,'flock'))
+            return real(path)
+        with patch.object(Path,'read_bytes',read),self.assertRaisesRegex(r.ReleaseError,'IDENTITY_READ_RACE'):self.collect()
+
+    def test_invalid_stat_identity_or_dead_pid_is_rejected(self):
+        path=self.cfg.proc/'2060126/stat'
+        good=r4_stat(2060126,2060125,51002,'node-22')
+        for raw in (r4_stat(42,2060125,51002,'node-22'),r4_stat(2060126,2060125,0,'node-22'),
+                    good.replace(b') S ',b') Z '),b'incomplete'):
+            path.write_bytes(raw)
+            with self.subTest(case=r.H(raw)),self.assertRaisesRegex(r.ReleaseError,'PROC_STAT_IDENTITY'):self.collect()
+
+    def test_parent_cmdline_drift_is_opaque_no_normalization(self):
+        path=self.cfg.proc/'2060125/cmdline'
+        self.mutate_second(lambda:path.write_bytes(path.read_bytes().replace(b'parent-arg',b'parent-drift')))
+
+    def test_whole_environment_drift_has_no_nodeunique_or_pm2_exception(self):
+        path=self.cfg.proc/'2060126/environ'
+        self.mutate_second(lambda:path.write_bytes(path.read_bytes().replace(b'NODE_UNIQUE_ID=17',b'NODE_UNIQUE_ID=19')))
+
+    def test_permissions_drift_between_samples_is_rejected(self):
+        path=self.cfg.proc/'2060125/status'
+        self.mutate_second(lambda:path.write_bytes(path.read_bytes().replace(b'0022',b'0077')))
+
+    def test_exact_script_and_no_unknown_child_loader_flags(self):
+        path=self.cfg.proc/'2060126/cmdline'; node=os.fsencode(self.root/'external-bin/node-22')
+        for args in (b'/unknown-bootstrap.mjs\0',b'--require\0/unknown-loader.js\0'+os.fsencode(self.fixture['script'])+b'\0',
+                     os.fsencode(self.fixture['script'])+b'\0extra-arg\0'):
+            path.write_bytes(node+b'\0'+args)
+            with self.subTest(case=r.H(args)),self.assertRaisesRegex(r.ReleaseError,'EXACT_CHILD_SCRIPT_ARGV'):self.collect()
+
+    def test_child_cwd_exact_not_a_normalized_or_guessed_path(self):
+        link=self.cfg.proc/'2060126/cwd'; link.unlink(); link.symlink_to(self.root/'external-parent-cwd')
+        with self.assertRaisesRegex(r.ReleaseError,'EXACT_CHILD_CWD'):self.collect()
+
+    def test_node_full_executable_sha_bound_not_name_only(self):
+        (self.root/'external-bin/node-22').write_bytes(b'other node binary')
+        with self.assertRaisesRegex(r.ReleaseError,'NODE_FULL_SHA_BINDING'):self.collect()
+
+    def test_actual_flock_path_is_kernel_observed_and_sticky(self):
+        other=self.root/'other-bin'; other.mkdir(); exe=other/'flock'
+        exe.write_bytes((self.root/'external-bin/flock').read_bytes())
+        link=self.cfg.proc/'2060125/exe'
+        def change():link.unlink(); link.symlink_to(exe)
+        self.mutate_second(change)
+
+    def test_source_script_full_bytes_drift_is_rejected(self):
+        path=self.fixture['script']; self.mutate_second(lambda:path.write_bytes(path.read_bytes()+b'// drift\n'))
+
+    def test_executable_source_full_meta_drift_even_same_hash_is_rejected(self):
+        path=self.root/'external-bin/flock'; self.mutate_second(lambda:path.chmod(0o600))
+
+    def test_script_full_meta_drift_even_same_hash_is_rejected(self):
+        self.mutate_second(lambda:self.fixture['script'].chmod(0o600))
+
+    def test_proc_directory_meta_drift_is_rejected(self):
+        self.mutate_second(lambda:(self.cfg.proc/'2060125').chmod(0o700))
+
+    def test_root_meta_drift_is_rejected(self):
+        self.mutate_second(lambda:self.fixture['ops'].chmod(0o700))
+
+    def test_parent_cwd_is_shallow_unknown_not_recursive_root_protection(self):
+        parentcwd=self.root/'external-parent-cwd'; os.mkfifo(parentcwd/'not-enumerated-fifo')
+        first=self.collect(); self.assertEqual(first['processes'][0]['cwdMeta'],r.describe(parentcwd))
+        self.assertNotIn(str(parentcwd),first['rootMeta'])
+        self.mutate_second(lambda:parentcwd.chmod(0o700))
+
+    def test_deleted_actual_exe_and_unsupported_source_links_fail_closed(self):
+        link=self.cfg.proc/'2060125/exe'; link.unlink(); link.symlink_to(str(self.root/'external-bin/flock')+' (deleted)')
+        with self.assertRaisesRegex(r.ReleaseError,'DELETED_OR_NONCANONICAL'):self.collect()
+        link.unlink(); link.symlink_to(self.root/'external-bin/flock')
+        alias=self.root/'alias-flock'; alias.symlink_to(self.root/'external-bin/flock')
+        link.unlink(); link.symlink_to(alias)
+        with self.assertRaisesRegex(r.ReleaseError,'SYMLINK_ESCAPE'):self.collect()
+
+    def test_hardlinked_exe_or_bootstrap_not_widened(self):
+        for path in (self.root/'external-bin/flock',self.fixture['script']):
+            hard=self.root/'extra-hardlink'; os.link(path,hard)
+            with self.subTest(path=path.name),self.assertRaisesRegex(r.ReleaseError,'SINGLE_REGULAR_SOURCE'):self.collect()
+            hard.unlink()
+
+    def test_missing_exact_protection_roots_not_replaced_by_ancestor(self):
+        for missing in (self.fixture['ops'],self.fixture['cwd']):
+            cfg=replace(self.cfg,extra_protected=tuple(p for p in self.cfg.extra_protected if p!=missing)+(self.root,))
+            with self.subTest(root=missing.name),self.assertRaisesRegex(r.ReleaseError,'REQUIRED_EXACT_ROOTS'):
+                r.external_protection(cfg,self.fixture)
+
+class R4TransportTests(unittest.TestCase):
+    setUp=AdapterFilesTests.setUp
+    fake_run=AdapterFilesTests.fake_run
+
+    def attach(self):
+        self.cfg,fixture=r4_external_fixture(self.root,self.cfg)
+        real=r.external_protection
+        guard=patch.object(r,'external_protection',side_effect=lambda cfg:real(cfg,fixture))
+        guard.start(); self.addCleanup(guard.stop)
+        return fixture
+
+    def test_transport_includes_actual_exe_script_sources_and_fullmeta_with_original_pins(self):
+        fixture=self.attach(); tr=r.transport(self.cfg); external=tr['externalProtection']
+        self.assertEqual(len(external['processes']),2)
+        self.assertTrue(external['fixtureOnly'])
+        self.assertTrue(set(external['sources'])<=set(tr['sources']))
+        for path,digest in external['sources'].items():
+            self.assertEqual(tr['sources'][path],digest)
+            self.assertEqual(external['fullSourceMeta'][path],r.describe(path))
+        self.assertEqual(len(r.PM2_GENERATION_PINS),9)
+        self.assertEqual(r.PM2_GENERATION_PINS['modules/fclone.js'],
+                         '9b921f33e5d4e36dd030f5d2e736ea2af0c95f4fb795ada696160e2db7fe2fe6')
+
+    def test_external_drift_during_mock_node_probe_rejected_before_transport_returns(self):
+        fixture=self.attach()
+        self.native_hook=lambda:(self.cfg.proc/'2060125/environ').write_bytes(b'DRIFT=1\0')
+        with self.assertRaisesRegex(r.ReleaseError,'EXTERNAL_TRANSPORT_DRIFT'):r.transport(self.cfg)
+
+    def test_fclone_fixed_source_missing_and_drift_are_failclosed(self):
+        target=self.cfg.pm2_base/'modules/fclone.js'; target.write_bytes(b'unknown cloning source')
+        with self.assertRaisesRegex(r.ReleaseError,'GENERATION_SOURCE_PIN_DRIFT'):r.transport(self.cfg)
+        target.unlink()
+        with self.assertRaises(FileNotFoundError):r.transport(self.cfg)
+
+class R4AuxFixTests(unittest.TestCase):
+    """Finite observed-phase checks only; no atomic or post-return guarantee."""
+    setUp = R4ExternalTests.setUp
+    collect = R4ExternalTests.collect
+
+    def test_stable_complete_records_fixed_pid_args_and_finite_rereads_pass(self):
+        proc_sample = r.external_proc_sample; source = r.external_source
+        with patch.object(r, 'external_proc_sample', wraps=proc_sample) as reads, \
+             patch.object(r, 'external_source', wraps=source) as sources:
+            result = self.collect()
+        expected = [(self.cfg, 2060125, 'flock'),
+                    (self.cfg, 2060126, 'node-22', self.fixture['script'], self.fixture['cwd'])]
+        self.assertEqual([call.args for call in reads.call_args_list], expected * 4)
+        files = sorted({Path(row['exe']) for row in result['processes']} |
+                       {self.cfg.node, self.fixture['script']})
+        self.assertEqual([call.args[0] for call in sources.call_args_list], files * 4)
+        self.assertEqual(result['processes'], [proc_sample(*args) for args in expected])
+        self.assertEqual(result['fullSourceMeta'], {str(p): source(p) for p in files})
+        self.assertEqual(result['rootMeta'], {str(self.fixture[k]): r.describe(self.fixture[k])
+                                            for k in ('ops', 'cwd')})
+        self.assertEqual(set(result), {'fixtureOnly', 'processes', 'sources', 'fullSourceMeta', 'rootMeta'})
+        self.assertEqual(set(result['processes'][0]), {'pid', 'ppid', 'startTicks', 'nameSha256',
+            'exeName', 'exe', 'cwd', 'knownScript', 'rawSha256', 'cmdlineSha256',
+            'permissionsSha256', 'procMeta', 'kernelLinkMeta', 'cwdMeta'})
+        self.assertTrue(result['fixtureOnly'])
+
+    def test_second_pair_parent_cmdline_phase_shallow_cwd_mtime_ctime_rejected(self):
+        parentcwd = self.root/'external-parent-cwd'; target = self.cfg.proc/'2060125/cmdline'
+        real_pair = r.external_protection_sample; real_read = Path.read_bytes; real_describe = r.describe
+        # Count pairs explicitly: the new intra-pair final read must not move this
+        # old second-pair counterexample into a different sampling phase.
+        for fields in (('mtimeNs',), ('ctimeNs',), ('mtimeNs', 'ctimeNs')):
+            state = dict(pair=0, parentCmdReads=0, drift=False)
+            def pair(*args):
+                state['pair'] += 1
+                return real_pair(*args)
+            def read(path):
+                data = real_read(path)
+                if path == target:
+                    state['parentCmdReads'] += 1
+                    if state['pair'] == 2: state['drift'] = True
+                return data
+            def describe(path):
+                value = real_describe(path)
+                if Path(path) == parentcwd and state['drift']:
+                    value = dict(value, **{key: value[key] + 1 for key in fields})
+                return value
+            with self.subTest(fields=fields), \
+                 patch.object(r, 'external_protection_sample', side_effect=pair), \
+                 patch.object(Path, 'read_bytes', read), patch.object(r, 'describe', side_effect=describe), \
+                 self.assertRaisesRegex(r.ReleaseError, '^EXTERNAL_PROC_IDENTITY_READ_RACE$'):
+                self.collect()
+            self.assertTrue(state['drift']); self.assertEqual(state['pair'], 2)
+            self.assertEqual(state['parentCmdReads'], 3)  # one early + final, then second early
+
+    def pair_parent_drift(self, stage, field):
+        real_pair = r.external_protection_sample; real_source = r.external_source
+        real_read = Path.read_bytes; real_describe = r.describe
+        parent = self.cfg.proc/'2060125'
+        state = dict(pair=0, sources=0, drift=False, parentCmdReads=0)
+        def pair(*args):
+            state['pair'] += 1; state['sources'] = 0
+            return real_pair(*args)
+        def source(path):
+            value = real_source(path); state['sources'] += 1
+            if stage == 'source' and state['pair'] == 2 and state['sources'] == 4:
+                state['drift'] = True  # last of the same four known sources
+            return value
+        def describe(path):
+            value = real_describe(path)
+            if stage == 'root' and state['pair'] == 2 and state['sources'] == 4 \
+                    and Path(path) == self.fixture['cwd']:
+                state['drift'] = True  # final root record has already been obtained
+            return value
+        def read(path):
+            data = real_read(path)
+            if path == parent/'cmdline': state['parentCmdReads'] += 1
+            if state['drift']:
+                if field == 'startTicks' and path == parent/'stat':
+                    data = r4_stat(2060125, 1234, 51002, 'flock')
+                elif field == 'rawenv' and path == parent/'environ':
+                    data = data.replace(b'NODE_UNIQUE_ID=17', b'NODE_UNIQUE_ID=19')
+                elif field == 'cmdline' and path == parent/'cmdline':
+                    data = data.replace(b'parent-arg', b'parent-drift')
+                elif field == 'permissions' and path == parent/'status':
+                    data = data.replace(b'0022', b'0077')
+            return data
+        with patch.object(r, 'external_protection_sample', side_effect=pair), \
+             patch.object(r, 'external_source', side_effect=source), \
+             patch.object(r, 'describe', side_effect=describe), patch.object(Path, 'read_bytes', read), \
+             self.assertRaisesRegex(r.ReleaseError, '^EXTERNAL_PROC_PAIR_READ_RACE$'):
+            self.collect()
+        self.assertTrue(state['drift']); self.assertEqual(state['pair'], 2)
+        self.assertEqual(state['parentCmdReads'], 4)  # full final reread, not identity-only
+
+    def test_second_pair_source_close_parent_start_env_cmd_permissions_rejected(self):
+        for field in ('startTicks', 'rawenv', 'cmdline', 'permissions'):
+            with self.subTest(field=field): self.pair_parent_drift('source', field)
+
+    def test_second_pair_root_close_parent_start_env_cmd_permissions_rejected(self):
+        for field in ('startTicks', 'rawenv', 'cmdline', 'permissions'):
+            with self.subTest(field=field): self.pair_parent_drift('root', field)
+
+    def final_proc_meta_drift(self, target, error):
+        real_pair = r.external_protection_sample; real_read = Path.read_bytes; real_describe = r.describe
+        cmd = self.cfg.proc/'2060126/cmdline'; state = dict(pair=0, childCmdReads=0, drift=False)
+        def pair(*args):
+            state['pair'] += 1; state['childCmdReads'] = 0
+            return real_pair(*args)
+        def read(path):
+            data = real_read(path)
+            if path == cmd:
+                state['childCmdReads'] += 1
+                if state['pair'] == 2 and state['childCmdReads'] == 2: state['drift'] = True
+            return data
+        def describe(path):
+            value = real_describe(path)
+            if Path(path) == target and state['drift']:
+                value = dict(value, mtimeNs=value['mtimeNs'] + 1, ctimeNs=value['ctimeNs'] + 1)
+            return value
+        with patch.object(r, 'external_protection_sample', side_effect=pair), \
+             patch.object(Path, 'read_bytes', read), patch.object(r, 'describe', side_effect=describe), \
+             self.assertRaisesRegex(r.ReleaseError, '^' + error + '$'):
+            self.collect()
+        self.assertTrue(state['drift']); self.assertEqual(state['pair'], 2)
+        self.assertEqual(state['childCmdReads'], 2)
+
+    def test_source_fullmeta_drift_during_final_proc_read_rejected_same_bytes(self):
+        self.final_proc_meta_drift(self.root/'external-bin/flock', 'EXTERNAL_SOURCE_META_READ_RACE')
+
+    def test_root_fullmeta_drift_during_final_proc_read_rejected(self):
+        self.final_proc_meta_drift(self.fixture['ops'], 'EXTERNAL_ROOT_META_READ_RACE')
+
+class R4ProtectedGraphTests(unittest.TestCase):
+    def fixture(self):
+        case=SafetyTests('test_new_identity_and_fixed_boundary'); case.setUp(); self.addCleanup(case.doCleanups)
+        case.cfg,fixture=r4_external_fixture(case.root,case.cfg); case.controller.cfg=case.cfg
+        def tr(cfg):
+            external=r.external_protection(cfg,fixture)
+            return dict(mockTransport=True,rpcSourceSha256=r.H(r.RPC.encode()),externalProtection=external,
+                        sources=external['sources'])
+        case.tr=tr(case.cfg); case.controller.transport_reader=tr
+        case.make_synthetic_package()
+        return case,fixture
+
+    def test_both_complete_extra_trees_files_dirs_emptydirs_and_set_not_only_pm2(self):
+        case,fixture=self.fixture(); original=case.cap['protectedFiles']
+        for root in (fixture['ops'],fixture['cwd']):
+            self.assertTrue({str(p) for p in (root,*root.rglob('*'))}<=set(original))
+        self.assertEqual(len(case.cap['processes']),12); self.assertEqual(r.identity(case.cfg,case.cap['processes']),list(range(6)))
+        self.assertEqual(len(case.cap['transport']['externalProtection']['processes']),2)
+        extra=fixture['cwd']/'empty/new-empty'; extra.mkdir()
+        paths,links=r.union(case.cfg,case.original_coord)
+        self.assertNotEqual(set(r.inventory(case.cfg,case.cap['processes'],paths,links)),set(original))
+        with self.assertRaisesRegex(r.ReleaseError,'FOREIGN_FULLMETA_PROCESS_DRIFT'):
+            case.controller.baseline_guard(case.controller.bundle(case.cfg.package,case.ms,case.rs))
+
+    def test_original_controller_guard_binds_external_opaque_identity_without_schema_change(self):
+        case,fixture=self.fixture(); c=case.prepare_state()
+        (case.cfg.proc/'2060126/environ').write_bytes(b'CHANGED_WHOLE_OPAQUE=1\0')
+        with self.assertRaisesRegex(r.ReleaseError,'SOCKET_ADAPTER_SOURCE_DRIFT'):c.guard()
+        self.assertEqual(case.reload_calls,[])
+
+    def test_default_exact_roots_no_parentcwd_or_root_recursion(self):
+        cfg=r.Config(); self.assertEqual(cfg.extra_protected[-2:],(r.EXTERNAL_OPS,r.EXTERNAL_CWD))
+        self.assertNotIn(Path('/root'),cfg.extra_protected); self.assertNotIn(Path('/'),cfg.extra_protected)
+        self.assertEqual(r.EXTERNAL_SCRIPT,r.EXTERNAL_OPS/'releases/20261112-forum12-1255b7b84aa3adac09cb8c05/worker-runtime-bootstrap.mjs')
+        self.assertEqual(r.SCOPE,'customer-batch-actions-20261120-6Lfttf6o-R4')
+
+
+class R4DomainTests(unittest.TestCase):
+    """Only synthetic Python JSON trees; actual fclone evidence is already offline."""
+    def fixture(self):
+        case = R3RawTests('test_exact_source_generated_projection_preserves_all_retained_bytes')
+        case.setUp()
+        return case
+
+    def put(self, tree, location, value):
+        if location == 'root': tree['__proto__'] = value
+        elif location == 'env': tree['env']['__proto__'] = value
+        elif location == 'opaque': tree['opaque'] = {'deep': {'__proto__': value}}
+        else: tree['opaque'] = [1, {'deep': [{'__proto__': value}]}]
+
+    def test_proto_root_env_nestedopaque_list_in_model_and_actual_refused_without_cleaning(self):
+        for side in ('model', 'actual'):
+            for location in ('root', 'env', 'opaque', 'list'):
+                for payload in ({'inherited': 'x'}, None, 'ignored-by-setter'):
+                    case = self.fixture()
+                    model, value = copy.deepcopy(case.model), copy.deepcopy(case.v)
+                    self.put(model['pm2_env'] if side == 'model' else value, location, payload)
+                    before_model, before_value = copy.deepcopy(model), copy.deepcopy(value)
+                    raw = case.bytes(value); original_raw = bytes(raw)
+                    with self.subTest(side=side, location=location, payload=payload), \
+                         patch.object(r.copy, 'deepcopy', side_effect=AssertionError('GUARD_BEFORE_FORECAST')), \
+                         self.assertRaisesRegex(r.ReleaseError, '^PM2_JSON_DOMAIN_PROTO_KEY$'):
+                        r.pm2_raw_binding(raw, model)
+                    self.assertEqual(model, before_model); self.assertEqual(value, before_value)
+                    self.assertEqual(raw, original_raw)
+                    self.assertEqual(r.decode(r.raw_values(raw)[b'pm2_env']), value)
+
+    def test_fifteen_finite_utf8_json_guard_samples_keep_values_keys_and_deepcopy(self):
+        samples = [None, [True, False], '', {}, [],
+            [0, -0.0, 1, -1, 0.125, -0.125, 1.0, 1e-7, 1e20, 5e-324,
+             1.7976931348623157e308, 2**53-1, -(2**53-1)],
+            {'值': '汉字𠮷😀', 'escape': 'quote" slash/ backslash\\ line\n tab\t nul\0'},
+            {'pair': '😀', 'empty': ''},
+            {'z': 1, '10': 10, '2': 2, '01': 1, '4294967294': 4, '0': 0},
+            {'x': {'b': 1, '9': 9, '1': 1}, 'a': [{'4': 4, '2': 2, 'c': 3}]},
+            {'a': [1, None, False, {'b': ['x', {'n': -2.5}]}], 'empty': {}},
+            {'status': 'online', 'env': {'nested': {'status': 'launching', 'axm_actions': []}}},
+            {'0': 'x', 'length': 1, 'indexOf': 'not-a-function', 'extra': True},
+            {'constructor': {'prototype': {'safe': 1}}, 'prototype': 'data', 'toString': 'data'},
+            {'a': {'v': [1, 2]}, 'b': {'v': [1, 2]}}]
+        self.assertEqual(len(samples), 15)
+        for value in samples:
+            before = copy.deepcopy(value); wire = r.encode(value)
+            self.assertIsNone(r.pm2_json_domain(value))
+            cloned = copy.deepcopy(value)
+            self.assertEqual(cloned, before); self.assertEqual(r.encode(value), wire)
+            if isinstance(value, (dict, list)): self.assertIsNot(cloned, value)
+            if isinstance(value, dict): self.assertEqual(list(cloned), list(value))
+
+    def test_ordinary_constructor_prototype_keys_and_opaque_string_preserved_in_binding(self):
+        case = self.fixture(); model, value = copy.deepcopy(case.model), copy.deepcopy(case.v)
+        plain = {'constructor': {'prototype': {'safe': 1}}, 'prototype': 'data', 'toString': 'data',
+                 'opaqueJSON': '{"__proto__":{"not":"a parsed key"}}'}
+        model['pm2_env']['ordinary'] = copy.deepcopy(plain); value['ordinary'] = copy.deepcopy(plain)
+        raw = case.bytes(value); before = copy.deepcopy(model)
+        self.assertTrue(r.pm2_raw_binding(raw, model)[2])
+        self.assertEqual(model, before); self.assertIn(b'"constructor"', raw)
+        self.assertEqual(r.decode(r.raw_values(raw)[b'pm2_env'])['ordinary'], plain)
+
+    def test_nonjson_types_nonstring_keys_and_python_special_subclasses_refused(self):
+        class CustomDict(dict): pass
+        class CustomInt(int): pass
+        for bad in (b'x', (1,), {1}, object(), lambda: None, {1: 'x'}, CustomDict(x=1), CustomInt(1)):
+            with self.subTest(kind=type(bad).__name__), self.assertRaisesRegex(r.ReleaseError, 'PM2_JSON_DOMAIN'):
+                r.pm2_json_domain({'opaque': [bad]})
+        for side in ('model', 'actual'):
+            case = self.fixture(); model = copy.deepcopy(case.model); value = copy.deepcopy(case.v)
+            if side == 'model': model['pm2_env']['opaque'] = b'not-JSON'
+            else: value['opaque'] = 2**53 + 1
+            with self.subTest(side=side), self.assertRaisesRegex(r.ReleaseError, 'PM2_JSON_DOMAIN'):
+                r.pm2_raw_binding(case.bytes(value), model)
+
+    def test_nonfinite_and_unsafe_integer_domain_both_inputs_refused(self):
+        for bad in (float('inf'), float('-inf'), float('nan'), 2**53, -(2**53), 2**53+1):
+            with self.subTest(bad=repr(bad)), self.assertRaisesRegex(r.ReleaseError, 'DOMAIN_NONFINITE|DOMAIN_UNSAFE_INTEGER'):
+                r.pm2_json_domain({'opaque': [{'n': bad}]})
+        for bad in (float('inf'), float('-inf'), float('nan'), 2**53, -(2**53)):
+            case = self.fixture(); model = copy.deepcopy(case.model); model['pm2_env']['opaque'] = [bad]
+            with self.subTest(model=repr(bad)), self.assertRaisesRegex(r.ReleaseError, 'PM2_JSON_DOMAIN'):
+                r.pm2_raw_binding(case.raw, model)
+        for token in (b'9007199254740993', b'-9007199254740992', b'1e400', b'-1e400', b'NaN'):
+            case = self.fixture(); data = r.raw_values(case.raw)[b'pm2_env']
+            raw = case.raw.replace(data, data[:-1]+b',"domainWitness":[{"n":'+token+b'}]}')
+            with self.subTest(actual=token), self.assertRaisesRegex(r.ReleaseError, 'DOMAIN_UNSAFE_INTEGER|NONFINITE_JSON'):
+                r.pm2_raw_binding(raw, case.model)
+
+    def test_lone_surrogates_refused_no_replacement_decode_policy_unchanged(self):
+        for string in ('\ud800', '\udfff'):
+            for is_key in (False, True):
+                bad = {string: 'x'} if is_key else {'x': string}
+                wire = json.dumps(bad, ensure_ascii=True).encode('ascii')
+                decoded = r.decode(wire); before = copy.deepcopy(decoded)
+                self.assertEqual(decoded, bad)  # original decoder still accepts JS UTF-16 data
+                with self.assertRaisesRegex(r.ReleaseError, 'PM2_JSON_DOMAIN_UTF8_OR_DEPTH'):
+                    r.pm2_json_domain(decoded)
+                self.assertEqual(decoded, before)
+                case = self.fixture(); model = copy.deepcopy(case.model); model['pm2_env']['opaque'] = bad
+                with self.assertRaisesRegex(r.ReleaseError, 'PM2_JSON_DOMAIN_UTF8_OR_DEPTH'):
+                    r.pm2_raw_binding(case.raw, model)
+                data = r.raw_values(case.raw)[b'pm2_env']
+                raw = case.raw.replace(data, data[:-1]+b',"domainWitness":'+wire+b'}')
+                with self.assertRaisesRegex(r.ReleaseError, 'PM2_JSON_DOMAIN_UTF8_OR_DEPTH'):
+                    r.pm2_raw_binding(raw, case.model)
+        with self.assertRaises(r.ReleaseError): r.pm2_raw_binding(b'pm2_env={"env":{},"x":"\xff"}\0', self.fixture().model)
+
+    def test_cycles_and_shared_python_containers_not_json_trees(self):
+        cycle = {}; cycle['self'] = cycle
+        shared = {'x': [1]}
+        for value in (cycle, {'a': shared, 'b': shared}):
+            with self.assertRaisesRegex(r.ReleaseError, 'PM2_JSON_DOMAIN_TREE_REQUIRED'):
+                r.pm2_json_domain(value)
+        self.assertIs(cycle['self'], cycle)
+
+
+class R4PublishGateTests(unittest.TestCase):
+    def fixture(self, mode):
+        case = SafetyTests('test_new_identity_and_fixed_boundary'); case.setUp(); self.addCleanup(case.doCleanups)
+        # Production six IDs, but all paths/process bytes remain purely synthetic.
+        ids = [190, 191, 192, 193, 194, 200]
+        for index, slot in enumerate(ids):
+            row = case.raw_rows[index]; row['pm_id'] = slot; row['pm2_env']['pm_id'] = slot
+            path = case.cfg.proc / str(row['pid']) / 'environ'; raw = path.read_bytes()
+            data = r.raw_values(raw)[b'pm2_env']; value = r.decode(data); value['pm_id'] = slot
+            path.write_bytes(raw.replace(data, json.dumps(value, ensure_ascii=False, separators=(',', ':')).encode()))
+            if mode == 'allfalse' or (mode == 'mixed' and index >= 4):
+                row['pm2_env']['version'] = 'diagnostic-monitor-added'
+        case.make_synthetic_package()
+        return case, ids
+
+    def full_tree(self, case):
+        out = {}
+        for path in [case.root, *sorted(case.root.rglob('*'))]:
+            out[str(path)] = (r.describe(path), path.read_bytes() if path.is_file() and not path.is_symlink() else None)
+        return out
+
+    def reject_entry(self, mode, method):
+        case, ids = self.fixture(mode); c = case.controller
+        own = [row for row in case.cap['processes'] if row['id'] in ids]
+        self.assertEqual([row['pm2ReloadReady'] for row in own], [False]*6 if mode == 'allfalse' else [True]*4+[False]*2)
+        self.assertEqual(r.identity(case.cfg, case.cap['processes']), ids)
+        before = self.full_tree(case)
+        with patch.object(r, 'exclusive', wraps=r.exclusive) as create, \
+             patch.object(r, 'cas', wraps=r.cas) as cas, \
+             patch.object(c, 'change_coord', wraps=c.change_coord) as window, \
+             patch.object(c, 'add_asset', wraps=c.add_asset) as asset, \
+             patch.object(c, 'change_file', wraps=c.change_file) as api, \
+             patch.object(c, 'checkpoint', wraps=c.checkpoint) as intent, \
+             patch.object(c, 'reload_adapter', wraps=c.reload_adapter) as adapter, \
+             patch.object(r, 'rpc', side_effect=AssertionError('NO_RPC_FOR_KNOWN_FALSE')) as rpc, \
+             self.assertRaisesRegex(r.ReleaseError, '^PM2_SIX_OWN_NOT_ALL_READY_NO_ATTEMPT_NO_PUBLISH$'):
+            getattr(c, method)(case.cfg.package, case.ms, case.rs)
+        self.assertEqual([x.call_count for x in (create, cas, window, asset, api, intent, adapter, rpc)], [0]*8)
+        self.assertFalse(case.cfg.receipt.exists()); self.assertEqual(case.reload_calls, [])
+        self.assertEqual(c.sequence, 0); self.assertIsNone(c.st); self.assertIsNone(c.state_hash)
+        self.assertEqual(self.full_tree(case), before)
+
+    def test_allfalse_preflight_zero_attempt_receipt_window_assets_api_intent_rpc_fullbefore(self):
+        self.reject_entry('allfalse', 'preflight')
+
+    def test_allfalse_apply_zero_attempt_receipt_window_assets_api_intent_rpc_fullbefore(self):
+        self.reject_entry('allfalse', 'apply')
+
+    def test_mixed_fronttrue_adminfalse_preflight_zero_writes_fullbefore(self):
+        self.reject_entry('mixed', 'preflight')
+
+    def test_mixed_fronttrue_adminfalse_apply_zero_writes_fullbefore(self):
+        self.reject_entry('mixed', 'apply')
+
+    def test_capture_snapshot_diagnostic_false_still_returns_identity_accepts(self):
+        case, ids = self.fixture('allfalse')
+        # Exercise unchanged capture method with no CLI, real RPC, production or output capture file.
+        before = self.full_tree(case)
+        with patch.object(r, 'exclusive', side_effect=AssertionError('NO_CAPTURE_FILE')), \
+             patch.object(r, 'cas', side_effect=AssertionError('NO_CAPTURE_WRITE')):
+            diagnostic = case.controller.capture()
+        self.assertEqual(r.identity(case.cfg, diagnostic['processes']), ids)
+        self.assertTrue(all(row['pm2ReloadReady'] is False for row in diagnostic['processes'] if row['id'] in ids))
+        self.assertEqual(diagnostic['productionWrites'], 0); self.assertEqual(self.full_tree(case), before)
+        self.assertFalse(case.cfg.receipt.exists()); self.assertEqual(case.reload_calls, [])
+
+    def test_allready_own_only_unowned_none_accepted_not_approval(self):
+        case, ids = self.fixture('alltrue')
+        r.pm2_publish_ready(case.cap['processes'], ids)
+        self.assertTrue(all(row['pm2ReloadReady'] is None for row in case.cap['processes'] if row['id'] not in ids))
+        self.assertEqual(case.preflight()['reloadScope'], ids)
+        self.assertFalse(case.cfg.receipt.exists()); self.assertEqual(case.reload_calls, [])
+
+    def test_ready_requires_literal_true_and_exact_six_only(self):
+        case, ids = self.fixture('alltrue')
+        rows = copy.deepcopy(case.cap['processes'])
+        for bad in (1, None, 'true', False):
+            rows[-6]['pm2ReloadReady'] = bad
+            with self.subTest(value=bad), self.assertRaisesRegex(r.ReleaseError, 'NO_ATTEMPT_NO_PUBLISH'):
+                r.pm2_publish_ready(rows, ids)
+        for bad_ids in (ids[:-1], ids+[ids[0]], ids[:-1]+[6]):
+            with self.assertRaisesRegex(r.ReleaseError, 'NO_ATTEMPT_NO_PUBLISH'):
+                r.pm2_publish_ready(case.cap['processes'], bad_ids)
+
+    def test_false_diagnostic_baseline_can_still_restore_manually_opened_journal(self):
+        case, ids = self.fixture('allfalse'); c = case.prepare_state()
+        with r.locked(case.cfg):
+            case.open_window(c)
+            c.restore_journal(case.cfg.package, case.ms, case.rs, c.attempt_hash, c.state_hash)
+            c.guard()
+        self.assertEqual(r.identity(case.cfg, c.st['processes']), ids)
+        self.assertEqual(case.reload_calls, [])
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,0 +1,11 @@
+test_duplicate_keys_still_rejected_before_any_projection (test_finite_json.FiniteJsonTests.test_duplicate_keys_still_rejected_before_any_projection) ... ok
+test_finite_decimals_and_exponents_accepted_without_reencoding (test_finite_json.FiniteJsonTests.test_finite_decimals_and_exponents_accepted_without_reencoding) ... ok
+test_literal_nonfinite_contract_unchanged (test_finite_json.FiniteJsonTests.test_literal_nonfinite_contract_unchanged) ... ok
+test_opaque_strings_and_escaped_bytes_remain_exact (test_finite_json.FiniteJsonTests.test_opaque_strings_and_escaped_bytes_remain_exact) ... ok
+test_overflow_rejected_at_every_nested_shape (test_finite_json.FiniteJsonTests.test_overflow_rejected_at_every_nested_shape) ... ok
+test_positive_and_negative_overflow_at_root (test_finite_json.FiniteJsonTests.test_positive_and_negative_overflow_at_root) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.001s
+
+OK

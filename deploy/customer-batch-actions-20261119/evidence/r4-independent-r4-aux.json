@@ -1,0 +1,176 @@
+{
+  "schema": "r4-aux-offline-review-v1",
+  "status": "NOT_APPROVED",
+  "controllerApproved": false,
+  "releaseApproved": false,
+  "finalApprove": false,
+  "finalDeployApproval": false,
+  "scope": "stable-8dc-externalProtection-minimal-delta-only",
+  "source": {
+    "mode": "pure-memory-reconstruction",
+    "currentRead": false,
+    "specifiedCandidatesExist": false,
+    "sourceAndSafetyHasCurrentSnapshot": false,
+    "evidenceRoot": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence",
+    "baselinePath": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r4-baseline-bf7ec85b/release.py",
+    "baselineSha256": "bf7ec85b902ae2474ded779bfad110e7ac791e7d4c244d67ca6f912614d375ab",
+    "baselineBytes": 114655,
+    "diffPath": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r4-controller.diff",
+    "diffSha256": "4eb5c448c216973025d9e59228a22f427582076ae82b067d79389f71248d8fb0",
+    "reviewedSha256": "8dc23eb3865e65bfc0a60d8b20f3548dc1a087cf533478ad89cdae88c86766f0",
+    "reviewedBytes": 121483,
+    "reconstructionHashMatched": true,
+    "sixBaselineHashesIndependentlyVerified": true,
+    "sixAllowedDiffReconstructionsMatchedEvidenceHashes": true,
+    "releaseBothDiffReconstructionsByteEqual": true
+  },
+  "findings": [
+    {
+      "id": "R4-AUX-01",
+      "classification": "reproducible-sampling-closure-gap",
+      "severity": "medium",
+      "approvalBlocking": true,
+      "title": "cwd target META and final pair proc records are not revalidated at sampling close",
+      "sourceSha256": "8dc23eb3865e65bfc0a60d8b20f3548dc1a087cf533478ad89cdae88c86766f0",
+      "lines": [642, 664, 668, 675, 676, 680, 688, 706, 708],
+      "counterexamples": [
+        {
+          "probe": "second_parent_cmd_read_mutates_parent_cwd_meta",
+          "helpersExecuted": ["external_proc_sample", "external_protection_sample", "external_protection"],
+          "io": "pure-memory VirtualProc/metadata/identity/link/source fixture",
+          "parentCmdReads": 2,
+          "collectorReturned": true,
+          "storedParentCwdTime": [1, 1],
+          "liveParentCwdTimeAtReturn": [2, 2],
+          "otherProcIdentityLinksSourcesExactRootsUnchanged": true,
+          "productionTimingExperiment": false
+        },
+        {
+          "probe": "last_pair_parent_drift_during_child_leaf",
+          "helpersExecuted": ["external_protection_sample", "external_protection"],
+          "leafSampler": "pure-memory phase stub with internally stable returned records",
+          "parentSamples": 2,
+          "childSamples": 2,
+          "collectorReturned": true,
+          "storedParentEqualsFirst": true,
+          "storedParentEqualsLiveAtReturn": false,
+          "driftFields": ["exe", "cmdlineSha256", "cwdMeta.mtimeNs", "cwdMeta.ctimeNs"],
+          "productionTimingExperiment": false
+        }
+      ],
+      "minimalSuggestions": [
+        "Add describe(current_cwd) == cwd_record to the final single-proc fail-closed check, without recursive parent cwd scanning or ignored META fields.",
+        "After source/root collection, revalidate complete parent and child proc records for the same fixed PID/script/cwd before returning a pair; keep complete pair/source/root equality.",
+        "Add narrow mock regressions for second-parent cmdline-phase cwd META drift and second-child/source-phase parent drift. Do not change Controller/RPC/schema or rebaseline."
+      ],
+      "limitation": "Finite readonly sampling is not an atomic freeze or a continuous post-return guarantee; suggestions close the demonstrated sampling-phase window only."
+    }
+  ],
+  "actualEvidencePending": [
+    {
+      "id": "PARENT-ACTUAL-IDENTITY",
+      "lines": [641, 649, 650, 680, 687],
+      "codeBugClaim": false,
+      "blocker": "basename flock plus fresh H/META records sticky observed identity but does not establish trusted software identity at first admission",
+      "probe": "pure-memory stable pair/source fixture accepted unreviewed same-named flock source",
+      "required": "Independently review kernel-observed actual executable full H/META/identity provenance and bind the approved fresh record; do not guess executable paths or introduce fallback/search/lifecycle."
+    },
+    {
+      "id": "ACTUAL-DEPENDENCY-CLOSURE",
+      "lines": [654, 655, 656, 663, 680, 687],
+      "codeBugClaim": false,
+      "blocker": "exact plain two-argument child argv and opaque env equality do not establish NODE_OPTIONS/NODE_PATH, dynamic/native/bootstrap dependency semantics or all actual source roots",
+      "required": "Keep unknown semantics unapproved; separately authorized actual-source/full-tree review only, no expanded scan and no private-value export."
+    },
+    {
+      "id": "FRESH-ACTUAL-META",
+      "required": "Same fresh approved record must bind fixed PID/PPID/startTicks, kernel actual exe, child full node SHA, exact bootstrap/cwd, opaque env/cmd and permissions hashes, proc/link META, shallow parent cwd META, fullSourceMeta, complete exact Ops+childcwd protected tree. Instability must reject, never drop time fields or rebaseline."
+    }
+  ],
+  "staticChecks": {
+    "statField4PPIDAndField22StartTicksCorrect": true,
+    "lastParenParsingSpecialCommProbePassed": true,
+    "virtualProcReadBytesNotRegularSize": true,
+    "deadStateRejected": true,
+    "withinProcAndBetweenSampleIdentityEquality": true,
+    "pairSamplingAtomicGuarantee": false,
+    "rawEnvironCmdlineWholeShaNoNormalization": true,
+    "privateValuesExported": false,
+    "permissionsHashIsCanonicalUidGidGroupsUmaskNotWholeRawStatus": true,
+    "kernelActualExePathNotGuessed": true,
+    "singleRegularNlink1AndNoSymlinkOrDeletedRulesRetained": true,
+    "childActualNodeFullShaMatchesCfgNode": true,
+    "childExactBootstrapCwdPlainTwoArgArgv": true,
+    "fullSourceMetaFiles": ["actual parent exe", "actual child exe", "cfg.node", "known exact bootstrap"],
+    "sourceMetaBetweenSamplesCompared": true,
+    "requiredRootsExact": ["/opt/ops/dianzi51-recommendation", "/opt/releases/20261009T170014Z-memory-isolation/dianzi51-platform"],
+    "priorTwoEnvAndVarPrivateRetained": true,
+    "wholeTreeInventoryMetaAndExactSetRetained": true,
+    "mockSkipAndFixtureOnlyCfgMock": true,
+    "cliNoMockProcPidStartArgRootOverride": true,
+    "missingOrAbnormalNoFallback": true,
+    "noNewExternalLifecycleSearchKillReloadUnlock": true,
+    "transportWholeEqualityAndRpcSourcesMergeRetained": true
+  },
+  "astByteProof": {
+    "independentlyCalculated": true,
+    "changedOldTopLevel": ["Config", "PM2_GENERATION_PINS", "SCOPE", "transport"],
+    "added": ["EXTERNAL_CHILD_PID", "EXTERNAL_CWD", "EXTERNAL_OPS", "EXTERNAL_PARENT_PID", "EXTERNAL_SCRIPT", "external_proc_identity", "external_proc_link", "external_proc_sample", "external_protection", "external_protection_sample", "external_source"],
+    "removed": [],
+    "configExceptExtraProtectedAstEqual": true,
+    "controllerWholeClassAstAndBytesEqual": true,
+    "controllerMethods": 30,
+    "controllerAstSha256": "6e835405a0d64ffddb906df433e12b584fc7cf8b38e2cdc93e8afbf0f39a426b",
+    "controllerSourceSha256": "f07ea5c21eafbc016aa27871a303419fd1006a59c07f79851c25c736c1f54c27",
+    "oldTopLevelFunctions": 53,
+    "unchangedOldFunctionsExceptTransport": 52,
+    "allExceptTransportFunctionsAstAndBytesEqual": true,
+    "rpcAssignmentAndFunctionAstAndBytesEqual": true,
+    "rpcPayloadSha256": "089d6af98a983ecc11e6feb1c0cd909c5aafba627fd7856eadd9935fec5da0c3",
+    "rpcAssignmentSourceSha256": "2dafc2b678e7dd9e1781da22cc516b7c579dde0cf793cbeb0e89870ac82091e1",
+    "rpcFunctionSourceSha256": "665107a8c6b6b95d1750af874dbeeebe26715f5a006333af9288abbba0adb2e1",
+    "preparerOnlyChange": "CONTROLLER_SHA",
+    "originalEightGenerationPinsRetained": true,
+    "originalPm2PackageJsonRemainsPin": true,
+    "newPinCount": 9,
+    "onlyAddedPin": {"modules/fclone.js": "9b921f33e5d4e36dd030f5d2e736ea2af0c95f4fb795ada696160e2db7fe2fe6"}
+  },
+  "testLogs": {
+    "rerun": false,
+    "shaAndBytesVerified": true,
+    "r4-release-tests.txt": {"tests": 121, "savedResult": "OK", "bytes": 17959, "sha256": "67a768651d2e4c7b2bc146571c469b292855ff7f4620bc42a7500c9e847fcd66"},
+    "r4-prepare-tests.txt": {"tests": 34, "savedResult": "OK", "bytes": 4007, "sha256": "7473c23bfacf88b188704333dfa6649b381bdf30766be77dbf431c60aa03657f"},
+    "r4-finite-tests.txt": {"tests": 6, "savedResult": "OK", "bytes": 906, "sha256": "ab36567b74ef88771992c87875e0f9d1f2ce5eaca7f04d0ed132a3f8b2de6f2b"}
+  },
+  "narrowMemoryProbes": [
+    {"name": "stat_parentPPID_startTicks_nested_comm", "expectationVerified": true},
+    {"name": "dead_state", "expectationVerified": true},
+    {"name": "mock_skip_explicit", "expectationVerified": true},
+    {"name": "fixture_in_production_rejected", "expectationVerified": true},
+    {"name": "production_proc_override_rejected", "expectationVerified": true},
+    {"name": "unreviewed_named_flock_initial_admission", "initialAccepted": true},
+    {"name": "second_pair_fullSourceMeta_drift_rejected", "expectationVerified": true},
+    {"name": "last_pair_parent_drift_during_child_leaf", "staleResultAccepted": true},
+    {"name": "second_parent_cmd_read_mutates_parent_cwd_meta", "staleResultAccepted": true}
+  ],
+  "safety": {
+    "writes": ["/home/ubuntu/work/customer-batch/review-r4-aux-offline.md", "/home/ubuntu/work/customer-batch/review-r4-aux-offline.json"],
+    "codeTestsEvidenceArtifactModified": false,
+    "gitExecuted": false,
+    "mcpExecuted": false,
+    "sshExecuted": false,
+    "productionProcRead": false,
+    "productionModuleImported": false,
+    "actualNodeExecuted": false,
+    "actualRpcExecuted": false,
+    "productionCliExecuted": false,
+    "actualLocksAcquired": false,
+    "serverOrProductionModified": false,
+    "captureStageAttemptWindowReloadPerformed": false,
+    "dependencyScanExpanded": false,
+    "rawmetadataCloneReaudited": false,
+    "knownPendingDomainPreReadyGuardCriticized": false,
+    "frontListDetailClosedClaimed": false,
+    "backendNoStageCaptureWindowAttempt": "handoff premise only; no production verification performed"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "baselineAllNineStaleAccepted": true,
+  "fixedAllNineRejected": true,
+  "output": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r4-auxfix-counterexamples.json",
+  "pureMockProbesPerMode": 9,
+  "status": "NOT_APPROVED"
+}

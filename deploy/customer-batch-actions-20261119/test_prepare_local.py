@@ -435,8 +435,8 @@ class LocalTests(unittest.TestCase):
 
     def test_r3_current_controller_sha_and_scope_fixed(self):
         self.assertEqual(P.CONTROLLER_SHA, P.sha((HERE/'release.py').read_bytes()))
-        self.assertEqual(R.SCOPE, 'customer-batch-actions-20261120-6Lfttf6o-R3')
-        self.assertEqual(str(R.Config().stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R3')
+        self.assertEqual(R.SCOPE, 'customer-batch-actions-20261120-6Lfttf6o-R4')
+        self.assertEqual(str(R.Config().stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R4')
         self.assertEqual(R.OWNER, '6Lfttf6oVWJ8YS69o5FkXQ')
 
     def test_old_failed_stage_scope_capture_is_not_reusable(self):
@@ -471,6 +471,39 @@ class LocalTests(unittest.TestCase):
         self.cap['protectionUnion']['paths'].remove(root); self.save_capture()
         with self.assertRaisesRegex(P.PrepareError,'protection union mismatch'):P.prepare(self.args)
         self.assertEqual(self.calls,[]); self.assertFalse(self.out.exists())
+
+    def test_r3_scope_and_bf7_capture_not_reusable_in_r4(self):
+        for key,value in [('scope','customer-batch-actions-20261120-6Lfttf6o-R3'),
+                          ('controllerSha256','bf7ec85b902ae2474ded779bfad110e7ac791e7d4c244d67ca6f912614d375ab')]:
+            old=self.cap[key]; self.cap[key]=value; self.save_capture()
+            with self.subTest(key=key),self.assertRaisesRegex(P.PrepareError,'fixed production capture binding'):
+                P.prepare(self.args)
+            self.cap[key]=old
+        self.assertEqual(self.calls,[]); self.assertFalse(self.out.exists())
+
+    def test_r4_both_external_exact_roots_cannot_be_omitted(self):
+        for root in (str(R.EXTERNAL_OPS),str(R.EXTERNAL_CWD)):
+            self.assertIn(root,self.cap['protectionUnion']['paths'])
+            self.cap['protectionUnion']['paths'].remove(root); self.save_capture()
+            with self.subTest(root=root),self.assertRaisesRegex(P.PrepareError,'protection union mismatch'):
+                P.prepare(self.args)
+            self.cap['protectionUnion']['paths'].append(root)
+            self.cap['protectionUnion']['paths'].sort()
+        self.assertEqual(self.calls,[]); self.assertFalse(self.out.exists())
+
+    def test_r4_domain_old_8dc_capture_pin_not_reusable(self):
+        self.cap['controllerSha256'] = '8dc23eb3865e65bfc0a60d8b20f3548dc1a087cf533478ad89cdae88c86766f0'
+        self.save_capture()
+        with self.assertRaisesRegex(P.PrepareError, 'fixed production capture binding'):
+            P.inputs(self.args, R)
+        self.assertEqual(self.calls, []); self.assertFalse(self.out.exists())
+
+    def test_r4_domain_false_readiness_diagnostic_inputs_not_publication_approval(self):
+        for row in self.cap['processes'][:6]: row['pm2ReloadReady'] = False
+        self.save_capture()
+        result = P.inputs(self.args, R)
+        self.assertTrue(all(row['pm2ReloadReady'] is False for row in result[3]['processes'][:6]))
+        self.assertEqual(self.calls, []); self.assertFalse(self.out.exists())
 
 if __name__ == '__main__':
     unittest.main()

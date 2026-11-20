@@ -32,3 +32,13 @@
 原R3 late pm2ReloadReady守卫是受控失败设计，不能称为全阶段零写阻断；未来正式审批前，六own实际Ready必须全部True，并与capture/manifest绑定，还要实证fclone、完整retained byte/source-shape、fresh fullMETA/前台新集合/全包正式审批。现在缺口未齐，不开发布窗。
 
 服务器已识别外部300GiB盘，但分区/根文件系统仍旧约197G99%；快照仅极速可用、OSS尚未全量完成，尚无新成功文件备份，未执行实际文件系统扩容。所有容量/快照/备份及互斥安全条件必须由服务器任务明确，前台B静态105测试/tsc0和seed包也不是现网部署。后台继续不连接ECS、不capture/stage/write/reload/env，不清理/迁移shadow或回退目录。服务器安全解除后先等前台新actualverifiedclosed交接，再后台fresh全审，不重用旧8a130/f893/旧seed/旧pin。
+
+## 11:12 R4恢复上线准备（仍未上线）
+
+用户10:31明确‘扩容结束，可以上线’。容量阻碍已由服务器任务确认解除，但前台用户同时增加列表+详情合包，按不冲突要求前台静态优先，后台仍未创建远程R4stage/capture/attempt/window、未业务active写或reload。一次获准的pure fclone resolve+exact source读取已完成断开：实际 /usr/local/lib/node_modules/pm2/modules/fclone.js，1239B SHA9b921f33e5d4e36dd030f5d2e736ea2af0c95f4fb795ada696160e2db7fe2fe6。明确目录候选ENOENT未做fallback，真实路径随后才由纯resolve确定。
+
+R4完整OWNER不变，SCOPE customer-batch-actions-20261120-6Lfttf6o-R4；当前controller **4fe2ad8a49982a2395a38254da473ebc958cd1ce9bc45310dba1481621fdc121**，preparerpin同步。完整保护新增非PM2推荐服务：PID2060125 flock父、2060126 node-22子、实际bootstrap、精确/opt/ops/dianzi51-recommendation全树及childcwd全树；全opaque环境/argv哈希、PPID/startTicks/exec/cwd/权限/source/rootMETA双读，末端完整复核，不修改/重载它们。原12PM2/六own/9生成源码pins/全部应用值保留。
+
+独立fclone域审15限定JSON样本通过但3自有__proto__样本真实不等价，已增加递归域明确拒绝，不删env字段或洗bytes。preflight/apply前增加sixown Ready全部True零写gate，合法false仍可作capture诊断；正式审批仍须实际sixReady真、typed/fullretained byte witness，不拿域guard或纯样本反推daemon对象类型。domain段独立静态通过；aux采样末端两缺口已最小修复并9原stale接受反例全部拒绝，最终142 controller/36 preparer/6 JSON测试通过。全部历史与准确AST/source日志在evidence/r4-*，不重写业务。辅助采样是有限读，不声称内核原子或连续冻结。
+
+下一步在前台未占窗阶段只许可一次≤30s定向readiness/安全身份见证（无stage/capture/fullMETA/锁/写/reload/DB、只布尔/哈希/差异keyname），不可当审批；前台新的actualverifiedclosed+明确交接后才后台fresh14proc/fullMETA/两API/adminHTML/当前源字节重建、独立全pkg审和窄scope发布。source/mocked tests不是actualReady，全approve仍False；旧8a130/f893/旧seed/旧bf7或529pin不复用。

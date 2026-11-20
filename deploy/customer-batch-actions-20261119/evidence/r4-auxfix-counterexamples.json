@@ -1,0 +1,337 @@
+{
+  "modes": {
+    "baseline52908c": [
+      {
+        "atomicGuarantee": false,
+        "collectorReturned": true,
+        "completeProcSamplerExecuted": true,
+        "error": null,
+        "field": null,
+        "kind": "cwd",
+        "liveParentCwdTimeDiffersFromBefore": true,
+        "productionTimingExperiment": false,
+        "stage": null,
+        "stateAtCollectorReturn": {
+          "drift": true,
+          "pair": 2,
+          "parentCmdReads": 2,
+          "sourceReads": 4
+        },
+        "storedParentCwdTimeMatchesBefore": true,
+        "storedParentEqualsLiveAtReturn": false,
+        "temporaryFixtureOnly": true
+      },
+      {
+        "atomicGuarantee": false,
+        "collectorReturned": true,
+        "completeProcSamplerExecuted": true,
+        "error": null,
+        "field": "startTicks",
+        "kind": "pair",
+        "productionTimingExperiment": false,
+        "stage": "source",
+        "stateAtCollectorReturn": {
+          "drift": true,
+          "pair": 2,
+          "parentCmdReads": 2,
+          "sourceReads": 4
+        },
+        "storedParentEqualsLiveAtReturn": false,
+        "temporaryFixtureOnly": true
+      },
+      {
+        "atomicGuarantee": false,
+        "collectorReturned": true,
+        "completeProcSamplerExecuted": true,
+        "error": null,
+        "field": "rawenv",
+        "kind": "pair",
+        "productionTimingExperiment": false,
+        "stage": "source",
+        "stateAtCollectorReturn": {
+          "drift": true,
+          "pair": 2,
+          "parentCmdReads": 2,
+          "sourceReads": 4
+        },
+        "storedParentEqualsLiveAtReturn": false,
+        "temporaryFixtureOnly": true
+      },
+      {
+        "atomicGuarantee": false,
+        "collectorReturned": true,
+        "completeProcSamplerExecuted": true,
+        "error": null,
+        "field": "cmdline",
+        "kind": "pair",
+        "productionTimingExperiment": false,
+        "stage": "source",
+        "stateAtCollectorReturn": {
+          "drift": true,
+          "pair": 2,
+          "parentCmdReads": 2,
+          "sourceReads": 4
+        },
+        "storedParentEqualsLiveAtReturn": false,
+        "temporaryFixtureOnly": true
+      },
+      {
+        "atomicGuarantee": false,
+        "collectorReturned": true,
+        "completeProcSamplerExecuted": true,
+        "error": null,
+        "field": "permissions",
+        "kind": "pair",
+        "productionTimingExperiment": false,
+        "stage": "source",
+        "stateAtCollectorReturn": {
+          "drift": true,
+          "pair": 2,
+          "parentCmdReads": 2,
+          "sourceReads": 4
+        },
+        "storedParentEqualsLiveAtReturn": false,
+        "temporaryFixtureOnly": true
+      },
+      {
+        "atomicGuarantee": false,
+        "collectorReturned": true,
+        "completeProcSamplerExecuted": true,
+        "error": null,
+        "field": "startTicks",
+        "kind": "pair",
+        "productionTimingExperiment": false,
+        "stage": "root",
+        "stateAtCollectorReturn": {
+          "drift": true,
+          "pair": 2,
+          "parentCmdReads": 2,
+          "sourceReads": 4
+        },
+        "storedParentEqualsLiveAtReturn": false,
+        "temporaryFixtureOnly": true
+      },
+      {
+        "atomicGuarantee": false,
+        "collectorReturned": true,
+        "completeProcSamplerExecuted": true,
+        "error": null,
+        "field": "rawenv",
+        "kind": "pair",
+        "productionTimingExperiment": false,
+        "stage": "root",
+        "stateAtCollectorReturn": {
+          "drift": true,
+          "pair": 2,
+          "parentCmdReads": 2,
+          "sourceReads": 4
+        },
+        "storedParentEqualsLiveAtReturn": false,
+        "temporaryFixtureOnly": true
+      },
+      {
+        "atomicGuarantee": false,
+        "collectorReturned": true,
+        "completeProcSamplerExecuted": true,
+        "error": null,
+        "field": "cmdline",
+        "kind": "pair",
+        "productionTimingExperiment": false,
+        "stage": "root",
+        "stateAtCollectorReturn": {
+          "drift": true,
+          "pair": 2,
+          "parentCmdReads": 2,
+          "sourceReads": 4
+        },
+        "storedParentEqualsLiveAtReturn": false,
+        "temporaryFixtureOnly": true
+      },
+      {
+        "atomicGuarantee": false,
+        "collectorReturned": true,
+        "completeProcSamplerExecuted": true,
+        "error": null,
+        "field": "permissions",
+        "kind": "pair",
+        "productionTimingExperiment": false,
+        "stage": "root",
+        "stateAtCollectorReturn": {
+          "drift": true,
+          "pair": 2,
+          "parentCmdReads": 2,
+          "sourceReads": 4
+        },
+        "storedParentEqualsLiveAtReturn": false,
+        "temporaryFixtureOnly": true
+      }
+    ],
+    "fixed": [
+      {
+        "atomicGuarantee": false,
+        "collectorReturned": false,
+        "completeProcSamplerExecuted": true,
+        "error": "EXTERNAL_PROC_IDENTITY_READ_RACE",
+        "field": null,
+        "kind": "cwd",
+        "liveParentCwdTimeDiffersFromBefore": true,
+        "productionTimingExperiment": false,
+        "stage": null,
+        "stateAtCollectorReturn": {
+          "drift": true,
+          "pair": 2,
+          "parentCmdReads": 3,
+          "sourceReads": 0
+        },
+        "storedParentCwdTimeMatchesBefore": null,
+        "storedParentEqualsLiveAtReturn": null,
+        "temporaryFixtureOnly": true
+      },
+      {
+        "atomicGuarantee": false,
+        "collectorReturned": false,
+        "completeProcSamplerExecuted": true,
+        "error": "EXTERNAL_PROC_PAIR_READ_RACE",
+        "field": "startTicks",
+        "kind": "pair",
+        "productionTimingExperiment": false,
+        "stage": "source",
+        "stateAtCollectorReturn": {
+          "drift": true,
+          "pair": 2,
+          "parentCmdReads": 4,
+          "sourceReads": 4
+        },
+        "storedParentEqualsLiveAtReturn": null,
+        "temporaryFixtureOnly": true
+      },
+      {
+        "atomicGuarantee": false,
+        "collectorReturned": false,
+        "completeProcSamplerExecuted": true,
+        "error": "EXTERNAL_PROC_PAIR_READ_RACE",
+        "field": "rawenv",
+        "kind": "pair",
+        "productionTimingExperiment": false,
+        "stage": "source",
+        "stateAtCollectorReturn": {
+          "drift": true,
+          "pair": 2,
+          "parentCmdReads": 4,
+          "sourceReads": 4
+        },
+        "storedParentEqualsLiveAtReturn": null,
+        "temporaryFixtureOnly": true
+      },
+      {
+        "atomicGuarantee": false,
+        "collectorReturned": false,
+        "completeProcSamplerExecuted": true,
+        "error": "EXTERNAL_PROC_PAIR_READ_RACE",
+        "field": "cmdline",
+        "kind": "pair",
+        "productionTimingExperiment": false,
+        "stage": "source",
+        "stateAtCollectorReturn": {
+          "drift": true,
+          "pair": 2,
+          "parentCmdReads": 4,
+          "sourceReads": 4
+        },
+        "storedParentEqualsLiveAtReturn": null,
+        "temporaryFixtureOnly": true
+      },
+      {
+        "atomicGuarantee": false,
+        "collectorReturned": false,
+        "completeProcSamplerExecuted": true,
+        "error": "EXTERNAL_PROC_PAIR_READ_RACE",
+        "field": "permissions",
+        "kind": "pair",
+        "productionTimingExperiment": false,
+        "stage": "source",
+        "stateAtCollectorReturn": {
+          "drift": true,
+          "pair": 2,
+          "parentCmdReads": 4,
+          "sourceReads": 4
+        },
+        "storedParentEqualsLiveAtReturn": null,
+        "temporaryFixtureOnly": true
+      },
+      {
+        "atomicGuarantee": false,
+        "collectorReturned": false,
+        "completeProcSamplerExecuted": true,
+        "error": "EXTERNAL_PROC_PAIR_READ_RACE",
+        "field": "startTicks",
+        "kind": "pair",
+        "productionTimingExperiment": false,
+        "stage": "root",
+        "stateAtCollectorReturn": {
+          "drift": true,
+          "pair": 2,
+          "parentCmdReads": 4,
+          "sourceReads": 4
+        },
+        "storedParentEqualsLiveAtReturn": null,
+        "temporaryFixtureOnly": true
+      },
+      {
+        "atomicGuarantee": false,
+        "collectorReturned": false,
+        "completeProcSamplerExecuted": true,
+        "error": "EXTERNAL_PROC_PAIR_READ_RACE",
+        "field": "rawenv",
+        "kind": "pair",
+        "productionTimingExperiment": false,
+        "stage": "root",
+        "stateAtCollectorReturn": {
+          "drift": true,
+          "pair": 2,
+          "parentCmdReads": 4,
+          "sourceReads": 4
+        },
+        "storedParentEqualsLiveAtReturn": null,
+        "temporaryFixtureOnly": true
+      },
+      {
+        "atomicGuarantee": false,
+        "collectorReturned": false,
+        "completeProcSamplerExecuted": true,
+        "error": "EXTERNAL_PROC_PAIR_READ_RACE",
+        "field": "cmdline",
+        "kind": "pair",
+        "productionTimingExperiment": false,
+        "stage": "root",
+        "stateAtCollectorReturn": {
+          "drift": true,
+          "pair": 2,
+          "parentCmdReads": 4,
+          "sourceReads": 4
+        },
+        "storedParentEqualsLiveAtReturn": null,
+        "temporaryFixtureOnly": true
+      },
+      {
+        "atomicGuarantee": false,
+        "collectorReturned": false,
+        "completeProcSamplerExecuted": true,
+        "error": "EXTERNAL_PROC_PAIR_READ_RACE",
+        "field": "permissions",
+        "kind": "pair",
+        "productionTimingExperiment": false,
+        "stage": "root",
+        "stateAtCollectorReturn": {
+          "drift": true,
+          "pair": 2,
+          "parentCmdReads": 4,
+          "sourceReads": 4
+        },
+        "storedParentEqualsLiveAtReturn": null,
+        "temporaryFixtureOnly": true
+      }
+    ]
+  },
+  "status": "NOT_APPROVED"
+}

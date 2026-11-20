@@ -1,0 +1,430 @@
+--- 8dc/release.py
++++ current/release.py
+@@ -470,6 +470,40 @@
+         text = text[:a] + '0' + text[b:]
+     return text.encode('utf8')
+ 
++def pm2_json_domain(value):
++    """Pure model/serialized JSON-tree guard, not original daemon typed evidence.
++    fclone assigns into {}, so any own __proto__ key is outside its proof domain.
++    Never strip, normalize, replace Unicode or infer hidden source object shape.
++    """
++    seen = set()
++    def walk(v):
++        t = type(v)
++        if v is None or t is bool:
++            return
++        if t is str:
++            v.encode('utf8', 'strict')
++        elif t is int:
++            need(-(2**53) < v < 2**53, 'PM2_JSON_DOMAIN_UNSAFE_INTEGER')
++        elif t is float:
++            need(math.isfinite(v), 'PM2_JSON_DOMAIN_NONFINITE')
++        elif t in (dict, list):
++            need(id(v) not in seen, 'PM2_JSON_DOMAIN_TREE_REQUIRED')
++            seen.add(id(v))
++            if t is dict:
++                for k, x in v.items():
++                    need(type(k) is str, 'PM2_JSON_DOMAIN_STRING_KEY')
++                    need(k != '__proto__', 'PM2_JSON_DOMAIN_PROTO_KEY')
++                    walk(k); walk(x)
++            else:
++                for x in v:
++                    walk(x)
++        else:
++            raise ReleaseError('PM2_JSON_DOMAIN_TYPE')
++    try:
++        walk(value)
++    except (UnicodeError, RecursionError) as exc:
++        raise ReleaseError('PM2_JSON_DOMAIN_UTF8_OR_DEPTH') from exc
++
+ def pm2_raw_binding(raw, model):
+     """Source-defined narrow proof; unresolved monitor/fork bytes yield not-ready.
+     No new/deleted top field, application escape or opaque byte gets an exception.
+@@ -480,6 +514,8 @@
+     e = model['pm2_env']
+     need(isinstance(e, dict) and isinstance(e.get('env'), dict)
+          and isinstance(value.get('env'), dict), 'PM2_ENV_OBJECT_REQUIRED')
++    pm2_json_domain(e)
++    pm2_json_domain(value)
+     bindings = {'name': model['name'], 'pm_id': model['pm_id'],
+                 'pm_exec_path': e['pm_exec_path'], 'pm_cwd': e['pm_cwd'],
+                 'exec_mode': 'cluster_mode', '_pm2_version': '7.0.3'}
+@@ -824,6 +860,14 @@
+          'OWN_NODE_UNIQUE_ID_COLLISION')
+     need(len(set(ids)) == 6, 'EXACT_SIX_OWN_SLOTS')
+     return ids
++
++def pm2_publish_ready(rows, ids):
++    """Only the identity-bound six OWN_CAP slots; not capture or recovery policy."""
++    own = [row for row in rows if row['id'] in ids]
++    need(len(ids) == len(set(ids)) == len(own) == 6
++         and {row['id'] for row in own} == set(ids)
++         and all(row['pm2ReloadReady'] is True for row in own),
++         'PM2_SIX_OWN_NOT_ALL_READY_NO_ATTEMPT_NO_PUBLISH')
+ 
+ def get_http(cfg, host, relative):
+     need(host in ('admin.51dianzi.com', '51dianzi.com'), 'FIXED_HTTPS_HOST')
+@@ -1370,6 +1414,7 @@
+         return b
+ 
+     def baseline_guard(self, b):
++        pm2_publish_ready(b['c']['processes'], b['ids'])
+         paths = tuple(Path(p) for p in b['c']['protectionUnion']['paths'])
+         links = {Path(a):Path(t) for a,t in b['c']['protectionUnion']['links'].items()}
+         snap = self.snapshot(b['c']['transport'], paths, links)
+--- 8dc/test_release.py
++++ current/test_release.py
+@@ -1,6 +1,7 @@
+ #!/usr/bin/env python3
+ """Isolated synthetic unit tests, NOT a production/full-builder release test.
+-No capture() invocation. All mutable fixtures live in a unique TemporaryDirectory.
++No production capture; diagnostic capture() is temp/mock only, with no capture file.
++All mutable fixtures live in a unique TemporaryDirectory.
+ Production subprocess, HTTP and RPC adapters are blocked/replaced before use.
+ Run: PYTHONDONTWRITEBYTECODE=1 python3 -B test_release.py -v
+ """
+@@ -1194,7 +1195,7 @@
+         for key in set(r.PM2_RAW_GENERATED)|{'pm_id','name','pm2_env','__proto__','pm_exec_path'}:
+             value=copy.deepcopy(self.v); model=copy.deepcopy(self.model)
+             model['pm2_env']['env'][key]=value['env'][key]='app'
+-            with self.subTest(key=key),self.assertRaisesRegex(r.ReleaseError,'OVERRIDE_AMBIGUITY'):
++            with self.subTest(key=key),self.assertRaisesRegex(r.ReleaseError,'OVERRIDE_AMBIGUITY|PM2_JSON_DOMAIN_PROTO_KEY'):
+                 self.semantic(self.bytes(value),model)
+ 
+     def test_monitor_added_field_is_not_proven_reload_ready(self):
+@@ -1672,5 +1673,216 @@
+         self.assertEqual(r.EXTERNAL_SCRIPT,r.EXTERNAL_OPS/'releases/20261112-forum12-1255b7b84aa3adac09cb8c05/worker-runtime-bootstrap.mjs')
+         self.assertEqual(r.SCOPE,'customer-batch-actions-20261120-6Lfttf6o-R4')
+ 
++
++class R4DomainTests(unittest.TestCase):
++    """Only synthetic Python JSON trees; actual fclone evidence is already offline."""
++    def fixture(self):
++        case = R3RawTests('test_exact_source_generated_projection_preserves_all_retained_bytes')
++        case.setUp()
++        return case
++
++    def put(self, tree, location, value):
++        if location == 'root': tree['__proto__'] = value
++        elif location == 'env': tree['env']['__proto__'] = value
++        elif location == 'opaque': tree['opaque'] = {'deep': {'__proto__': value}}
++        else: tree['opaque'] = [1, {'deep': [{'__proto__': value}]}]
++
++    def test_proto_root_env_nestedopaque_list_in_model_and_actual_refused_without_cleaning(self):
++        for side in ('model', 'actual'):
++            for location in ('root', 'env', 'opaque', 'list'):
++                for payload in ({'inherited': 'x'}, None, 'ignored-by-setter'):
++                    case = self.fixture()
++                    model, value = copy.deepcopy(case.model), copy.deepcopy(case.v)
++                    self.put(model['pm2_env'] if side == 'model' else value, location, payload)
++                    before_model, before_value = copy.deepcopy(model), copy.deepcopy(value)
++                    raw = case.bytes(value); original_raw = bytes(raw)
++                    with self.subTest(side=side, location=location, payload=payload), \
++                         patch.object(r.copy, 'deepcopy', side_effect=AssertionError('GUARD_BEFORE_FORECAST')), \
++                         self.assertRaisesRegex(r.ReleaseError, '^PM2_JSON_DOMAIN_PROTO_KEY$'):
++                        r.pm2_raw_binding(raw, model)
++                    self.assertEqual(model, before_model); self.assertEqual(value, before_value)
++                    self.assertEqual(raw, original_raw)
++                    self.assertEqual(r.decode(r.raw_values(raw)[b'pm2_env']), value)
++
++    def test_fifteen_finite_utf8_json_guard_samples_keep_values_keys_and_deepcopy(self):
++        samples = [None, [True, False], '', {}, [],
++            [0, -0.0, 1, -1, 0.125, -0.125, 1.0, 1e-7, 1e20, 5e-324,
++             1.7976931348623157e308, 2**53-1, -(2**53-1)],
++            {'值': '汉字𠮷😀', 'escape': 'quote" slash/ backslash\\ line\n tab\t nul\0'},
++            {'pair': '😀', 'empty': ''},
++            {'z': 1, '10': 10, '2': 2, '01': 1, '4294967294': 4, '0': 0},
++            {'x': {'b': 1, '9': 9, '1': 1}, 'a': [{'4': 4, '2': 2, 'c': 3}]},
++            {'a': [1, None, False, {'b': ['x', {'n': -2.5}]}], 'empty': {}},
++            {'status': 'online', 'env': {'nested': {'status': 'launching', 'axm_actions': []}}},
++            {'0': 'x', 'length': 1, 'indexOf': 'not-a-function', 'extra': True},
++            {'constructor': {'prototype': {'safe': 1}}, 'prototype': 'data', 'toString': 'data'},
++            {'a': {'v': [1, 2]}, 'b': {'v': [1, 2]}}]
++        self.assertEqual(len(samples), 15)
++        for value in samples:
++            before = copy.deepcopy(value); wire = r.encode(value)
++            self.assertIsNone(r.pm2_json_domain(value))
++            cloned = copy.deepcopy(value)
++            self.assertEqual(cloned, before); self.assertEqual(r.encode(value), wire)
++            if isinstance(value, (dict, list)): self.assertIsNot(cloned, value)
++            if isinstance(value, dict): self.assertEqual(list(cloned), list(value))
++
++    def test_ordinary_constructor_prototype_keys_and_opaque_string_preserved_in_binding(self):
++        case = self.fixture(); model, value = copy.deepcopy(case.model), copy.deepcopy(case.v)
++        plain = {'constructor': {'prototype': {'safe': 1}}, 'prototype': 'data', 'toString': 'data',
++                 'opaqueJSON': '{"__proto__":{"not":"a parsed key"}}'}
++        model['pm2_env']['ordinary'] = copy.deepcopy(plain); value['ordinary'] = copy.deepcopy(plain)
++        raw = case.bytes(value); before = copy.deepcopy(model)
++        self.assertTrue(r.pm2_raw_binding(raw, model)[2])
++        self.assertEqual(model, before); self.assertIn(b'"constructor"', raw)
++        self.assertEqual(r.decode(r.raw_values(raw)[b'pm2_env'])['ordinary'], plain)
++
++    def test_nonjson_types_nonstring_keys_and_python_special_subclasses_refused(self):
++        class CustomDict(dict): pass
++        class CustomInt(int): pass
++        for bad in (b'x', (1,), {1}, object(), lambda: None, {1: 'x'}, CustomDict(x=1), CustomInt(1)):
++            with self.subTest(kind=type(bad).__name__), self.assertRaisesRegex(r.ReleaseError, 'PM2_JSON_DOMAIN'):
++                r.pm2_json_domain({'opaque': [bad]})
++        for side in ('model', 'actual'):
++            case = self.fixture(); model = copy.deepcopy(case.model); value = copy.deepcopy(case.v)
++            if side == 'model': model['pm2_env']['opaque'] = b'not-JSON'
++            else: value['opaque'] = 2**53 + 1
++            with self.subTest(side=side), self.assertRaisesRegex(r.ReleaseError, 'PM2_JSON_DOMAIN'):
++                r.pm2_raw_binding(case.bytes(value), model)
++
++    def test_nonfinite_and_unsafe_integer_domain_both_inputs_refused(self):
++        for bad in (float('inf'), float('-inf'), float('nan'), 2**53, -(2**53), 2**53+1):
++            with self.subTest(bad=repr(bad)), self.assertRaisesRegex(r.ReleaseError, 'DOMAIN_NONFINITE|DOMAIN_UNSAFE_INTEGER'):
++                r.pm2_json_domain({'opaque': [{'n': bad}]})
++        for bad in (float('inf'), float('-inf'), float('nan'), 2**53, -(2**53)):
++            case = self.fixture(); model = copy.deepcopy(case.model); model['pm2_env']['opaque'] = [bad]
++            with self.subTest(model=repr(bad)), self.assertRaisesRegex(r.ReleaseError, 'PM2_JSON_DOMAIN'):
++                r.pm2_raw_binding(case.raw, model)
++        for token in (b'9007199254740993', b'-9007199254740992', b'1e400', b'-1e400', b'NaN'):
++            case = self.fixture(); data = r.raw_values(case.raw)[b'pm2_env']
++            raw = case.raw.replace(data, data[:-1]+b',"domainWitness":[{"n":'+token+b'}]}')
++            with self.subTest(actual=token), self.assertRaisesRegex(r.ReleaseError, 'DOMAIN_UNSAFE_INTEGER|NONFINITE_JSON'):
++                r.pm2_raw_binding(raw, case.model)
++
++    def test_lone_surrogates_refused_no_replacement_decode_policy_unchanged(self):
++        for string in ('\ud800', '\udfff'):
++            for is_key in (False, True):
++                bad = {string: 'x'} if is_key else {'x': string}
++                wire = json.dumps(bad, ensure_ascii=True).encode('ascii')
++                decoded = r.decode(wire); before = copy.deepcopy(decoded)
++                self.assertEqual(decoded, bad)  # original decoder still accepts JS UTF-16 data
++                with self.assertRaisesRegex(r.ReleaseError, 'PM2_JSON_DOMAIN_UTF8_OR_DEPTH'):
++                    r.pm2_json_domain(decoded)
++                self.assertEqual(decoded, before)
++                case = self.fixture(); model = copy.deepcopy(case.model); model['pm2_env']['opaque'] = bad
++                with self.assertRaisesRegex(r.ReleaseError, 'PM2_JSON_DOMAIN_UTF8_OR_DEPTH'):
++                    r.pm2_raw_binding(case.raw, model)
++                data = r.raw_values(case.raw)[b'pm2_env']
++                raw = case.raw.replace(data, data[:-1]+b',"domainWitness":'+wire+b'}')
++                with self.assertRaisesRegex(r.ReleaseError, 'PM2_JSON_DOMAIN_UTF8_OR_DEPTH'):
++                    r.pm2_raw_binding(raw, case.model)
++        with self.assertRaises(r.ReleaseError): r.pm2_raw_binding(b'pm2_env={"env":{},"x":"\xff"}\0', self.fixture().model)
++
++    def test_cycles_and_shared_python_containers_not_json_trees(self):
++        cycle = {}; cycle['self'] = cycle
++        shared = {'x': [1]}
++        for value in (cycle, {'a': shared, 'b': shared}):
++            with self.assertRaisesRegex(r.ReleaseError, 'PM2_JSON_DOMAIN_TREE_REQUIRED'):
++                r.pm2_json_domain(value)
++        self.assertIs(cycle['self'], cycle)
++
++
++class R4PublishGateTests(unittest.TestCase):
++    def fixture(self, mode):
++        case = SafetyTests('test_new_identity_and_fixed_boundary'); case.setUp(); self.addCleanup(case.doCleanups)
++        # Production six IDs, but all paths/process bytes remain purely synthetic.
++        ids = [190, 191, 192, 193, 194, 200]
++        for index, slot in enumerate(ids):
++            row = case.raw_rows[index]; row['pm_id'] = slot; row['pm2_env']['pm_id'] = slot
++            path = case.cfg.proc / str(row['pid']) / 'environ'; raw = path.read_bytes()
++            data = r.raw_values(raw)[b'pm2_env']; value = r.decode(data); value['pm_id'] = slot
++            path.write_bytes(raw.replace(data, json.dumps(value, ensure_ascii=False, separators=(',', ':')).encode()))
++            if mode == 'allfalse' or (mode == 'mixed' and index >= 4):
++                row['pm2_env']['version'] = 'diagnostic-monitor-added'
++        case.make_synthetic_package()
++        return case, ids
++
++    def full_tree(self, case):
++        out = {}
++        for path in [case.root, *sorted(case.root.rglob('*'))]:
++            out[str(path)] = (r.describe(path), path.read_bytes() if path.is_file() and not path.is_symlink() else None)
++        return out
++
++    def reject_entry(self, mode, method):
++        case, ids = self.fixture(mode); c = case.controller
++        own = [row for row in case.cap['processes'] if row['id'] in ids]
++        self.assertEqual([row['pm2ReloadReady'] for row in own], [False]*6 if mode == 'allfalse' else [True]*4+[False]*2)
++        self.assertEqual(r.identity(case.cfg, case.cap['processes']), ids)
++        before = self.full_tree(case)
++        with patch.object(r, 'exclusive', wraps=r.exclusive) as create, \
++             patch.object(r, 'cas', wraps=r.cas) as cas, \
++             patch.object(c, 'change_coord', wraps=c.change_coord) as window, \
++             patch.object(c, 'add_asset', wraps=c.add_asset) as asset, \
++             patch.object(c, 'change_file', wraps=c.change_file) as api, \
++             patch.object(c, 'checkpoint', wraps=c.checkpoint) as intent, \
++             patch.object(c, 'reload_adapter', wraps=c.reload_adapter) as adapter, \
++             patch.object(r, 'rpc', side_effect=AssertionError('NO_RPC_FOR_KNOWN_FALSE')) as rpc, \
++             self.assertRaisesRegex(r.ReleaseError, '^PM2_SIX_OWN_NOT_ALL_READY_NO_ATTEMPT_NO_PUBLISH$'):
++            getattr(c, method)(case.cfg.package, case.ms, case.rs)
++        self.assertEqual([x.call_count for x in (create, cas, window, asset, api, intent, adapter, rpc)], [0]*8)
++        self.assertFalse(case.cfg.receipt.exists()); self.assertEqual(case.reload_calls, [])
++        self.assertEqual(c.sequence, 0); self.assertIsNone(c.st); self.assertIsNone(c.state_hash)
++        self.assertEqual(self.full_tree(case), before)
++
++    def test_allfalse_preflight_zero_attempt_receipt_window_assets_api_intent_rpc_fullbefore(self):
++        self.reject_entry('allfalse', 'preflight')
++
++    def test_allfalse_apply_zero_attempt_receipt_window_assets_api_intent_rpc_fullbefore(self):
++        self.reject_entry('allfalse', 'apply')
++
++    def test_mixed_fronttrue_adminfalse_preflight_zero_writes_fullbefore(self):
++        self.reject_entry('mixed', 'preflight')
++
++    def test_mixed_fronttrue_adminfalse_apply_zero_writes_fullbefore(self):
++        self.reject_entry('mixed', 'apply')
++
++    def test_capture_snapshot_diagnostic_false_still_returns_identity_accepts(self):
++        case, ids = self.fixture('allfalse')
++        # Exercise unchanged capture method with no CLI, real RPC, production or output capture file.
++        before = self.full_tree(case)
++        with patch.object(r, 'exclusive', side_effect=AssertionError('NO_CAPTURE_FILE')), \
++             patch.object(r, 'cas', side_effect=AssertionError('NO_CAPTURE_WRITE')):
++            diagnostic = case.controller.capture()
++        self.assertEqual(r.identity(case.cfg, diagnostic['processes']), ids)
++        self.assertTrue(all(row['pm2ReloadReady'] is False for row in diagnostic['processes'] if row['id'] in ids))
++        self.assertEqual(diagnostic['productionWrites'], 0); self.assertEqual(self.full_tree(case), before)
++        self.assertFalse(case.cfg.receipt.exists()); self.assertEqual(case.reload_calls, [])
++
++    def test_allready_own_only_unowned_none_accepted_not_approval(self):
++        case, ids = self.fixture('alltrue')
++        r.pm2_publish_ready(case.cap['processes'], ids)
++        self.assertTrue(all(row['pm2ReloadReady'] is None for row in case.cap['processes'] if row['id'] not in ids))
++        self.assertEqual(case.preflight()['reloadScope'], ids)
++        self.assertFalse(case.cfg.receipt.exists()); self.assertEqual(case.reload_calls, [])
++
++    def test_ready_requires_literal_true_and_exact_six_only(self):
++        case, ids = self.fixture('alltrue')
++        rows = copy.deepcopy(case.cap['processes'])
++        for bad in (1, None, 'true', False):
++            rows[-6]['pm2ReloadReady'] = bad
++            with self.subTest(value=bad), self.assertRaisesRegex(r.ReleaseError, 'NO_ATTEMPT_NO_PUBLISH'):
++                r.pm2_publish_ready(rows, ids)
++        for bad_ids in (ids[:-1], ids+[ids[0]], ids[:-1]+[6]):
++            with self.assertRaisesRegex(r.ReleaseError, 'NO_ATTEMPT_NO_PUBLISH'):
++                r.pm2_publish_ready(case.cap['processes'], bad_ids)
++
++    def test_false_diagnostic_baseline_can_still_restore_manually_opened_journal(self):
++        case, ids = self.fixture('allfalse'); c = case.prepare_state()
++        with r.locked(case.cfg):
++            case.open_window(c)
++            c.restore_journal(case.cfg.package, case.ms, case.rs, c.attempt_hash, c.state_hash)
++            c.guard()
++        self.assertEqual(r.identity(case.cfg, c.st['processes']), ids)
++        self.assertEqual(case.reload_calls, [])
++
+ if __name__ == '__main__':
+     unittest.main()
+--- 8dc/prepare-local.py
++++ current/prepare-local.py
+@@ -15,7 +15,7 @@
+ HERE = Path(__file__).absolute().parent
+ REPO = HERE.parent.parent
+ WORK = Path('/home/ubuntu/work/customer-batch')
+-CONTROLLER_SHA = '8dc23eb3865e65bfc0a60d8b20f3548dc1a087cf533478ad89cdae88c86766f0'
++CONTROLLER_SHA = '52908c3719ef8f00b974b432af10c889c01397094778be812cea69ae828ae72f'
+ NODE = '/usr/bin/node'
+ # Exactly backend-builder.compile's transform options, but read original files twice.
+ BACKEND_HASH_CHECK = """
+--- 8dc/test_prepare_local.py
++++ current/test_prepare_local.py
+@@ -491,5 +491,19 @@
+             self.cap['protectionUnion']['paths'].sort()
+         self.assertEqual(self.calls,[]); self.assertFalse(self.out.exists())
+ 
++    def test_r4_domain_old_8dc_capture_pin_not_reusable(self):
++        self.cap['controllerSha256'] = '8dc23eb3865e65bfc0a60d8b20f3548dc1a087cf533478ad89cdae88c86766f0'
++        self.save_capture()
++        with self.assertRaisesRegex(P.PrepareError, 'fixed production capture binding'):
++            P.inputs(self.args, R)
++        self.assertEqual(self.calls, []); self.assertFalse(self.out.exists())
++
++    def test_r4_domain_false_readiness_diagnostic_inputs_not_publication_approval(self):
++        for row in self.cap['processes'][:6]: row['pm2ReloadReady'] = False
++        self.save_capture()
++        result = P.inputs(self.args, R)
++        self.assertTrue(all(row['pm2ReloadReady'] is False for row in result[3]['processes'][:6]))
++        self.assertEqual(self.calls, []); self.assertFalse(self.out.exists())
++
+ if __name__ == '__main__':
+     unittest.main()
+--- 8dc/README.md
++++ current/README.md
+@@ -1,8 +1,48 @@
+-# 客户批次发布控制器：R4 外部推荐服务最小离线保护
++# 客户批次发布控制器：R4 JSON-domain 与零写发布 pre-gate
+ 
+ ## 当前状态：NOT_APPROVED（2026-11-20）
+ 
+-OWNER 保持 `6Lfttf6oVWJ8YS69o5FkXQ`；新 SCOPE 为 **`customer-batch-actions-20261120-6Lfttf6o-R4`**，默认 stage 仅为派生路径，未创建或访问真实 stage。当前 controller SHA256 为 `8dc23eb3865e65bfc0a60d8b20f3548dc1a087cf533478ad89cdae88c86766f0`；`prepare-local.py` 固定 pin 同步。准确 bf7 基线六文件位于 `evidence/r4-baseline-bf7ec85b/`，全部哈希核对。R3 从未执行 remote stage/capture/attempt，本轮不重用 R3 scope/pin/capture。
++当前 controller SHA256 **`52908c3719ef8f00b974b432af10c889c01397094778be812cea69ae828ae72f`**，preparer 固定 `CONTROLLER_SHA` 已同步。准确增量基线为 **`8dc23eb3865e65bfc0a60d8b20f3548dc1a087cf533478ad89cdae88c86766f0`**，六文件先保存到 `evidence/r4-domain-baseline-8dc/`，基线哈希见 `evidence/r4-domain-baseline-sha256.txt`。OWNER `6Lfttf6oVWJ8YS69o5FkXQ`、SCOPE `customer-batch-actions-20261120-6Lfttf6o-R4` 不变；R4 从未 remote/stage/capture/attempt，本增量只静态更新 pin，不迭代 scope，不重用旧 pin capture。
++
++本增量仅六个许可 Python/测试/README 文件及 `evidence/r4-domain-*`。没有 Git/MCP/SSH/server/业务/TS/JS builder、真实 Node/模块执行、实际 capture、CLI 或 reload。测试中 capture/preflight/apply/恢复/锁/CAS 均为唯一 TemporaryDirectory 与 mock，诊断 capture 不写 capture 文件，不能视为 actual witness。
++
++## 递归 clone JSON 域：拒绝，不清洗
++
++已读 `/home/ubuntu/work/customer-batch/review-fclone-offline.md`、`.json` 及实际本地 `fclone-resolved-once/fclone.js`；源码 1239 bytes，SHA `9b921f33e5d4e36dd030f5d2e736ea2af0c95f4fb795ada696160e2db7fe2fe6`。源码用普通 `{}` 的 `copy[key] = ...`，自有 `__proto__` 值为对象/null/string 的三个合法 JSON 反例已由独立离线审确认会丢 key 或改变副本 prototype。Utility.clone 根 null→`{}` 的差异不适用已要求 dict 的 model.pm2_env；不忽略该边界。
++
++新增纯 `pm2_json_domain` 在 `pm2_raw_binding` forecast 前分别检查**完整 model.pm2_env e** 与**完整 actual serialized value**。递归拒绝任何 `__proto__` key、非标准 dict/list/JSON 叶类型、非字符串 key、非有限 float、`abs(int) >= 2**53`、非树的 Python cycle/shared container 与不支持的递归深度。字符串/key 使用 strict UTF-8，lone surrogate 报 `ReleaseError`，绝不替换字符。有限 Python float 本身是 binary64（含 1e20/最大有限值），不将它们误限为 PM2 生成安全整数；整数跨语言精确保留则只接受 JS safe integer。
++
++guard 不改 decoder 的合法字符串政策；JS UTF-16 可含孤 surrogate，原 forecast strict UTF-8 已阻断，本检查只将该有限证明域提前显式拒绝。普通 `constructor`、`prototype`、`toString` 数据 key 和含 `__proto__` 文本的 opaque string 不被泛化禁用。没有删字段、递归 env 清洗、canonicalization、字节重写或新增生命周期例外；原 app retained bytes、metadata 五字段与 token/escape/order 规则保持。
++
++**JSON 投影不能反推 original daemon 的 prototypes/functions/special/accessors/undefined/symbols/cycles/shared identity**。guard 不是 typed/fullSourceShape witness；unknown typed/full witness 仍需 actual 新核验。原独立 fclone 15 样本结论仍只是限定 clone 证据；本轮 15 个 finite/UTF-8 Python guard/deepcopy 样本不是重新执行 Node/fclone，也不是实际六槽预测通过。
++
++## 正式 preflight/apply：已知 false 在任何写入及发布 snapshot RPC 前拒绝
++
++固定 R3 离线审 `review-r3-offline.md:69–86` 指出旧行为是 late-gate/controlled-failure，并非成功绕过：合法 false 可以在 attempt/open/assets/API CAS 之后才由单槽 reload gate 拒绝，front-ready/admin-false 甚至可能先滚 front。本增量不重写恢复协议，只在 **baseline_guard 最前面**新增 `pm2_publish_ready`：identity-bound **六 own 槽** `pm2ReloadReady is True` 必须全部成立，否则 `PM2_SIX_OWN_NOT_ALL_READY_NO_ATTEMPT_NO_PUBLISH`。
++
++baseline_guard 实际仅被 preflight/apply 调用，均在 receipt mkdir / attempt 之前；先检 sealed capture six readiness，再由既有 exact snapshot guard 拒绝 true→false 或任何其它漂移。six ID 在 actual fresh capture 必须为 190/191/192/193/194/200；测试也用这些 ID，但代码依既有 name/script/identity 得到 b.ids，不新造固定 ID/CLI 例外。unowned/外部辅助 readiness 不纳入该门槛。capture/identity 与 candidate not-approved 的合法 false 诊断不变；原单槽 intent 前 `...UNPROVEN_NO_RELOAD` 保留。rollback/restore/guard/state/journal/receipt 全不改，必要恢复不受新发布前 gate 阻断。
++
++## 限定回归与精确差量
++
++修改前 **121/34/6** 基线重新通过；新增后 **136/136 controller、36/36 preparer、6/6 finite JSON** 通过。原全部测试方法保留，仅一个旧 __proto__ override 预期接受更早 domain 拒绝；原 late direct reload 测试仍手工开 mock window 并验证单槽 guard。新增 root/env/nested opaque/list 的 model/raw __proto__ 反例证明 input/env 不清洗、forecast 未执行；有限域/UTF-8/safe JSON、普通 constructor、all-false/mixed pub 拒绝全覆盖。四个 pub 反例逐项断言 attempt/exclusive/new receipt/window/immutable assets/API CAS/intent/adapter/RPC 全 0、整个临时树 bytes/full META 完全不变；mock capture 返回 false/identity 接受和手工恢复 false journal 也通过。
++
++完整日志 `evidence/r4-domain-release-tests.txt`、`r4-domain-prepare-tests.txt`、`r4-domain-finite-tests.txt`；首轮测试 fixture 重复 opaque key 的错误日志保留为 `r4-domain-release-tests-initial.txt`，只改测试新增键为 domainWitness，没有放宽 duplicate-key 或生产政策。source SHA、日志 SHA、准确 AST/逐函数全文 bytes 比较、完整六文件 diff 与报告见 `evidence/r4-domain-source-and-safety.json`、`r4-domain-ast-diff.json`、`r4-domain-controller.diff`、`r4-domain-allowed-files.diff`、`r4-domain-report.md`。
++
++对 8dc：仅新增 `pm2_json_domain` / `pm2_publish_ready` 两纯 helper，改 `pm2_raw_binding` 两行调用及 `Controller.baseline_guard` 一行；不是修改全部 Controller。原 OWNER/SCOPE/extraProtect、九 generation pins、RPC、外部辅助 protection/transport/root 以及其它 Controller 方法全文 bytes/AST 不变。preparer 源码仅固定 pin 一项 AST 改动。
++
++## 剩余 hold：必要门槛不是实际 true，更不是批准
++
++**controllerApproved=false；releaseApproved=false；finalDeployApproval=false；reloadApproved=false；NOT_APPROVED。** 仍待主任务真实 fresh14proc、**六 Ready 全部 True 的 actual hash-bound 证据**、typed/fullSourceShape/actualfield/fullRetained/complete-byte witness、fresh full protected trees/fullMETA、fresh new full package/manifest/source/tool/owner/nonce/TTL/正逆字节及独立 fullpackage 审查与明确部署许可。all-ready 新代码不能描述为实际 all true，也不能替代任何 witness 或 approve。R4 无实际 capture/stage/attempt/approval/window/reload。
++
++---
++
++## R4 8dc 外部保护历史（以下不是当前 pin 或本增量差量）
++
++# R4 8dc 外部推荐服务离线保护记录
++
++## 当前状态：NOT_APPROVED（2026-11-20）
++
++OWNER 保持 `6Lfttf6oVWJ8YS69o5FkXQ`；新 SCOPE 为 **`customer-batch-actions-20261120-6Lfttf6o-R4`**，默认 stage 仅为派生路径，未创建或访问真实 stage。8dc 阶段 controller SHA256 为 `8dc23eb3865e65bfc0a60d8b20f3548dc1a087cf533478ad89cdae88c86766f0`；当时 `prepare-local.py` 固定 pin 同步；现已更新到上方新 pin。准确 bf7 基线六文件位于 `evidence/r4-baseline-bf7ec85b/`，全部哈希核对。R3 从未执行 remote stage/capture/attempt，本轮不重用 R3 scope/pin/capture。
+ 
+ 只修改 release/test_release/prepare-local/test_prepare_local/两 README 六文件和 `evidence/r4-*`。不改业务/UI/TS/JS builder，不执行 Git/MCP/SSH、生产 CLI、真实 Node/模块 import/RPC/capture/lock/reload。所有新 fixture 位于 TemporaryDirectory；现有锁、CAS、journal、receipt、reload 测试仅使用既有临时目录/mock，不能视为生产操作或发布证明。
+ 
+--- 8dc/prepare-local.README.md
++++ current/prepare-local.README.md
+@@ -5,12 +5,12 @@
+ 本轮 preparer 的唯一源码 AST 差量为固定 `CONTROLLER_SHA` 更新；其它 AST 不变。当前固定 SHA 为：
+ 
+ ```text
+-8dc23eb3865e65bfc0a60d8b20f3548dc1a087cf533478ad89cdae88c86766f0
++52908c3719ef8f00b974b432af10c889c01397094778be812cea69ae828ae72f
+ ```
+ 
+-R3/bf7 基线仅用于差异审计，不重用其 capture。只有 pin 改动，preparer 所有方法/schema AST 与原字节不变；scope 直接引用 release.SCOPE。仅接受 **`customer-batch-actions-20261120-6Lfttf6o-R4`**、完整 OWNER `6Lfttf6oVWJ8YS69o5FkXQ`、当前 controller SHA 与完整 Config 的当次 fresh capture。R2 scope/d6 capture、历史旧 scope/7fc capture、丢失 JSON 均不可重用。Config 保留两个 env 和 `/var/lib/dianzi51-private`，R4 追加准确 `/opt/ops/dianzi51-recommendation` 与 `/opt/releases/20261009T170014Z-memory-isolation/dianzi51-platform` 完整保护树；对象-only union 检查不能漏掉任一精确根。R3 原 process rows 的 `pm2RawMeta` 和 `pm2ReloadReady`，原样由当前 controller 的严格 schema/identity 验证，外部两进程只在 transport.externalProtection 中保护，不放入 PM2 processes；不从布尔 ready 或 mock 通过制造发布批准。
++R3/bf7/8dc 基线仅用于差异审计，不重用其 capture。只有 pin 改动，preparer 所有方法/schema AST 与原字节不变；scope 直接引用 release.SCOPE。仅接受 **`customer-batch-actions-20261120-6Lfttf6o-R4`**、完整 OWNER `6Lfttf6oVWJ8YS69o5FkXQ`、当前 controller SHA 与完整 Config 的当次 fresh capture。R2 scope/d6 capture、历史旧 scope/7fc capture、丢失 JSON 均不可重用。Config 保留两个 env 和 `/var/lib/dianzi51-private`，R4 追加准确 `/opt/ops/dianzi51-recommendation` 与 `/opt/releases/20261009T170014Z-memory-isolation/dianzi51-platform` 完整保护树；对象-only union 检查不能漏掉任一精确根。R3 原 process rows 的 `pm2RawMeta` 和 `pm2ReloadReady`，原样由当前 controller 的严格 schema/identity 验证，外部两进程只在 transport.externalProtection 中保护，不放入 PM2 processes；不从布尔 ready 或 mock 通过制造发布批准。
+ 
+-R2 已由独立审确认不能上线，R4 仍 **NOT_APPROVED**。本轮只执行本地隔离测试、内存编译与 AST/SHA 核对；不修改/执行 JS builder、业务或 UI，不运行本脚本的真实 prepare，不用 Git/SSH/MCP，不访问生产，不执行 capture/preflight/apply/verify/rollback CLI。控制器 R4 的源码限定转换、source/loader pins 与剩余证据阻碍详见 `README.md`、`evidence/r4-controller.diff` 和 `evidence/r4-report.md`。
++R2 已由独立审确认不能上线，R4 仍 **NOT_APPROVED**。本轮只执行本地隔离测试、内存编译与 AST/SHA 核对；不修改/执行 JS builder、业务或 UI，不运行本脚本的真实 prepare，不用 Git/SSH/MCP，不访问生产，不执行 capture/preflight/apply/verify/rollback CLI。控制器 R4 的源码限定转换、source/loader pins 与剩余证据阻碍详见 `README.md`、`evidence/r4-domain-controller.diff` 和 `evidence/r4-domain-report.md`。
+ 
+ ## 输入和路径约束
+ 
+@@ -94,3 +94,13 @@
+ 原 32 项 preparer 测试方法全部保留，新增 R3 scope/bf7 pin 拒绝与 R4 两外部精确根漏根拒绝，共 **34/34** 通过。所有 capture/baseline/source/nonce/reviewer fixture 位于 TemporaryDirectory，build/candidate subprocess 完全 mock；真实 pure helper 仍拒绝合成空 native records。这不是实际构建、真实 RPC 或发布证明。完整日志 `evidence/r4-prepare-tests.txt`；controller **121/121** mock 反例日志 `evidence/r4-release-tests.txt`。内存编译及精确 AST 证据在 `evidence/r4-source-and-safety.json` 和 `evidence/r4-ast-diff.json`，无 pycache。
+ 
+ 尚缺实际 R4 fresh14proc/full protected trees/fullMETA/前台保护集合绑定、fclone 完整 retainedWitness/实际 clone 语义与 retained raw/model 完整 forecast、真实新 package/manifest/source/tool pins、完整正逆字节和独立差量审。**controllerApproved=false；finalDeployApproval=false；NOT_APPROVED。** 私有输出含真实 capture/nonce 时不可进入 Git，不 commit/push、上传或分享这些资料。
++
++## R4 domain 增量（2026-11-20，仍 NOT_APPROVED）
++
++准确 8dc 基线六文件先存于 `evidence/r4-domain-baseline-8dc/`。controller 新增 pure recursive JSON-domain guard：完整 monitor e 与 actual serialized value 分别拒绝 `__proto__`/非 JSON/非有限数/unsafe integer/strict UTF-8 编码不支持的 lone surrogate，不删 key、不清洗 env、不 canonicalize。普通 constructor/prototype key 保留；不从 JSON 投影反推 original daemon typed shape。原 decoder 与业务合法字符串政策不改，模型根 dict 已排除 Utility.clone 根 null 的差异。
++
++正式 pub 的 baseline_guard 在任何 receipt/attempt/write 和发布 snapshot RPC 前要求 identity-bound six-own 全部 `pm2ReloadReady is True`，保留原单槽 gate；不覆盖 unowned/外部辅助，不修改 rollback/restore/state/receipt。**本 preparer 输入与 candidate seal 的合法 false 诊断仍接受，不新增审批或封印策略**。prepare/seal 结果仍 not-approved；不能把 pub 必要前条件当实际六槽 all true 或独立审批。
++
++本增量基线 121/34/6 已重跑，现 controller **136/136**、preparer **36/36**、finite JSON **6/6** 通过，日志 `evidence/r4-domain-release-tests.txt`、`r4-domain-prepare-tests.txt`、`r4-domain-finite-tests.txt`。原 34 preparer 方法全部保留，新增旧8dc capture pin拒绝与合法false输入仍只诊断。真实 builders/CLI/生产/actual capture/reload 均未执行。准确 AST/source/log SHA 见 `evidence/r4-domain-ast-diff.json` 与 `r4-domain-source-and-safety.json`。
++
++真实 fresh14proc、six Ready all True typed/retained witness/freshMeta/new fullpackage 及独立全包审查全部仍待主任务。**controllerApproved=false；releaseApproved=false；finalDeployApproval=false；reloadApproved=false；NOT_APPROVED。** R4 从未 remote/stage/capture/attempt，SCOPE 不迭代，仅静态 pin 更新。

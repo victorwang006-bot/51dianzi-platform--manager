@@ -1,0 +1,179 @@
+test_enumeration_race_refused (__main__.AdapterFilesTests.test_enumeration_race_refused) ... ok
+test_failed_resolve_has_no_npm_or_other_fallback (__main__.AdapterFilesTests.test_failed_resolve_has_no_npm_or_other_fallback) ... ok
+test_file_and_empty_directory_set_changes_bound (__main__.AdapterFilesTests.test_file_and_empty_directory_set_changes_bound) ... ok
+test_full_vendor_files_dirs_meta_and_root_package_pins (__main__.AdapterFilesTests.test_full_vendor_files_dirs_meta_and_root_package_pins) ... ok
+test_hardlink_dependency_escape_refused (__main__.AdapterFilesTests.test_hardlink_dependency_escape_refused) ... ok
+test_late_directory_addition_refused (__main__.AdapterFilesTests.test_late_directory_addition_refused) ... ok
+test_late_file_deletion_refused (__main__.AdapterFilesTests.test_late_file_deletion_refused) ... ok
+test_late_file_meta_change_refused (__main__.AdapterFilesTests.test_late_file_meta_change_refused) ... ok
+test_late_source_change_refused (__main__.AdapterFilesTests.test_late_source_change_refused) ... ok
+test_missing_index_is_refused (__main__.AdapterFilesTests.test_missing_index_is_refused) ... ok
+test_missing_root_package_never_drops_pin_or_falls_back (__main__.AdapterFilesTests.test_missing_root_package_never_drops_pin_or_falls_back) ... ok
+test_rpc_arguments_keep_original_specifiers_and_all_source_pins (__main__.AdapterFilesTests.test_rpc_arguments_keep_original_specifiers_and_all_source_pins) ... ok
+test_same_bytes_metadata_change_bound (__main__.AdapterFilesTests.test_same_bytes_metadata_change_bound) ... ok
+test_source_change_between_snapshot_and_pins_refused (__main__.AdapterFilesTests.test_source_change_between_snapshot_and_pins_refused) ... ok
+test_special_unknown_entry_refused (__main__.AdapterFilesTests.test_special_unknown_entry_refused) ... ok
+test_symlink_file_and_directory_dependency_escape_refused (__main__.AdapterFilesTests.test_symlink_file_and_directory_dependency_escape_refused) ... ok
+test_wrong_resolved_entries_and_npm_fallback_refused (__main__.AdapterFilesTests.test_wrong_resolved_entries_and_npm_fallback_refused) ... ok
+test_exact_default_private_root_keeps_all_prior_protection (__main__.R3ProtocolTests.test_exact_default_private_root_keeps_all_prior_protection) ... ok
+test_illegal_observation_leaves_only_intent_never_loaded_or_unlock (__main__.R3ProtocolTests.test_illegal_observation_leaves_only_intent_never_loaded_or_unlock) ... ok
+test_multiple_slot_unique_collision_and_unrolled_raw_are_rejected (__main__.R3ProtocolTests.test_multiple_slot_unique_collision_and_unrolled_raw_are_rejected) ... ok
+test_no_reload_intent_when_current_model_forecast_unproved (__main__.R3ProtocolTests.test_no_reload_intent_when_current_model_forecast_unproved) ... ok
+test_observation_checkpoint_failure_keeps_memory_and_durable_intent_uncertain (__main__.R3ProtocolTests.test_observation_checkpoint_failure_keeps_memory_and_durable_intent_uncertain) ... ok
+test_observed_source_drift_rejected_before_event_is_recorded (__main__.R3ProtocolTests.test_observed_source_drift_rejected_before_event_is_recorded) ... ok
+test_partial_journal_intent_cannot_forge_observed_transition (__main__.R3ProtocolTests.test_partial_journal_intent_cannot_forge_observed_transition) ... ok
+test_private_root_full_files_emptydirs_meta_set_and_existing_union (__main__.R3ProtocolTests.test_private_root_full_files_emptydirs_meta_set_and_existing_union) ... ok
+test_private_root_special_entry_fail_closed (__main__.R3ProtocolTests.test_private_root_special_entry_fail_closed) ... ok
+test_uncertain_adapter_error_keeps_only_proved_observation_then_recovery (__main__.R3ProtocolTests.test_uncertain_adapter_error_keeps_only_proved_observation_then_recovery) ... ok
+test_application_escape_bytes_not_recursive_canonicalized (__main__.R3RawTests.test_application_escape_bytes_not_recursive_canonicalized) ... ok
+test_current_model_generated_relation_required (__main__.R3RawTests.test_current_model_generated_relation_required) ... ok
+test_duplicate_keys_at_top_env_nested_and_escaped_alias_rejected (__main__.R3RawTests.test_duplicate_keys_at_top_env_nested_and_escaped_alias_rejected) ... ok
+test_env_lifecycle_values_not_deleted_even_when_monitor_strip_would (__main__.R3RawTests.test_env_lifecycle_values_not_deleted_even_when_monitor_strip_would) ... ok
+test_every_outer_lifecycle_looking_application_value_is_byte_exact (__main__.R3RawTests.test_every_outer_lifecycle_looking_application_value_is_byte_exact) ... ok
+test_exact_source_generated_projection_preserves_all_retained_bytes (__main__.R3RawTests.test_exact_source_generated_projection_preserves_all_retained_bytes) ... ok
+test_generated_integer_types_and_noncanonical_tokens_refused (__main__.R3RawTests.test_generated_integer_types_and_noncanonical_tokens_refused) ... ok
+test_generation_override_and_container_override_ambiguity_refused (__main__.R3RawTests.test_generation_override_and_container_override_ambiguity_refused) ... ok
+test_merge_object_coercion_ambiguity_refused (__main__.R3RawTests.test_merge_object_coercion_ambiguity_refused) ... ok
+test_monitor_added_field_is_not_proven_reload_ready (__main__.R3RawTests.test_monitor_added_field_is_not_proven_reload_ready) ... ok
+test_nested_life_values_and_nested_unique_never_transform (__main__.R3RawTests.test_nested_life_values_and_nested_unique_never_transform) ... ok
+test_restart_time_reset_and_time_window_are_exact_not_whitelisted (__main__.R3RawTests.test_restart_time_reset_and_time_window_are_exact_not_whitelisted) ... ok
+test_stable_identity_and_wrong_container_types_rejected (__main__.R3RawTests.test_stable_identity_and_wrong_container_types_rejected) ... ok
+test_top_order_whitespace_and_unproved_field_exact (__main__.R3RawTests.test_top_order_whitespace_and_unproved_field_exact) ... ok
+test_wait_ready_truthiness_type_ambiguity_refused (__main__.R3RawTests.test_wait_ready_truthiness_type_ambiguity_refused) ... ok
+test_absent_and_empty_loader_env_allowed_only_with_mock_node (__main__.R3SourcePinTests.test_absent_and_empty_loader_env_allowed_only_with_mock_node) ... ok
+test_each_generating_source_drift_fail_closed (__main__.R3SourcePinTests.test_each_generating_source_drift_fail_closed) ... ok
+test_generation_pins_all_measured_exact_no_missing_sources (__main__.R3SourcePinTests.test_generation_pins_all_measured_exact_no_missing_sources) ... ok
+test_loader_env_refused_before_any_node_probe_without_unsetting (__main__.R3SourcePinTests.test_loader_env_refused_before_any_node_probe_without_unsetting) ... ok
+test_cycles_and_shared_python_containers_not_json_trees (__main__.R4DomainTests.test_cycles_and_shared_python_containers_not_json_trees) ... ok
+test_fifteen_finite_utf8_json_guard_samples_keep_values_keys_and_deepcopy (__main__.R4DomainTests.test_fifteen_finite_utf8_json_guard_samples_keep_values_keys_and_deepcopy) ... ok
+test_lone_surrogates_refused_no_replacement_decode_policy_unchanged (__main__.R4DomainTests.test_lone_surrogates_refused_no_replacement_decode_policy_unchanged) ... FAIL
+test_nonfinite_and_unsafe_integer_domain_both_inputs_refused (__main__.R4DomainTests.test_nonfinite_and_unsafe_integer_domain_both_inputs_refused) ... 
+  test_nonfinite_and_unsafe_integer_domain_both_inputs_refused (__main__.R4DomainTests.test_nonfinite_and_unsafe_integer_domain_both_inputs_refused) (actual=b'9007199254740993') ... FAIL
+  test_nonfinite_and_unsafe_integer_domain_both_inputs_refused (__main__.R4DomainTests.test_nonfinite_and_unsafe_integer_domain_both_inputs_refused) (actual=b'-9007199254740992') ... FAIL
+test_nonjson_types_nonstring_keys_and_python_special_subclasses_refused (__main__.R4DomainTests.test_nonjson_types_nonstring_keys_and_python_special_subclasses_refused) ... ok
+test_ordinary_constructor_prototype_keys_and_opaque_string_preserved_in_binding (__main__.R4DomainTests.test_ordinary_constructor_prototype_keys_and_opaque_string_preserved_in_binding) ... ok
+test_proto_root_env_nestedopaque_list_in_model_and_actual_refused_without_cleaning (__main__.R4DomainTests.test_proto_root_env_nestedopaque_list_in_model_and_actual_refused_without_cleaning) ... ok
+test_actual_flock_path_is_kernel_observed_and_sticky (__main__.R4ExternalTests.test_actual_flock_path_is_kernel_observed_and_sticky) ... ok
+test_child_cwd_exact_not_a_normalized_or_guessed_path (__main__.R4ExternalTests.test_child_cwd_exact_not_a_normalized_or_guessed_path) ... ok
+test_child_startticks_cannot_precede_bound_parent (__main__.R4ExternalTests.test_child_startticks_cannot_precede_bound_parent) ... ok
+test_deleted_actual_exe_and_unsupported_source_links_fail_closed (__main__.R4ExternalTests.test_deleted_actual_exe_and_unsupported_source_links_fail_closed) ... ok
+test_exact_script_and_no_unknown_child_loader_flags (__main__.R4ExternalTests.test_exact_script_and_no_unknown_child_loader_flags) ... ok
+test_executable_source_full_meta_drift_even_same_hash_is_rejected (__main__.R4ExternalTests.test_executable_source_full_meta_drift_even_same_hash_is_rejected) ... ok
+test_fixed_two_nonpm2_identities_whole_opaque_hashes_and_full_file_meta (__main__.R4ExternalTests.test_fixed_two_nonpm2_identities_whole_opaque_hashes_and_full_file_meta) ... ok
+test_fixture_only_skip_is_explicit_never_a_production_override (__main__.R4ExternalTests.test_fixture_only_skip_is_explicit_never_a_production_override) ... ok
+test_hardlinked_exe_or_bootstrap_not_widened (__main__.R4ExternalTests.test_hardlinked_exe_or_bootstrap_not_widened) ... ok
+test_invalid_stat_identity_or_dead_pid_is_rejected (__main__.R4ExternalTests.test_invalid_stat_identity_or_dead_pid_is_rejected) ... ok
+test_missing_either_proc_has_no_pid_search_or_fallback (__main__.R4ExternalTests.test_missing_either_proc_has_no_pid_search_or_fallback) ... ok
+test_missing_exact_protection_roots_not_replaced_by_ancestor (__main__.R4ExternalTests.test_missing_exact_protection_roots_not_replaced_by_ancestor) ... ok
+test_node_full_executable_sha_bound_not_name_only (__main__.R4ExternalTests.test_node_full_executable_sha_bound_not_name_only) ... ok
+test_parent_cmdline_drift_is_opaque_no_normalization (__main__.R4ExternalTests.test_parent_cmdline_drift_is_opaque_no_normalization) ... ok
+test_parent_cwd_is_shallow_unknown_not_recursive_root_protection (__main__.R4ExternalTests.test_parent_cwd_is_shallow_unknown_not_recursive_root_protection) ... ok
+test_parent_is_flock_not_another_node (__main__.R4ExternalTests.test_parent_is_flock_not_another_node) ... ok
+test_permissions_drift_between_samples_is_rejected (__main__.R4ExternalTests.test_permissions_drift_between_samples_is_rejected) ... ok
+test_pid_reuse_inside_single_proc_sample_is_rejected (__main__.R4ExternalTests.test_pid_reuse_inside_single_proc_sample_is_rejected) ... ok
+test_pid_reuse_startticks_between_complete_samples_is_rejected (__main__.R4ExternalTests.test_pid_reuse_startticks_between_complete_samples_is_rejected) ... ok
+test_proc_directory_meta_drift_is_rejected (__main__.R4ExternalTests.test_proc_directory_meta_drift_is_rejected) ... ok
+test_root_meta_drift_is_rejected (__main__.R4ExternalTests.test_root_meta_drift_is_rejected) ... ok
+test_script_full_meta_drift_even_same_hash_is_rejected (__main__.R4ExternalTests.test_script_full_meta_drift_even_same_hash_is_rejected) ... ok
+test_source_script_full_bytes_drift_is_rejected (__main__.R4ExternalTests.test_source_script_full_bytes_drift_is_rejected) ... ok
+test_whole_environment_drift_has_no_nodeunique_or_pm2_exception (__main__.R4ExternalTests.test_whole_environment_drift_has_no_nodeunique_or_pm2_exception) ... ok
+test_wrong_child_exe_and_argv0_fail_closed (__main__.R4ExternalTests.test_wrong_child_exe_and_argv0_fail_closed) ... ok
+test_wrong_ppid_and_parent_cycle_are_rejected (__main__.R4ExternalTests.test_wrong_ppid_and_parent_cycle_are_rejected) ... ok
+test_both_complete_extra_trees_files_dirs_emptydirs_and_set_not_only_pm2 (__main__.R4ProtectedGraphTests.test_both_complete_extra_trees_files_dirs_emptydirs_and_set_not_only_pm2) ... ok
+test_default_exact_roots_no_parentcwd_or_root_recursion (__main__.R4ProtectedGraphTests.test_default_exact_roots_no_parentcwd_or_root_recursion) ... ok
+test_original_controller_guard_binds_external_opaque_identity_without_schema_change (__main__.R4ProtectedGraphTests.test_original_controller_guard_binds_external_opaque_identity_without_schema_change) ... ok
+test_allfalse_apply_zero_attempt_receipt_window_assets_api_intent_rpc_fullbefore (__main__.R4PublishGateTests.test_allfalse_apply_zero_attempt_receipt_window_assets_api_intent_rpc_fullbefore) ... ok
+test_allfalse_preflight_zero_attempt_receipt_window_assets_api_intent_rpc_fullbefore (__main__.R4PublishGateTests.test_allfalse_preflight_zero_attempt_receipt_window_assets_api_intent_rpc_fullbefore) ... ok
+test_allready_own_only_unowned_none_accepted_not_approval (__main__.R4PublishGateTests.test_allready_own_only_unowned_none_accepted_not_approval) ... ok
+test_capture_snapshot_diagnostic_false_still_returns_identity_accepts (__main__.R4PublishGateTests.test_capture_snapshot_diagnostic_false_still_returns_identity_accepts) ... ok
+test_false_diagnostic_baseline_can_still_restore_manually_opened_journal (__main__.R4PublishGateTests.test_false_diagnostic_baseline_can_still_restore_manually_opened_journal) ... ok
+test_mixed_fronttrue_adminfalse_apply_zero_writes_fullbefore (__main__.R4PublishGateTests.test_mixed_fronttrue_adminfalse_apply_zero_writes_fullbefore) ... ok
+test_mixed_fronttrue_adminfalse_preflight_zero_writes_fullbefore (__main__.R4PublishGateTests.test_mixed_fronttrue_adminfalse_preflight_zero_writes_fullbefore) ... ok
+test_ready_requires_literal_true_and_exact_six_only (__main__.R4PublishGateTests.test_ready_requires_literal_true_and_exact_six_only) ... ok
+test_external_drift_during_mock_node_probe_rejected_before_transport_returns (__main__.R4TransportTests.test_external_drift_during_mock_node_probe_rejected_before_transport_returns) ... ok
+test_fclone_fixed_source_missing_and_drift_are_failclosed (__main__.R4TransportTests.test_fclone_fixed_source_missing_and_drift_are_failclosed) ... ok
+test_transport_includes_actual_exe_script_sources_and_fullmeta_with_original_pins (__main__.R4TransportTests.test_transport_includes_actual_exe_script_sources_and_fullmeta_with_original_pins) ... ok
+test_candidate_wrong_controller_pin_creates_no_output (__main__.SafetyTests.test_candidate_wrong_controller_pin_creates_no_output) ... ok
+test_capture_ttl_forward_only_and_fresh_recovery_approval (__main__.SafetyTests.test_capture_ttl_forward_only_and_fresh_recovery_approval) ... ok
+test_cas_last_race_never_overwrites_foreign_bytes (__main__.SafetyTests.test_cas_last_race_never_overwrites_foreign_bytes) ... ok
+test_cas_remember_precedes_target_dir_fsync_failure_and_is_recoverable (__main__.SafetyTests.test_cas_remember_precedes_target_dir_fsync_failure_and_is_recoverable) ... ok
+test_change_coord_journal_failure_remembers_owned_raw_immediately (__main__.SafetyTests.test_change_coord_journal_failure_remembers_owned_raw_immediately) ... ok
+test_change_file_journal_failure_after_rename_tracks_memory_no_replay (__main__.SafetyTests.test_change_file_journal_failure_after_rename_tracks_memory_no_replay) ... ok
+test_checkpoint_dir_fsync_fault_never_claims_durable_or_replays (__main__.SafetyTests.test_checkpoint_dir_fsync_fault_never_claims_durable_or_replays) ... ok
+test_coord_history_protection_union_preserves_counts_and_extensions (__main__.SafetyTests.test_coord_history_protection_union_preserves_counts_and_extensions) ... ok
+test_coord_missing_closed_proof_or_history_and_replay_refused (__main__.SafetyTests.test_coord_missing_closed_proof_or_history_and_replay_refused) ... ok
+test_durable_success_requires_actual_closed_raw_and_latest_state (__main__.SafetyTests.test_durable_success_requires_actual_closed_raw_and_latest_state) ... ok
+test_fail_after_close_retains_owned_recovery_hold_and_history (__main__.SafetyTests.test_fail_after_close_retains_owned_recovery_hold_and_history) ... ok
+test_fail_foreign_coord_never_changes_foreign_bytes_or_external_lock (__main__.SafetyTests.test_fail_foreign_coord_never_changes_foreign_bytes_or_external_lock) ... ok
+test_foreign_dual_lock_busy_preserves_inode_and_held_external_lock (__main__.SafetyTests.test_foreign_dual_lock_busy_preserves_inode_and_held_external_lock) ... ok
+test_foreign_recovery_busy_rejected_without_write (__main__.SafetyTests.test_foreign_recovery_busy_rejected_without_write) ... ok
+test_full_coord_close_preserves_opaque_foreign_and_all_history (__main__.SafetyTests.test_full_coord_close_preserves_opaque_foreign_and_all_history) ... ok
+test_json_duplicate_nonfinite_and_relative_escape_refused (__main__.SafetyTests.test_json_duplicate_nonfinite_and_relative_escape_refused) ... ok
+test_manifest_source_scope_and_nonce_seals (__main__.SafetyTests.test_manifest_source_scope_and_nonce_seals) ... ok
+test_new_identity_and_fixed_boundary (__main__.SafetyTests.test_new_identity_and_fixed_boundary) ... ok
+test_payload_drift_and_unknown_files_are_rejected (__main__.SafetyTests.test_payload_drift_and_unknown_files_are_rejected) ... ok
+test_preflight_readonly_no_attempt_no_reload_no_production_write (__main__.SafetyTests.test_preflight_readonly_no_attempt_no_reload_no_production_write) ... ok
+test_preflight_refuses_foreign_worker_drift_without_writes (__main__.SafetyTests.test_preflight_refuses_foreign_worker_drift_without_writes) ... ok
+test_preflight_refuses_missing_fixed_alias_without_write (__main__.SafetyTests.test_preflight_refuses_missing_fixed_alias_without_write) ... ok
+test_public_apply_failure_receipt_io_failure_is_explicit_recovery (__main__.SafetyTests.test_public_apply_failure_receipt_io_failure_is_explicit_recovery) ... ok
+test_public_apply_proof_failure_after_close_has_no_success_and_keeps_owned_hold (__main__.SafetyTests.test_public_apply_proof_failure_after_close_has_no_success_and_keeps_owned_hold) ... ok
+test_public_rollback_baseline_only_expired_capture_fresh_approval (__main__.SafetyTests.test_public_rollback_baseline_only_expired_capture_fresh_approval) ... ok
+test_public_rollback_requires_fresh_fields_and_independent_exact_binding (__main__.SafetyTests.test_public_rollback_requires_fresh_fields_and_independent_exact_binding) ... ok
+test_public_rollback_stale_or_future_approval_refused_without_new_attempt (__main__.SafetyTests.test_public_rollback_stale_or_future_approval_refused_without_new_attempt) ... ok
+test_public_verify_status_only_is_explicit_readonly_recovery_failure (__main__.SafetyTests.test_public_verify_status_only_is_explicit_readonly_recovery_failure) ... ok
+test_public_verify_synthetic_receipt_is_actual_raw_bound (__main__.SafetyTests.test_public_verify_synthetic_receipt_is_actual_raw_bound) ... ok
+test_raw_drift_without_reload_is_rejected_even_unique_exception (__main__.SafetyTests.test_raw_drift_without_reload_is_rejected_even_unique_exception) ... ok
+test_raw_malformed_duplicate_and_nondeci_unique_refused (__main__.SafetyTests.test_raw_malformed_duplicate_and_nondeci_unique_refused) ... ok
+test_raw_only_one_outer_unique_id_is_exception (__main__.SafetyTests.test_raw_only_one_outer_unique_id_is_exception) ... ok
+test_receipt_fsync_failure_never_returns_success_and_can_keep_owned_hold (__main__.SafetyTests.test_receipt_fsync_failure_never_returns_success_and_can_keep_owned_hold) ... ok
+test_recovery_approval_file_and_report_are_rechecked_by_guard (__main__.SafetyTests.test_recovery_approval_file_and_report_are_rechecked_by_guard) ... ok
+test_reload_refuses_env_permissions_and_other_slot_drift (__main__.SafetyTests.test_reload_refuses_env_permissions_and_other_slot_drift) ... ok
+test_reload_single_mock_slot_accepts_unique_only_and_preserves_other_eleven (__main__.SafetyTests.test_reload_single_mock_slot_accepts_unique_only_and_preserves_other_eleven) ... ok
+test_replay_rejected_for_empty_receipt_failed_attempt_and_symlink (__main__.SafetyTests.test_replay_rejected_for_empty_receipt_failed_attempt_and_symlink) ... ok
+test_restore_journal_latest_pin_and_hashchain_no_stale_replay (__main__.SafetyTests.test_restore_journal_latest_pin_and_hashchain_no_stale_replay) ... ok
+test_review_is_independent_manifest_and_report_bound (__main__.SafetyTests.test_review_is_independent_manifest_and_report_bound) ... ok
+test_sealed_guard_checks_payload_mode_and_controller_source_hash (__main__.SafetyTests.test_sealed_guard_checks_payload_mode_and_controller_source_hash) ... ok
+test_state_invariants_refuse_foreign_fields_and_history_rewrite (__main__.SafetyTests.test_state_invariants_refuse_foreign_fields_and_history_rewrite) ... ok
+test_status_only_closed_coord_is_not_success_receipt (__main__.SafetyTests.test_status_only_closed_coord_is_not_success_receipt) ... ok
+test_synthetic_sealed_bundle_validates_without_bypassing_payload (__main__.SafetyTests.test_synthetic_sealed_bundle_validates_without_bypassing_payload) ... ok
+
+======================================================================
+FAIL: test_lone_surrogates_refused_no_replacement_decode_policy_unchanged (__main__.R4DomainTests.test_lone_surrogates_refused_no_replacement_decode_policy_unchanged)
+----------------------------------------------------------------------
+customer_batch_release_offline.ReleaseError: DUPLICATE_JSON_KEY
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/test_release.py", line 1780, in test_lone_surrogates_refused_no_replacement_decode_policy_unchanged
+    with self.assertRaisesRegex(r.ReleaseError, 'PM2_JSON_DOMAIN_UTF8_OR_DEPTH'):
+AssertionError: "PM2_JSON_DOMAIN_UTF8_OR_DEPTH" does not match "DUPLICATE_JSON_KEY"
+
+======================================================================
+FAIL: test_nonfinite_and_unsafe_integer_domain_both_inputs_refused (__main__.R4DomainTests.test_nonfinite_and_unsafe_integer_domain_both_inputs_refused) (actual=b'9007199254740993')
+----------------------------------------------------------------------
+customer_batch_release_offline.ReleaseError: DUPLICATE_JSON_KEY
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/test_release.py", line 1762, in test_nonfinite_and_unsafe_integer_domain_both_inputs_refused
+    with self.subTest(actual=token), self.assertRaisesRegex(r.ReleaseError, 'DOMAIN_UNSAFE_INTEGER|NONFINITE_JSON'):
+AssertionError: "DOMAIN_UNSAFE_INTEGER|NONFINITE_JSON" does not match "DUPLICATE_JSON_KEY"
+
+======================================================================
+FAIL: test_nonfinite_and_unsafe_integer_domain_both_inputs_refused (__main__.R4DomainTests.test_nonfinite_and_unsafe_integer_domain_both_inputs_refused) (actual=b'-9007199254740992')
+----------------------------------------------------------------------
+customer_batch_release_offline.ReleaseError: DUPLICATE_JSON_KEY
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/test_release.py", line 1762, in test_nonfinite_and_unsafe_integer_domain_both_inputs_refused
+    with self.subTest(actual=token), self.assertRaisesRegex(r.ReleaseError, 'DOMAIN_UNSAFE_INTEGER|NONFINITE_JSON'):
+AssertionError: "DOMAIN_UNSAFE_INTEGER|NONFINITE_JSON" does not match "DUPLICATE_JSON_KEY"
+
+----------------------------------------------------------------------
+Ran 136 tests in 12.680s
+
+FAILED (failures=3)

@@ -1,0 +1,11 @@
+test_root_fullmeta_drift_during_final_proc_read_rejected (test_release.R4AuxFixTests.test_root_fullmeta_drift_during_final_proc_read_rejected) ... ok
+test_second_pair_parent_cmdline_phase_shallow_cwd_mtime_ctime_rejected (test_release.R4AuxFixTests.test_second_pair_parent_cmdline_phase_shallow_cwd_mtime_ctime_rejected) ... ok
+test_second_pair_root_close_parent_start_env_cmd_permissions_rejected (test_release.R4AuxFixTests.test_second_pair_root_close_parent_start_env_cmd_permissions_rejected) ... ok
+test_second_pair_source_close_parent_start_env_cmd_permissions_rejected (test_release.R4AuxFixTests.test_second_pair_source_close_parent_start_env_cmd_permissions_rejected) ... ok
+test_source_fullmeta_drift_during_final_proc_read_rejected_same_bytes (test_release.R4AuxFixTests.test_source_fullmeta_drift_during_final_proc_read_rejected_same_bytes) ... ok
+test_stable_complete_records_fixed_pid_args_and_finite_rereads_pass (test_release.R4AuxFixTests.test_stable_complete_records_fixed_pid_args_and_finite_rereads_pass) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.174s
+
+OK

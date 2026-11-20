@@ -1,0 +1,56 @@
+{
+  "actualLocksAcquired": false,
+  "actualNodeExecuted": false,
+  "actualRPCExecuted": false,
+  "actualReloadExecuted": false,
+  "allBaselineHashesVerified": true,
+  "captureExecuted": false,
+  "controllerApproved": false,
+  "finalDeployApproval": false,
+  "gitExecuted": false,
+  "mcpExecuted": false,
+  "onlyLocalTempMockTests": true,
+  "productionReads": 0,
+  "productionWrites": 0,
+  "remoteStageCreated": false,
+  "sourceFiles": {
+    "README.md": {
+      "baselineBytes": 9194,
+      "baselineSha256": "8f729dde52c611cbcf658983c6ae945634bf8a00e16243f172da9f1aea757c41",
+      "currentBytes": 15830,
+      "currentSha256": "3408f340b80c6e92dc307909b0395f6759b5ef3189330e221f0bffaa7d4a96a2"
+    },
+    "prepare-local.README.md": {
+      "baselineBytes": 7960,
+      "baselineSha256": "fbd20614cefdf48ad8ce32eb27bbeebb71b3dd5fa1fabecd36dae29c3b51bb57",
+      "currentBytes": 8403,
+      "currentSha256": "e8420c7b3268fd692277d0e2c4e1d312cb077b834acf60e40c3f8d2fbb6a409d"
+    },
+    "prepare-local.py": {
+      "baselineBytes": 22260,
+      "baselineSha256": "48fbfaecdb81c65dff8722b88c701fbccf5202457e2d080f0c24cbcd2993aa79",
+      "currentBytes": 22260,
+      "currentSha256": "2b67639684de64a3ec308d6b9594b0b313de57837432e149244be42a19f73c24"
+    },
+    "release.py": {
+      "baselineBytes": 114655,
+      "baselineSha256": "bf7ec85b902ae2474ded779bfad110e7ac791e7d4c244d67ca6f912614d375ab",
+      "currentBytes": 121483,
+      "currentSha256": "8dc23eb3865e65bfc0a60d8b20f3548dc1a087cf533478ad89cdae88c86766f0"
+    },
+    "test_prepare_local.py": {
+      "baselineBytes": 26876,
+      "baselineSha256": "91f2f078bfd6759a3dc1bb89013fc826801b2975f09a73b41eefafcbe58c013b",
+      "currentBytes": 28094,
+      "currentSha256": "62b8f538b2327f4d0c64a05da452bd866027095b207bfb31840f52d850df2f5d"
+    },
+    "test_release.py": {
+      "baselineBytes": 85767,
+      "baselineSha256": "57e089aa2cb90ff3c6fb2ce5eb21a67d6c7b3d12417b6bc183ae3f114e186157",
+      "currentBytes": 103191,
+      "currentSha256": "c4c9b7b54c22b052dbc89bc0b12daac48d6cbd4458a63bfac3b58d034eee9f9e"
+    }
+  },
+  "sshExecuted": false,
+  "status": "NOT_APPROVED"
+}

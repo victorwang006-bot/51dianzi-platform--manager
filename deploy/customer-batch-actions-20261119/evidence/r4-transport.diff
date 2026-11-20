@@ -1,0 +1,27 @@
+--- bf7/transport
++++ R4/transport
+@@ -1,4 +1,5 @@
+ def transport(cfg):
++    external = external_protection(cfg)
+     sock = cfg.pm2_home / 'rpc.sock'
+     r = describe(sock)
+     need(r['kind'] == 'socket', 'EXISTING_PM2_SOCKET_REQUIRED')
+@@ -19,6 +20,9 @@
+     adapters = adapter_files(cfg, entries)
+     sources.extend(Path(p) for p, record in adapters.items() if record['kind'] == 'file')
+     pins = {str(p): H(regular(p)) for p in sources}
++    need(all(p not in pins or pins[p] == h for p, h in external['sources'].items()),
++         'EXTERNAL_TRANSPORT_SOURCE_COLLISION')
++    pins.update(external['sources'])
+     need(all(pins[str(cfg.pm2_base/n)] == h for n, h in PM2_GENERATION_PINS.items()),
+          'PM2_GENERATION_SOURCE_PIN_DRIFT')
+     need(all(pins[p] == record['sha256'] for p, record in adapters.items()
+@@ -29,6 +33,7 @@
+         stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
+     need(result.returncode == 0 and b'NODE_UNIQUE_ID' in result.stdout, 'NODE_CLUSTER_SOURCE_REQUIRED')
+     need(adapter_files(cfg, entries) == adapters, 'ADAPTER_FULL_META_SET_DRIFT')
++    need(external_protection(cfg) == external, 'EXTERNAL_TRANSPORT_DRIFT')
+     return dict(socket=r, daemonPid=int(pid), pidfile=describe(cfg.pm2_home / 'pm2.pid'),
+-                sources=pins, fullAdapterMeta=adapters,
++                sources=pins, fullAdapterMeta=adapters, externalProtection=external,
+                 nodeClusterPrimarySha256=H(result.stdout), rpcSourceSha256=H(RPC.encode()))

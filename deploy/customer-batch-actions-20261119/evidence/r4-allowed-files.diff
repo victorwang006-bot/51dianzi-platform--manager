@@ -1,0 +1,657 @@
+--- bf7-baseline/release.py
++++ R4/release.py
+@@ -25,7 +25,7 @@
+ from dataclasses import dataclass
+ 
+ OWNER = '6Lfttf6oVWJ8YS69o5FkXQ'
+-SCOPE = 'customer-batch-actions-20261120-6Lfttf6o-R3'
++SCOPE = 'customer-batch-actions-20261120-6Lfttf6o-R4'
+ API_BASE = '/opt/releases/20261110-customer-workbench-b7f3a2a7e317'
+ FRONT_API = API_BASE + '/front/dist/index.js'
+ ADMIN_API = API_BASE + '/admin/dist/index.js'
+@@ -214,7 +214,9 @@
+     node: Path = Path('/usr/bin/node-22')
+     extra_protected: tuple = (Path('/opt/config/dianzi51-admin/runtime.env'),
+                               Path('/opt/config/dianzi51/runtime.env'),
+-                              Path('/var/lib/dianzi51-private'),)
++                              Path('/var/lib/dianzi51-private'),
++                              Path('/opt/ops/dianzi51-recommendation'),
++                              Path('/opt/releases/20261009T170014Z-memory-isolation/dianzi51-platform'))
+     extra_links: tuple = ()
+     mock: bool = False  # never selectable by CLI
+ 
+@@ -396,6 +398,7 @@
+     'lib/ProcessContainer.js': '712b414f248a460f58d4365898fa7b27d39bf7f571ac889359e3a7b6a32419d1',
+     'constants.js': '5a4adce0c3c277d4974c0ebdefb22d62ffcad74edcf910bfeeff287dacb8a853',
+     'package.json': 'f2819cffb2aae16bb813596575410877570a253be11949260caa33c8038788d6',
++    'modules/fclone.js': '9b921f33e5d4e36dd030f5d2e736ea2af0c95f4fb795ada696160e2db7fe2fe6',
+ }
+ PM2_RAW_GENERATED = ('pm_uptime', 'restart_time', 'created_at',
+                      'unstable_restarts', 'prev_restart_delay')
+@@ -591,7 +594,122 @@
+         need(out.get(str(root / 'index.js'), {}).get('kind') == 'file', 'ADAPTER_INDEX_FILE_REQUIRED')
+     return dict(sorted(out.items()))
+ 
++# Fixed non-PM2 protection: no CLI selector, discovery, fallback or lifecycle action.
++EXTERNAL_PARENT_PID = 2060125
++EXTERNAL_CHILD_PID = 2060126
++EXTERNAL_OPS = Path('/opt/ops/dianzi51-recommendation')
++EXTERNAL_CWD = Path('/opt/releases/20261009T170014Z-memory-isolation/dianzi51-platform')
++EXTERNAL_SCRIPT = EXTERNAL_OPS / 'releases/20261112-forum12-1255b7b84aa3adac09cb8c05/worker-runtime-bootstrap.mjs'
++
++def external_proc_identity(cfg, pid):
++    # procfs bytes are virtual (often st_size=0): use the existing read_bytes
++    # semantics, not regular-file size checks. State is live-only, not normalized.
++    data = (cfg.proc / str(pid) / 'stat').read_bytes()
++    head, sep, tail = data.rpartition(b') ')
++    prefix = str(pid).encode() + b' ('
++    fields = tail.split()
++    need(sep and head.startswith(prefix) and len(fields) >= 20
++         and fields[0] not in (b'Z', b'X', b'x')
++         and re.fullmatch(rb'[0-9]+', fields[1])
++         and re.fullmatch(rb'[1-9][0-9]*', fields[19]), 'EXTERNAL_PROC_STAT_IDENTITY')
++    return dict(pid=pid, ppid=int(fields[1]), startTicks=int(fields[19]),
++                nameSha256=H(head[len(prefix):]))
++
++def external_proc_link(cfg, pid, name):
++    value = os.readlink(cfg.proc / str(pid) / name)
++    p = Path(value)
++    need(p.is_absolute() and str(p) == value and '..' not in p.parts
++         and not value.endswith(' (deleted)'), 'EXTERNAL_DELETED_OR_NONCANONICAL_LINK')
++    # Only the kernel's actual path is used; unsupported file links fail closed.
++    return no_link(p)
++
++def external_source(path):
++    record = describe(no_link(path))
++    need(record['kind'] == 'file' and record['nlink'] == 1,
++         'EXTERNAL_SINGLE_REGULAR_SOURCE')
++    need(describe(path) == record, 'EXTERNAL_SOURCE_META_READ_RACE')
++    return record
++
++def external_proc_sample(cfg, pid, expected_exe, script=None, cwd=None):
++    identity_before = external_proc_identity(cfg, pid)
++    proc = no_link(cfg.proc / str(pid))
++    proc_record = meta(proc)
++    need(stat.S_ISDIR(proc_record['statmode']), 'EXTERNAL_PROC_DIRECTORY')
++    exe = external_proc_link(cfg, pid, 'exe')
++    current_cwd = external_proc_link(cfg, pid, 'cwd')
++    link_meta = {name: meta(proc / name) for name in ('exe', 'cwd')}
++    need(exe.name == expected_exe, 'EXTERNAL_ACTUAL_EXE_NAME')
++    cwd_record = describe(current_cwd)
++    need(cwd_record['kind'] == 'directory', 'EXTERNAL_CWD_DIRECTORY')
++    if cwd is not None:
++        need(current_cwd == cwd, 'EXTERNAL_EXACT_CHILD_CWD')
++    cmdline = (proc / 'cmdline').read_bytes()
++    need(cmdline.endswith(b'\0'), 'EXTERNAL_CMDLINE_NUL')
++    args = cmdline[:-1].split(b'\0')
++    need(args and all(args) and Path(os.fsdecode(args[0])).name == expected_exe,
++         'EXTERNAL_CMDLINE_EXE_BINDING')
++    if script is not None:
++        # Only plain known bootstrap argv is supported. Unknown loader/flags
++        # are not inferred, executed or excused by opaque-byte equality.
++        need(len(args) == 2 and args[1] == os.fsencode(script),
++             'EXTERNAL_EXACT_CHILD_SCRIPT_ARGV')
++    raw = (proc / 'environ').read_bytes()
++    need(not raw or raw.endswith(b'\0'), 'EXTERNAL_ENV_NUL')
++    permission_hash = permissions(cfg, pid)
++    record = dict(identity_before, exeName=expected_exe, exe=str(exe), cwd=str(current_cwd),
++                  knownScript=str(script) if script is not None else None,
++                  rawSha256=H(raw), cmdlineSha256=H(cmdline),
++                  permissionsSha256=permission_hash, procMeta=proc_record,
++                  kernelLinkMeta=link_meta, cwdMeta=cwd_record)
++    need(external_proc_identity(cfg, pid) == identity_before
++         and meta(proc) == proc_record
++         and all(external_proc_link(cfg, pid, name) == path
++                 for name, path in (('exe', exe), ('cwd', current_cwd)))
++         and {name: meta(proc / name) for name in ('exe', 'cwd')} == link_meta,
++         'EXTERNAL_PROC_IDENTITY_READ_RACE')
++    return record
++
++def external_protection_sample(cfg, ops, cwd, script):
++    roots = {str(p): describe(no_link(p)) for p in (ops, cwd)}
++    need(all(v['kind'] == 'directory' for v in roots.values()), 'EXTERNAL_ROOT_DIRECTORIES')
++    parent = external_proc_sample(cfg, EXTERNAL_PARENT_PID, 'flock')
++    child = external_proc_sample(cfg, EXTERNAL_CHILD_PID, 'node-22', script, cwd)
++    need(child['ppid'] == parent['pid'] and parent['ppid'] > 0
++         and child['startTicks'] >= parent['startTicks'] and parent['ppid'] not in
++         (parent['pid'], child['pid']), 'EXTERNAL_EXACT_PARENT_CHILD')
++    files = {Path(parent['exe']), Path(child['exe']), cfg.node, script}
++    source_meta = {str(p): external_source(p) for p in sorted(files)}
++    need(source_meta[child['exe']]['sha256'] == source_meta[str(cfg.node)]['sha256'],
++         'EXTERNAL_NODE_FULL_SHA_BINDING')
++    need({str(p): describe(p) for p in (ops, cwd)} == roots,
++         'EXTERNAL_ROOT_META_READ_RACE')
++    return dict(fixtureOnly=cfg.mock, processes=[parent, child],
++                sources={p: v['sha256'] for p, v in source_meta.items()},
++                fullSourceMeta=source_meta, rootMeta=roots)
++
++def external_protection(cfg, fixture=None):
++    """Pure readonly, two COMPLETE samples; fixture routing exists only in mock.
++    Parent cwd is observed shallowly, never guessed or recursively enumerated.
++    Dependency/loader semantics still require actual-source/full-tree review.
++    """
++    need(fixture is None or cfg.mock, 'EXTERNAL_FIXTURE_ONLY_NO_PRODUCTION_OVERRIDE')
++    if cfg.mock and fixture is None:
++        return dict(fixtureOnly=True, processes=[], sources={}, fullSourceMeta={}, rootMeta={})
++    if fixture is None:
++        need(cfg.proc == Path('/proc'), 'EXTERNAL_FIXED_PRODUCTION_PROC')
++        ops, cwd, script = EXTERNAL_OPS, EXTERNAL_CWD, EXTERNAL_SCRIPT
++    else:
++        exact(fixture, 'ops cwd script', 'EXTERNAL_FIXTURE_PATH_SCHEMA')
++        ops, cwd, script = (no_link(fixture[k]) for k in ('ops', 'cwd', 'script'))
++    need(ops in cfg.extra_protected and cwd in cfg.extra_protected
++         and ops in script.parents, 'EXTERNAL_REQUIRED_EXACT_ROOTS')
++    first = external_protection_sample(cfg, ops, cwd, script)
++    second = external_protection_sample(cfg, ops, cwd, script)
++    need(first == second, 'EXTERNAL_TWO_SAMPLE_DRIFT')
++    return first
++
+ def transport(cfg):
++    external = external_protection(cfg)
+     sock = cfg.pm2_home / 'rpc.sock'
+     r = describe(sock)
+     need(r['kind'] == 'socket', 'EXISTING_PM2_SOCKET_REQUIRED')
+@@ -612,6 +730,9 @@
+     adapters = adapter_files(cfg, entries)
+     sources.extend(Path(p) for p, record in adapters.items() if record['kind'] == 'file')
+     pins = {str(p): H(regular(p)) for p in sources}
++    need(all(p not in pins or pins[p] == h for p, h in external['sources'].items()),
++         'EXTERNAL_TRANSPORT_SOURCE_COLLISION')
++    pins.update(external['sources'])
+     need(all(pins[str(cfg.pm2_base/n)] == h for n, h in PM2_GENERATION_PINS.items()),
+          'PM2_GENERATION_SOURCE_PIN_DRIFT')
+     need(all(pins[p] == record['sha256'] for p, record in adapters.items()
+@@ -622,8 +743,9 @@
+         stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
+     need(result.returncode == 0 and b'NODE_UNIQUE_ID' in result.stdout, 'NODE_CLUSTER_SOURCE_REQUIRED')
+     need(adapter_files(cfg, entries) == adapters, 'ADAPTER_FULL_META_SET_DRIFT')
++    need(external_protection(cfg) == external, 'EXTERNAL_TRANSPORT_DRIFT')
+     return dict(socket=r, daemonPid=int(pid), pidfile=describe(cfg.pm2_home / 'pm2.pid'),
+-                sources=pins, fullAdapterMeta=adapters,
++                sources=pins, fullAdapterMeta=adapters, externalProtection=external,
+                 nodeClusterPrimarySha256=H(result.stdout), rpcSourceSha256=H(RPC.encode()))
+ 
+ def rpc(cfg, tr, reload_row=None):
+--- bf7-baseline/test_release.py
++++ R4/test_release.py
+@@ -294,7 +294,7 @@
+     def test_new_identity_and_fixed_boundary(self):
+         cfg = r.Config()
+         self.assertEqual(r.OWNER, '6Lfttf6oVWJ8YS69o5FkXQ')
+-        self.assertEqual(str(cfg.stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R3')
++        self.assertEqual(str(cfg.stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R4')
+         self.assertEqual(len(cfg.aliases), 7)
+         self.assertEqual(r.identity(self.cfg,self.cap['processes']), list(range(6)))
+         with self.assertRaisesRegex(r.ReleaseError,'PRODUCTION_ADAPTER_INJECTION_REFUSED'):
+@@ -897,7 +897,9 @@
+         measured = Path('/home/ubuntu/work/customer-batch/pm2-live-source')
+         for name, digest in r.PM2_GENERATION_PINS.items():
+             file = self.cfg.pm2_base/name; file.parent.mkdir(parents=True, exist_ok=True)
+-            data = (measured/name).read_bytes(); self.assertEqual(r.H(data), digest)
++            source = (Path('/home/ubuntu/work/customer-batch/fclone-resolved-once/fclone.js')
++                      if name == 'modules/fclone.js' else measured/name)
++            data = source.read_bytes(); self.assertEqual(r.H(data), digest)
+             file.write_bytes(data)  # measured source bytes pinned, never evaluated/imported
+         (self.cfg.pm2_base/'lib/Daemon.js').write_bytes(b'synthetic Daemon source')
+         self.calls = []
+@@ -1331,7 +1333,8 @@
+     def test_exact_default_private_root_keeps_all_prior_protection(self):
+         cfg=r.Config()
+         self.assertEqual(cfg.extra_protected,(Path('/opt/config/dianzi51-admin/runtime.env'),
+-            Path('/opt/config/dianzi51/runtime.env'),Path('/var/lib/dianzi51-private')))
++            Path('/opt/config/dianzi51/runtime.env'),Path('/var/lib/dianzi51-private'),
++            r.EXTERNAL_OPS,r.EXTERNAL_CWD))
+         self.assertNotIn(Path('/var/lib'),cfg.extra_protected)
+         self.assertEqual(len(cfg.aliases),7)
+ 
+@@ -1390,5 +1393,284 @@
+                 r.transport(self.cfg)
+             path.write_bytes(original)
+ 
++
++
++def r4_stat(pid, ppid, ticks, name):
++    fields = ['S', str(ppid), *(['0'] * 17), str(ticks), '0']
++    return str(pid).encode() + b' (' + name.encode() + b') ' + ' '.join(fields).encode() + b'\n'
++
++def r4_external_fixture(root, cfg):
++    """Fake proc links/files only in a unique caller-owned TemporaryDirectory."""
++    ops = root/'external-ops'; cwd = root/'external-child-cwd'; parentcwd = root/'external-parent-cwd'
++    script = ops/'releases/20261112-forum12-1255b7b84aa3adac09cb8c05/worker-runtime-bootstrap.mjs'
++    script.parent.mkdir(parents=True); script.write_bytes(b'// synthetic bootstrap, never imported\n')
++    cwd.mkdir(); parentcwd.mkdir(); (cwd/'empty').mkdir()
++    (cwd/'dep.txt').write_bytes(b'synthetic full protected dependency')
++    (ops/'empty').mkdir(); (ops/'retained.data').write_bytes(b'synthetic retained Ops file')
++    binary = root/'external-bin'; binary.mkdir()
++    flock = binary/'flock'; node = binary/'node-22'
++    flock.write_bytes(b'synthetic flock, never executed'); node.write_bytes(cfg.node.read_bytes())
++    for pid, ppid, ticks, exe, work in [(2060125, 1234, 51001, flock, parentcwd),
++                                       (2060126, 2060125, 51002, node, cwd)]:
++        proc = cfg.proc/str(pid); proc.mkdir(parents=True)
++        (proc/'stat').write_bytes(r4_stat(pid,ppid,ticks,exe.name))
++        (proc/'exe').symlink_to(exe); (proc/'cwd').symlink_to(work, target_is_directory=True)
++        (proc/'status').write_bytes(b'Uid:\t1000 1000 1000 1000\nGid:\t1000 1000 1000 1000\nGroups:\t1000\nUmask:\t0022\n')
++        cmd = os.fsencode(exe) + b'\0'
++        if pid == 2060126: cmd += os.fsencode(script) + b'\0'
++        else: cmd += b'-n\0SYNTHETIC-opaque-parent-arg\0'
++        (proc/'cmdline').write_bytes(cmd)
++        (proc/'environ').write_bytes(b'PRIVATE_SENTINEL_DO_NOT_EXPORT=synthetic-secret\0NODE_UNIQUE_ID=17\0pm_uptime=opaque-app\0')
++    cfg = replace(cfg, extra_protected=(*cfg.extra_protected,ops,cwd))
++    return cfg, dict(ops=ops,cwd=cwd,script=script)
++
++class R4ExternalTests(unittest.TestCase):
++    def setUp(self):
++        self.tmp = tempfile.TemporaryDirectory(prefix='r4-external-only-')
++        self.addCleanup(self.tmp.cleanup); self.root = Path(self.tmp.name)
++        node = self.root/'node-22'; node.write_bytes(b'synthetic node binary')
++        self.cfg,self.fixture = r4_external_fixture(self.root,r.Config(proc=self.root/'proc',node=node,
++                                                           extra_protected=(),mock=True))
++        for obj,name in [(r.subprocess,'run'),(r.os,'kill'),(r.socket,'socket'),(r.fcntl,'flock')]:
++            guard=patch.object(obj,name,side_effect=AssertionError('PURE_READONLY_EXTERNAL_REQUIRED'))
++            guard.start(); self.addCleanup(guard.stop)
++
++    def collect(self):
++        return r.external_protection(self.cfg,self.fixture)
++
++    def mutate_second(self, change, error='EXTERNAL_TWO_SAMPLE_DRIFT'):
++        real=r.external_protection_sample; count=[]
++        def sample(*args):
++            count.append(1)
++            if len(count)==2:change()
++            return real(*args)
++        with patch.object(r,'external_protection_sample',side_effect=sample),self.assertRaisesRegex(r.ReleaseError,error):
++            self.collect()
++        self.assertEqual(len(count),2)
++
++    def test_fixed_two_nonpm2_identities_whole_opaque_hashes_and_full_file_meta(self):
++        real=r.external_protection_sample
++        with patch.object(r,'external_protection_sample',wraps=real) as samples:
++            result=self.collect()
++        self.assertEqual(samples.call_count,2)
++        parent,child=result['processes']
++        self.assertEqual((parent['pid'],child['pid'],child['ppid']),(2060125,2060126,2060125))
++        self.assertEqual((parent['exeName'],child['exeName']),('flock','node-22'))
++        self.assertEqual((parent['startTicks'],child['startTicks']),(51001,51002))
++        self.assertEqual(child['knownScript'],str(self.fixture['script']))
++        self.assertEqual(child['cwd'],str(self.fixture['cwd']))
++        for row in (parent,child):
++            proc=self.cfg.proc/str(row['pid'])
++            self.assertEqual(row['rawSha256'],r.H((proc/'environ').read_bytes()))
++            self.assertEqual(row['cmdlineSha256'],r.H((proc/'cmdline').read_bytes()))
++            self.assertEqual(row['permissionsSha256'],r.permissions(self.cfg,row['pid']))
++            self.assertEqual(result['fullSourceMeta'][row['exe']],r.describe(row['exe']))
++        self.assertEqual(result['fullSourceMeta'][str(self.fixture['script'])],r.describe(self.fixture['script']))
++        self.assertEqual(result['sources'][child['exe']],result['sources'][str(self.cfg.node)])
++        self.assertNotIn(b'PRIVATE_SENTINEL',r.encode(result))
++        self.assertNotIn(b'synthetic-secret',r.encode(result))
++        self.assertNotIn(b'SYNTHETIC-opaque-parent-arg',r.encode(result))
++        self.assertTrue(result['fixtureOnly'])
++
++    def test_fixture_only_skip_is_explicit_never_a_production_override(self):
++        with patch.object(Path,'read_bytes',side_effect=AssertionError('NO_PROC_READ_FOR_FIXTURE_SKIP')):
++            empty=r.external_protection(self.cfg)
++            self.assertEqual(empty,dict(fixtureOnly=True,processes=[],sources={},fullSourceMeta={},rootMeta={}))
++            with self.assertRaisesRegex(r.ReleaseError,'NO_PRODUCTION_OVERRIDE'):
++                r.external_protection(replace(self.cfg,mock=False),self.fixture)
++            with self.assertRaisesRegex(r.ReleaseError,'FIXED_PRODUCTION_PROC'):
++                r.external_protection(replace(self.cfg,mock=False))
++
++    def test_parent_is_flock_not_another_node(self):
++        link=self.cfg.proc/'2060125/exe'; link.unlink(); link.symlink_to(self.root/'external-bin/node-22')
++        with self.assertRaisesRegex(r.ReleaseError,'ACTUAL_EXE_NAME'):self.collect()
++
++    def test_wrong_child_exe_and_argv0_fail_closed(self):
++        path=self.cfg.proc/'2060126/cmdline'; path.write_bytes(b'other-node\0'+os.fsencode(self.fixture['script'])+b'\0')
++        with self.assertRaisesRegex(r.ReleaseError,'CMDLINE_EXE_BINDING'):self.collect()
++
++    def test_wrong_ppid_and_parent_cycle_are_rejected(self):
++        for pid,ppid,name in [(2060126,1234,'node-22'),(2060125,2060126,'flock'),
++                              (2060125,2060125,'flock'),(2060125,0,'flock')]:
++            path=self.cfg.proc/str(pid)/'stat'; old=path.read_bytes()
++            path.write_bytes(r4_stat(pid,ppid,51001 if pid==2060125 else 51002,name))
++            with self.subTest(pid=pid,ppid=ppid),self.assertRaisesRegex(r.ReleaseError,'EXACT_PARENT_CHILD'):self.collect()
++            path.write_bytes(old)
++
++    def test_child_startticks_cannot_precede_bound_parent(self):
++        (self.cfg.proc/'2060126/stat').write_bytes(r4_stat(2060126,2060125,51000,'node-22'))
++        with self.assertRaisesRegex(r.ReleaseError,'EXACT_PARENT_CHILD'):self.collect()
++
++    def test_missing_either_proc_has_no_pid_search_or_fallback(self):
++        for pid in (2060125,2060126):
++            path=self.cfg.proc/str(pid)/'stat'; old=path.read_bytes(); path.unlink()
++            with self.subTest(pid=pid),self.assertRaises(FileNotFoundError):self.collect()
++            path.write_bytes(old)
++
++    def test_pid_reuse_startticks_between_complete_samples_is_rejected(self):
++        self.mutate_second(lambda:(self.cfg.proc/'2060126/stat').write_bytes(r4_stat(2060126,2060125,999999,'node-22')))
++
++    def test_pid_reuse_inside_single_proc_sample_is_rejected(self):
++        real=Path.read_bytes; seen=[]; target=self.cfg.proc/'2060125/stat'
++        def read(path):
++            if path==target:
++                seen.append(1)
++                if len(seen)==2:target.write_bytes(r4_stat(2060125,1234,999999,'flock'))
++            return real(path)
++        with patch.object(Path,'read_bytes',read),self.assertRaisesRegex(r.ReleaseError,'IDENTITY_READ_RACE'):self.collect()
++
++    def test_invalid_stat_identity_or_dead_pid_is_rejected(self):
++        path=self.cfg.proc/'2060126/stat'
++        good=r4_stat(2060126,2060125,51002,'node-22')
++        for raw in (r4_stat(42,2060125,51002,'node-22'),r4_stat(2060126,2060125,0,'node-22'),
++                    good.replace(b') S ',b') Z '),b'incomplete'):
++            path.write_bytes(raw)
++            with self.subTest(case=r.H(raw)),self.assertRaisesRegex(r.ReleaseError,'PROC_STAT_IDENTITY'):self.collect()
++
++    def test_parent_cmdline_drift_is_opaque_no_normalization(self):
++        path=self.cfg.proc/'2060125/cmdline'
++        self.mutate_second(lambda:path.write_bytes(path.read_bytes().replace(b'parent-arg',b'parent-drift')))
++
++    def test_whole_environment_drift_has_no_nodeunique_or_pm2_exception(self):
++        path=self.cfg.proc/'2060126/environ'
++        self.mutate_second(lambda:path.write_bytes(path.read_bytes().replace(b'NODE_UNIQUE_ID=17',b'NODE_UNIQUE_ID=19')))
++
++    def test_permissions_drift_between_samples_is_rejected(self):
++        path=self.cfg.proc/'2060125/status'
++        self.mutate_second(lambda:path.write_bytes(path.read_bytes().replace(b'0022',b'0077')))
++
++    def test_exact_script_and_no_unknown_child_loader_flags(self):
++        path=self.cfg.proc/'2060126/cmdline'; node=os.fsencode(self.root/'external-bin/node-22')
++        for args in (b'/unknown-bootstrap.mjs\0',b'--require\0/unknown-loader.js\0'+os.fsencode(self.fixture['script'])+b'\0',
++                     os.fsencode(self.fixture['script'])+b'\0extra-arg\0'):
++            path.write_bytes(node+b'\0'+args)
++            with self.subTest(case=r.H(args)),self.assertRaisesRegex(r.ReleaseError,'EXACT_CHILD_SCRIPT_ARGV'):self.collect()
++
++    def test_child_cwd_exact_not_a_normalized_or_guessed_path(self):
++        link=self.cfg.proc/'2060126/cwd'; link.unlink(); link.symlink_to(self.root/'external-parent-cwd')
++        with self.assertRaisesRegex(r.ReleaseError,'EXACT_CHILD_CWD'):self.collect()
++
++    def test_node_full_executable_sha_bound_not_name_only(self):
++        (self.root/'external-bin/node-22').write_bytes(b'other node binary')
++        with self.assertRaisesRegex(r.ReleaseError,'NODE_FULL_SHA_BINDING'):self.collect()
++
++    def test_actual_flock_path_is_kernel_observed_and_sticky(self):
++        other=self.root/'other-bin'; other.mkdir(); exe=other/'flock'
++        exe.write_bytes((self.root/'external-bin/flock').read_bytes())
++        link=self.cfg.proc/'2060125/exe'
++        def change():link.unlink(); link.symlink_to(exe)
++        self.mutate_second(change)
++
++    def test_source_script_full_bytes_drift_is_rejected(self):
++        path=self.fixture['script']; self.mutate_second(lambda:path.write_bytes(path.read_bytes()+b'// drift\n'))
++
++    def test_executable_source_full_meta_drift_even_same_hash_is_rejected(self):
++        path=self.root/'external-bin/flock'; self.mutate_second(lambda:path.chmod(0o600))
++
++    def test_script_full_meta_drift_even_same_hash_is_rejected(self):
++        self.mutate_second(lambda:self.fixture['script'].chmod(0o600))
++
++    def test_proc_directory_meta_drift_is_rejected(self):
++        self.mutate_second(lambda:(self.cfg.proc/'2060125').chmod(0o700))
++
++    def test_root_meta_drift_is_rejected(self):
++        self.mutate_second(lambda:self.fixture['ops'].chmod(0o700))
++
++    def test_parent_cwd_is_shallow_unknown_not_recursive_root_protection(self):
++        parentcwd=self.root/'external-parent-cwd'; os.mkfifo(parentcwd/'not-enumerated-fifo')
++        first=self.collect(); self.assertEqual(first['processes'][0]['cwdMeta'],r.describe(parentcwd))
++        self.assertNotIn(str(parentcwd),first['rootMeta'])
++        self.mutate_second(lambda:parentcwd.chmod(0o700))
++
++    def test_deleted_actual_exe_and_unsupported_source_links_fail_closed(self):
++        link=self.cfg.proc/'2060125/exe'; link.unlink(); link.symlink_to(str(self.root/'external-bin/flock')+' (deleted)')
++        with self.assertRaisesRegex(r.ReleaseError,'DELETED_OR_NONCANONICAL'):self.collect()
++        link.unlink(); link.symlink_to(self.root/'external-bin/flock')
++        alias=self.root/'alias-flock'; alias.symlink_to(self.root/'external-bin/flock')
++        link.unlink(); link.symlink_to(alias)
++        with self.assertRaisesRegex(r.ReleaseError,'SYMLINK_ESCAPE'):self.collect()
++
++    def test_hardlinked_exe_or_bootstrap_not_widened(self):
++        for path in (self.root/'external-bin/flock',self.fixture['script']):
++            hard=self.root/'extra-hardlink'; os.link(path,hard)
++            with self.subTest(path=path.name),self.assertRaisesRegex(r.ReleaseError,'SINGLE_REGULAR_SOURCE'):self.collect()
++            hard.unlink()
++
++    def test_missing_exact_protection_roots_not_replaced_by_ancestor(self):
++        for missing in (self.fixture['ops'],self.fixture['cwd']):
++            cfg=replace(self.cfg,extra_protected=tuple(p for p in self.cfg.extra_protected if p!=missing)+(self.root,))
++            with self.subTest(root=missing.name),self.assertRaisesRegex(r.ReleaseError,'REQUIRED_EXACT_ROOTS'):
++                r.external_protection(cfg,self.fixture)
++
++class R4TransportTests(unittest.TestCase):
++    setUp=AdapterFilesTests.setUp
++    fake_run=AdapterFilesTests.fake_run
++
++    def attach(self):
++        self.cfg,fixture=r4_external_fixture(self.root,self.cfg)
++        real=r.external_protection
++        guard=patch.object(r,'external_protection',side_effect=lambda cfg:real(cfg,fixture))
++        guard.start(); self.addCleanup(guard.stop)
++        return fixture
++
++    def test_transport_includes_actual_exe_script_sources_and_fullmeta_with_original_pins(self):
++        fixture=self.attach(); tr=r.transport(self.cfg); external=tr['externalProtection']
++        self.assertEqual(len(external['processes']),2)
++        self.assertTrue(external['fixtureOnly'])
++        self.assertTrue(set(external['sources'])<=set(tr['sources']))
++        for path,digest in external['sources'].items():
++            self.assertEqual(tr['sources'][path],digest)
++            self.assertEqual(external['fullSourceMeta'][path],r.describe(path))
++        self.assertEqual(len(r.PM2_GENERATION_PINS),9)
++        self.assertEqual(r.PM2_GENERATION_PINS['modules/fclone.js'],
++                         '9b921f33e5d4e36dd030f5d2e736ea2af0c95f4fb795ada696160e2db7fe2fe6')
++
++    def test_external_drift_during_mock_node_probe_rejected_before_transport_returns(self):
++        fixture=self.attach()
++        self.native_hook=lambda:(self.cfg.proc/'2060125/environ').write_bytes(b'DRIFT=1\0')
++        with self.assertRaisesRegex(r.ReleaseError,'EXTERNAL_TRANSPORT_DRIFT'):r.transport(self.cfg)
++
++    def test_fclone_fixed_source_missing_and_drift_are_failclosed(self):
++        target=self.cfg.pm2_base/'modules/fclone.js'; target.write_bytes(b'unknown cloning source')
++        with self.assertRaisesRegex(r.ReleaseError,'GENERATION_SOURCE_PIN_DRIFT'):r.transport(self.cfg)
++        target.unlink()
++        with self.assertRaises(FileNotFoundError):r.transport(self.cfg)
++
++class R4ProtectedGraphTests(unittest.TestCase):
++    def fixture(self):
++        case=SafetyTests('test_new_identity_and_fixed_boundary'); case.setUp(); self.addCleanup(case.doCleanups)
++        case.cfg,fixture=r4_external_fixture(case.root,case.cfg); case.controller.cfg=case.cfg
++        def tr(cfg):
++            external=r.external_protection(cfg,fixture)
++            return dict(mockTransport=True,rpcSourceSha256=r.H(r.RPC.encode()),externalProtection=external,
++                        sources=external['sources'])
++        case.tr=tr(case.cfg); case.controller.transport_reader=tr
++        case.make_synthetic_package()
++        return case,fixture
++
++    def test_both_complete_extra_trees_files_dirs_emptydirs_and_set_not_only_pm2(self):
++        case,fixture=self.fixture(); original=case.cap['protectedFiles']
++        for root in (fixture['ops'],fixture['cwd']):
++            self.assertTrue({str(p) for p in (root,*root.rglob('*'))}<=set(original))
++        self.assertEqual(len(case.cap['processes']),12); self.assertEqual(r.identity(case.cfg,case.cap['processes']),list(range(6)))
++        self.assertEqual(len(case.cap['transport']['externalProtection']['processes']),2)
++        extra=fixture['cwd']/'empty/new-empty'; extra.mkdir()
++        paths,links=r.union(case.cfg,case.original_coord)
++        self.assertNotEqual(set(r.inventory(case.cfg,case.cap['processes'],paths,links)),set(original))
++        with self.assertRaisesRegex(r.ReleaseError,'FOREIGN_FULLMETA_PROCESS_DRIFT'):
++            case.controller.baseline_guard(case.controller.bundle(case.cfg.package,case.ms,case.rs))
++
++    def test_original_controller_guard_binds_external_opaque_identity_without_schema_change(self):
++        case,fixture=self.fixture(); c=case.prepare_state()
++        (case.cfg.proc/'2060126/environ').write_bytes(b'CHANGED_WHOLE_OPAQUE=1\0')
++        with self.assertRaisesRegex(r.ReleaseError,'SOCKET_ADAPTER_SOURCE_DRIFT'):c.guard()
++        self.assertEqual(case.reload_calls,[])
++
++    def test_default_exact_roots_no_parentcwd_or_root_recursion(self):
++        cfg=r.Config(); self.assertEqual(cfg.extra_protected[-2:],(r.EXTERNAL_OPS,r.EXTERNAL_CWD))
++        self.assertNotIn(Path('/root'),cfg.extra_protected); self.assertNotIn(Path('/'),cfg.extra_protected)
++        self.assertEqual(r.EXTERNAL_SCRIPT,r.EXTERNAL_OPS/'releases/20261112-forum12-1255b7b84aa3adac09cb8c05/worker-runtime-bootstrap.mjs')
++        self.assertEqual(r.SCOPE,'customer-batch-actions-20261120-6Lfttf6o-R4')
++
+ if __name__ == '__main__':
+     unittest.main()
+--- bf7-baseline/prepare-local.py
++++ R4/prepare-local.py
+@@ -15,7 +15,7 @@
+ HERE = Path(__file__).absolute().parent
+ REPO = HERE.parent.parent
+ WORK = Path('/home/ubuntu/work/customer-batch')
+-CONTROLLER_SHA = 'bf7ec85b902ae2474ded779bfad110e7ac791e7d4c244d67ca6f912614d375ab'
++CONTROLLER_SHA = '8dc23eb3865e65bfc0a60d8b20f3548dc1a087cf533478ad89cdae88c86766f0'
+ NODE = '/usr/bin/node'
+ # Exactly backend-builder.compile's transform options, but read original files twice.
+ BACKEND_HASH_CHECK = """
+--- bf7-baseline/test_prepare_local.py
++++ R4/test_prepare_local.py
+@@ -435,8 +435,8 @@
+ 
+     def test_r3_current_controller_sha_and_scope_fixed(self):
+         self.assertEqual(P.CONTROLLER_SHA, P.sha((HERE/'release.py').read_bytes()))
+-        self.assertEqual(R.SCOPE, 'customer-batch-actions-20261120-6Lfttf6o-R3')
+-        self.assertEqual(str(R.Config().stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R3')
++        self.assertEqual(R.SCOPE, 'customer-batch-actions-20261120-6Lfttf6o-R4')
++        self.assertEqual(str(R.Config().stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R4')
+         self.assertEqual(R.OWNER, '6Lfttf6oVWJ8YS69o5FkXQ')
+ 
+     def test_old_failed_stage_scope_capture_is_not_reusable(self):
+@@ -472,5 +472,24 @@
+         with self.assertRaisesRegex(P.PrepareError,'protection union mismatch'):P.prepare(self.args)
+         self.assertEqual(self.calls,[]); self.assertFalse(self.out.exists())
+ 
++    def test_r3_scope_and_bf7_capture_not_reusable_in_r4(self):
++        for key,value in [('scope','customer-batch-actions-20261120-6Lfttf6o-R3'),
++                          ('controllerSha256','bf7ec85b902ae2474ded779bfad110e7ac791e7d4c244d67ca6f912614d375ab')]:
++            old=self.cap[key]; self.cap[key]=value; self.save_capture()
++            with self.subTest(key=key),self.assertRaisesRegex(P.PrepareError,'fixed production capture binding'):
++                P.prepare(self.args)
++            self.cap[key]=old
++        self.assertEqual(self.calls,[]); self.assertFalse(self.out.exists())
++
++    def test_r4_both_external_exact_roots_cannot_be_omitted(self):
++        for root in (str(R.EXTERNAL_OPS),str(R.EXTERNAL_CWD)):
++            self.assertIn(root,self.cap['protectionUnion']['paths'])
++            self.cap['protectionUnion']['paths'].remove(root); self.save_capture()
++            with self.subTest(root=root),self.assertRaisesRegex(P.PrepareError,'protection union mismatch'):
++                P.prepare(self.args)
++            self.cap['protectionUnion']['paths'].append(root)
++            self.cap['protectionUnion']['paths'].sort()
++        self.assertEqual(self.calls,[]); self.assertFalse(self.out.exists())
++
+ if __name__ == '__main__':
+     unittest.main()
+--- bf7-baseline/README.md
++++ R4/README.md
+@@ -1,3 +1,45 @@
++# 客户批次发布控制器：R4 外部推荐服务最小离线保护
++
++## 当前状态：NOT_APPROVED（2026-11-20）
++
++OWNER 保持 `6Lfttf6oVWJ8YS69o5FkXQ`；新 SCOPE 为 **`customer-batch-actions-20261120-6Lfttf6o-R4`**，默认 stage 仅为派生路径，未创建或访问真实 stage。当前 controller SHA256 为 `8dc23eb3865e65bfc0a60d8b20f3548dc1a087cf533478ad89cdae88c86766f0`；`prepare-local.py` 固定 pin 同步。准确 bf7 基线六文件位于 `evidence/r4-baseline-bf7ec85b/`，全部哈希核对。R3 从未执行 remote stage/capture/attempt，本轮不重用 R3 scope/pin/capture。
++
++只修改 release/test_release/prepare-local/test_prepare_local/两 README 六文件和 `evidence/r4-*`。不改业务/UI/TS/JS builder，不执行 Git/MCP/SSH、生产 CLI、真实 Node/模块 import/RPC/capture/lock/reload。所有新 fixture 位于 TemporaryDirectory；现有锁、CAS、journal、receipt、reload 测试仅使用既有临时目录/mock，不能视为生产操作或发布证明。
++
++## 两个原 PM2 模型之外的固定进程
++
++只读 helper 固定 parent PID **2060125**，实际 executable basename **flock**，child PID **2060126**，basename **node-22**。父不是另一个 Node，不将二者塞入原 12 槽或六 own 集合。child PPID 必须精确指向 parent，parent PPID 必须有效且无自身/子循环，child startTicks 不得早于 parent。
++
++child bootstrap 精确为 `/opt/ops/dianzi51-recommendation/releases/20261112-forum12-1255b7b84aa3adac09cb8c05/worker-runtime-bootstrap.mjs`；child cwd 精确为 `/opt/releases/20261009T170014Z-memory-isolation/dianzi51-platform`。当前 helper 仅支持 child 的 plain executable + exact bootstrap 两参数 argv；任何额外/未知 loader flags、错误脚本、错误 cwd、缺失 PID、复用或不稳定身份立即 fail closed，不搜索 fallback，不启动/杀进程。
++
++`/proc/<pid>/stat` 使用现有虚拟文件 read_bytes 语义（不拿 procfs 的 st_size=0 当 regular 文件长度）。每次完整采样记录 startTicks/PPID/内核路径、whole opaque environ SHA、whole cmdline SHA、permissions SHA、proc 根 META、exe/cwd link META、cwd META，单 proc 前后 identity/link/root 稳定后再作两次完整 pair+source+root 采样 equality。ENV/cmdline 原字节不输出，无 normalization，无 NodeUnique/五元 metadata/PM2 例外。exe `readlink` 的实际路径 fresh 固定，`flock` 不猜 `/usr/bin` 替代路径；child executable **完整文件 SHA** 必须等于 cfg.node。deleted、非规范、未被既有 no-link/single-regular 规则支持的实际 exe/script links/hardlinks 拒绝，不宽放 regular。
++
++Parent cwd 未获准确值：仅 fresh 路径/目录 META 记录比较，不猜等于 child，不递归 `/root` 或 `/`。观察稳定不是未知 loader/dependency 语义 closure；仍需后续 actual 源码和完整保护树审查。
++
++## 精确完整保护根与 transport 绑定
++
++`Config.extra_protected` 保留两个原 env 与 `/var/lib/dianzi51-private`，追加 **完整 `/opt/ops/dianzi51-recommendation` 树**与**完整 childcwd 树**。原 union/inventory AST 与字节不变，负责根、所有文件、目录、空目录、links/targets 的全 META/hash 与精确路径集合。精确根缺少任何一项即拒绝；不能用祖先根假装覆盖。
++
++`transport.externalProtection` 位于原 processes 之外，含二 proc、actual exe + known bootstrap + cfg.node 的 fullSourceMeta/sources 与两个 rootMeta。外部 file hashes 合并进既有固定 `transport.sources`（因此原 RPC 会同样核对）；碰撞不一致拒绝。既有 adapter probes 前后的 collector equality 防漂移，原 Controller snapshot/guard/health/rolling equality 原样覆盖全部 transport，任何 start/env/cmd/permissions/exe/script/cwd/META/source/root 变更拒绝，不重基线。cfg.mock=True 默认明确返回 fixtureOnly 空外部记录以兼容旧临时 fixture；显式 fixture 参数只能在 mock 使用，没有 CLI 参数或生产 override/skip。
++
++## fclone 精确源绑定，而非语义批准
++
++主任务一次获准只读 resolve/SFTP 已交接实际 `/usr/local/lib/node_modules/pm2/modules/fclone.js`，本地副本 `/home/ubuntu/work/customer-batch/fclone-resolved-once/fclone.js`，1239 bytes，SHA256 `9b921f33e5d4e36dd030f5d2e736ea2af0c95f4fb795ada696160e2db7fe2fe6`。本轮只将准确 **modules/fclone.js** 追加到 PM2_GENERATION_PINS：原八项逐项保留，无新 require、loader 行为或 dependency 扫描。全 pm2_base META 保护不变。测试仅复制这些已读源字节到临时 fixture 验 pin，缺失或漂移拒绝；没有执行任何源或把 pin 当 retainedWitness/clone 语义证明。
++
++## 离线验证与精确保留
++
++原 89 controller + 32 preparer + 6 JSON 方法全部保留；本轮 **121/121 controller、34/34 preparer、6/6 JSON** 通过。日志为 `evidence/r4-release-tests.txt`、`evidence/r4-prepare-tests.txt`、`evidence/r4-finite-tests.txt`，实际 SHA/bytes 在 `evidence/r4-test-log-hashes.json`。首轮唯一反例预期错误日志保留在 `r4-release-tests-initial.txt`：新增根项更早触发 rootMETA/transport 拒绝；只调整测试为嵌套新增以单独验证 inventory set，不放宽生产代码。
++
++精确 AST 与 byte ranges/hashes 见 `evidence/r4-ast-diff.json`；controller 全差异 `evidence/r4-controller.diff`、transport 最小差异 `evidence/r4-transport.diff`、六文件 diff `evidence/r4-allowed-files.diff`，六文件实际源 SHA `evidence/r4-source-and-safety.json`。release 只改 SCOPE、Config.extra_protected、PM2_GENERATION_PINS 新增一项、transport 并新增纯只读 helpers/固定事实常量；全部 Controller 方法、capture/schema、config_binding、identity、原 12slot/六 own、RPC literal/function、raw semantics/NodeUnique/五 metadata/forecast、loopback budget、CAS/env/source/journal/receipt 协议 AST 与字节均不改。preparer 唯一 AST 改动为 CONTROLLER_SHA，其 scope 已引用 release.SCOPE，不扩大。
++
++## 仍待主任务，不能批准
++
++**controllerApproved=false；finalDeployApproval=false；NOT_APPROVED。** 尚需当次实际 fresh14proc（12 PM2 + 2 外部）完整 identity/env/cmd/permissions/source/root fullMETA、完整 Ops 与 childcwd protected tree review、fclone 完整 retainedWitness/actual clone semantics/forecast、真实新 full package/manifest/source/tool/owner/nonce/完整正逆字节、independent fullpackage 审查及部署许可。本轮没有实际 capture、stage、attempt、approval、window 或 reload。
++
++---
++
++## R3 历史说明（以下非 R4 当前 pin、schema 改动或批准）
++
+ # 客户批次发布控制器：R3 限定源码与隔离反例
+ 
+ ## 状态：NOT_APPROVED（2026-11-20）
+--- bf7-baseline/prepare-local.README.md
++++ R4/prepare-local.README.md
+@@ -1,16 +1,16 @@
+-# 客户批次：仅本地准备器（R3，NOT_APPROVED）
++# 客户批次：仅本地准备器（R4，NOT_APPROVED）
+ 
+ `prepare-local.py` 只把**已交接到本地的 fresh capture 与当前 baseline**交给现有两个限定构建器，收集可复审的真实来源/编译/逆向证据，生成 `release.py seal_candidate` 的公开 candidate spec。默认不封印，不审核，不批准，不部署。
+ 
+ 本轮 preparer 的唯一源码 AST 差量为固定 `CONTROLLER_SHA` 更新；其它 AST 不变。当前固定 SHA 为：
+ 
+ ```text
+-bf7ec85b902ae2474ded779bfad110e7ac791e7d4c244d67ca6f912614d375ab
++8dc23eb3865e65bfc0a60d8b20f3548dc1a087cf533478ad89cdae88c86766f0
+ ```
+ 
+-仅接受 **`customer-batch-actions-20261120-6Lfttf6o-R3`**、完整 OWNER `6Lfttf6oVWJ8YS69o5FkXQ`、当前 controller SHA 与完整 Config 的当次 fresh capture。R2 scope/d6 capture、历史旧 scope/7fc capture、丢失 JSON 均不可重用。Config 原路径保持，仅追加准确 `/var/lib/dianzi51-private` 保护根；preparer 的对象-only union 检查不能漏掉新根。R3 process rows 新增 `pm2RawMeta` 和 `pm2ReloadReady`，由当前 controller 的严格 schema/identity 验证；不从布尔 ready 或 mock 通过制造发布批准。
++R3/bf7 基线仅用于差异审计，不重用其 capture。只有 pin 改动，preparer 所有方法/schema AST 与原字节不变；scope 直接引用 release.SCOPE。仅接受 **`customer-batch-actions-20261120-6Lfttf6o-R4`**、完整 OWNER `6Lfttf6oVWJ8YS69o5FkXQ`、当前 controller SHA 与完整 Config 的当次 fresh capture。R2 scope/d6 capture、历史旧 scope/7fc capture、丢失 JSON 均不可重用。Config 保留两个 env 和 `/var/lib/dianzi51-private`，R4 追加准确 `/opt/ops/dianzi51-recommendation` 与 `/opt/releases/20261009T170014Z-memory-isolation/dianzi51-platform` 完整保护树；对象-only union 检查不能漏掉任一精确根。R3 原 process rows 的 `pm2RawMeta` 和 `pm2ReloadReady`，原样由当前 controller 的严格 schema/identity 验证，外部两进程只在 transport.externalProtection 中保护，不放入 PM2 processes；不从布尔 ready 或 mock 通过制造发布批准。
+ 
+-R2 已由独立审确认不能上线，R3 仍 **NOT_APPROVED**。本轮只执行本地隔离测试、内存编译与 AST/SHA 核对；不修改/执行 JS builder、业务或 UI，不运行本脚本的真实 prepare，不用 Git/SSH/MCP，不访问生产，不执行 capture/preflight/apply/verify/rollback CLI。控制器 R3 的源码限定转换、source/loader pins 与剩余证据阻碍详见 `README.md`、`evidence/r3-controller.diff` 和 `evidence/r3-report.md`。
++R2 已由独立审确认不能上线，R4 仍 **NOT_APPROVED**。本轮只执行本地隔离测试、内存编译与 AST/SHA 核对；不修改/执行 JS builder、业务或 UI，不运行本脚本的真实 prepare，不用 Git/SSH/MCP，不访问生产，不执行 capture/preflight/apply/verify/rollback CLI。控制器 R4 的源码限定转换、source/loader pins 与剩余证据阻碍详见 `README.md`、`evidence/r4-controller.diff` 和 `evidence/r4-report.md`。
+ 
+ ## 输入和路径约束
+ 
+@@ -36,9 +36,9 @@
+ ```bash
+ cd /home/ubuntu/51-manager/deploy/customer-batch-actions-20261119
+ PYTHONDONTWRITEBYTECODE=1 python3 -B prepare-local.py \
+-  --base /home/ubuntu/work/customer-batch/handoff-current-r3 \
+-  --owner-nonce-file /home/ubuntu/work/customer-batch/owner-nonce-current-r3.txt \
+-  --out /home/ubuntu/work/customer-batch/backend-prepare-current-r3-001
++  --base /home/ubuntu/work/customer-batch/handoff-current-r4 \
++  --owner-nonce-file /home/ubuntu/work/customer-batch/owner-nonce-current-r4.txt \
++  --out /home/ubuntu/work/customer-batch/backend-prepare-current-r4-001
+ ```
+ 
+ 输出必须为 WORK 的**全新直接子目录**，名字匹配 `backend-prepare-[A-Za-z0-9][A-Za-z0-9_-]{0,79}`；没有 `/opt/ops` override、任意 repo/node/mock 参数或输出泛化。WORK 根目录应已存在。
+@@ -47,7 +47,7 @@
+ 
+ 脚本既有本地顺序不变：读取 builders 声明的 source inventories；留存原 source/tools/controller/preparer 快照；运行现有 native source-ABI 与 backend 原 source 编译 hash 检查；使用现有 backend freeze/build 和 UI customer-only 增量构建；再核对原/frozen/source/compiled hashes、UI 七叶与内嵌第八叶、native identity/逆向字节及 tool provenance；最后生成待审 spec。它不使用 JS eval 猜 source、不运行 API 入口或生产数据库。
+ 
+-准备器既有本地构建子进程使用固定清洁 PATH/locale/no-pycache 与 UI 两路径环境，不继承应用秘密/`NODE_OPTIONS`/`ESBUILD_BINARY_PATH`/`PYTHONPATH`。此既有 preparer 行为与 R3 生产 controller 的 loader **只读拒绝，不 unset/env replacement**规则不同；本轮未更改任一既有 subprocess 环境协议。
++准备器既有本地构建子进程使用固定清洁 PATH/locale/no-pycache 与 UI 两路径环境，不继承应用秘密/`NODE_OPTIONS`/`ESBUILD_BINARY_PATH`/`PYTHONPATH`。此既有 preparer 行为与 R4 生产 controller 的 loader **只读拒绝，不 unset/env replacement**规则不同；本轮未更改任一既有 subprocess 环境协议。
+ 
+ ## 输出与证据映射
+ 
+@@ -74,12 +74,12 @@
+ 
+ ## 外部真实 reviewer 与可选 --seal
+ 
+-`--reviewer-report` 必须为已存在、真正独立生成的报告，并同时给 `--reviewer-sha256`。脚本只核对非空普通文件、路径和显式 SHA，再逐字节复制；不会生成报告或伪称审核真实性，`externalReviewerAuthenticityVerified=false` 明示边界。必须覆盖当次 R3 current source/native inputs/diff，不能挪用旧 R2/种子报告。
++`--reviewer-report` 必须为已存在、真正独立生成的报告，并同时给 `--reviewer-sha256`。脚本只核对非空普通文件、路径和显式 SHA，再逐字节复制；不会生成报告或伪称审核真实性，`externalReviewerAuthenticityVerified=false` 明示边界。必须覆盖当次 R4 current source/native inputs/diff，不能挪用旧 R2/种子报告。
+ 
+ 仅提供报告仍不封印。显式 `--seal` 才允许当次新输出中的唯一 release 操作：
+ 
+ ```text
+-python3 -B release.py candidate --controller-sha256 <当前固定R3 SHA> \
++python3 -B release.py candidate --controller-sha256 <当前固定R4 SHA> \
+   --spec <新输出>/candidate-spec.json --out <新输出>/sealed-candidate
+ ```
+ 
+@@ -91,6 +91,6 @@
+ PYTHONDONTWRITEBYTECODE=1 python3 -B test_prepare_local.py -v
+ ```
+ 
+-原 30 项测试方法保留，新增 R2 scope/d6 pin 拒绝和 R3 private union 漏根拒绝，共 **32/32** 通过。所有 capture/baseline/source/nonce/reviewer fixture 位于 TemporaryDirectory，build/candidate subprocess 完全 mock；真实 pure helper 仍拒绝合成空 native records。这不是实际构建、真实 RPC 或发布证明。完整日志 `evidence/r3-prepare-tests.txt`；controller **89/89** mock 反例日志 `evidence/r3-release-tests.txt`。内存编译及精确 AST 证据在 `evidence/r3-static-checks.json` 和 `evidence/r3-ast-diff.json`，无 pycache。
++原 32 项 preparer 测试方法全部保留，新增 R3 scope/bf7 pin 拒绝与 R4 两外部精确根漏根拒绝，共 **34/34** 通过。所有 capture/baseline/source/nonce/reviewer fixture 位于 TemporaryDirectory，build/candidate subprocess 完全 mock；真实 pure helper 仍拒绝合成空 native records。这不是实际构建、真实 RPC 或发布证明。完整日志 `evidence/r4-prepare-tests.txt`；controller **121/121** mock 反例日志 `evidence/r4-release-tests.txt`。内存编译及精确 AST 证据在 `evidence/r4-source-and-safety.json` 和 `evidence/r4-ast-diff.json`，无 pycache。
+ 
+-尚缺实际 R3 fresh capture/private tree fullMETA/前台保护集合绑定、retained raw/model 完整 forecast 与 clone 语义证据、真实新 package/manifest/source/tool pins、完整正逆字节和独立差量审。**controllerApproved=false；finalDeployApproval=false；NOT_APPROVED。** 私有输出含真实 capture/nonce 时不可进入 Git，不 commit/push、上传或分享这些资料。
++尚缺实际 R4 fresh14proc/full protected trees/fullMETA/前台保护集合绑定、fclone 完整 retainedWitness/实际 clone 语义与 retained raw/model 完整 forecast、真实新 package/manifest/source/tool pins、完整正逆字节和独立差量审。**controllerApproved=false；finalDeployApproval=false；NOT_APPROVED。** 私有输出含真实 capture/nonce 时不可进入 Git，不 commit/push、上传或分享这些资料。
