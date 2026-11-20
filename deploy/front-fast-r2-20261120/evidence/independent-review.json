@@ -1,0 +1,25 @@
+{
+  "schema": "fast-independent-review-v1",
+  "ownerTask": "qp4e5jVmsAp0UHKwymyD5X",
+  "scope": "front-fast-r2-20261120-qp4e5jVm",
+  "status": "passed",
+  "independent": true,
+  "releaseApproved": true,
+  "reviewer": "independent-readonly-r2-reviewer-20261120T0033-subagent",
+  "reviewedAtUtc": "2026-11-20T00:33:16.043518Z",
+  "manifestSha256": "ec3894f939fecaf24c76b9083e6375a9b8386d567b1280d60873fe51c96f33bf",
+  "controllerSha256": "8a69178951903c32cc30b23fdafac70f97558d4504df9eed7fbfd2de74d3059b",
+  "sourceFiles": {
+    "bindings.json": "0f9cbdedb510c9e4ebda4cb2d25b57b7ed22666c56d1e95884a810a606d88866",
+    "pinned_reference.py": "c703f6c4dcc58eda496f715ce07ef262202a11aceea0b1ea1c5f0b64e5e7c29f",
+    "reference/release.py": "57cc80e961fde0cdbc3ab4742551bb016786c06fbbf1034cb7c17ea9797cb161",
+    "reference/safe_helpers.py": "655bc995a61aa6252e836a128eadf9a7f3ec18ea452846bc11e92f4e9543b882",
+    "reference/scope.py": "4de5c1db9166cbdf7bfa6dcd68df56950395138c6ecfb0befcae4aea42cfff21",
+    "release.py": "ef9c84f5a36e84864587fb049e751c22b40ec9dc9b8579e700e6f86ba98ca4de",
+    "scope.py": "033c5799241a7c0ed133e027140331b88fcf9141b773ddec57389f16efc82218"
+  },
+  "captureSha256": "f2a542459f399594c7677741d363b3d83bbc9c25ec58ab4cafdbe539c6388ad7",
+  "fullMetaSha256": "1d2ce28b2a1885400e8e9d5c30118d472af7a0b23187c5e66c1bf71c6c12268d",
+  "coordSha256": "1777afc87c7c64d7c7715fb1560ede06f8139b063250f1564908e671ae4a1632",
+  "bindingsSha256": "0f9cbdedb510c9e4ebda4cb2d25b57b7ed22666c56d1e95884a810a606d88866"
+}

@@ -1,0 +1,331 @@
+{
+  "provenance": "front R2 capture; reconfirmed exact in final readonly snapshot 00:46 UTC",
+  "locks": [
+    "/var/lock/dianzi51-public-deploy.lock",
+    "/var/lock/dianzi51-production-code.lock"
+  ],
+  "coord": "/opt/ops/51-project-release-coordination-20261027.json",
+  "nodeSelector": "/usr/bin/node-22 if regular is_file; otherwise /usr/bin/node",
+  "pm2Base": "/usr/local/lib/node_modules/pm2",
+  "pm2Rpc": "/root/.pm2/rpc.sock",
+  "pm2PidFile": "/root/.pm2/pm2.pid",
+  "allSevenExistingAliases": {
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/public": {
+      "ctimeNs": 1794286300537991800,
+      "dev": 66309,
+      "gid": 0,
+      "ino": 9779586,
+      "kind": "directory-symlink",
+      "link": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public",
+      "mtimeNs": 1794286300537991800,
+      "nlink": 1,
+      "size": 62,
+      "statmode": 41471,
+      "target": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public",
+      "targetRoot": {
+        "dev": 66309,
+        "gid": 994,
+        "ino": 6213374,
+        "mode": 488,
+        "uid": 0
+      },
+      "uid": 0
+    },
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/forumPdfScanWorker.mjs": {
+      "ctimeNs": 1794286300524991742,
+      "dev": 66309,
+      "gid": 0,
+      "ino": 9779575,
+      "kind": "symlink",
+      "link": "/opt/releases/20261104-admin-upload-stars-layout-v22/front/dist/forumPdfScanWorker.mjs",
+      "mtimeNs": 1794286300524991742,
+      "nlink": 1,
+      "size": 86,
+      "statmode": 41471,
+      "target": "/opt/releases/20261104-admin-upload-stars-layout-v22/front/dist/forumPdfScanWorker.mjs",
+      "targetRecord": {
+        "ctimeNs": 1793800891410495354,
+        "dev": 66309,
+        "gid": 0,
+        "ino": 6666653,
+        "kind": "file",
+        "mtimeNs": 1793800891409495349,
+        "nlink": 1,
+        "sha256": "b0f0bd81bad769e38ec14a7fc8ef74f5b466b21be66538ad6417b5d0eb393a1e",
+        "size": 2831,
+        "statmode": 33188,
+        "uid": 0
+      },
+      "uid": 0
+    },
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/marketSnapshotRefresh.js": {
+      "ctimeNs": 1794286300525991746,
+      "dev": 66309,
+      "gid": 0,
+      "ino": 9779576,
+      "kind": "symlink",
+      "link": "/opt/releases/20261104-admin-upload-stars-layout-v22/front/dist/marketSnapshotRefresh.js",
+      "mtimeNs": 1794286300525991746,
+      "nlink": 1,
+      "size": 88,
+      "statmode": 41471,
+      "target": "/opt/releases/20261104-admin-upload-stars-layout-v22/front/dist/marketSnapshotRefresh.js",
+      "targetRecord": {
+        "ctimeNs": 1793800892274499301,
+        "dev": 66309,
+        "gid": 0,
+        "ino": 6666655,
+        "kind": "file",
+        "mtimeNs": 1793800892271499287,
+        "nlink": 1,
+        "sha256": "e6ffe9778543b650afdc02244724acdddb4a3136c94a00b8c3e7d313cb9086b0",
+        "size": 569330,
+        "statmode": 33188,
+        "uid": 0
+      },
+      "uid": 0
+    },
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/public": {
+      "ctimeNs": 1794286300526991751,
+      "dev": 66309,
+      "gid": 0,
+      "ino": 9779577,
+      "kind": "directory-symlink",
+      "link": "/opt/releases/20261031-homepage-banner-v39/front/dist/public",
+      "mtimeNs": 1794286300526991751,
+      "nlink": 1,
+      "size": 60,
+      "statmode": 41471,
+      "target": "/opt/releases/20261031-homepage-banner-v39/front/dist/public",
+      "targetRoot": {
+        "dev": 66309,
+        "gid": 0,
+        "ino": 6219401,
+        "mode": 493,
+        "uid": 0
+      },
+      "uid": 0
+    },
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/publicHotSnapshotRefresh.js": {
+      "ctimeNs": 1794286300527991755,
+      "dev": 66309,
+      "gid": 0,
+      "ino": 9779578,
+      "kind": "symlink",
+      "link": "/opt/releases/20261104-admin-upload-stars-layout-v22/front/dist/publicHotSnapshotRefresh.js",
+      "mtimeNs": 1794286300527991755,
+      "nlink": 1,
+      "size": 91,
+      "statmode": 41471,
+      "target": "/opt/releases/20261104-admin-upload-stars-layout-v22/front/dist/publicHotSnapshotRefresh.js",
+      "targetRecord": {
+        "ctimeNs": 1793800892711501297,
+        "dev": 66309,
+        "gid": 0,
+        "ino": 6666656,
+        "kind": "file",
+        "mtimeNs": 1793800892709501288,
+        "nlink": 1,
+        "sha256": "3909cd2206978d07023afb4b0e01f49289ade5665ec85d6295bd819352c0c552",
+        "size": 345448,
+        "statmode": 33188,
+        "uid": 0
+      },
+      "uid": 0
+    },
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/recommendationValueRefresh.js": {
+      "ctimeNs": 1794286300528991760,
+      "dev": 66309,
+      "gid": 0,
+      "ino": 9779579,
+      "kind": "symlink",
+      "link": "/opt/releases/20261104-admin-upload-stars-layout-v22/front/dist/recommendationValueRefresh.js",
+      "mtimeNs": 1794286300528991760,
+      "nlink": 1,
+      "size": 93,
+      "statmode": 41471,
+      "target": "/opt/releases/20261104-admin-upload-stars-layout-v22/front/dist/recommendationValueRefresh.js",
+      "targetRecord": {
+        "ctimeNs": 1793800893141503261,
+        "dev": 66309,
+        "gid": 0,
+        "ino": 6666657,
+        "kind": "file",
+        "mtimeNs": 1793800893140503257,
+        "nlink": 1,
+        "sha256": "ea9c25b57270f758832fbb6bd2cb099aee5c0cac1a5b698d242d5c957cb35ad6",
+        "size": 403429,
+        "statmode": 33188,
+        "uid": 0
+      },
+      "uid": 0
+    },
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/server": {
+      "ctimeNs": 1794286300529991764,
+      "dev": 66309,
+      "gid": 0,
+      "ino": 9779580,
+      "kind": "directory-symlink",
+      "link": "/opt/releases/20261104-admin-upload-stars-layout-v22/front/dist/server",
+      "mtimeNs": 1794286300529991764,
+      "nlink": 1,
+      "size": 70,
+      "statmode": 41471,
+      "target": "/opt/releases/20261104-admin-upload-stars-layout-v22/front/dist/server",
+      "targetRoot": {
+        "dev": 66309,
+        "gid": 0,
+        "ino": 6666658,
+        "mode": 493,
+        "uid": 0
+      },
+      "uid": 0
+    }
+  },
+  "servingRoots": {
+    "190": {
+      "alias": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/public",
+      "aliasLink": "/opt/releases/20261031-homepage-banner-v39/front/dist/public",
+      "aliasMetadata": {
+        "ctimeNs": 1794286300526991751,
+        "dev": 66309,
+        "gid": 0,
+        "ino": 9779577,
+        "mtimeNs": 1794286300526991751,
+        "nlink": 1,
+        "size": 60,
+        "statmode": 41471,
+        "uid": 0
+      },
+      "name": "dianzi51",
+      "root": "/opt/releases/20261031-homepage-banner-v39/front/dist/public",
+      "targetRoot": {
+        "dev": 66309,
+        "gid": 0,
+        "ino": 6219401,
+        "statmode": 16877,
+        "uid": 0
+      }
+    },
+    "191": {
+      "alias": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/public",
+      "aliasLink": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public",
+      "aliasMetadata": {
+        "ctimeNs": 1794286300537991800,
+        "dev": 66309,
+        "gid": 0,
+        "ino": 9779586,
+        "mtimeNs": 1794286300537991800,
+        "nlink": 1,
+        "size": 62,
+        "statmode": 41471,
+        "uid": 0
+      },
+      "name": "dianzi51-admin",
+      "root": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public",
+      "targetRoot": {
+        "dev": 66309,
+        "gid": 994,
+        "ino": 6213374,
+        "statmode": 16872,
+        "uid": 0
+      }
+    },
+    "192": {
+      "alias": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/public",
+      "aliasLink": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public",
+      "aliasMetadata": {
+        "ctimeNs": 1794286300537991800,
+        "dev": 66309,
+        "gid": 0,
+        "ino": 9779586,
+        "mtimeNs": 1794286300537991800,
+        "nlink": 1,
+        "size": 62,
+        "statmode": 41471,
+        "uid": 0
+      },
+      "name": "dianzi51-admin",
+      "root": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public",
+      "targetRoot": {
+        "dev": 66309,
+        "gid": 994,
+        "ino": 6213374,
+        "statmode": 16872,
+        "uid": 0
+      }
+    },
+    "193": {
+      "alias": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/public",
+      "aliasLink": "/opt/releases/20261031-homepage-banner-v39/front/dist/public",
+      "aliasMetadata": {
+        "ctimeNs": 1794286300526991751,
+        "dev": 66309,
+        "gid": 0,
+        "ino": 9779577,
+        "mtimeNs": 1794286300526991751,
+        "nlink": 1,
+        "size": 60,
+        "statmode": 41471,
+        "uid": 0
+      },
+      "name": "dianzi51",
+      "root": "/opt/releases/20261031-homepage-banner-v39/front/dist/public",
+      "targetRoot": {
+        "dev": 66309,
+        "gid": 0,
+        "ino": 6219401,
+        "statmode": 16877,
+        "uid": 0
+      }
+    },
+    "194": {
+      "alias": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/public",
+      "aliasLink": "/opt/releases/20261031-homepage-banner-v39/front/dist/public",
+      "aliasMetadata": {
+        "ctimeNs": 1794286300526991751,
+        "dev": 66309,
+        "gid": 0,
+        "ino": 9779577,
+        "mtimeNs": 1794286300526991751,
+        "nlink": 1,
+        "size": 60,
+        "statmode": 41471,
+        "uid": 0
+      },
+      "name": "dianzi51",
+      "root": "/opt/releases/20261031-homepage-banner-v39/front/dist/public",
+      "targetRoot": {
+        "dev": 66309,
+        "gid": 0,
+        "ino": 6219401,
+        "statmode": 16877,
+        "uid": 0
+      }
+    },
+    "200": {
+      "alias": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/public",
+      "aliasLink": "/opt/releases/20261031-homepage-banner-v39/front/dist/public",
+      "aliasMetadata": {
+        "ctimeNs": 1794286300526991751,
+        "dev": 66309,
+        "gid": 0,
+        "ino": 9779577,
+        "mtimeNs": 1794286300526991751,
+        "nlink": 1,
+        "size": 60,
+        "statmode": 41471,
+        "uid": 0
+      },
+      "name": "dianzi51",
+      "root": "/opt/releases/20261031-homepage-banner-v39/front/dist/public",
+      "targetRoot": {
+        "dev": 66309,
+        "gid": 0,
+        "ino": 6219401,
+        "statmode": 16877,
+        "uid": 0
+      }
+    }
+  }
+}
