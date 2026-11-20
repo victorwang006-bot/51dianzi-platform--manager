@@ -1,0 +1,20 @@
+{
+  "status": "LOCAL_EXACT_COMPARISON_DELTA",
+  "originalControllerSha256": "4f32de6aec3d7af51828aff6ee3d3e76be68f14b48f66e513573bc44324e625c",
+  "adapterSha256": "af3b73a1bb666cee511cd3f7c3ef50231a61509fe3641c57c937758bfea4304e",
+  "originalRestoreJournalMethodSha256": "c8bd6b71206d7c9c5111c8d0543b2d423cb8224fc96713bec97a5285367ee178",
+  "reverseReplacementRestoresOriginalMethodBytesExact": true,
+  "onlyOneComparisonChange": true,
+  "noOriginalSourceOrJournalMutation": true,
+  "originalStrictPassClaimed": false,
+  "allActualDiffPathsOnlyProtectedRootTwoTimes": true,
+  "originalVerifiedApplyReceiptSha256": "ae28cf371f764f514a507044caae554d6a431576a77be98c558187e07c4da4e3",
+  "latestStateSha256": "54f73dd6aae8cc0efe010bbfe069c06d5c3535eea0e8ccffba64f757e38cf480",
+  "parameters": {
+    "manifestSha256": "093d5476c2a16cc1fce2e2810de018bea35f22c7dbba9b22744ccb7abf6d64b4",
+    "reviewSha256": "7218090baa6296e7bb22a4ab1c9d9963582ef76b5011d884a2fc82dd175a78fd",
+    "attemptSha256": "3a287307181cab6ea01a95d0fbe5780d6c02a655754dea986393b852ffd7fd26",
+    "stateSha256": "54f73dd6aae8cc0efe010bbfe069c06d5c3535eea0e8ccffba64f757e38cf480",
+    "receiptSha256": "ae28cf371f764f514a507044caae554d6a431576a77be98c558187e07c4da4e3"
+  }
+}

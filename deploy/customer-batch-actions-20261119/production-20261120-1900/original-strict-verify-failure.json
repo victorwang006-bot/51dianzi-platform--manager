@@ -1,0 +1,11 @@
+{
+  "status": "ORIGINAL_STRICT_READONLY_VERIFY_FAILED_RETAINED",
+  "originalStrictVerifyPassed": false,
+  "exactFailure": "FIRST_JOURNAL_FRESH_CAPTURE_BINDING",
+  "originalControllerSha256": "4f32de6aec3d7af51828aff6ee3d3e76be68f14b48f66e513573bc44324e625c",
+  "receiptSha256Unchanged": "ae28cf371f764f514a507044caae554d6a431576a77be98c558187e07c4da4e3",
+  "originalStderrSha256": "11f736cb4e7e0d556f0ec6298881c5a26db5c3ea2eff2eb7f8abd038b5bd41d3",
+  "actualDifferenceCount": 2,
+  "comparisonAdapterIndependentlyRecorded": true,
+  "rawCaptureJournalReceiptAndFailureOriginalsKeptPrivateUnchanged": true
+}

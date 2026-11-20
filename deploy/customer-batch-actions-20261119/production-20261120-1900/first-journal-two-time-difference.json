@@ -1,0 +1,20 @@
+{
+  "status": "EXACT_FIRST_JOURNAL_DIFF_READONLY",
+  "state1Sha256": "deb29a89bc771b94aa625e43494f1e92c456d8693d3ce705915e280b8779f47c",
+  "differences": [
+    {
+      "path": "/protectedFiles//opt/releases/20261009T170014Z-memory-isolation/dianzi51-platform/ctimeNs",
+      "expected": 1795171441428975479,
+      "actual": 1795171771403434955
+    },
+    {
+      "path": "/protectedFiles//opt/releases/20261009T170014Z-memory-isolation/dianzi51-platform/mtimeNs",
+      "expected": 1795171441428975479,
+      "actual": 1795171771403434955
+    }
+  ],
+  "differenceCount": 2,
+  "productionWrites": 0,
+  "noPM2RPCOrNewSnapshot": true,
+  "originalSourceAndReceiptUnmodified": true
+}

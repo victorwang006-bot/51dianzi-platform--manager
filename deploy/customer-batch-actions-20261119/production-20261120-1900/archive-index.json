@@ -1,0 +1,62 @@
+{
+  "status": "SANITIZED_ACTUAL_RELEASE_ARCHIVE",
+  "files": {
+    "actual-budget.json": {
+      "sha256": "fa47f10aee2134598872eeb0657c65bbb9567aec55bc546c848b3f7b1a95556a",
+      "size": 507
+    },
+    "actual-release-summary.json": {
+      "sha256": "560886a2537e0402ffb31727362d8ec0afcdf9e616beb409d7bd15cc98b91e79",
+      "size": 13822
+    },
+    "adapted-readonly-verified.json": {
+      "sha256": "ab541ff01f2ae402138c42ee66da588135364d3beb56543c65c30c561663073f",
+      "size": 1126
+    },
+    "first-journal-two-time-difference.json": {
+      "sha256": "a242189851013c4005b7f7d8e9da5286b8869b2a8e69539a1deb30f7c33cb142",
+      "size": 679
+    },
+    "mapping-delta-tests.json": {
+      "sha256": "15820910251cd9918cab58619f63c3442ffc4e39b6083d8090d6bdcb12d5c8c6",
+      "size": 427
+    },
+    "original-strict-verify-failure.json": {
+      "sha256": "3bc1daf740da6a006235a1c217d2f484d64cbd85064d18bdb137a6c58a657c4a",
+      "size": 605
+    },
+    "parent-boundary-byte-proof.json": {
+      "sha256": "6c615e052b42946bba5fa03dc6502788d1bf70d51128dca40bbdb20e4ceb4868",
+      "size": 923
+    },
+    "parent-boundary-only.patch": {
+      "sha256": "f891623be8e269b52e25040b3e962230e1989af623d85256aa17e15f6923fc5e",
+      "size": 793686
+    },
+    "readonly-adapter-byte-proof.json": {
+      "sha256": "53cae7494f403fdd8c0e9a475a833dc8271171083d3d363453f5890aab4af100",
+      "size": 1239
+    },
+    "readonly-first-comparison-only.patch": {
+      "sha256": "dfe2b41ba377d79125315241e272efd5c5ecf2686c6109632d3bba53c7482c71",
+      "size": 811
+    },
+    "readonly-verify-adapter-af3b73a1bb666cee.py": {
+      "sha256": "af3b73a1bb666cee511cd3f7c3ef50231a61509fe3641c57c937758bfea4304e",
+      "size": 3853
+    },
+    "release-4f32de6aec3d7af5.py": {
+      "sha256": "4f32de6aec3d7af51828aff6ee3d3e76be68f14b48f66e513573bc44324e625c",
+      "size": 545291
+    },
+    "scope-policy-db8386b7.json": {
+      "sha256": "db8386b7a7024cc6001a19902f6006adf78a2f2cf17aec595fc13d0fa7dffe55",
+      "size": 410635
+    },
+    "上线完成报告.md": {
+      "sha256": "861b3fb0f30f5900b0832ebfc8d340a58feaa7a99ea4c636ba392595fb2ca7c2",
+      "size": 5782
+    }
+  },
+  "rawPrivateArtifactsIncluded": false
+}

@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "priorNineTestsReusedSha256": "acad4b73cb38b7960343e161f339e6620651052f58de92c98db7277c9ff513ac",
+  "newBoundaryCases": [
+    {
+      "name": "historical-tool-parent-not-recursive-but-module-and-parent-still-protected",
+      "passed": true
+    },
+    {
+      "name": "unloaded-runtime-node-modules-not-added-as-generic-alias-exemption",
+      "passed": true
+    }
+  ],
+  "allFunctionsASTExact": true
+}

@@ -1,0 +1,11 @@
+--- original-4f-restore_journal
++++ explicit-readonly-restore_journal
+@@ -30,7 +30,7 @@
+                 original = dict(**{k:self.b['c'][k] for k in ('processes','protectedFiles','transport')},
+                     coordBase64=self.b['c']['coordBase64'],coordRecord=self.b['c']['coordRecord'],
+                     targets={'front':'before','admin':'before','html':'before'},assets=[],loadedSlots=[],events=[])
+-                need(d['state'] == original, 'FIRST_JOURNAL_FRESH_CAPTURE_BINDING')
++                need(root_times_equal(d['state'], original), 'FIRST_JOURNAL_FRESH_CAPTURE_BINDING')
+             previous, latest = H(raw), d
+         need(previous == pin(state_sha), 'LATEST_STATE_EXPLICIT_PIN_NO_STALE_REPLAY')
+         self.sequence, self.state_hash, self.st = count, previous, latest['state']

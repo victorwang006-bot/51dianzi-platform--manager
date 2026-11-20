@@ -2,7 +2,7 @@
 
 沿用现有后台、蓝色样式和原客户/账号授权。用户批准原方案，不创建新站点。与“前台任务”分工：本任务只改客户库存/上传处理，不改首页与芯片参数；独立工作目录，Git同步保留并发提交；正式发布用共享双锁与最新字节CAS，不全量dist，不覆盖前台API/资产。
 
-前列已勾选项表示源码实现与隔离验证完成，不代表生产已上线。上线与实际现网核验继续以最后未勾选项为准。
+前列功能勾选项表示源码实现与隔离验证；最后发布项现已完成。**最新终态：2026-11-20 19:00:19真实发布／六槽reload／verified闭窗，19:08:00附加adapted只读核验，19:08:54恢复／双锁释放证明齐备。**下方较早“未上线／blocked”记录属于历史，原失败不删除。
 
 - [x] 库存工具栏新增“全部批次”，选项“11-19 14:30 · 库存.xlsx”。服务器按真实uploadBatchId及customerId同时筛选，型号/品牌继续配合，数量随批次更新。历史无批次记录不猜时间关联。
 - [x] 保留勾选物料“删除所选（N）”，未勾选隐藏；确认“删除选中的 N 条物料？”、按钮“取消｜删除”、成功“已删除”。只移除真实成功回执记录，权限/版本冲突记录保留，未知按原请求核实。
@@ -11,7 +11,7 @@
 - [x] “导出失败”下载Excel原字段顺序+失败原因，包含当前修改值，名称“库存_失败记录_YYYYMMDD_HHMM.xlsx”。无法解析时提供下载原文件，不能显示无效编辑入口，上传忽略失败原因列。旧恢复记录无原列证据时只用明确的标准模板，不伪称原顺序。2026-11-20已补齐历史编辑入口：保留单一客户端真实Excel导出，保存原表列/附注和当前修改；多表精确sourceRefs、1000行末页、原UUID冻结恢复均已测。非编辑历史导出另附授权原manifest的问题原行，不猜缺失字段。
 - [x] “重新提交”只处理可修正的未提交问题行，归属原批次，不重复成功行；unknown沿用原请求核实，不覆盖冻结payload。全部成功反馈“全部提交成功”；未知结果显示“待确认”，不冒充确定失败。身份、客户、版本、权限变化立即阻断。原准备已提交但丢失回执时，完整匹配服务端canonical集合后沿用原UUID恢复；部分问题行补发后仍可处理余下问题行。
 - [x] 本地隔离测试/类型检查；UI 15文件364项及实际失败编辑器10项通过，后端相关308项及原生API 16项VM验证通过。没有生产物料写测、DDL、环境改写或重启其他任务服务。
-- [ ] 保存最终源码并定向发布，核验实际URL新字节与共享前台保护。发布前重新捕获现网，以最新API/HTML字节CAS封印；双方排队开窗，保留前台新参数/手册等全部非本任务字节。未发布不声称上线。
+- [x] 保存最终源码并定向发布，核验实际URL新字节与共享前台保护。发布前重新捕获现网，以最新API/HTML字节CAS封印；双方排队开窗，保留前台新参数/手册等全部非本任务字节。未发布不声称上线。
 
 ## 当前状态
 
@@ -94,3 +94,14 @@ R9当前controller `2c7047701591af1ee2c21f93fe84593184ff0e6e3ed3d40ad2ee1d0f87de
 14:52明确无开窗释放，14:55总协调要求前台先行，后台保持0ECS连接/不install/apply/不暂停timer/不插队，不把该等待勾为任务完成。已离线备好10个块、每块最大48KiB（末块42B）的剩余字节计划，每块准确offset/before-prefixH/chunkH/after-prefixH，20s每块/180s全程，完整归档最终必须H `a0cc4d7a3797e55b93f012a04bd72a2a01e9ee7aed7e2f550af69d52dfeb71b2`。默认plan不联网；只有前台真实终态退出连接锁并重新协调后才能补这唯一suffix，不重传大包/不重建业务/不重审已过内容。
 
 后续实际当前META/coord/source binding须重新符合现场（原timer窗已结束、前台可能更改受保护静态集合），不得仅凭旧时效/nonce/报告复用为live准入，不能伪改捕获时间。继续既定窄scope流程，实际业务验收与verified持久闭窗/定时器恢复证明全部齐后，才勾选发布完成。
+
+
+## 19:08真实上线收尾（发布项完成）
+
+用户18:15明确批准本轮M1最小实际后台范围。实际4f32执行器／db8386 policy、cb6f scoped capture／M093d当前119payload及721809原schema独立核对全部绑定；业务payload、33历史source、构建／类型／原生API／正逆字节／页面证据按哈希复用。19:00:19一次原apply exit0，402.286s，六own槽190/193/194/200/191/192逐个reload并verified持久闭窗，receipt ae28cf…、closedcoord 930e78…；DB/env/frontStatic写入0，另六槽raw保持，前台HTML349cbe…及原5assets受保护。
+
+19:01原strict只读verify真实FIRST_JOURNAL_FRESH_CAPTURE_BINDING失败保留；完整首state精确差量只有获批单root mtimeNs/ctimeNs，其余字段一致。原4f/M/capture/journal/receipt不改。唯一协调19:06:43核对独立af3b73 adapter，仅这一首比较调原root_times_equal，其余完整原verify继承。19:08:00实际adapted-read-only-verify通过，originalStrictVerifyPassed=false；生产写／reload／timer操作0，不把原strict失败改称通过。
+
+timer19:01:38实际恢复，19:01:39守护确认退出；19:08:54最后一次只读证明active/enabled/unitH原态、closed930e及receipt ae28原字节一致、双锁非阻塞取得且FD identity匹配，退出后释放、SSH关闭，本任务无遗留执行作业。后台串行占用正式释放，无追加apply/reload/pause/全机扫描。
+
+当前报告与去敏实际证据：`deploy/customer-batch-actions-20261119/production-20261120-1900/上线完成报告.md`及同目录`actual-release-summary.json`。原strict失败、历史capture/review/源码保持原件；不把原whole-machine门槛称通过，不将Git归档当上线。

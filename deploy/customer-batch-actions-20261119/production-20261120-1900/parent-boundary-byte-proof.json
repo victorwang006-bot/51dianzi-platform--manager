@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "oldControllerSha256": "dab77f642ad24836150407897d538eb24d61b4de760cee66c485676c029db6b2",
+  "controllerSha256": "4f32de6aec3d7af51828aff6ee3d3e76be68f14b48f66e513573bc44324e625c",
+  "scopePolicySha256": "db8386b7a7024cc6001a19902f6006adf78a2f2cf17aec595fc13d0fa7dffe55",
+  "allOriginalAndReviewedM1FunctionASTExact": true,
+  "onlyEmbeddedPolicyChanged": true,
+  "recursiveRootsRemoved": [
+    "/opt/ops/20261117-channel-reference-fill-v1"
+  ],
+  "shallowDirectoriesAdded": [
+    "/opt/ops/20261117-channel-reference-fill-v1"
+  ],
+  "fixedLoadedModulePinAdded": {
+    "/opt/ops/20261117-channel-reference-fill-v1/channel-reference-service.mjs": "573ffde0aea872ac35a47ccfb35d3f01401e8104ad03df18613d4e51f32d602e"
+  },
+  "noSymlinkMappingRelaxed": true,
+  "noBusinessPayloadChanged": true,
+  "scope": "customer-batch-actions-20261120-6Lfttf6o-M1",
+  "historical52eAndM1FailedCaptureImmutable": true
+}
