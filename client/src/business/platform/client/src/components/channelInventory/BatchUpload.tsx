@@ -806,7 +806,7 @@ function BatchUploadSession(props: Props) {
       const XLSX = await import("xlsx");
       if (!current()) return;
       const workbook = XLSX.utils.book_new();
-      for (const group of groups.values()) {
+      for (const group of Array.from(groups.values())) {
         const sheet = XLSX.utils.aoa_to_sheet([group.header, ...group.rows.sort((a, b) => a.rowNumber - b.rowNumber).map(row => row.cells)]);
         sheet["!cols"] = group.header.map((_, index) => ({ wch: index === group.header.length - 1 ? 60 : 18 }));
         const base = group.name.replace(/[\\/?:*\[\]]/g, "_").slice(0, 31) || "失败记录";
