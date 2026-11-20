@@ -1,0 +1,785 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useRoute } from "wouter";
+import { toast } from "sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
+import MallNav from "@/components/MallNav";
+import MallLoginDialog from "@/components/MallLoginDialog";
+import { trpc } from "@/lib/trpc";
+import { formatInventoryUnitPrice } from "@/lib/inventoryPriceDisplay";
+import ProductImageGallery, {
+  productImageSources,
+} from "@/components/ProductImageGallery";
+import ProductDetailSkeleton from "@/components/ProductDetailSkeleton";
+import { createSearchInquiryUrl } from "@/lib/searchInquiry";
+import { openInNewTab } from "@/lib/openInNewTab";
+import { useEnterpriseInquiryLauncher } from "@/hooks/useEnterpriseInquiryLauncher";
+import { useMaterialExposure } from "@/hooks/useMaterialExposure";
+import {
+  formatInventoryAvailability,
+  inventoryQuantityDisplay,
+} from "@/lib/inventoryQuantityDisplay";
+import { SUPPLIER_NAME_FALLBACK } from "@shared/supplierDisplayName";
+import {
+  displayInventoryLeadTime,
+  isSpotInventoryLeadTime,
+} from "@shared/inventoryLeadTime";
+
+const BLUE = "#185FA5";
+const RED = "#A32D2D";
+const PUBLIC_QUOTE_CTA = "登录查看供应商报价、阶梯价与库存明细";
+
+function previewAvailabilityLabel(
+  availability: "in_stock" | "unknown" | undefined
+) {
+  return availability === "in_stock" ? "有货" : "可询价";
+}
+
+const fmt = (n: number | null | undefined) => (n ?? 0).toLocaleString("zh-CN");
+
+interface LadderTier {
+  minQty: number;
+  price: number;
+}
+
+/* ── 阶梯价工具（与搜索页一致，兼容 {minQty,price} 与 {qty,price} 两种历史格式） ── */
+function ladderOf(
+  ladderPrices: unknown,
+  priceEx: string | null,
+  moq: number | null
+): LadderTier[] {
+  if (Array.isArray(ladderPrices) && ladderPrices.length > 0) {
+    const tiers = (ladderPrices as Array<Record<string, unknown>>)
+      .map(t => ({ minQty: Number(t.minQty ?? t.qty), price: Number(t.price) }))
+      .filter(t => Number.isFinite(t.minQty) && Number.isFinite(t.price))
+      .sort((a, b) => a.minQty - b.minQty);
+    if (tiers.length > 0) return tiers;
+  }
+  return [{ minQty: moq || 1, price: Number(priceEx ?? 0) }];
+}
+
+function hasRealLadder(ladderPrices: unknown): boolean {
+  return (
+    Array.isArray(ladderPrices) &&
+    (ladderPrices as Array<Record<string, unknown>>).some(
+      t =>
+        Number.isFinite(Number(t.minQty ?? t.qty)) &&
+        Number.isFinite(Number(t.price))
+    )
+  );
+}
+
+function tierIndex(ladder: LadderTier[], qty: number) {
+  let idx = 0;
+  ladder.forEach((t, i) => {
+    if (qty >= t.minQty) idx = i;
+  });
+  return idx;
+}
+
+/**
+ * 商品详情页 /product/:id
+ * 布局：导航栏 / 面包屑 / 主区（图片 + 规格参数 + 价格购买区）/ 详细参数表 / 相关商品推荐
+ */
+export default function ProductDetail() {
+  const [, params] = useRoute("/product/:id");
+  const [, navigate] = useLocation();
+  const id = Number(params?.id);
+  const validId = Number.isInteger(id) && id > 0;
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { launchInquiry, inquiryEnterpriseChooser } = useEnterpriseInquiryLauncher();
+  const [loginOpen, setLoginOpen] = useState(false);
+  const utils = trpc.useUtils();
+
+  const detailInput = useMemo(
+    () => ({ id: validId ? id : 1, deferRelated: true }),
+    [id, validId]
+  );
+  // 报价详情是登录配额接口。游客仅请求没有价格、数量或供应商字段的安全预览。
+  const {
+    data,
+    isLoading: detailLoading,
+    isError: detailError,
+    error: detailQueryError,
+  } = trpc.search.detail.useQuery(detailInput, {
+    enabled: validId && !authLoading && isAuthenticated,
+    trpc: { context: { skipBatch: true } },
+    // detail 同样计入每日查询配额；详情页停留、回到窗口或重连不得自动重复查询。
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    meta: { expectedErrorCodes: ["NOT_FOUND"] },
+  });
+  const {
+    data: previewDetail,
+    isLoading: previewLoading,
+    isError: previewError,
+    error: previewQueryError,
+  } = trpc.search.previewDetail.useQuery(detailInput, {
+    enabled: validId && !authLoading && !isAuthenticated,
+    trpc: { context: { skipBatch: true } },
+    retry: (count, err) => err.data?.code !== "NOT_FOUND" && count < 2,
+    meta: { expectedErrorCodes: ["NOT_FOUND"] },
+  });
+  const isLoading =
+    authLoading || (isAuthenticated ? detailLoading : previewLoading);
+  const isError = isAuthenticated ? detailError : previewError;
+  const error = isAuthenticated ? detailQueryError : previewQueryError;
+
+  const item = data?.item;
+  // Deferred recommendations cannot hold the detail response or technical parameters open.
+  const relatedToken = data?.relatedReadToken ?? null;
+  const {
+    data: deferredRelated,
+    isFetching: relatedLoading,
+    isError: relatedError,
+  } = trpc.search.relatedDetail.useQuery(
+    { id: validId ? id : 1, token: relatedToken ?? "" },
+    {
+      enabled: isAuthenticated && !!item && !!relatedToken,
+      retry: false,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      staleTime: 120_000,
+      trpc: { context: { skipBatch: true } },
+    }
+  );
+  const related = deferredRelated?.related ?? data?.related ?? [];
+  const mainExposureRef = useMaterialExposure<HTMLDivElement>(
+    data?.exposureToken,
+    String(item?.id ?? "")
+  );
+  const relatedExposureRef = useMaterialExposure<HTMLDivElement>(
+    deferredRelated?.relatedExposureToken ?? data?.relatedExposureToken,
+    related.map(row => row.id).join(",")
+  );
+
+  /* 后台数据字典参数 */
+  const specsBatchInput = useMemo(
+    () => ({ partNumbers: item?.partNumber ? [item.partNumber] : [] }),
+    [item?.partNumber]
+  );
+  const { data: specsMap, isFetching: specsLoading } =
+    trpc.material.getSpecsBatch.useQuery(specsBatchInput, {
+      enabled:
+        isAuthenticated &&
+        Boolean(item?.partNumber && item.partNumber.length >= 3),
+      staleTime: 120_000,
+      retry: false,
+      refetchOnWindowFocus: false,
+      trpc: { context: { skipBatch: true } },
+    });
+  const specs = item?.partNumber ? specsMap?.[item.partNumber] : undefined;
+  const specEntries = specs?.specs ? Object.entries(specs.specs) : [];
+
+  const moq = item?.moq || 1;
+  const ladder = useMemo(
+    () => (item ? ladderOf(item.ladderPrices, item.priceEx, item.moq) : []),
+    [item]
+  );
+  const [qty, setQty] = useState(1);
+  const [quantityTouched, setQuantityTouched] = useState(false);
+  useEffect(() => {
+    if (item) {
+      setQty(item.moq || 1);
+      setQuantityTouched(false);
+    }
+  }, [item]);
+  const ti = tierIndex(ladder, qty);
+  const unitPrice = ladder[ti]?.price ?? Number(item?.priceEx ?? 0);
+  const subtotal = +(unitPrice * qty).toFixed(2);
+  const step = moq >= 100 ? 100 : moq >= 10 ? 10 : 1;
+  const negotiable =
+    !!item &&
+    !(Number(item.priceEx ?? 0) > 0) &&
+    !(
+      Array.isArray(item.ladderPrices) &&
+      (item.ladderPrices as Array<Record<string, unknown>>).some(
+        t => Number(t?.price) > 0
+      )
+    );
+  const untaxed = !!item && item.taxIncluded === false && !negotiable;
+  const displayedLeadTime = displayInventoryLeadTime(item?.leadTime);
+  const quantityDisplay = item
+    ? inventoryQuantityDisplay(item)
+    : { spotQuantity: null, orderQuantity: null };
+  // Order-only availability is quote-only; it never participates in cart, checkout, or pricing math.
+  const canTransact = quantityDisplay.spotQuantity !== null;
+
+  const photos = useMemo(() => (item ? productImageSources(item) : []), [item]);
+
+  /*
+   * 供应商关注：与搜索页共用同一套接口，保证两处状态一致。
+   * 仅查当前这一个供应商，避免拉全量关注列表。
+   */
+  const supplierId = item?.supplierId ?? null;
+  const followedIdsQuery = trpc.search.followedSupplierIds.useQuery(
+    { supplierIds: supplierId ? [supplierId] : [] },
+    { enabled: isAuthenticated && !!supplierId, retry: false }
+  );
+  const following =
+    !!supplierId && (followedIdsQuery.data ?? []).includes(supplierId);
+  const toggleFollowMut = trpc.search.toggleFollowSupplier.useMutation({
+    onSuccess: res => {
+      followedIdsQuery.refetch();
+      toast.success(res.following ? "已关注该供应商" : "已取消关注", {
+        description: res.following
+          ? "可在搜索页用「☆ 我关注的供应商」快速筛选"
+          : undefined,
+      });
+    },
+    onError: e => toast.error(e.message || "操作失败，请重试"),
+  });
+  const handleToggleFollow = () => {
+    if (!isAuthenticated) {
+      setLoginOpen(true);
+      return;
+    }
+    if (!supplierId) return;
+    toggleFollowMut.mutate({ supplierId, follow: !following });
+  };
+
+  const addCartMut = trpc.cart.add.useMutation({
+    onSuccess: (res, vars) => {
+      utils.cart.count.invalidate();
+      utils.cart.list.invalidate();
+      if (vars.buyNow) {
+        if (!res.checkoutToken) {
+          toast.error("结算准备失败，请重试");
+          return;
+        }
+        navigate(
+          `/cart?checkout=1&token=${encodeURIComponent(res.checkoutToken)}`
+        );
+      } else {
+        toast.success("已加入购物车", {
+          description: `购物车共 ${res.count} 种商品`,
+          action: { label: "去结算", onClick: () => navigate("/cart") },
+        });
+      }
+    },
+    onError: e => toast.error(e.message),
+  });
+
+  const handleAddCart = (buyNow = false) => {
+    if (!item) return;
+    if (inventoryQuantityDisplay(item).spotQuantity === null) return;
+    if (!isAuthenticated) {
+      toast.info("请先登录", {
+        description: buyNow ? "登录后即可在线下单" : "登录后即可加入购物车",
+      });
+      setLoginOpen(true);
+      return;
+    }
+    addCartMut.mutate({ inventoryId: item.id, qty, buyNow });
+  };
+
+  /** 聊一聊：跳转会话并携带询价意图 */
+  const handleInquiry = () => {
+    if (!item) return;
+    if (!isAuthenticated) {
+      toast.info("请先登录", { description: "登录后即可向供应商询价" });
+      setLoginOpen(true);
+      return;
+    }
+    if (!item.supplierId) {
+      toast.info("无法发起询价", { description: "该供应商信息不完整" });
+      return;
+    }
+    /*
+     * 新开标签页而不是 window.location.href 整页跳转。
+     * 买家往往在详情页比完参数才询价，询价后还要回来看参数或下单，
+     * 把详情页替掉会迫使他重新搜一遍。
+     */
+    launchInquiry({
+      userId: item.supplierId,
+      inventoryId: item.id,
+      buyerUserId: user?.id,
+      partNumber: item.partNumber,
+      qty: quantityTouched ? qty || moq : null,
+      brand: item.brand,
+      pkg: item.pkg,
+      source: "detail",
+    }, target => openInNewTab(target, navigate));
+  };
+
+  const chgQty = (d: number) => {
+    setQuantityTouched(true);
+    setQty(q => Math.max(moq, (q || 0) + d * step));
+  };
+  const inputQty = (v: string) => {
+    setQuantityTouched(true);
+    const n = parseInt(v.replace(/\D/g, ""), 10);
+    if (isNaN(n) || n < moq) {
+      toast(`最低起订量为 ${fmt(moq)} 颗`);
+      setQty(moq);
+    } else {
+      setQty(n);
+    }
+  };
+
+  /* 基础属性表 */
+  const baseAttrs: Array<[string, string]> = item
+    ? ([
+        ["型号", item.partNumber],
+        ["品牌/厂牌", item.brand],
+        ["分类", item.category || "—"],
+        ["封装", item.pkg || "—"],
+        ["生产周期（Date Code）", item.dateCode || "—"],
+        ["货期", displayedLeadTime],
+        ["RoHS", item.rohs ? "符合" : "—"],
+        ["整包数量 SPQ", item.spq ? `${fmt(item.spq)} 颗` : "—"],
+        ["增值税发票", item.invoice ? "可开 13% 专票" : "不提供"],
+      ] as Array<[string, string]>)
+    : [];
+
+  const notFound = isError && error?.data?.code === "NOT_FOUND";
+
+  return (
+    <div className="pd-root">
+      <MallNav />
+      <MallLoginDialog open={loginOpen} onOpenChange={setLoginOpen} />
+      {inquiryEnterpriseChooser}
+
+      {/* ── 面包屑 ── */}
+      <div className="pd-crumb">
+        <Link href="/">首页</Link>
+        <span className="pd-crumb-sep">/</span>
+        <Link href="/search">元器件搜索</Link>
+        <span className="pd-crumb-sep">/</span>
+        <span className="pd-crumb-cur">
+          {item?.partNumber || previewDetail?.partNumber || "商品详情"}
+        </span>
+      </div>
+
+      {!validId || notFound ? (
+        <div className="pd-empty">
+          <div className="pd-empty-title">商品不存在或已下架</div>
+          <div className="pd-empty-sub">该库存可能已售罄或被供应商下架</div>
+          <button className="pd-btn-back" onClick={() => navigate("/search")}>
+            去搜索其他元器件
+          </button>
+        </div>
+      ) : isLoading ? (
+        <ProductDetailSkeleton />
+      ) : !isAuthenticated && previewDetail ? (
+        <section className="pd-public-preview" aria-label="商品安全概览">
+          <div className="pd-public-preview-copy">
+            <span className="pd-public-preview-eyebrow">商品安全概览</span>
+            <h1>{previewDetail.partNumber}</h1>
+            {previewDetail.brand && <p>品牌：{previewDetail.brand}</p>}
+            <span
+              className={`pd-public-availability${previewDetail.availability === "in_stock" ? " is-in-stock" : ""}`}
+            >
+              {previewAvailabilityLabel(previewDetail.availability)}
+            </span>
+          </div>
+          <div className="pd-public-preview-cta">
+            <p>登录后可查看报价、阶梯价、库存明细及供应商信息。</p>
+            <button type="button" onClick={() => setLoginOpen(true)}>
+              {PUBLIC_QUOTE_CTA}
+            </button>
+          </div>
+        </section>
+      ) : isError ? (
+        <div className="pd-empty">加载失败，请刷新页面重试</div>
+      ) : item ? (
+        <>
+          {/* ── 主区 ── */}
+          <div
+            ref={mainExposureRef}
+            className="pd-main"
+            data-material-part={item.partNumber}
+          >
+            {/* 图片区 */}
+            <ProductImageGallery
+              sources={photos}
+              partNumber={item.partNumber}
+            />
+
+            {/* 信息区 */}
+            <div className="pd-info">
+              <h1 className="pd-part">{item.partNumber}</h1>
+              <div className="pd-summary">
+                {[item.brand, item.pkg, item.category]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </div>
+              <div className="pd-attrs">
+                <div className="pd-attr">
+                  <span className="pl">厂牌</span>
+                  <span className="pv">{item.brand}</span>
+                </div>
+                <div className="pd-attr">
+                  <span className="pl">封装</span>
+                  <span className="pv">{item.pkg || "—"}</span>
+                </div>
+                <div className="pd-attr">
+                  <span className="pl">生产周期（Date Code）</span>
+                  <span className="pv">{item.dateCode || "—"}</span>
+                </div>
+                <div className="pd-attr">
+                  <span className="pl">货期</span>
+                  <span
+                    className="pv"
+                    style={{
+                      color: isSpotInventoryLeadTime(item.leadTime)
+                        ? "#1e7a44"
+                        : "#c9610d",
+                    }}
+                  >
+                    {displayedLeadTime}
+                  </span>
+                </div>
+                <div className="pd-attr">
+                  <span className="pl">起订量</span>
+                  <span className="pv">{fmt(moq)} 颗</span>
+                </div>
+                <div className="pd-attr">
+                  <span className="pl">库存</span>
+                  <span className="pv pd-stock">
+                    {formatInventoryAvailability(item) || "—"}
+                  </span>
+                </div>
+              </div>
+              <div className="pd-supplier">
+                <span className="pd-sup-label">供应商</span>
+                <span className="pd-sup-name">
+                  {item.supplierName || SUPPLIER_NAME_FALLBACK}
+                </span>
+                {/* 星标关注：就地完成，不离开详情页 */}
+                {supplierId && (
+                  <button
+                    type="button"
+                    className={`pd-sup-follow${following ? " is-following" : ""}`}
+                    title={following ? "取消关注该供应商" : "关注该供应商"}
+                    aria-label={following ? "取消关注该供应商" : "关注该供应商"}
+                    aria-pressed={following}
+                    onClick={handleToggleFollow}
+                  >
+                    {following ? "★ 已关注" : "☆ 关注"}
+                  </button>
+                )}
+                <span className="pd-sup-badge">实名认证</span>
+              </div>
+              {item.note && <div className="pd-note">备注：{item.note}</div>}
+            </div>
+
+            {/* 购买区 */}
+            <div className="pd-buy">
+              <div className="pd-price-box">
+                <div className="pd-price-title">
+                  {negotiable
+                    ? "价格"
+                    : untaxed
+                      ? hasRealLadder(item.ladderPrices)
+                        ? "阶梯报价（未税价）"
+                        : "未税价"
+                      : hasRealLadder(item.ladderPrices)
+                        ? "阶梯报价（含税）"
+                        : "价格（含税）"}
+                </div>
+                {negotiable ? (
+                  <div className="pd-negotiable">
+                    <span className="pd-neg-tag">面议</span>
+                    <span className="pd-neg-hint">价格请与供应商洽谈</span>
+                  </div>
+                ) : hasRealLadder(item.ladderPrices) ? (
+                  ladder.map((t, i) => (
+                    <div
+                      key={i}
+                      className={`pd-lp-row${i === ti ? " active" : ""}`}
+                    >
+                      <span className="pd-lp-qty">{fmt(t.minQty)}+</span>
+                      <span className="pd-lp-price">
+                        ¥{formatInventoryUnitPrice(t.price)}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="pd-lp-row active">
+                    <span className="pd-lp-qty">{fmt(moq)}+</span>
+                    <span className="pd-lp-price">
+                      ¥{formatInventoryUnitPrice(ladder[0]?.price ?? 0)}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {!negotiable && !untaxed && canTransact && (
+                <>
+                  <div className="pd-qty-row">
+                    <span className="pd-qty-label">数量</span>
+                    <div className="pd-stepper">
+                      <button onClick={() => chgQty(-1)}>−</button>
+                      <input
+                        type="text"
+                        value={qty}
+                        onChange={e => {
+                          setQuantityTouched(true);
+                          setQty(
+                            parseInt(e.target.value.replace(/\D/g, ""), 10) || 0
+                          );
+                        }}
+                        onBlur={e => inputQty(e.target.value)}
+                      />
+                      <button onClick={() => chgQty(1)}>＋</button>
+                    </div>
+                    <span className="pd-qty-unit">颗</span>
+                  </div>
+                  <div className="pd-subtotal">
+                    单价 ¥{formatInventoryUnitPrice(unitPrice)} · 小计{" "}
+                    <b>¥{fmt(subtotal)}</b>
+                  </div>
+                </>
+              )}
+
+              <div className="pd-actions">
+                {!negotiable && !untaxed && canTransact && (
+                  <>
+                    <button
+                      className="pd-btn-cart"
+                      onClick={() => handleAddCart(false)}
+                      disabled={addCartMut.isPending}
+                    >
+                      加入购物车
+                    </button>
+                    <button
+                      className="pd-btn-buy"
+                      onClick={() => handleAddCart(true)}
+                      disabled={addCartMut.isPending}
+                    >
+                      立即购买
+                    </button>
+                  </>
+                )}
+                <button
+                  className={`pd-btn-inquiry${negotiable || untaxed ? " primary" : ""}`}
+                  onClick={handleInquiry}
+                >
+                  <span className="pd-cdot" />
+                  聊一聊
+                </button>
+              </div>
+              {untaxed && (
+                <div className="pd-buy-tips">
+                  该价格不含税费，最终含税价格、发票、运费及交货方式请通过「聊一聊」确认
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── 详细参数 ── */}
+          <div className="pd-section">
+            <div className="pd-sec-title">规格参数</div>
+            <div className="pd-spec-table">
+              {baseAttrs.map(([k, v]) => (
+                <div key={k} className="pd-spec-row">
+                  <span className="pd-spec-key">{k}</span>
+                  <span className="pd-spec-val">{v}</span>
+                </div>
+              ))}
+              {specsLoading && specEntries.length === 0 && (
+                <div className="pd-spec-row">
+                  <span className="pd-spec-key">技术参数</span>
+                  <span className="pd-spec-val">参数加载中…</span>
+                </div>
+              )}
+              {specEntries.map(([k, v]) => (
+                <div key={`dict-${k}`} className="pd-spec-row">
+                  <span className="pd-spec-key">{k}</span>
+                  <span className="pd-spec-val">{v}</span>
+                </div>
+              ))}
+            </div>
+            {specs?.datasheetUrl && (
+              <a
+                className="pd-datasheet"
+                href={specs.datasheetUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                查看数据手册 ↗
+              </a>
+            )}
+          </div>
+
+          {/* ── 相关商品推荐：独立状态，不阻塞当前库存 ── */}
+          {relatedLoading && related.length === 0 && (
+            <div className="pd-section">
+              <div className="pd-sec-title">相关商品推荐</div>
+              <div className="pd-secondary-loading">推荐加载中…</div>
+            </div>
+          )}
+          {relatedError && related.length === 0 && (
+            <div className="pd-section">
+              <div className="pd-sec-title">相关商品推荐</div>
+              <div className="pd-secondary-loading">
+                推荐暂不可用，不影响当前商品查看与询价
+              </div>
+            </div>
+          )}
+          {related.length > 0 && (
+            <div className="pd-section">
+              <div className="pd-sec-title">相关商品推荐</div>
+              <div ref={relatedExposureRef} className="pd-related">
+                {related.map(r => {
+                  const rPrice = Number(r.priceEx ?? 0);
+                  return (
+                    <button
+                      key={r.id}
+                      className="pd-rel-card"
+                      data-material-part={r.partNumber}
+                      onClick={() => openInNewTab(`/product/${r.id}`, navigate)}
+                    >
+                      <ProductImageGallery
+                        compact
+                        sources={productImageSources(r)}
+                        partNumber={r.partNumber}
+                      />
+                      <div className="pd-rel-pn">{r.partNumber}</div>
+                      <div className="pd-rel-meta">
+                        {[r.brand, r.pkg].filter(Boolean).join(" · ")}
+                      </div>
+                      <div className="pd-rel-footer">
+                        <span className="pd-rel-price">
+                          {rPrice > 0
+                            ? `${r.taxIncluded === false ? "未税价 " : ""}¥${formatInventoryUnitPrice(rPrice)}`
+                            : "面议"}
+                        </span>
+                        <span className="pd-rel-stock">
+                          {formatInventoryAvailability(r) || "—"}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
+      ) : null}
+
+      {/* ── 样式（scoped，与搜索页原型风格一致） ── */}
+      <style>{`
+        .pd-root{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;background:#f5f5f5;color:#1a1a1a;font-size:13px;min-height:100vh;display:flex;flex-direction:column}
+        .pd-crumb{padding:12px 24px 0;font-size:12px;color:#999;display:flex;gap:6px;align-items:center}
+        .pd-crumb a{color:#666;text-decoration:none}
+        .pd-crumb a:hover{color:${BLUE}}
+        .pd-crumb-cur{color:#1a1a1a;font-weight:600}
+        .pd-empty{background:#fff;border:1px solid #eee;border-radius:10px;margin:16px 24px;padding:64px 0;text-align:center;color:#bbb;font-size:13px}
+        .pd-empty-title{font-size:16px;font-weight:600;color:#555;margin-bottom:6px}
+        .pd-empty-sub{margin-bottom:16px}
+        .pd-btn-back{padding:8px 20px;background:${BLUE};color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit}
+        .pd-public-preview{margin:12px 24px 24px;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:26px 28px;border:1px solid #dce7f1;border-radius:10px;background:#fff}
+        .pd-public-preview-copy{min-width:0}
+        .pd-public-preview-eyebrow{display:block;margin-bottom:7px;color:#718196;font-size:12px;font-weight:650}
+        .pd-public-preview h1{margin:0;color:${BLUE};font-family:'SF Mono',Consolas,monospace;font-size:22px;font-weight:700;overflow-wrap:anywhere}
+        .pd-public-preview-copy p{margin:7px 0 0;color:#64748b;font-size:13px}
+        .pd-public-availability{display:inline-flex;align-items:center;margin-top:11px;border:1px solid #d9e2eb;border-radius:999px;padding:3px 10px;color:#67788a;background:#f8fafc;font-size:12px;font-weight:650}
+        .pd-public-availability.is-in-stock{border-color:#abd6ba;color:#1e7a44;background:#f0fbf3}
+        .pd-public-preview-cta{display:flex;flex:0 1 370px;flex-direction:column;gap:10px}
+        .pd-public-preview-cta p{margin:0;color:#718196;font-size:12px;line-height:1.6}
+        .pd-public-preview-cta button{min-height:40px;border:1px solid ${BLUE};border-radius:7px;background:${BLUE};color:#fff;padding:8px 13px;font:inherit;font-size:13px;font-weight:650;cursor:pointer;transition:background .15s ease,box-shadow .15s ease}
+        .pd-public-preview-cta button:hover{background:#0C447C;box-shadow:0 3px 10px rgba(24,95,165,.2)}
+        .pd-main{margin:12px 24px 0;display:grid;grid-template-columns:300px 1fr 280px;gap:16px;align-items:start}
+        .pd-gallery{background:#fff;border:1px solid #eee;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px}
+        .pd-photo{aspect-ratio:1;border:1px solid #f0f0f0;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fafbfc}
+        .pd-photo{position:relative}
+        .pd-image-skeleton{background:linear-gradient(100deg,#edf1f5 20%,#f8fafc 45%,#edf1f5 70%);background-size:220% 100%;animation:pd-shimmer 1.6s ease-in-out infinite}
+        .pd-photo>.pd-image-skeleton,.pd-rel-img>.pd-image-skeleton{position:absolute;inset:0}
+        .pd-rel-img{position:relative}
+        .pd-image-empty{font-size:12px;color:#8b9aad}
+        .pd-image-source{font-size:11px;color:#8897a7;text-align:center;line-height:1.5}
+        .pd-secondary-loading{font-size:12px;color:#8391a2}
+        .pd-skeleton-line{height:14px;border-radius:4px;margin:6px 0;background:#edf1f5}
+        .pd-skeleton-title{height:24px;width:65%;margin-bottom:16px}
+        .pd-skeleton-attrs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0}
+        .pd-skeleton-supplier{height:38px}
+        .pd-skeleton-button{height:34px}
+        @keyframes pd-shimmer{to{background-position:-220% 0}}
+        @media(prefers-reduced-motion:reduce){.pd-image-skeleton{animation:none}}
+        .pd-photo img{width:100%;height:100%;object-fit:contain}
+        .pd-photo-fallback{font-size:44px;font-weight:700;color:#b8cde0}
+        .pd-thumbs{display:flex;gap:6px;flex-wrap:wrap}
+        .pd-thumb{width:52px;height:52px;border:2px solid #eee;border-radius:6px;overflow:hidden;cursor:pointer;padding:0;background:#fff}
+        .pd-thumb.on{border-color:${BLUE}}
+        .pd-thumb img{width:100%;height:100%;object-fit:cover}
+        .pd-info{background:#fff;border:1px solid #eee;border-radius:10px;padding:18px 20px}
+        .pd-part{font-size:20px;font-weight:700;color:#1a1a1a;margin:0 0 6px;font-family:'SF Mono',Consolas,monospace}
+        .pd-summary{font-size:12px;color:#888;margin-bottom:14px}
+        .pd-attrs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 18px;margin-bottom:14px}
+        .pd-attr{display:flex;gap:8px;font-size:12.5px}
+        .pd-attr .pl{color:#999;flex-shrink:0}
+        .pd-attr .pv{color:#1a1a1a;font-weight:500}
+        .pd-stock{color:${BLUE}}
+        .pd-supplier{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#f8fafd;border:1px solid #e8eef5;border-radius:8px;font-size:12px}
+        .pd-sup-label{color:#999}
+        .pd-sup-name{font-weight:600;color:#1a1a1a}
+        /* 关注按钮：详情页空间充足，带文字更明确（搜索页只有星标） */
+        .pd-sup-follow{border:1px solid #e3e6ea;background:#fff;color:#77818c;cursor:pointer;
+          font-size:11.5px;padding:2px 8px;border-radius:4px;line-height:1.5;transition:all .15s}
+        .pd-sup-follow:hover{border-color:#f5c977;color:#B45309;background:#fffaf0}
+        .pd-sup-follow.is-following{border-color:#f5c977;color:#B45309;background:#fff7e8}
+        .pd-sup-badge{font-size:10.5px;padding:2px 7px;border-radius:4px;background:#fff7e8;color:#B45309;border:1px solid #f5dfb8}
+        .pd-note{margin-top:10px;font-size:12px;color:#777;background:#fafafa;border-radius:7px;padding:9px 12px;line-height:1.6}
+        .pd-buy{background:#fff;border:1px solid #eee;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px}
+        .pd-price-box{border:1px solid #f0f0f0;border-radius:8px;padding:10px 12px;background:#fafbfd}
+        .pd-price-title{font-size:11px;color:#999;margin-bottom:6px}
+        .pd-lp-row{display:flex;justify-content:space-between;padding:4px 6px;border-radius:5px;font-size:12.5px}
+        .pd-lp-row.active{background:#e8f0fe}
+        .pd-lp-qty{color:#666}
+        .pd-lp-price{font-weight:600;color:${RED}}
+        .pd-negotiable{display:flex;align-items:center;gap:8px}
+        .pd-neg-tag{font-size:15px;font-weight:700;color:${RED}}
+        .pd-neg-hint{font-size:11px;color:#999}
+        .pd-qty-row{display:flex;align-items:center;gap:8px}
+        .pd-qty-label{font-size:12px;color:#666}
+        .pd-stepper{display:flex;border:1px solid #ddd;border-radius:6px;overflow:hidden}
+        .pd-stepper button{width:28px;height:30px;border:none;background:#f7f7f7;cursor:pointer;font-size:14px;color:#555}
+        .pd-stepper input{width:72px;height:30px;border:none;border-left:1px solid #ddd;border-right:1px solid #ddd;text-align:center;font-size:13px;outline:none;font-family:inherit}
+        .pd-qty-unit{font-size:11px;color:#bbb}
+        .pd-subtotal{font-size:12px;color:#666}
+        .pd-subtotal b{color:${RED};font-size:14px}
+        .pd-actions{display:flex;flex-direction:column;gap:8px}
+        .pd-btn-cart{height:38px;border:1px solid ${BLUE};background:#fff;color:${BLUE};border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+        .pd-btn-cart:hover{background:#f0f6fc}
+        .pd-btn-buy{height:38px;border:none;background:${BLUE};color:#fff;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+        .pd-btn-buy:hover{background:#0C447C}
+        .pd-btn-cart:disabled,.pd-btn-buy:disabled{opacity:.6;cursor:not-allowed}
+        .pd-btn-inquiry{height:38px;border:1px solid #d9e6f2;background:#f0f6fc;color:${BLUE};border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px}
+        .pd-btn-inquiry:hover{background:#e3eef9}
+        .pd-btn-inquiry.primary{background:${BLUE};color:#fff;border-color:${BLUE}}
+        .pd-cdot{width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block}
+        .pd-buy-tips{font-size:10.5px;color:#bbb;line-height:1.6}
+        .pd-section{margin:16px 24px 0;background:#fff;border:1px solid #eee;border-radius:10px;padding:18px 20px}
+        .pd-section:last-of-type{margin-bottom:24px}
+        .pd-sec-title{font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:12px;padding-left:9px;border-left:3px solid ${BLUE}}
+        .pd-spec-table{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0 24px}
+        .pd-spec-row{display:flex;padding:8px 6px;border-bottom:1px dashed #f0f0f0;font-size:12.5px;gap:12px}
+        .pd-spec-key{color:#999;flex-shrink:0;min-width:96px}
+        .pd-spec-val{color:#1a1a1a;word-break:break-all}
+        .pd-datasheet{display:inline-block;margin-top:12px;font-size:12px;color:${BLUE};text-decoration:none;font-weight:500}
+        .pd-related{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+        .pd-rel-card{border:1px solid #eee;border-radius:9px;padding:10px;background:#fff;cursor:pointer;text-align:left;font-family:inherit;transition:box-shadow .15s,border-color .15s}
+        .pd-rel-card:hover{border-color:#b3cfe8;box-shadow:0 3px 12px rgba(24,95,165,.1)}
+        .pd-rel-img{aspect-ratio:4/3;border-radius:6px;overflow:hidden;background:#fafbfc;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+        .pd-rel-img img{width:100%;height:100%;object-fit:contain}
+        .pd-rel-fallback{font-size:24px;font-weight:700;color:#b8cde0}
+        .pd-rel-pn{font-size:12.5px;font-weight:600;color:#1a1a1a;font-family:'SF Mono',Consolas,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .pd-rel-meta{font-size:11px;color:#999;margin:3px 0 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .pd-rel-footer{display:flex;justify-content:space-between;align-items:center}
+        .pd-rel-price{font-size:12.5px;font-weight:700;color:${RED}}
+        .pd-rel-stock{font-size:10.5px;color:#999}
+        @media (max-width: 960px){
+          .pd-main{grid-template-columns:1fr;margin:12px 12px 0}
+          .pd-crumb{padding:10px 12px 0}
+          .pd-section{margin:12px 12px 0}
+          .pd-empty{margin:12px}
+          .pd-public-preview{margin:12px;align-items:stretch;flex-direction:column;gap:18px;padding:20px}
+          .pd-public-preview h1{font-size:18px}
+          .pd-public-preview-cta{flex-basis:auto}
+        }
+      `}</style>
+    </div>
+  );
+}
