@@ -1,0 +1,10 @@
+test_proc_mixed_byte_script_suffixes (__main__.ReadonlyTests.test_proc_mixed_byte_script_suffixes) ... ok
+test_exception_type_visible_without_secret_message (__main__.ReadonlyTests.test_exception_type_visible_without_secret_message) ... {"phase": "read-credentialless-stdin-payload"}
+{"errorCode": "EXCEPTION_TYPEERROR", "phase": "aborted"}
+ok
+test_cli_invalid_payload_one_json_no_traceback (__main__.ReadonlyTests.test_cli_invalid_payload_one_json_no_traceback) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.060s
+
+OK

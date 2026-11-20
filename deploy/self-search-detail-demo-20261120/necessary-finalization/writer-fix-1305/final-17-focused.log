@@ -1,0 +1,22 @@
+test_exclusive_foreign_inode_different_bytes_rejected (test_writer_identity.WriterIdentity.test_exclusive_foreign_inode_different_bytes_rejected) ... ok
+test_exclusive_foreign_inode_same_bytes_rejected (test_writer_identity.WriterIdentity.test_exclusive_foreign_inode_same_bytes_rejected) ... ok
+test_exclusive_request_bytes_not_written_rejected (test_writer_identity.WriterIdentity.test_exclusive_request_bytes_not_written_rejected) ... ok
+test_exclusive_same_inode_content_changed_rejected (test_writer_identity.WriterIdentity.test_exclusive_same_inode_content_changed_rejected) ... ok
+test_exclusive_success_short_writes_and_empty_bytes (test_writer_identity.WriterIdentity.test_exclusive_success_short_writes_and_empty_bytes) ... ok
+test_publish_rejects_valid_owned_prepared_with_wrong_request_bytes (test_writer_identity.WriterIdentity.test_publish_rejects_valid_owned_prepared_with_wrong_request_bytes) ... ok
+test_publish_success_exact_requested_bytes (test_writer_identity.WriterIdentity.test_publish_success_exact_requested_bytes) ... ok
+test_scratch_creation_foreign_inode_different_bytes_rejected (test_writer_identity.WriterIdentity.test_scratch_creation_foreign_inode_different_bytes_rejected) ... ok
+test_scratch_creation_foreign_inode_same_bytes_rejected (test_writer_identity.WriterIdentity.test_scratch_creation_foreign_inode_same_bytes_rejected) ... ok
+test_scratch_creation_same_inode_content_changed_rejected (test_writer_identity.WriterIdentity.test_scratch_creation_same_inode_content_changed_rejected) ... ok
+test_scratch_metadata_fd_path_foreign_inode_rejected (test_writer_identity.WriterIdentity.test_scratch_metadata_fd_path_foreign_inode_rejected) ... ok
+test_scratch_metadata_reopen_foreign_inode_not_modified_or_adopted (test_writer_identity.WriterIdentity.test_scratch_metadata_reopen_foreign_inode_not_modified_or_adopted) ... ok
+test_scratch_metadata_same_byte_foreign_inode_rejected (test_writer_identity.WriterIdentity.test_scratch_metadata_same_byte_foreign_inode_rejected) ... ok
+test_scratch_metadata_same_inode_content_changed_rejected (test_writer_identity.WriterIdentity.test_scratch_metadata_same_inode_content_changed_rejected) ... ok
+test_scratch_metadata_success_and_remove (test_writer_identity.WriterIdentity.test_scratch_metadata_success_and_remove) ... ok
+test_success_apply_verify_actual_adapter (test_production.E2E.test_success_apply_verify_actual_adapter) ... ok
+test_error_before_htmlwrite_restores (test_production.E2E.test_error_before_htmlwrite_restores) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 12.874s
+
+OK
