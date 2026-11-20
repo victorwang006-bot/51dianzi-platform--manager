@@ -1,0 +1,34 @@
+{
+  "status": "BUILT_NOT_DEPLOYED",
+  "approval": "NOT_APPROVED",
+  "readOnly": true,
+  "manifest": "/home/ubuntu/work/self-row-redesign/native-builder/candidate-final-b/manifest.json",
+  "fullRebuildParity": true,
+  "nonTargetBytesExact": true,
+  "leafPatches": 5,
+  "wrapperImportPatches": 1,
+  "searchImportPatches": 1,
+  "htmlPatches": 17,
+  "defaultResourceParity": {
+    "status": "PASSED",
+    "defaultDOMCases": 480,
+    "searchPanelCases": 240,
+    "omittedAndExplicitDefaultEquivalent": true,
+    "exactHookCallbackOrder": true,
+    "pureHelperSet": [
+      "isValidOfficialParameterText",
+      "validOfficialParameters",
+      "selectOfficialCoreParameters",
+      "safeOfficialDatasheetUrl",
+      "PRIORITIES"
+    ],
+    "noReactOrTRPCOrGuestInstantiated": true,
+    "note": "Offline normalized rendered host tree; not a browser geometry/screenshot test"
+  },
+  "negativeControls": {
+    "financialASTMutationRejected": true,
+    "unclassifiedHTMLReferenceRejected": true,
+    "logicalKeysPreservedAndPhysicalScopeMigrated": true
+  },
+  "productionWrites": 0
+}

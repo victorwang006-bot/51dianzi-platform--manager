@@ -1,0 +1,303 @@
+import { useEffect, useRef, useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { ShoppingCart } from "lucide-react";
+import { Link } from "wouter";
+import OfficialSearchImage from "./OfficialSearchImage";
+import OfficialMaterialResources, { officialMaterialStyles } from "./OfficialMaterialResources";
+import { useOfficialMaterial } from "@/hooks/useOfficialMaterial";
+import { inlineOfficialMaterialResourceSeed, type OfficialMaterialResourceSeed } from "@/lib/officialMaterialClient";
+import { boundedSearchRequest, SEARCH_RESULT_TIMEOUT_MS, type OfficialSearchCommit } from "@/lib/searchResultCommit";
+import { applicableOfficialPrice, initialOfficialQuantity, officialDraftReady, officialSubtotal, parseOfficialQuantity, positiveOfficialQuantity, validOfficialQuantity, OFFICIAL_QUANTITY_MAX } from "../../lib/officialCardPresentation";
+import type { SearchUrlState } from "@/lib/searchUrlState";
+import type { OfficialMallPublicMaterial, OfficialMallPublicListResult } from "../../../server/services/officialMallPublic";
+
+export type OfficialMallSearchResultsProps = {
+  keyword: string;
+  brand: string;
+  sort: SearchUrlState["sort"];
+  viewMode: SearchUrlState["viewMode"];
+  followedOnly?: boolean;
+  category?: string;
+  onAddOfficialDraft?: (material: OfficialMallPublicMaterial, quantity: number) => void;
+  officialCheckoutReady?: boolean;
+  searchCommit?: OfficialSearchCommit;
+};
+const PAGE_SIZE = 100;
+const REFRESH_MS = 60_000;
+const quantityText = (value: number | null) => value === null ? "待确认" : value.toLocaleString("zh-CN");
+const normalize = (value: string) => value.trim().toLocaleUpperCase();
+
+/** Decimal comparison never converts a published financial string to a floating-point number. */
+export function compareOfficialPrice(left: string, right: string): number {
+  const [li, lf = ""] = left.split(".");
+  const [ri, rf = ""] = right.split(".");
+  const integer = li.length - ri.length || (li < ri ? -1 : li > ri ? 1 : 0);
+  if (integer) return Math.sign(integer);
+  const width = Math.max(lf.length, rf.length);
+  const l = lf.padEnd(width, "0"), r = rf.padEnd(width, "0");
+  return l < r ? -1 : l > r ? 1 : 0;
+}
+/** Only explicit day/week ranges are comparable; ambiguous delivery prose stays last. */
+function leadDays(value: string): number | null {
+  const match = value.trim().match(/^(\d{1,4})(?:\s*[-~～至到]\s*(\d{1,4}))?\s*(个?工作日|天|日|周|星期|days?|weeks?)$/i);
+  if (!match) return null;
+  const upper = Number(match[2] ?? match[1]);
+  return upper * (/周|星期|week/i.test(match[3]) ? 7 : 1);
+}
+function nullableCompare<T>(a: T | null, b: T | null, direction: number, compare: (a: T, b: T) => number): number {
+  if (a === null || b === null) return a === b ? 0 : a === null ? 1 : -1;
+  return direction * compare(a, b);
+}
+export function sortOfficialMaterials(items: OfficialMallPublicMaterial[], keyword: string, sort: SearchUrlState["sort"]) {
+  const exact = normalize(keyword);
+  return [...items].sort((a, b) => {
+    const match = Number(normalize(b.partNumber) === exact) - Number(normalize(a.partNumber) === exact);
+    if (match) return match;
+    switch (sort) {
+      case "priceAsc": case "priceDesc":
+        return nullableCompare(a.priceEx, b.priceEx, sort === "priceAsc" ? 1 : -1, compareOfficialPrice);
+      case "stockAsc": case "stockDesc":
+        return nullableCompare(a.qtyStock, b.qtyStock, sort === "stockAsc" ? 1 : -1, (l, r) => l - r);
+      case "lead":
+        return nullableCompare(leadDays(a.leadTime), leadDays(b.leadTime), 1, (l, r) => l - r);
+      default: return 0;
+    }
+  });
+}
+
+/** Unsupported merchant-only narrowing must not mix unrelated official materials into results. */
+export function officialSearchScopeSupported(props: Pick<OfficialMallSearchResultsProps, "keyword" | "brand" | "followedOnly" | "category">) {
+  return typeof props.keyword === "string" && typeof props.brand === "string"
+    && props.keyword.trim().length <= 128 && props.brand.trim().length <= 128 && !props.followedOnly
+    && (props.category === undefined || props.category === "" || props.category === "all");
+}
+export function OfficialMallSearchResults(props: OfficialMallSearchResultsProps) {
+  if (!officialSearchScopeSupported(props)) return null;
+  const keyword = props.keyword.trim();
+  const brand = props.brand.trim();
+  // A remount synchronously removes every prior keyword/brand snapshot and invalidates its requests.
+  return <ScopedOfficialResults key={JSON.stringify([keyword, brand, props.searchCommit?.key])} {...props} keyword={keyword} brand={brand} />;
+}
+
+type Snapshot = { items: OfficialMallPublicMaterial[]; total: number; pages: number; materialSeed: OfficialMaterialResourceSeed };
+function ScopedOfficialResults({ keyword, brand, sort, viewMode, onAddOfficialDraft, officialCheckoutReady, searchCommit }: OfficialMallSearchResultsProps) {
+  const utils = trpc.useUtils();
+  const client = useRef(utils.client);
+  client.current = utils.client;
+  const fence = useRef(0);
+  const active = useRef(false);
+  const loadedPages = useRef(1);
+  const loadRef = useRef<(pages?: number) => Promise<void>>(async () => {});
+  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+  const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
+  const loading = useRef(false);
+  const loadAbort = useRef<AbortController | null>(null);
+
+  loadRef.current = async (pages = loadedPages.current) => {
+    const request = ++fence.current;
+    loadAbort.current?.abort();
+    const controller = new AbortController();
+    loadAbort.current = controller;
+    loading.current = true;
+    setPhase("loading");
+    const deadline = Date.now() + SEARCH_RESULT_TIMEOUT_MS;
+    const commit = (apply: () => void) => {
+      const guarded = () => { if (active.current && request === fence.current) { apply(); loading.current = false; } };
+      if (searchCommit) searchCommit.stageOfficial(guarded); else guarded();
+    };
+    // Same-scope refresh keeps the mounted snapshot until every requested page validates.
+    try {
+      const items: OfficialMallPublicMaterial[] = [];
+      let total = 0, actualPages = 0;
+      const seen = new Set<string>();
+      // Refresh all displayed pages together: never append a new page to an old price snapshot.
+      for (let page = 1; page <= Math.min(pages, 10_000); page += 1) {
+        const result: OfficialMallPublicListResult = await boundedSearchRequest(client.current.officialMall.list.query({
+          partNumber: keyword || undefined, brand: brand === "all" || !brand ? undefined : brand,
+          page, pageSize: PAGE_SIZE,
+        }, { signal: controller.signal, context: { skipBatch: true } }), controller, Math.max(0, deadline - Date.now()));
+        if (!active.current || request !== fence.current) return;
+        if (!result || !Array.isArray(result.items) || !Number.isSafeInteger(result.total) || result.total < 0
+          || result.items.length > PAGE_SIZE || result.page !== page || result.pageSize !== PAGE_SIZE || (page > 1 && result.total !== total)
+          || result.items.some(item => seen.has(item.publicId))) throw new Error("Snapshot changed");
+        total = result.total;
+        for (const item of result.items) {
+          if (seen.has(item.publicId)) throw new Error("Duplicate snapshot identity");
+          seen.add(item.publicId); items.push(item);
+        }
+        actualPages = page;
+        if (page * PAGE_SIZE >= total) break;
+        if (result.items.length !== PAGE_SIZE) throw new Error("Incomplete snapshot");
+      }
+      if (!active.current || request !== fence.current) return;
+      const materialSeed = inlineOfficialMaterialResourceSeed(items);
+      commit(() => {
+        loadedPages.current = actualPages;
+        setSnapshot({ items, total, pages: actualPages, materialSeed });
+        setPhase("ready");
+      });
+    } catch {
+      // Keep the last verified same-scope snapshot visible, but strictly read-only until retry succeeds.
+      commit(() => setPhase("error"));
+    }
+  };
+  useEffect(() => {
+    active.current = true;
+    void loadRef.current(1);
+    const refresh = () => { if (document.visibilityState !== "hidden" && !loading.current) void loadRef.current(); };
+    const interval = window.setInterval(refresh, REFRESH_MS);
+    window.addEventListener("focus", refresh);
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      active.current = false;
+      fence.current += 1;
+      loadAbort.current?.abort();
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, []);
+
+  const items = snapshot ? sortOfficialMaterials(snapshot.items, keyword, sort) : [];
+  const materials = useOfficialMaterial(items, snapshot?.materialSeed);
+  const renderedFence = fence.current;
+  const quoteCurrent = () => active.current && !loading.current && renderedFence === fence.current;
+  if (phase === "loading" && snapshot === null) return <div className="omr-state" role="status">自营报价加载中…</div>;
+  if (phase === "ready" && !snapshot?.items.length) return null;
+  return <div ref={materials.rootRef} className={`omr-root ${viewMode === "grid" ? "omr-grid" : "omr-list"}`}>
+    {phase === "error" && <div className="omr-state" role="alert">自营报价暂不可用{snapshot ? "，以下为上次报价，仅供查看" : ""}，<button type="button" onClick={() => void loadRef.current()}>重试</button></div>}
+        {items.map((item, index) => <OfficialSearchCard key={item.publicId} item={item} materials={materials} quoteReady={phase === "ready"} quoteCurrent={quoteCurrent} onResourceRetry={() => { if (!loading.current) void loadRef.current(); }} priority={index < 2} onAddOfficialDraft={onAddOfficialDraft} officialCheckoutReady={officialCheckoutReady} />)}
+        <div className="omr-refresh">
+          {phase === "loading" && <span role="status">报价更新中</span>}
+          {snapshot && snapshot.pages * PAGE_SIZE < snapshot.total && snapshot.pages < 10_000
+            && <button type="button" disabled={phase === "loading"} onClick={() => void loadRef.current(snapshot.pages + 1)}>加载更多</button>}
+        </div>
+    <style>{officialSearchStyles}{officialMaterialStyles}</style>
+  </div>;
+}
+
+/** Smallest threshold-reaching quantity; never bypass the published MOQ/SPQ/sale guards. */
+export function officialTierSelectionQuantity(item: OfficialMallPublicMaterial, minQty: number): number | null {
+  if (!positiveOfficialQuantity(minQty) || !positiveOfficialQuantity(item.moq)
+    || (item.spq !== null && !positiveOfficialQuantity(item.spq)) || !positiveOfficialQuantity(item.qtyOnSale)) return null;
+  const step = item.spq ?? 1;
+  const quantity = Math.ceil(Math.max(minQty, item.moq) / step) * step;
+  return validOfficialQuantity(item, quantity) ? quantity : null;
+}
+
+function OfficialSearchCard({ item, materials, quoteReady, quoteCurrent, onResourceRetry, priority, onAddOfficialDraft, officialCheckoutReady }: {
+  item: OfficialMallPublicMaterial;
+  materials: ReturnType<typeof useOfficialMaterial>;
+  quoteReady: boolean;
+  quoteCurrent: () => boolean;
+  onResourceRetry: () => void;
+  priority: boolean;
+  onAddOfficialDraft?: OfficialMallSearchResultsProps["onAddOfficialDraft"];
+  officialCheckoutReady?: boolean;
+}) {
+  const [rawQuantity, setRawQuantity] = useState(() => String(initialOfficialQuantity(item)));
+  const [tiersOpen, setTiersOpen] = useState(false);
+  const tiersExpanded = tiersOpen && item.ladderPrices.length > 3;
+  const remainingTiersId = `omr-remaining-tiers-${item.publicId}`;
+  const quantity = parseOfficialQuantity(rawQuantity);
+  const price = applicableOfficialPrice(item, quantity);
+  const subtotal = officialSubtotal(price, quantity);
+  const step = positiveOfficialQuantity(item.spq) ? item.spq : 1;
+  const minimum = initialOfficialQuantity(item);
+  const maximum = typeof item.qtyOnSale === "number" ? Math.min(item.qtyOnSale, OFFICIAL_QUANTITY_MAX) : OFFICIAL_QUANTITY_MAX;
+  const canAdd = quoteReady && officialCheckoutReady === true && typeof onAddOfficialDraft === "function" && officialDraftReady(item, quantity);
+  const disabledReason = !quoteReady ? "报价更新中，请稍后再加入购物车" : officialCheckoutReady !== true || !onAddOfficialDraft ? "自营结算暂不可用"
+    : !positiveOfficialQuantity(item.moq) || (item.spq !== null && !positiveOfficialQuantity(item.spq)) || !positiveOfficialQuantity(item.qtyOnSale)
+      ? "起订、包装或可售信息待确认" : "请填写满足起订量、包装倍数及可售数量的有效数量与报价";
+  let activeTier: number | null = null;
+  if (price !== null && quantity !== null) {
+    for (const tier of item.ladderPrices) if (tier.minQty <= quantity && (activeTier === null || tier.minQty > activeTier)) activeTier = tier.minQty;
+  }
+  const tierRow = (tier: OfficialMallPublicMaterial["ladderPrices"][number]) => {
+    const target = officialTierSelectionQuantity(item, tier.minQty);
+    return <button type="button" className={`omr-tier omr-tier-select${activeTier === tier.minQty ? " is-active" : ""}`} key={tier.minQty}
+      disabled={!quoteReady || target === null} aria-current={activeTier === tier.minQty ? "true" : undefined}
+      title={target === null ? "不可选择：起订、包装信息待确认或超出可售数量" : `选择数量 ${quantityText(target)}，满足起订量和包装倍数`}
+      onClick={() => { if (target !== null) setRawQuantity(String(target)); }}>
+      <span>{quantityText(tier.minQty)}起{target === null && <small> · 不可选</small>}</span><strong>{tier.price}</strong>
+    </button>;
+  };
+  return <article className={`omr-card${tiersExpanded ? " omr-tiers-expanded" : ""}`} data-source-type="official_mall" data-official-public-id={item.publicId} aria-label={`${item.partNumber} 51自营报价`}>
+    <div className="omr-info omr-info-search" data-omr-zone="info">
+      <div className="omr-identity">
+        <div className="omr-image" data-omr-zone="image">
+          <OfficialSearchImage item={item} priority={priority} />
+          <span className="omr-image-note">包装示意 · 非商品实拍</span>
+        </div>
+        <div className="omr-basic">
+          <div className="omr-title"><span className="omr-part">{item.partNumber}</span></div>
+          <div className="omr-meta">{item.brand && <span>品牌 {item.brand}</span>}{item.pkg && <span>封装 {item.pkg}</span>}</div>
+          <div className="omr-facts">{item.dateCode && <span>生产周期 <b>{item.dateCode}</b></span>}{item.leadTime && <span>交期 <b>{item.leadTime}</b></span>}</div>
+        </div>
+      </div>
+      <OfficialMaterialResources presentation="search" publicId={item.publicId} partNumber={item.partNumber}
+        resource={materials.resources.get(item.publicId)} favorite={materials.favorites.get(item.publicId)}
+        authenticated={materials.authenticated} pending={materials.pending.has(item.publicId)}
+        error={materials.resourceErrors.get(item.publicId) || materials.favoriteError}
+        resourceError={materials.resourceErrors.get(item.publicId) ?? null}
+        onResourceRetry={onResourceRetry} onFavorite={() => void materials.toggleFavorite(item.publicId)} />
+    </div>
+    <div className="omr-procurement" data-omr-zone="procurement" aria-label="采购区">
+    <div className="omr-prices" data-omr-zone="tiers" aria-label="公开阶梯价格">
+      <div className="omr-price-heading"><span>单价</span>
+        {item.qtyStock != null ? <span className="omr-stock">库存 <b>{quantityText(item.qtyStock)}</b></span>
+          : item.qtyOnSale != null ? <span className="omr-stock">可售 <b>{quantityText(item.qtyOnSale)}</b></span> : null}
+      </div>
+      {item.ladderPrices.length ? item.ladderPrices.slice(0, 3).map(tierRow)
+        : <div className="omr-tier"><span>单价</span><strong>{item.priceEx ?? "—"}</strong></div>}
+      {item.ladderPrices.length > 3 && <>
+        <div id={remainingTiersId} className="omr-remaining-tiers" hidden={!tiersExpanded}>
+          {tiersExpanded && item.ladderPrices.slice(3).map(tierRow)}
+        </div>
+        <button type="button" className="omr-more-tiers" aria-expanded={tiersExpanded} aria-controls={remainingTiersId}
+          onClick={() => setTiersOpen(open => !open)}>{tiersExpanded ? "收起 ▴" : `${item.ladderPrices.length}档 ▾`}</button>
+      </>}
+    </div>
+    <div className="omr-order" data-omr-zone="order" aria-label="自营待结算草稿">
+      <div className="omr-quantity"><label htmlFor={`omr-qty-${item.publicId}`}>数量</label><div className="omr-counter">
+        <button type="button" aria-label="减少数量" disabled={!quoteReady || quantity === null || quantity - step < minimum} onClick={() => quantity !== null && setRawQuantity(String(quantity - step))}>−</button>
+        <input id={`omr-qty-${item.publicId}`} aria-label={`${item.partNumber} 数量`} aria-invalid={!validOfficialQuantity(item, quantity)} readOnly={!quoteReady} inputMode="numeric" value={rawQuantity} onChange={event => setRawQuantity(event.target.value)} onBlur={() => { if (quantity !== null) setRawQuantity(String(quantity)); }} />
+        <button type="button" aria-label="增加数量" disabled={!quoteReady || quantity === null || quantity + step > maximum} onClick={() => quantity !== null && setRawQuantity(String(quantity + step))}>+</button>
+      </div></div>
+      <div className="omr-unit-price" aria-live="polite">单价 <span>{price === null ? "—" : `¥${price}`}</span></div>
+      <div className="omr-subtotal" aria-live="polite">小计 <strong>{subtotal === null ? "—" : `¥${subtotal}`}</strong></div>
+      <button className="omr-cart" type="button" disabled={!canAdd} title={canAdd ? "加入自营待结算草稿" : disabledReason} onClick={() => { if (canAdd && quoteCurrent() && quantity !== null) onAddOfficialDraft?.(item, quantity); }}><ShoppingCart size={15} aria-hidden="true" />加入购物车</button>
+      <div className="omr-contact" data-omr-zone="contact" aria-label="联系平台客服"><Link href="/chat?service=1" title="联系平台客服">聊一聊</Link></div>
+    </div>
+    </div>
+  </article>;
+}
+
+const officialSearchStyles = `
+.omr-root{box-sizing:border-box;width:100%;max-width:1280px;margin:0 auto;min-width:0;padding:8px 0 0;color:#30343b;font-family:inherit;font-size:12px}
+.omr-root *{box-sizing:border-box}.omr-list{display:flex;flex-direction:column;gap:8px}
+.omr-root .omr-card{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) 356px;gap:16px;align-items:stretch;min-height:164px;padding:16px;background:#fff;border:1px solid #e4e7eb;border-radius:8px}
+.omr-root .omr-card .omr-identity{grid-column:1;grid-row:1;display:grid;grid-template-columns:88px minmax(0,1fr);gap:12px;align-items:start;min-width:0}
+.omr-root .omr-card .omr-image{position:relative;min-width:0;width:100%;align-self:start}.omr-root .omr-card .omr-image-trigger,.omr-root .omr-card .omr-image-placeholder{position:relative;display:block;width:100%!important;height:auto!important;aspect-ratio:1/1;border:0;padding:0;border-radius:5px;background:#f8fafc}.omr-root .omr-card .omr-image-trigger{cursor:zoom-in;overflow:hidden}.omr-root .omr-card .omr-image-trigger img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain}
+.omr-root .omr-card .omr-image-note{display:block;margin-top:5px;font-size:10px;line-height:15px;color:#8d96a0;text-align:center;overflow-wrap:anywhere}
+.omr-root .omr-card .omr-info{min-width:0}.omr-root .omr-card .omr-basic{grid-column:2;align-self:start}.omr-root .omr-card .omr-title{line-height:24px}.omr-root .omr-card .omr-part{color:#185fa5;font-size:16px;font-weight:600;overflow-wrap:anywhere}
+.omr-root .omr-card .omr-facts{display:flex;align-items:baseline;flex-wrap:wrap;gap:3px 12px;margin-top:6px;color:#87919d;line-height:20px;overflow-wrap:anywhere}.omr-root .omr-card .omr-facts:empty,.omr-root .omr-card .omr-meta:empty{display:none}.omr-root .omr-card .omr-facts b{color:#39434e;font-weight:500}
+.omr-root .omr-card .omr-stock{display:inline-flex;align-items:baseline;flex-wrap:wrap;gap:5px;color:#7d8793}.omr-root .omr-card .omr-stock b{font-weight:650;color:#17633b}
+.omr-root .omr-card .omr-meta{display:flex;flex-wrap:wrap;gap:3px 12px;margin-top:4px;color:#89939e;font-size:12px;line-height:20px;overflow-wrap:anywhere}
+.omr-root .omr-card .omr-procurement{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:16px;min-width:0;border-left:1px solid #e4e7eb;padding-left:16px}
+.omr-root .omr-card .omr-prices{min-width:0;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;justify-content:center}.omr-root .omr-card .omr-price-heading{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:4px 8px;margin-bottom:6px;color:#697684;line-height:20px}.omr-root .omr-card .omr-tier{display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0;line-height:24px;padding:0 4px;border-radius:3px}.omr-root .omr-card .omr-tier>span{color:#7d8793;flex-shrink:0}.omr-root .omr-card .omr-tier strong{color:#414b56;font-size:13px;font-weight:500;overflow-wrap:anywhere;text-align:right}.omr-root .omr-card .omr-tier.is-active{background:#fff2e6}.omr-root .omr-card .omr-tier.is-active strong{color:#d74634;font-weight:700}
+.omr-root .omr-card .omr-tier-select{width:100%;border:0;background:transparent;font:inherit;text-align:left;cursor:pointer}.omr-root .omr-card .omr-tier-select:hover:not(:disabled){background:#f1f6fc}.omr-root .omr-card .omr-tier-select:disabled{cursor:not-allowed}.omr-root .omr-card .omr-tier-select:disabled strong{color:#89939d}.omr-root .omr-card .omr-tier-select small{font-size:10px}.omr-root .omr-card .omr-more-tiers{align-self:flex-start;border:0;padding:0;background:transparent;font:inherit;font-size:11px;margin:3px 4px;color:#185fa5;line-height:20px;cursor:pointer}
+.omr-root .omr-card .omr-remaining-tiers{min-width:0;width:100%}
+.omr-root .omr-card .omr-order{min-width:0;display:flex;flex-direction:column;justify-content:center;gap:6px;font-variant-numeric:tabular-nums}.omr-root .omr-card .omr-quantity{display:flex;align-items:center;justify-content:space-between;gap:6px;min-width:0;color:#7d8793}.omr-root .omr-card .omr-counter{display:flex;align-items:stretch;min-width:0;height:28px;border:1px solid #dce2e8;border-radius:4px;overflow:hidden}.omr-root .omr-card .omr-counter button{border:0;background:#f6f8fa;color:#485663;flex:0 0 24px;width:24px;padding:0;font-size:16px;cursor:pointer}.omr-root .omr-card .omr-counter input{width:60px;min-width:0;border:0;border-left:1px solid #e4e7eb;border-right:1px solid #e4e7eb;padding:0 3px;background:#fff;text-align:center;color:#39434e;font:inherit}.omr-root .omr-card .omr-counter button:disabled{color:#bac1c9;cursor:not-allowed}.omr-root .omr-card .omr-unit-price,.omr-root .omr-card .omr-subtotal{display:flex;justify-content:space-between;gap:6px;color:#88929d;line-height:18px;overflow-wrap:anywhere}.omr-root .omr-card .omr-unit-price span{color:#434d59}.omr-root .omr-card .omr-subtotal strong{color:#d74634;font-size:14px;font-weight:700}.omr-root .omr-card .omr-cart{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:30px;border:1px solid #185fa5;border-radius:4px;background:#fff;color:#185fa5;font:inherit;cursor:pointer}.omr-root .omr-card .omr-cart:disabled{cursor:not-allowed;opacity:.62}
+.omr-root .omr-card .omr-contact{display:flex;align-items:center;justify-content:center}.omr-root .omr-card .omr-contact a{display:flex;align-items:center;justify-content:center;width:100%;min-height:30px;border:1px solid #185fa5;border-radius:4px;background:#185fa5;color:#fff;font:inherit;text-decoration:none;white-space:nowrap}.omr-root .omr-card .omr-contact a:hover{background:#124e89}
+.omr-root .omr-refresh{display:flex;justify-content:flex-end;gap:12px;grid-column:1/-1}.omr-refresh button,.omr-state button{border:0;background:transparent;color:#185fa5;font:inherit;cursor:pointer;padding:3px 0}.omr-state{padding:9px 0;color:#7a8794;grid-column:1/-1}.omr-root a:focus-visible,.omr-root button:focus-visible,.omr-root input:focus-visible,.omr-root summary:focus-visible{outline:2px solid #185fa5;outline-offset:2px}
+.omr-root .omr-refresh:empty{display:none}.omr-root.omr-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.omr-root.omr-grid .omr-card{display:flex;flex-direction:column;align-items:stretch;gap:12px;min-height:0}.omr-root.omr-grid .omr-info{flex:1}.omr-root.omr-grid .omr-card .omr-procurement{border-left:0;border-top:1px solid #e4e7eb;padding:12px 0 0}.omr-root.omr-grid .omr-card .omr-part{font-size:15px}
+@media(max-width:1100px){.omr-root.omr-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.omr-root.omr-list .omr-card{grid-template-columns:minmax(0,1fr) 330px;gap:12px;padding:12px}.omr-root .omr-card .omr-identity{grid-template-columns:72px minmax(0,1fr);gap:8px}.omr-root .omr-card .omr-procurement{gap:12px;padding-left:12px}}
+@media(max-width:900px){.omr-root.omr-list .omr-card{grid-template-columns:minmax(0,1fr)}.omr-root.omr-list .omr-card .omr-procurement{border-left:0;border-top:1px solid #e4e7eb;padding:12px 0 0}.omr-root .omr-card .omr-counter{flex:1;max-width:130px}.omr-root .omr-card .omr-counter input{width:100%;flex:1}}
+.omr-root .omr-card .omr-cart{background:#185fa5;color:#fff}.omr-root .omr-card .omr-cart:hover:not(:disabled){background:#124e89}.omr-root .omr-card .omr-contact a{background:#fff;color:#185fa5}.omr-root .omr-card .omr-contact a:hover{background:#f1f6fc}
+@media(max-width:600px){.omr-root.omr-grid{grid-template-columns:minmax(0,1fr)}.omr-root .omr-card{padding:12px}.omr-root .omr-card .omr-part{font-size:15px}.omr-root .omr-card .omr-counter button{flex-basis:22px;width:22px}.omr-root .omr-card .omr-quantity{gap:4px}}
+@media(max-width:360px){.omr-root .omr-card .omr-procurement{grid-template-columns:minmax(0,1fr)}.omr-root .omr-card .omr-order{border-top:1px solid #edf0f3;padding-top:10px}}
+.omr-root .omr-card.omr-tiers-expanded>.omr-info-search{align-content:start}.omr-root .omr-card.omr-tiers-expanded .omr-prices,.omr-root .omr-card.omr-tiers-expanded .omr-order{justify-content:flex-start}.omr-root.omr-grid .omr-card.omr-tiers-expanded>.omr-info-search{flex:0}.omr-root .omr-card.omr-tiers-expanded .omr-basic{align-self:start}
+`;

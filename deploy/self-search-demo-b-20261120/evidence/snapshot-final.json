@@ -1,0 +1,11 @@
+{
+  "status": "NOT_APPROVED",
+  "inputSourceDir": "/home/ubuntu/work/self-row-redesign/native-builder/input-final_b",
+  "sourceShaFile": "/home/ubuntu/work/self-row-redesign/native-builder/source-sha-final_b.json",
+  "sourceSha": "8b297ce41027a1c907ddd253134a1c326b5eacd9be1d85242d94b579150c74a5",
+  "files": {
+    "client/src/components/OfficialMallSearchResults.tsx": "d7d49321b0d45b9322464bc5af086e864fd282e6afe1020c05f76798d728df9a",
+    "client/src/components/OfficialMaterialResources.tsx": "031f1a991aab21105bd617e46c033dd8eae86c6faf935201b293ed23499cd3aa"
+  },
+  "productionWrites": 0
+}

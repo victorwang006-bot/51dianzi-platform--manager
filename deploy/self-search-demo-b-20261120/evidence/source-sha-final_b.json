@@ -1,0 +1,11 @@
+{
+  "schema": "demo-b-source-sha-v1",
+  "baselineHead": "6589eb2653eb30714845c77f7336ed0cf23e3afb",
+  "status": "NOT_APPROVED",
+  "seedOnly": true,
+  "files": {
+    "client/src/components/OfficialMallSearchResults.tsx": "d7d49321b0d45b9322464bc5af086e864fd282e6afe1020c05f76798d728df9a",
+    "client/src/components/OfficialMaterialResources.tsx": "031f1a991aab21105bd617e46c033dd8eae86c6faf935201b293ed23499cd3aa"
+  },
+  "note": "Source snapshot only. No deployment or fresh production approval."
+}
