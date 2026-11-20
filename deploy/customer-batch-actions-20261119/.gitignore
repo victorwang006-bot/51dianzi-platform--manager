@@ -1,0 +1,10 @@
+# Production snapshots/receipts and private packages must stay outside Git.
+capture/
+package/
+receipt/
+backend-candidate*/
+backend-freeze*/
+*.pem
+*.key
+__pycache__/
+*.pyc

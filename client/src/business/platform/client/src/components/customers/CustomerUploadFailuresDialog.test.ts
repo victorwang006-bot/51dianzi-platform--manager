@@ -100,7 +100,7 @@ describe("customer failed-row repair wrapper", () => {
     await expect(prepare(originalReview)).rejects.toThrow("lost prepare reply"); const input = rt.prepare.mock.calls[0][0];
     expect(rt.context).toHaveBeenCalledTimes(2); // initial mounted proof plus fresh pre-write proof
     const changed = structuredClone(originalReview); changed.confirmedDrafts[0].draft.partNumber = "MUST-NOT-RESEND";
-    await prepare(changed); expect(rt.prepare.mock.calls[1][0]).toBe(input); expect(rt.context).toHaveBeenCalledTimes(2); expect(input.rows[0].fields.partNumber).toBe("BROKEN");
+    await prepare(changed); expect(rt.prepare.mock.calls[1][0]).toBe(input); expect(rt.context).toHaveBeenCalledTimes(3); expect(input.rows[0].fields.partNumber).toBe("BROKEN");
   });
   it.each(["logical-id", "hash", "row-number"])("rejects forged %s evidence without a repair write", async kind => {
     await render(); const r = review(); const metadata: any = r.confirmedDrafts[0].metadata;
@@ -136,5 +136,24 @@ describe("customer failed-row repair wrapper", () => {
     await act(async () => root.unmount()); root = createRoot(host);
     pending.resolve({ customer: { id: 801, version: 7, archivedAt: null }, channel: { id: 11 }, canUpload: true });
     await rejected; expect(rt.prepare).not.toHaveBeenCalled(); expect(rt.create).not.toHaveBeenCalled();
+  });
+  it.each(["version", "permission"] as const)("unknown preparation cannot retry through a changed %s context or change its original frozen payload", async kind => {
+    rt.prepare.mockRejectedValueOnce(new Error("lost reply")); await render(); const original = review();
+    await expect(prepare(original)).rejects.toThrow("lost reply"); const frozen = structuredClone(rt.prepare.mock.calls[0][0]);
+    rt.context.mockResolvedValue({ customer: { id: 801, version: kind === "version" ? 8 : 7, archivedAt: null }, channel: { id: 11 }, canUpload: kind !== "permission" });
+    const changed = structuredClone(original); changed.confirmedDrafts[0].draft.partNumber = "FORGED-RETRY";
+    await expect(prepare(changed)).rejects.toThrow(kind === "version" ? "客户版本已变化" : "上传权限已变化");
+    expect(rt.prepare).toHaveBeenCalledTimes(1); expect(rt.prepare.mock.calls[0][0]).toEqual(frozen); expect(rt.create).not.toHaveBeenCalled();
+  });
+  it.each(["revision", "permission", "identity"] as const)("old callbacks stop after props %s changes", async kind => {
+    await render(); const oldQueue = queue(), oldReview = review(); const changed = structuredClone(detail);
+    if (kind === "revision") changed.history.revision++;
+    if (kind === "permission") changed.history.capabilities.canConfirm = false;
+    if (kind === "identity") {
+      await act(async () => root.render(React.createElement(CustomerUploadFailuresDialog, { customerId: 801, identity: { ...identity, key: "OTHER-AUTH" }, detail: changed,
+        isCurrent: () => true, onClose: rt.close, onComplete: rt.complete, onAuthorizationError: rt.auth })));
+    } else await render(changed);
+    await expect(oldQueue.onCreateCustomerBatch!(batchInput(), oldReview)).rejects.toThrow();
+    expect(rt.prepare).not.toHaveBeenCalled(); expect(rt.create).not.toHaveBeenCalled();
   });
 });

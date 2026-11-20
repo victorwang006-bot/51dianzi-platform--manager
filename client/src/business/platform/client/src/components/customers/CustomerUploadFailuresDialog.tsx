@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { trpc } from "../../../../../api/business-trpc";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, Button } from "../channelInventory/bridge";
-import { BatchUpload, batchUploadDialogStyle, type BatchUploadDialogControls, type CustomerConfirmRows } from "../channelInventory/BatchUpload";
+import { BatchUpload, batchUploadDialogStyle, type BatchUploadDialogControls, type CustomerConfirmRows, type FailureExportSource } from "../channelInventory/BatchUpload";
 import { fields, mapGrid, suggestMapping, toPayload, type Draft } from "../channelInventory/import";
 import { inventoryRequestId, type ManagedBatchEntry } from "../channelInventory/management";
 import { canonicalConfirmationPayload, recoveryEntries, savePrivateFile, type HistoryDetail, type SourceRef } from "./customerUploadHistory";
@@ -16,6 +16,7 @@ export function CustomerUploadFailuresDialog(props: Props) {
   const controls = useRef<BatchUploadDialogControls | null>(null);
   const mounted = useRef(true);
   const latest = useRef(props); latest.current = props;
+  const origin = useRef(props).current;
   const [fullscreen, setFullscreen] = useState(false);
   const [message, setMessage] = useState("");
   const [exporting, setExporting] = useState(false);
@@ -26,19 +27,55 @@ export function CustomerUploadFailuresDialog(props: Props) {
   const [contextVersion, setContextVersion] = useState<number>();
   const expected = { expectedEnterpriseId: props.identity.enterpriseId, expectedActorUserId: props.identity.actorUserId };
   const confirmation = props.detail.confirmation;
-  const current = () => mounted.current && latest.current.isCurrent() && latest.current.customerId === props.customerId
-    && latest.current.identity.key === props.identity.key;
+  const current = () => mounted.current && latest.current.isCurrent() && latest.current.customerId === origin.customerId
+    && latest.current.identity.key === origin.identity.key && latest.current.identity.enterpriseId === origin.identity.enterpriseId
+    && latest.current.identity.actorUserId === origin.identity.actorUserId && latest.current.detail.history.historyId === origin.detail.history.historyId
+    && latest.current.detail.history.revision === origin.detail.history.revision
+    && latest.current.detail.history.uploadBatch?.revision === origin.detail.history.uploadBatch?.revision
+    && latest.current.detail.confirmation?.confirmationId === origin.detail.confirmation?.confirmationId;
   const report = (error: unknown) => { if (current()) { latest.current.onAuthorizationError(error); setMessage(error instanceof Error ? error.message : "操作失败"); } };
   const [initial] = useState(() => {
     try {
       if (!confirmation || confirmation.batch.customerId !== props.customerId || props.detail.history.customerId !== props.customerId) throw new Error("批次归属未能确认");
-      const rows: { row: number; draft: Draft; metadata: { logicalRowId: string; sourceRefs: SourceRef[] } }[] = [];
+      const rows: { row: number; draft: Draft; metadata: { logicalRowId: string; sourceRefs: SourceRef[] }; exportSources?: FailureExportSource[]; failureReason: string }[] = [];
+      const sourceRows = new Set<string>();
+      let fallback = false;
+      const dataFirstRows = new Set([...confirmation.entries, ...confirmation.excludedRows]
+        .flatMap(row => row.sourceRefs ?? []).filter(ref => ref.rowNumber === 1).map(ref => ref.sheetIndex));
       for (const entry of confirmation.entries) canonical.current.set(entry.rowRequestId, entry);
       const claimed = new Set(confirmation.entries.map(entry => entry.logicalRowId));
       for (const excluded of confirmation.excludedRows) {
         if (!excluded.reason.startsWith("跳过问题行：") || claimed.has(excluded.logicalRowId)) continue;
         if (!excluded.sourceRefs?.length) throw new Error("原行来源不完整，请导出核对");
-        const candidate = props.detail.selectedVersion?.rows.find(row => row.logicalRowId === excluded.logicalRowId);
+        if (rows.some(row => row.metadata.logicalRowId === excluded.logicalRowId)) throw new Error("问题行逻辑标识重复，不能猜测来源");
+        const candidates = props.detail.selectedVersion?.rows.filter(row => row.logicalRowId === excluded.logicalRowId) ?? [];
+        if (candidates.length > 1) throw new Error("候选物料不能唯一匹配原行");
+        const candidate = candidates[0];
+        const refKey = (ref: SourceRef) => JSON.stringify([ref.sheetIndex, ref.sheetName, ref.rowNumber, ref.originalRowHash, ref.cellRange ?? null]);
+        if (candidate && (props.detail.selectedVersion?.versionId !== confirmation.versionId
+          || JSON.stringify(candidate.sourceRefs.map(refKey).sort()) !== JSON.stringify(excluded.sourceRefs.map(refKey).sort()))) throw new Error("候选版本或原行来源不匹配，不能猜测数据");
+        const exportSources: FailureExportSource[] = [];
+        let missingHeader = false;
+        for (const ref of excluded.sourceRefs) {
+          const rowKey = `${ref.sheetIndex}:${ref.rowNumber}`;
+          if (sourceRows.has(rowKey)) throw new Error("原行来源重复或存在歧义，请导出核对");
+          sourceRows.add(rowKey);
+          if (!props.detail.originalSheets.length) continue;
+          const sheets = props.detail.originalSheets.filter(sheet => sheet.sheetIndex === ref.sheetIndex && sheet.sheetName === ref.sheetName);
+          const sources = sheets.length === 1 ? sheets[0].rows.filter(row => row.rowNumber === ref.rowNumber) : [];
+          const headers = sheets.length === 1 ? sheets[0].rows.filter(row => row.rowNumber === 1) : [];
+          if (sources.length !== 1 || headers.length > 1 || sources[0].originalRowHash !== ref.originalRowHash) throw new Error("原行证据不匹配或不能唯一关联，请导出核对");
+          // Row 1 is not a header merely because it is first. Canonical or
+          // excluded material references prove it is data, not column evidence.
+          if (!headers.length || dataFirstRows.has(ref.sheetIndex)) { missingHeader = true; continue; }
+          const header = headers[0].cells;
+          if (!header.length || fields.some(field => header.filter(cell => suggestMapping([cell])[field.key] === 0).length > 1)) throw new Error("原表列映射存在歧义，请先核对原表");
+          if (fields.every(field => suggestMapping(header)[field.key] < 0)) { missingHeader = true; continue; }
+          exportSources.push({ sheetIndex: ref.sheetIndex, sheetName: ref.sheetName, rowNumber: ref.rowNumber, originalRowHash: ref.originalRowHash,
+            header: [...header], mapping: suggestMapping(header), cells: [...sources[0].cells] });
+        }
+        // A multi-source candidate must not silently lose its headerless refs.
+        if (missingHeader) exportSources.length = 0;
         let draft: Draft;
         if (candidate) {
           const value = candidate.candidate;
@@ -46,21 +83,19 @@ export function CustomerUploadFailuresDialog(props: Props) {
             dateCode: value.dateCode ?? "", price: value.price ?? "", currency: value.currency ?? "",
             taxIncluded: value.taxIncluded == null ? "unknown" : String(value.taxIncluded), leadTime: value.leadTime ?? "", note: value.note ?? "" };
         } else {
-          if (excluded.sourceRefs.length !== 1) throw new Error("多来源行请先导出核对");
-          const ref = excluded.sourceRefs[0];
-          const sheet = props.detail.originalSheets.find(sheet => sheet.sheetIndex === ref.sheetIndex && sheet.sheetName === ref.sheetName);
-          const source = sheet?.rows.find(row => row.rowNumber === ref.rowNumber && row.originalRowHash === ref.originalRowHash);
-          const header = sheet?.rows.find(row => row.rowNumber === 1);
-          if (!source || !header || ref.rowNumber <= 1) throw new Error("原行证据不匹配，请导出核对");
-          const mapping = suggestMapping(header.cells);
-          const mapped = mapGrid([header.cells, source.cells], mapping, [header.cells, source.cells]);
+          if (exportSources.length !== 1) throw new Error(exportSources.length ? "多来源行缺少可信候选，请先导出核对" : "缺少可信原表和候选物料，不能猜测数据");
+          const source = exportSources[0];
+          const mapping = source.mapping;
+          const mapped = mapGrid([source.header, source.cells], mapping, [source.header, source.cells]);
           if (mapped.length !== 1) throw new Error("原行不能唯一映射");
           draft = { ...mapped[0].draft, currency: mapping.currency < 0 ? "" : String(source.cells[mapping.currency] ?? "").trim() };
         }
-        rows.push({ row: rows.length + 2, draft, metadata: { logicalRowId: excluded.logicalRowId, sourceRefs: excluded.sourceRefs } });
+        if (!exportSources.length) fallback = true;
+        rows.push({ row: rows.length + 2, draft, metadata: { logicalRowId: excluded.logicalRowId, sourceRefs: excluded.sourceRefs },
+          ...(exportSources.length ? { exportSources } : {}), failureReason: excluded.reason });
       }
-      return { rows, error: "" };
-    } catch (error) { return { rows: [], error: error instanceof Error ? error.message : "原行证据不可用" }; }
+      return { rows, error: "", notice: fallback ? "缺少可信原表列证据，导出将使用标准库存模板；仅保留已核实候选和当前编辑值，不猜测原列或附注。" : "" };
+    } catch (error) { return { rows: [], error: error instanceof Error ? error.message : "原行证据不可用", notice: "" }; }
   });
   useEffect(() => {
     mounted.current = true;
@@ -98,9 +133,17 @@ export function CustomerUploadFailuresDialog(props: Props) {
     if (!current()) throw new Error("当前客户或权限已变化");
     return detail;
   };
+  const verifyContext = async (version: number | undefined) => {
+    if (!current() || !latest.current.detail.history.capabilities.canConfirm || latest.current.detail.history.batchClosed !== false) throw new Error("原客户、权限或修复版本已变化");
+    const context = await utils.client.channelInventory.customerSupplyContext.query({ ...expected, customerId: props.customerId });
+    if (!current() || !latest.current.detail.history.capabilities.canConfirm || context.customer.id !== props.customerId
+      || context.customer.archivedAt || !context.canUpload || context.channel?.id !== confirmation?.batch.channelId) throw new Error("原客户或上传权限已变化");
+    if (!Number.isSafeInteger(version) || context.customer.version !== version) throw new Error("客户版本已变化，请重新核验；原请求和冻结内容不会改写");
+  };
   const reconcile = async (entries: ManagedBatchEntry[]) => {
     const detail = await readOriginal();
     const original = verifyEntries(entries, detail);
+    await verifyContext(original.entries.find(entry => entry.rowRequestId === entries[0]?.requestId)?.payload.expectedCustomerVersion);
     const result = await utils.client.channelInventory.customerUploadReconcileBatch.mutate({ ...expected, historyId: session.historyId,
       confirmationId: original.confirmationId, requestId: inventoryRequestId() });
     if (!current() || result.batch.id !== session.batchId || result.history.historyId !== session.historyId) throw new Error("修复回执身份不匹配");
@@ -116,6 +159,7 @@ export function CustomerUploadFailuresDialog(props: Props) {
   };
   const prepare = async (input: { requestId: string }, review?: CustomerConfirmRows) => {
     if (!current() || !confirmation || !review?.confirmedDrafts.length || !checkedSession(review.sessionData)) throw new Error("修复确认记录不完整");
+    await verifyContext(frozenPrepare.current?.expectedCustomerVersion ?? review.sessionData.customerVersion);
     const missing = review.confirmedDrafts.some(row => !initial.rows.some(original => original.metadata.logicalRowId === (row.metadata as typeof initial.rows[number]["metadata"] | undefined)?.logicalRowId));
     if (missing && !frozenPrepare.current) {
       // A previous subset may already be durably claimed while its reply was lost.
@@ -138,8 +182,6 @@ export function CustomerUploadFailuresDialog(props: Props) {
       return detail.history.uploadBatch;
     }
     if (!frozenPrepare.current) {
-      const context = await utils.client.channelInventory.customerSupplyContext.query({ ...expected, customerId: props.customerId });
-      if (!current() || context.customer.id !== props.customerId || context.customer.archivedAt || !context.canUpload || context.channel?.id !== confirmation.batch.channelId) throw new Error("原客户或上传权限已变化");
       const frozenSession = review.sessionData;
       customerVersion.current = frozenSession.customerVersion;
       frozenPrepare.current = { ...expected, historyId: frozenSession.historyId, confirmationId: frozenSession.confirmationId,
@@ -178,11 +220,13 @@ export function CustomerUploadFailuresDialog(props: Props) {
     finally { if (current()) setExporting(false); }
   };
   const closed = props.detail.history.batchClosed !== false || confirmation?.batchClosed === true;
+  const editable = Boolean(confirmation && initial.rows.length && !closed);
   return <Dialog open onOpenChange={open => { if (!open) controls.current?.close(); }}><DialogContent className="ci-dialog ci-batch-dialog customer-supply-dialog" style={{ ...batchUploadDialogStyle,
     width: fullscreen ? "100vw" : "90vw", maxWidth: fullscreen ? "100vw" : "90vw", height: fullscreen ? "100dvh" : "85dvh", maxHeight: fullscreen ? "100dvh" : "85dvh", borderRadius: fullscreen ? 0 : undefined }}
     aria-describedby={undefined} onPointerDownOutside={event => event.preventDefault()} onEscapeKeyDown={event => controls.current?.onEscapeKeyDown(event)}>
-    <DialogHeader style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingRight: 30 }}><DialogTitle>处理失败</DialogTitle><div className="history-row-actions"><button type="button" className="ci-inline-link" disabled={exporting} onClick={() => void exportProblems()}>{exporting ? "导出中…" : "导出失败"}</button><button type="button" className="ci-inline-link" onClick={() => setFullscreen(value => !value)}>{fullscreen ? "退出全屏" : "全屏"}</button></div></DialogHeader>
+    <DialogHeader style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingRight: 30 }}><DialogTitle>处理失败</DialogTitle><div className="history-row-actions">{!editable ? <button type="button" className="ci-inline-link" disabled={exporting} onClick={() => void exportProblems()}>{exporting ? "导出中…" : "导出原失败记录"}</button> : null}<button type="button" className="ci-inline-link" onClick={() => setFullscreen(value => !value)}>{fullscreen ? "退出全屏" : "全屏"}</button></div></DialogHeader>
     {message || initial.error ? <p className="ci-error" role="alert">{message || initial.error}</p> : null}
+    {initial.notice ? <p className="ci-dialog-note">{initial.notice}</p> : null}
     {confirmation && initial.rows.length && !closed ? <BatchUpload key={`${props.identity.key}:${session.historyId}:repair`} dialogMode="content" dialogControlsRef={controls}
       channels={[{ id: confirmation.batch.channelId, name: props.detail.history.customerName, active: true }]} channelTotal={1}
       enterpriseId={props.identity.enterpriseId} actorUserId={props.identity.actorUserId} initialChannelId={confirmation.batch.channelId}
@@ -203,6 +247,7 @@ export function CustomerUploadFailuresDialog(props: Props) {
         const wire = canonicalConfirmationPayload(entry.payload);
         if (wire.uploadBatchId !== batchId || wire.requestId !== requestId || wire.customerId !== props.customerId
           || fields.some(({ key }) => String(wire[key] ?? "") !== String(_payload[key] ?? ""))) throw new Error("原修复请求不能改写");
+        await verifyContext(wire.expectedCustomerVersion);
         const { channelId, ...payload } = wire;
         const receipt = await utils.client.channelInventory.createCustomerMaterial.mutate(payload);
         if (!current()) throw new Error("提交结果待原请求确认");

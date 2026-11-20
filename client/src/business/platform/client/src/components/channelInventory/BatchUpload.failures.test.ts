@@ -4,8 +4,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { randomUUID, webcrypto } from "node:crypto";
 import * as XLSX from "xlsx";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { BatchUpload, type CustomerConfirmRows } from "./BatchUpload";
-import { emptyDraft, fields, templateGrid, toPayload, type Draft } from "./import";
+import { BatchUpload, type CustomerConfirmRows, type FailureExportSource } from "./BatchUpload";
+import { emptyDraft, fields, suggestMapping, templateGrid, toPayload, type Draft } from "./import";
 import type { BatchEntry } from "./queue";
 import { readFileSync } from "node:fs";
 
@@ -216,4 +216,25 @@ describe("customer inventory cell review and failure XLSX", () => {
     click(button("继续处理未完成（沿用原请求）")); await settle(); expect(create.mock.calls[1]).toEqual(originalCall);
     expect(create.mock.calls.every(([payload]) => payload.partNumber === "FROZEN-UNKNOWN")).toBe(true);
   });
+
+  it.each(["duplicate-ref", "inconsistent-sheet-header", "wrong-hash", "mapping-out-of-range"] as const)(
+    "rejects restored %s download evidence without altering the immutable queue or allocating a new request", async kind => {
+      const queue: BatchEntry[] = [{ row: 2, requestId: randomUUID(), status: "unknown", payload: toPayload(row(2).draft, 11) }];
+      const header = ["品牌", "型号", "币种", "数量", "附注"];
+      const source: FailureExportSource = { sheetIndex: 3, sheetName: "原表", rowNumber: 25, originalRowHash: "a".repeat(64),
+        header, mapping: suggestMapping(header), cells: ["TI", "PART-2", "CNY", "", "不可猜测附注"] };
+      const sources = [source];
+      if (kind === "duplicate-ref") sources.push(structuredClone(source));
+      if (kind === "inconsistent-sheet-header") sources.push({ ...structuredClone(source), rowNumber: 26, header: ["型号", "品牌", "币种", "数量", "附注"] });
+      if (kind === "wrong-hash") source.originalRowHash = "forged";
+      if (kind === "mapping-out-of-range") source.mapping.brand = 99;
+      const snapshot = { rows: [{ row: 2, draft: row(2).draft, reason: "", sources }] };
+      sessionStorage.setItem(storageKey, JSON.stringify({ version: 1, actorUserId: 7, enterpriseId: 31, channelId: 11,
+        name: "frozen.xlsx", entries: queue, failureExport: snapshot }));
+      const raw = sessionStorage.getItem(storageKey); const allocate = vi.spyOn(crypto, "randomUUID");
+      render(); expect(document.body.textContent).toContain("原批次失败导出记录无效");
+      expect([...document.querySelectorAll("button")].some(button => button.textContent?.trim() === "恢复原批次")).toBe(false);
+      expect(create).not.toHaveBeenCalled(); expect(prepare).not.toHaveBeenCalled(); expect(allocate).not.toHaveBeenCalled();
+      expect(sessionStorage.getItem(storageKey)).toBe(raw); expect(downloads.files).toHaveLength(0);
+    });
 });

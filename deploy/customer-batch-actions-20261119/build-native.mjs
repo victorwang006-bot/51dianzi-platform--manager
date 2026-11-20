@@ -61,6 +61,12 @@ function customerScope(ast) {
   assert(parent?.name?.getText(ast) === "__CHANNEL_REFERENCE_HOST_EXPORTS", "customer native host only");
   return scope;
 }
+export async function verifySources() {
+  const compiled = await Promise.all(specs.map(compile));
+  return { status: "LOCAL_SOURCE_ABI_CHECKED_NO_CAPTURE", productionWrites: 0,
+    leaves: compiled.map(({ name, native, sourceSha256, compiledSha256 }) => ({ name, native, sourceSha256, compiledSha256 })),
+    embeddedFailuresChecked: true, noUnboundNewIdentifiers: true, noNewImports: true };
+}
 export async function build() {
   assert(!fs.existsSync(OUT), "fresh output directory required");
   const sourceFiles = [...new Set([...specs.map(spec => spec.file), failures.file,
@@ -114,4 +120,8 @@ export async function build() {
   json("package/evidence/html.json", { beforeSha256: H(beforeHtml), afterSha256: H(after), counts, link, inverseVerified: true });
   console.log(JSON.stringify({ status: "LOCAL_NATIVE_CANDIDATES_NOT_DEPLOYED", modules, assets }, null, 2));
 }
-if (process.argv[1] === fileURLToPath(import.meta.url)) await build();
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  if (process.argv[2] === "--verify-sources") console.log(JSON.stringify(await verifySources(), null, 2));
+  else if (process.argv.length === 2) await build();
+  else throw new Error("Usage: build-native.mjs [--verify-sources]");
+}

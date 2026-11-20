@@ -1,0 +1,299 @@
+--- /home/ubuntu/work/customer-batch/original-controllers/release-07188c50996a3b6b.py	2026-11-20 00:01:46.548184031 +0000
++++ release.py	2026-11-20 00:08:59.371284945 +0000
+@@ -2,7 +2,7 @@
+ """Customer batch scope: capture/candidate/preflight/apply/verify/rollback.
+ Stdlib only. No SSH, PM2 CLI, daemon start, env write, DDL or whole-dist copy.
+ Production execution is exclusively an operator action, never an import side effect.
+-See release.README.md for the sealing and independent-review protocol.
++See README.md for the sealing and independent-review protocol. Offline preparation only.
+ """
+ import argparse
+ import base64
+@@ -23,8 +23,8 @@
+ from contextlib import contextmanager
+ from dataclasses import dataclass
+ 
+-OWNER = '6URUhFue'
+-SCOPE = 'customer-batch-actions-20261119-6URUhFue'
++OWNER = '6Lfttf6oVWJ8YS69o5FkXQ'
++SCOPE = 'customer-batch-actions-20261120-6Lfttf6o'
+ API_BASE = '/opt/releases/20261110-customer-workbench-b7f3a2a7e317'
+ FRONT_API = API_BASE + '/front/dist/index.js'
+ ADMIN_API = API_BASE + '/admin/dist/index.js'
+@@ -390,13 +390,10 @@
+         need(b'NODE_UNIQUE_ID' in values and re.fullmatch(rb'[0-9]+', values[b'NODE_UNIQUE_ID']),
+              'OWN_OUTER_NODE_UNIQUE_ID_DECIMAL')
+         del values[b'NODE_UNIQUE_ID']  # ONLY the real outer Node cluster lifecycle key
++    # All other raw environment values are byte-bound, including apparent PM2
++    # lifecycle names and nested JSON. Non-reloaded slots also require rawSha256.
+     norm = {k.decode('utf8', 'surrogateescape'): v.decode('utf8', 'surrogateescape')
+-            for k, v in values.items() if k.decode('utf8', 'surrogateescape') not in LIFECYCLE}
+-    if b'pm2_env' in values:
+-        e = decode(values[b'pm2_env'])
+-        norm['pm2_env'] = shallow_pm2(e)
+-        if 'env' in norm['pm2_env']:
+-            norm['pm2_env']['env'] = shallow_pm2(norm['pm2_env']['env'])
++            for k, v in values.items()}
+     return H(encode(norm))
+ 
+ def permissions(cfg, pid):
+@@ -978,6 +975,10 @@
+         self.state_hash = None
+         self.b = None
+         self.st = None
++        self.recovery_approval = None
++        self.recovery_approval_sha = None
++        self.journal_uncertain = False
++        self.pending_state_hash = None
+ 
+     def no_replay(self):
+         if self.cfg.receipt.exists() or self.cfg.receipt.is_symlink():
+@@ -1192,6 +1193,14 @@
+     def guard(self, forward=False):
+         if forward:
+             fresh(self.b['c'])
++        if self.recovery_approval is not None:
++            fresh(dict(capturedAtUtc=self.recovery_approval['approvedAtUtc'],
++                       ttlSeconds=self.recovery_approval['ttlSeconds']))
++            approval_raw = regular(self.cfg.stage/'rollback-review.json')
++            need(H(approval_raw) == self.recovery_approval_sha and decode(approval_raw) == self.recovery_approval
++                 and H(regular(self.cfg.stage/'rollback-reviewer-report.txt')) == self.recovery_approval['reviewerHash'],
++                 'RECOVERY_APPROVAL_REPORT_SEAL_DRIFT')
++        need(not self.journal_uncertain, 'JOURNAL_DURABILITY_UNCERTAIN_NO_CONTINUE')
+         self.sealed_guard()
+         self.state_invariants(self.st)
+         need(regular(self.cfg.coord) == unb64(self.st['coordBase64'])
+@@ -1207,13 +1216,20 @@
+                     reviewSha256=b['reviewSha256'], captureSha256=b['m']['captureSha256'])
+ 
+     def checkpoint(self, operation):
++        need(not self.journal_uncertain, 'JOURNAL_DURABILITY_UNCERTAIN_NO_REPLAY')
+         self.sequence += 1
+         doc = dict(schema='customer-batch-durable-state-v1', **self.common(),
+                    attemptSha256=self.attempt_hash, sequence=self.sequence, previousSha256=self.state_hash,
+                    operation=operation, recordedAtUtc=now(), state=copy.deepcopy(self.st))
+         data = encode(doc)
+-        exclusive(self.cfg.receipt/('state-%06d.json' % self.sequence), data)
++        self.pending_state_hash = H(data)
++        try:
++            exclusive(self.cfg.receipt/('state-%06d.json' % self.sequence), data)
++        except BaseException:
++            self.journal_uncertain = True
++            raise
+         self.state_hash = H(data)
++        self.pending_state_hash = None
+         return doc
+ 
+     def set_parent(self, path):
+@@ -1258,7 +1274,9 @@
+         need(isinstance(w, dict) and all(w.get(k) == v for k,v in
+              dict(owner_task=OWNER, scope=SCOPE, nonce=self.b['m']['nonce'],
+                   ownerNonce=self.b['m']['ownerNonce'], manifestSha256=self.b['manifestSha256'],
+-                  controllerSha256=self.hash, reloadScope=self.b['ids']).items()), 'OWN_ATTEMPT_WINDOW_REQUIRED')
++                  controllerSha256=self.hash, attemptSha256=self.attempt_hash,
++                  reviewSha256=self.b['reviewSha256'], captureSha256=self.b['m']['captureSha256'],
++                  reloadScope=self.b['ids']).items()), 'OWN_ATTEMPT_WINDOW_REQUIRED')
+         return c
+ 
+     def close(self, outcome):
+@@ -1272,6 +1290,82 @@
+         c['window'] = closed; c['shared_release_active'] = False; c['updated_at'] = now()
+         self.change_coord(encode(c), 'close-' + outcome)
+ 
++    def receipt_proof(self, receipt, outcome):
++        """No status-only success: actual closed raw bytes + durable latest state."""
++        self.guard()
++        c = self.owned_window()
++        raw = regular(self.cfg.coord)
++        need(c.get('shared_release_active') is False and c['window'].get('status') == 'closed'
++             and c['window'].get('outcome') == outcome
++             and c['window'].get('needsOperatorRecovery') is False
++             and c.get('needsOperatorRecovery', False) is False
++             and isinstance(c['window'].get('closedAtUtc'), str) and c['window']['closedAtUtc']
++             and c['window_history'] and c['window_history'][-1] == c['window'],
++             'ACTUAL_OWN_CLOSED_COORD_REQUIRED')
++        latest = regular(self.cfg.receipt/('state-%06d.json' % self.sequence))
++        state_doc = decode(latest)
++        need(H(latest) == self.state_hash and state_doc.get('state') == self.st
++             and state_doc.get('sequence') == self.sequence
++             and state_doc.get('attemptSha256') == self.attempt_hash
++             and all(state_doc.get(k) == v for k,v in self.common().items())
++             and H(regular(self.cfg.receipt/'attempt.json')) == self.attempt_hash,
++             'DURABLE_LATEST_STATE_ATTEMPT_BINDING')
++        need(receipt.get('schema') == ('customer-batch-receipt-v1' if outcome == 'verified'
++             else 'customer-batch-rollback-receipt-v1')
++             and receipt.get('status') == outcome and receipt.get('stateSha256') == self.state_hash
++             and receipt.get('stateSequence') == self.sequence
++             and receipt.get('attemptSha256') == self.attempt_hash
++             and all(receipt.get(k) == v for k,v in self.common().items())
++             and receipt.get('coordSha256') == H(raw) == H(unb64(self.st['coordBase64']))
++             and receipt.get('reloadEvents') == self.st['events']
++             and receipt.get('assetsRetained') is True
++             and receipt.get('databaseWrites') == receipt.get('envWrites') == 0,
++             'DURABLE_RECEIPT_ACTUAL_COORD_BINDING')
++        target = 'candidate' if outcome == 'verified' else 'before'
++        need(self.st['targets'] == dict(front=target, admin=target, html=target)
++             and set(self.st['loadedSlots']) == (set(self.b['ids']) if outcome == 'verified' else set()),
++             'RECEIPT_TARGET_RELOAD_COMPLETENESS')
++        if outcome == 'verified':
++            need(receipt.get('canonicalMetadataSha256') == H(encode(self.st['protectedFiles']))
++                 and receipt.get('reloadScope') == self.b['ids']
++                 and receipt.get('otherSixSlotsRawExact') is True and receipt.get('frontStaticWrites') == 0,
++                 'VERIFIED_FULL_BOUNDARIES_RECEIPT')
++        else:
++            need(receipt.get('rollbackAttemptSha256') == H(regular(self.cfg.receipt/'rollback-attempt.json')),
++                 'ROLLBACK_RECEIPT_ATTEMPT_BINDING')
++        return H(raw)
++
++    def durable_success(self, receipt, name, outcome):
++        self.receipt_proof(receipt, outcome)
++        raw = encode(receipt)
++        exclusive(self.cfg.receipt/name, raw)  # file AND receipt directory fsynced
++        need(regular(self.cfg.receipt/name) == raw, 'DURABLE_RECEIPT_READBACK')
++        self.receipt_proof(decode(regular(self.cfg.receipt/name)), outcome)
++        return receipt
++
++    def retain_owned_hold(self):
++        """Narrow full-CAS failure hold only; never repair foreign coord or clear locks."""
++        check_locks()
++        need(len(ACTIVE_LOCKS) == 2 and {x[0] for x in ACTIVE_LOCKS} ==
++             {p.resolve(strict=True) for p in self.cfg.locks}, 'OWN_DUAL_LOCKS_REQUIRED_FOR_HOLD')
++        c = self.owned_window()
++        old = unb64(self.st['coordBase64'])
++        need(regular(self.cfg.coord) == old and describe(self.cfg.coord) == self.st['coordRecord'],
++             'FAILURE_HOLD_FOREIGN_COORD_NO_WRITE')
++        need((c.get('shared_release_active') is True and c['window'].get('status') in ('open','recovery-required'))
++             or (c.get('shared_release_active') is False and c['window'].get('status') == 'closed'),
++             'FAILURE_HOLD_ONLY_OWN_WINDOW')
++        c['window'] = dict(c['window'], status='recovery-required', needsOperatorRecovery=True,
++                           recoveryRequiredAtUtc=now())
++        c['shared_release_active'] = True; c['updated_at'] = now()
++        raw = encode(c)
++        def remember(record):
++            self.st['coordBase64'] = base64.b64encode(raw).decode()
++            self.st['coordRecord'] = record
++            self.checkpoint('failure-owned-hold-coord-rename')
++        cas(self.cfg.coord, self.st['coordRecord'], old, raw, self.cfg.stage, remember)
++        return H(raw)
++
+     def add_asset(self, a):
+         self.guard(True)
+         n = a['relative']; p = self.cfg.public/n
+@@ -1346,13 +1440,22 @@
+ 
+     def fail(self, exc, name='failure.json'):
+         # No automatic repair or rollback. Keep own blocked window and retained assets.
++        hold_sha, hold_error = None, None
++        try:
++            hold_sha = self.retain_owned_hold()
++        except BaseException as hold_exc:
++            hold_error = type(hold_exc).__name__ + (': ' + str(hold_exc)
++                         if isinstance(hold_exc, ReleaseError) else '')
+         d = dict(schema='customer-batch-failure-v1', **self.common(), status='recovery-required',
+                  needsOperatorRecovery=True, error=type(exc).__name__ +
+                  (': ' + str(exc) if isinstance(exc, ReleaseError) else ''),
+                  attemptSha256=self.attempt_hash, lastStateSha256=self.state_hash,
+                  lastStateSequence=self.sequence, failedAtUtc=now(),
+                  assetsRetained=True, automaticRollback=False, databaseWrites=0, envWrites=0,
+-                 reloadOnlyCapturedSix=True, observedCoordinatorSha256=None)
++                 reloadOnlyCapturedSix=True, observedCoordinatorSha256=None,
++                 ownedHoldSha256=hold_sha, holdProofError=hold_error,
++                 journalDurabilityUncertain=self.journal_uncertain, pendingStateSha256=self.pending_state_hash,
++                 successProven=False, operatorRecoveryRequiredEvenIfCoordinatorLooksClosed=True)
+         try:
+             d['observedCoordinatorSha256'] = H(regular(self.cfg.coord))
+         except BaseException:
+@@ -1409,10 +1512,13 @@
+                     coordSha256=H(unb64(self.st['coordBase64'])), canonicalMetadataSha256=H(encode(self.st['protectedFiles'])),
+                     reloadScope=self.b['ids'], reloadEvents=self.st['events'], assetsRetained=True,
+                     otherSixSlotsRawExact=True, databaseWrites=0, envWrites=0, frontStaticWrites=0, closedAtUtc=now())
+-                exclusive(self.cfg.receipt/'receipt.json', encode(receipt))
+-                return receipt
++                return self.durable_success(receipt, 'receipt.json', 'verified')
+             except BaseException as exc:
+-                failure = self.fail(exc)
++                try:
++                    failure = self.fail(exc)
++                except BaseException as proof_exc:
++                    raise ReleaseError('RECOVERY_REQUIRED_FAILURE_RECEIPT_UNPROVEN: ' +
++                                       type(proof_exc).__name__) from exc
+                 raise ReleaseError('RECOVERY_REQUIRED: ' + failure['error']) from exc
+ 
+     def restore_journal(self, package, manifest_sha, review_sha, attempt_sha, state_sha):
+@@ -1466,8 +1572,16 @@
+         return latest
+ 
+     def verify(self, package, manifest_sha, review_sha, attempt_sha, state_sha, receipt_sha):
++        try:
++            return self._verify(package, manifest_sha, review_sha, attempt_sha, state_sha, receipt_sha)
++        except BaseException as exc:
++            raise ReleaseError('VERIFICATION_RECOVERY_REQUIRED_NO_SUCCESS: ' +
++                               (str(exc) if isinstance(exc, ReleaseError) else type(exc).__name__)) from exc
++
++    def _verify(self, package, manifest_sha, review_sha, attempt_sha, state_sha, receipt_sha):
+         with locked(self.cfg):
+             need(not (self.cfg.receipt/'failure.json').exists()
++                 and not (self.cfg.receipt/'rollback-failure.json').exists()
+                  and not (self.cfg.receipt/'rollback-attempt.json').exists(), 'FAILURE_OR_ROLLBACK_SUPERSEDES_RECEIPT')
+             self.restore_journal(package, manifest_sha, review_sha, attempt_sha, state_sha)
+             raw = regular(self.cfg.receipt/'receipt.json')
+@@ -1482,6 +1596,8 @@
+             need(c['shared_release_active'] is False and c['window']['status'] == 'closed'
+                  and c['window']['outcome'] == 'verified', 'VERIFIED_OWN_CLOSED_COORD')
+             self.health(self.guard(), True); self.guard()
++            self.receipt_proof(r, 'verified')
++            need(regular(self.cfg.receipt/'receipt.json') == raw, 'DURABLE_RECEIPT_POST_DRIFT')
+             return dict(status='verified-live-matching-own-receipt', stateSha256=state_sha,
+                         receiptSha256=receipt_sha, productionWrites=0, processCount=12)
+ 
+@@ -1498,7 +1614,8 @@
+             approval_raw = regular(self.cfg.stage/'rollback-review.json')
+             need(H(approval_raw) == pin(rollback_review_sha), 'ROLLBACK_REVIEW_PIN')
+             approval = decode(approval_raw)
+-            exact(approval, 'schema independent rollbackApproved reviewerScope reviewerHash bindings', 'ROLLBACK_APPROVAL_SCHEMA')
++            exact(approval, 'schema independent rollbackApproved reviewerScope reviewerHash bindings approvedAtUtc ttlSeconds',
++                  'ROLLBACK_APPROVAL_SCHEMA')
+             expected = dict(**self.common(), attemptSha256=attempt_sha, stateSha256=state_sha,
+                 outcomeSha256=outcome_sha, packageFiles=self.b['m']['packageFiles'],
+                 targets=self.st['targets'], reloadOnlyLoadedSlots=self.st['loadedSlots'], retainAllAssets=True)
+@@ -1509,17 +1626,20 @@
+             pin(approval['reviewerHash'])
+             report = regular(self.cfg.stage/'rollback-reviewer-report.txt')
+             need(H(report) == approval['reviewerHash'], 'ROLLBACK_REVIEWER_REPORT_PIN')
++            self.recovery_approval = approval
++            self.recovery_approval_sha = rollback_review_sha
+             self.guard()
+             coord = self.owned_window()
+-            need((coord['shared_release_active'] is True and coord['window']['status'] == 'open')
++            need((coord['shared_release_active'] is True and coord['window']['status'] in ('open','recovery-required'))
+                  or (coord['shared_release_active'] is False and coord['window']['status'] == 'closed'
+                      and coord['window'].get('outcome') == 'verified'), 'NO_FOREIGN_OR_ALREADY_ROLLEDBACK_WINDOW')
+             rb = encode(dict(schema='customer-batch-rollback-attempt-v1', **expected,
+                              approvalSha256=rollback_review_sha, startedAtUtc=now()))
+             exclusive(self.cfg.receipt/'rollback-attempt.json', rb)
+             try:
+-                if coord['shared_release_active'] is False:
+-                    coord['window'] = dict(coord['window'], status='open', rollbackAttemptSha256=H(rb))
++                if coord['shared_release_active'] is False or coord['window']['status'] == 'recovery-required':
++                    coord['window'] = dict(coord['window'], status='open', needsOperatorRecovery=False,
++                                           rollbackAttemptSha256=H(rb))
+                     coord['shared_release_active'] = True
+                     self.change_coord(encode(coord), 'reopen-own-verified-rollback')
+                 if self.st['targets']['html'] == 'candidate':
+@@ -1537,10 +1657,13 @@
+                     attemptSha256=attempt_sha, rollbackAttemptSha256=H(rb), stateSha256=self.state_hash,
+                     stateSequence=self.sequence, assetsRetained=True, reloadEvents=self.st['events'],
+                     coordSha256=H(unb64(self.st['coordBase64'])), databaseWrites=0, envWrites=0)
+-                exclusive(self.cfg.receipt/'rollback-receipt.json', encode(receipt))
+-                return receipt
++                return self.durable_success(receipt, 'rollback-receipt.json', 'rolled-back')
+             except BaseException as exc:
+-                failure = self.fail(exc, 'rollback-failure.json')
++                try:
++                    failure = self.fail(exc, 'rollback-failure.json')
++                except BaseException as proof_exc:
++                    raise ReleaseError('ROLLBACK_RECOVERY_REQUIRED_FAILURE_RECEIPT_UNPROVEN: ' +
++                                       type(proof_exc).__name__) from exc
+                 raise ReleaseError('ROLLBACK_RECOVERY_REQUIRED: ' + failure['error']) from exc
+ 
+ def production_reload(cfg, tr, row, api_sha):

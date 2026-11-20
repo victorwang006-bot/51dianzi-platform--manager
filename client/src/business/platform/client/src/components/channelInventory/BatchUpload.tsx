@@ -27,7 +27,8 @@ export type CustomerConfirmRows = { batchRequestId: string; sessionData?: unknow
 export type CustomerInitialRecovery = { channelId: number; entries: ManagedBatchEntry[]; name: string; sessionData?: unknown; uploadBatch: PersistentUploadBatch; skippedRows?: number; failureExport?: FailureExportSnapshot };
 type Grid = (string | number | null | undefined)[][];
 // Download-only evidence. Neither these drafts nor cells may rebuild a queue.
-type FailureExportRow = { row: number; draft: Draft; reason: string; cells?: Grid[number] };
+export type FailureExportSource = { sheetIndex: number; sheetName: string; rowNumber: number; originalRowHash: string; header: Grid[number]; mapping: Record<keyof Draft, number>; cells: Grid[number] };
+type FailureExportRow = { row: number; draft: Draft; reason: string; cells?: Grid[number]; sources?: FailureExportSource[] };
 type FailureExportSnapshot = { header?: Grid[number]; mapping?: Record<keyof Draft, number>; rows: FailureExportRow[] };
 type Props = {
   channels: Channel[];
@@ -50,7 +51,7 @@ type Props = {
   customerSourceReady?: boolean;
   customerSourceDisabledReason?: string;
   onOriginalFilePersist?: (file: File) => Promise<{ sessionData: unknown; rows: { row: number; metadata: unknown }[] }>;
-  initialRows?: { row: number; draft: Draft; metadata: unknown }[];
+  initialRows?: { row: number; draft: Draft; metadata: unknown; exportSources?: FailureExportSource[]; failureReason?: string }[];
   initialFile?: File;
   initialRecovery?: CustomerInitialRecovery;
   renderParseEntry?: (controls: { onDirtyChange: (dirty: boolean) => void; onBusyChange: (busy: boolean) => void }) => React.ReactNode;
@@ -155,26 +156,40 @@ function BatchUploadSession(props: Props) {
     const safeCells = (cells: unknown): cells is Grid[number] => Array.isArray(cells) && cells.length <= 40
       && cells.every(cell => cell == null || (typeof cell === "number" && Number.isFinite(cell)) || safeText(cell));
     const hasSource = snapshot.header !== undefined || snapshot.mapping !== undefined;
-    if (hasSource) {
-      if (!safeCells(snapshot.header) || !snapshot.header.length || !snapshot.mapping
-        || typeof snapshot.mapping !== "object" || Array.isArray(snapshot.mapping)
-        || Object.keys(snapshot.mapping).some(key => !fields.some(field => field.key === key))
-        || !fields.every(field => Number.isInteger(snapshot.mapping![field.key]) && snapshot.mapping![field.key] >= -1
-          && snapshot.mapping![field.key] < snapshot.header!.length
-          && (snapshot.mapping![field.key] < 0 || !isFailureReasonHeader(snapshot.header![snapshot.mapping![field.key]])))) return false;
-      const columns = fields.map(field => snapshot.mapping![field.key]).filter(column => column >= 0);
-      if (new Set(columns).size !== columns.length) return false;
-    }
+    const safeMapping = (header: unknown, mapping: FailureExportSnapshot["mapping"]) => {
+      if (!safeCells(header) || !header.length || !mapping || typeof mapping !== "object" || Array.isArray(mapping)
+        || Object.keys(mapping).some(key => !fields.some(field => field.key === key))
+        || !fields.every(field => Number.isInteger(mapping[field.key]) && mapping[field.key] >= -1
+          && mapping[field.key] < header.length
+          && (mapping[field.key] < 0 || !isFailureReasonHeader(header[mapping[field.key]])))) return false;
+      const columns = fields.map(field => mapping[field.key]).filter(column => column >= 0);
+      return new Set(columns).size === columns.length;
+    };
+    if (hasSource && !safeMapping(snapshot.header, snapshot.mapping)) return false;
+    const sourceRows = new Set<string>();
+    const sourceSheets = new Map<number, string>();
+    const safeSources = (sources: FailureExportSource[] | undefined) => sources === undefined || (Array.isArray(sources)
+      && sources.length > 0 && sources.length <= 100 && sources.every(source => {
+        if (!source || typeof source !== "object" || Array.isArray(source)
+          || Object.keys(source).some(key => !["sheetIndex", "sheetName", "rowNumber", "originalRowHash", "header", "mapping", "cells"].includes(key))
+          || !Number.isSafeInteger(source.sheetIndex) || source.sheetIndex < 0 || !safeText(source.sheetName) || !source.sheetName.trim()
+          || !Number.isSafeInteger(source.rowNumber) || source.rowNumber < 2 || !/^[a-f0-9]{64}$/.test(source.originalRowHash)
+          || !safeMapping(source.header, source.mapping) || !safeCells(source.cells)) return false;
+        const rowKey = `${source.sheetIndex}:${source.rowNumber}`;
+        const sheet = JSON.stringify([source.sheetName, source.header, source.mapping]);
+        if (sourceRows.has(rowKey) || (sourceSheets.has(source.sheetIndex) && sourceSheets.get(source.sheetIndex) !== sheet)) return false;
+        sourceRows.add(rowKey); sourceSheets.set(source.sheetIndex, sheet); return true;
+      }));
     const seen = new Set<number>();
     return snapshot.rows.every(row => {
       if (!row || typeof row !== "object" || Array.isArray(row)
-        || Object.keys(row).some(key => !["row", "draft", "reason", "cells"].includes(key))
+        || Object.keys(row).some(key => !["row", "draft", "reason", "cells", "sources"].includes(key))
         || !Number.isSafeInteger(row.row) || row.row < 2 || row.row > 1001 || seen.has(row.row)
         || !safeText(row.reason) || !row.draft || typeof row.draft !== "object" || Array.isArray(row.draft)
         || Object.keys(row.draft).some(key => key !== "sourceIssue" && !fields.some(field => field.key === key))
         || !fields.every(field => safeText(row.draft[field.key]))
         || (row.draft.sourceIssue !== undefined && !safeText(row.draft.sourceIssue))
-        || (hasSource ? !safeCells(row.cells) : row.cells !== undefined)) return false;
+        || (hasSource ? !safeCells(row.cells) : row.cells !== undefined) || !safeSources(row.sources)) return false;
       seen.add(row.row);
       return true;
     });
@@ -264,6 +279,7 @@ function BatchUploadSession(props: Props) {
   const [blankBrand, setBlankBrand] = useState("");
   const excludedReasons = useRef<Record<number, string>>({});
   const rowMetadata = useRef(new Map<number, unknown>(props.initialRows?.map(r => [r.row, r.metadata]) ?? []));
+  const initialExportRows = useRef(new Map(props.initialRows?.map((row, index) => [index + 2, row]) ?? []));
   const importSession = useRef<unknown>(props.sessionData);
   importSession.current = props.sessionData ?? importSession.current;
   const [saved, setSaved] = useState<SavedBatch | null>(initial.saved);
@@ -346,6 +362,7 @@ function BatchUploadSession(props: Props) {
     setExcluded([]); setEdits({}); setCurrencyConfirmed(false); excludedReasons.current = {};
     setReviewPage(1); setResultPage(1); reviewOrder.current = []; rowCurrencyConfirmed.current.clear();
     setExclusionUndo([]); uploadSkippedRows.current = 0; setSkippedRows(0);
+    initialExportRows.current.clear();
     failureExport.current = undefined;
     setReviewedMapping([]); setBlankBrand("");
     setError("");
@@ -432,6 +449,9 @@ function BatchUploadSession(props: Props) {
       loadGrid([fields.map(f => f.label), ...props.initialRows.map(r => fields.map(f => r.draft[f.key]))], props.initialFile?.name ?? "解析结果核对");
       setEdits(Object.fromEntries(props.initialRows.map((r, i) => [i + 2, r.draft])));
       rowMetadata.current = new Map(props.initialRows.map((r, i) => [i + 2, r.metadata]));
+      // Display indices are not source row numbers: bind evidence to the same
+      // initial row as its logical metadata, never index into originalSheets.
+      initialExportRows.current = new Map(props.initialRows.map((r, i) => [i + 2, r]));
     } else if (props.initialFile) void selectFile(props.initialFile);
   }, []);
   const download = async () => {
@@ -469,8 +489,10 @@ function BatchUploadSession(props: Props) {
     ...(grid[0]?.length ? { header: [...grid[0]], mapping: { ...mapping } } : {}),
     // Empty reasons retain source-column evidence for frozen unfinished entries.
     rows: allRows.map(row => ({ row: row.row, draft: { ...row.draft },
-      reason: excluded.includes(row.row) ? `已移除：${excludedReasons.current[row.row] || "用户移除"}` : row.errors.join("；"),
+      reason: excluded.includes(row.row) ? `已移除：${excludedReasons.current[row.row] || "用户移除"}` : row.errors.join("；")
+        || (initialExportRows.current.get(row.row)?.failureReason ? "已修正，待重新提交" : ""),
       ...(grid[0]?.length ? { cells: [...(grid[row.row - 1] ?? [])] } : {}),
+      ...(initialExportRows.current.get(row.row)?.exportSources ? { sources: initialExportRows.current.get(row.row)!.exportSources } : {}),
     })),
   });
   const rows = allRows.filter(r => !excluded.includes(r.row));
@@ -599,6 +621,9 @@ function BatchUploadSession(props: Props) {
         next = (preparation.confirmation ? latest.current.preparedEntries?.() : undefined) ?? preparation.rows.map(row => ({ row: row.row, requestId: row.requestId,
           payload: toPayload(row.draft, created.channelId), uploadBatchId: created.id, status: "pending" }));
         if (preparation.confirmation && (next.length !== preparation.rows.length || next.some((entry, i) => entry.requestId !== preparation!.rows[i].requestId || entry.payload.channelId !== created.channelId || (entry as ManagedBatchEntry).uploadBatchId !== created.id))) throw new Error("服务端确认队列与冻结UUID不匹配，不能重建批次。");
+        // Canonical recovery helpers may compact rows. Keep the frozen UI row
+        // associated by request UUID so skipped/source evidence cannot shift.
+        next = next.map(entry => ({ ...entry, row: preparation!.rows.find(row => row.requestId === entry.requestId)!.row }));
         setEntries(next);
         if (!persist(next, target.id)) return;
         setPreparing(undefined);
@@ -753,7 +778,7 @@ function BatchUploadSession(props: Props) {
   const exportSourceRows = new Map(exportSnapshot.rows.map(row => [row.row, row]));
   const validationFailures = exportSnapshot.rows.filter(row => row.reason && (step !== 4 || !queuedRows.has(row.row)));
   const exportRows: FailureExportRow[] = step === 4 ? [...validationFailures, ...unfinishedEntries.map(entry => ({ row: entry.row,
-    draft: payloadDraft(entry.payload), cells: exportSourceRows.get(entry.row)?.cells, reason: entry.status === "unknown"
+    draft: payloadDraft(entry.payload), cells: exportSourceRows.get(entry.row)?.cells, sources: exportSourceRows.get(entry.row)?.sources, reason: entry.status === "unknown"
     ? `待确认（非已确认失败），请按原请求重试${entry.error ? `：${entry.error}` : ""}`
     : `未完成 / 等待上传${entry.error ? `：${entry.error}` : ""}` }))] : validationFailures;
   const exportDraftCell = (draft: Draft, field: typeof fields[number]) => field.key === "taxIncluded"
@@ -762,26 +787,35 @@ function BatchUploadSession(props: Props) {
   const exportFailures = async () => {
     if (!current() || exporting || !exportRows.length) return;
     // Capture the displayed values, never change the queue, UUIDs or frozen payloads.
-    const sourceHeader = exportSnapshot.header;
-    const sourceMapping = exportSnapshot.mapping;
-    // Keep unknown annotations and original business-column order. A prior
-    // failure-reason column is replaced by the single final, non-business column.
-    const sourceColumns = sourceHeader?.map((_, index) => index).filter(index => !isFailureReasonHeader(sourceHeader[index]));
-    const useSource = Boolean(sourceHeader?.length && sourceMapping);
-    const values: Grid = [ [...(useSource ? sourceColumns!.map(index => sourceHeader![index]) : templateGrid()[0]), "失败原因"],
-      ...exportRows.map(row => [ ...(useSource ? sourceColumns!.map(index => {
-        const field = fields.find(field => sourceMapping![field.key] === index);
-        return field ? exportDraftCell(row.draft, field) : row.cells?.[index] ?? "";
-      }) : fields.map(field => exportDraftCell(row.draft, field))), row.reason ]) ];
+    if (!validateFailureExport(exportSnapshot)) { setError("原表失败导出证据无效或存在歧义，不能猜测来源。"); return; }
+    const groups = new Map<string, { name: string; header: Grid[number]; mapping: Record<keyof Draft, number>; rows: { rowNumber: number; cells: Grid[number] }[] }>();
+    const addRow = (row: FailureExportRow, source?: FailureExportSource) => {
+      const header = source?.header ?? exportSnapshot.header ?? templateGrid()[0];
+      const mapping = source?.mapping ?? exportSnapshot.mapping ?? suggestMapping(templateGrid()[0]);
+      const columns = header.map((_, index) => index).filter(index => !isFailureReasonHeader(header[index]));
+      const groupKey = source ? `sheet:${source.sheetIndex}` : "fallback";
+      if (!groups.has(groupKey)) groups.set(groupKey, { name: source?.sheetName ?? "失败记录", header: [...columns.map(index => header[index]), "失败原因"], mapping, rows: [] });
+      groups.get(groupKey)!.rows.push({ rowNumber: source?.rowNumber ?? row.row, cells: [...columns.map(index => {
+        const field = fields.find(field => mapping[field.key] === index);
+        return field ? exportDraftCell(row.draft, field) : (source?.cells ?? row.cells)?.[index] ?? "";
+      }), row.reason] });
+    };
+    exportRows.forEach(row => row.sources?.length ? row.sources.forEach(source => addRow(row, source)) : addRow(row));
     setExporting(true);
     try {
       const XLSX = await import("xlsx");
       if (!current()) return;
       const workbook = XLSX.utils.book_new();
-      const sheet = XLSX.utils.aoa_to_sheet(values);
-      sheet["!cols"] = [...(useSource ? sourceColumns!.map(index => ({ wch: sourceMapping!.note === index ? 35 : 18 }))
-        : fields.map(field => ({ wch: field.key === "note" ? 35 : 18 }))), { wch: 60 }];
-      XLSX.utils.book_append_sheet(workbook, sheet, "失败记录");
+      for (const group of groups.values()) {
+        const sheet = XLSX.utils.aoa_to_sheet([group.header, ...group.rows.sort((a, b) => a.rowNumber - b.rowNumber).map(row => row.cells)]);
+        sheet["!cols"] = group.header.map((_, index) => ({ wch: index === group.header.length - 1 ? 60 : 18 }));
+        const base = group.name.replace(/[\\/?:*\[\]]/g, "_").slice(0, 31) || "失败记录";
+        let sheetName = base, suffix = 1;
+        while (workbook.SheetNames.some(name => name.toLowerCase() === sheetName.toLowerCase())) {
+          const end = `_${suffix++}`; sheetName = `${base.slice(0, 31 - end.length)}${end}`;
+        }
+        XLSX.utils.book_append_sheet(workbook, sheet, sheetName);
+      }
       const date = new Date();
       const pad = (value: number) => String(value).padStart(2, "0");
       const stamp = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}_${pad(date.getHours())}${pad(date.getMinutes())}`;

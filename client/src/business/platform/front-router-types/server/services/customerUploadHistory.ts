@@ -255,7 +255,8 @@ export function createCustomerUploadHistoryService(deps: CustomerUploadHistoryDe
         const cf = await confirmation(tx, h);
         const versionId = cf ? cf.frozen.versionId : h.latest_version_id;
         const v = versionId ? await version(tx, h, versionId) : null;
-        return customerUploadProblemsWorkbook(await dto(tx, policy, scope, h), v, cf ? confirmationDto(cf) : null);
+        const original = await file(tx, h, h.original_file_id);
+        return customerUploadProblemsWorkbook(await dto(tx, policy, scope, h), v, cf ? confirmationDto(cf) : null, manifestOf(original)?.sheets ?? []);
       });
     },
     async customerUploadOriginal(scope: ChannelInventoryScope, raw: schemas.CustomerUploadOriginalInput): Promise<CustomerUploadHistoryOutputs["channelInventory.customerUploadOriginal"]> {
