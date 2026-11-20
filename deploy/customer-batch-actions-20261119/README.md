@@ -4,9 +4,11 @@
 
 R2 `d6f724847e205005060b6d11e0b15d7e31ba0ce373119187d062aba437e4cdec` 已被独立审确认不可发布：固定保护图遗漏 `/var/lib/dianzi51-private`；真实 PM2 cluster fork 将必变顶部 `pm_uptime` 放入 serialized `pm2_env`，R2 只准 outer `NODE_UNIQUE_ID` 的算法必然误判正常 reload。R2 审计在 `/home/ubuntu/work/customer-batch/review-r2-independent.md` 和 `.json`，不是 R3 批准。
 
-R3 OWNER 完整保持 `6Lfttf6oVWJ8YS69o5FkXQ`；SCOPE 为 **`customer-batch-actions-20261120-6Lfttf6o-R3`**，默认 stage 仅因此派生为 `/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R3`。没有创建或操作远程 stage。当前准确 controller/preparer/tool SHA 见 `evidence/r3-source-and-safety.json`；preparer 固 pin 与 controller 字节相符，不重用 R2 capture、旧 scope、旧 pin 或丢失的 capture JSON。
+R3 OWNER 完整保持 `6Lfttf6oVWJ8YS69o5FkXQ`；SCOPE 为 **`customer-batch-actions-20261120-6Lfttf6o-R3`**，默认 stage 仅因此派生为 `/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R3`。没有创建或操作远程 stage。当前F1修正后的准确 controller/preparer/test SHA 见 `evidence/r3-f1-source-and-safety.json`；初版ec2及tool历史保留于 `evidence/r3-source-and-safety.json`。preparer 固 pin 与当前 controller 字节相符，不重用 R2 capture、旧 scope、旧 pin 或丢失的 capture JSON。
 
 本轮只修改六个许可 Python/测试/README 文件及 `evidence/r3-*`。不修改业务、UI、JS builder；不执行真实构建器、Git、SSH、MCP、生产访问或 release CLI。测试里的 apply/preflight/verify/rollback、锁、CAS、receipt 和 reload 全部发生在独立临时目录与 mock adapters 中，不是实际发布流程。
+
+10:06独立审查发现F1：普通指数 `1e400/-1e400` 可被旧JSON decoder解析成非有限浮点。主任务只离线增加 `math.isfinite` 的checked `parse_float`、同步pin并新增纯内存 `test_finite_json.py`，不更改任何原token/五字段/PM2/审批/恢复协议。89 controller、32 preparer、6 JSON边界测试通过；所有其它controller AST不变，详见 `evidence/r3-f1-report.md`。主任务Git保存不是ECS发布；ECS备份/容量及前台最新静态需求共同hold，当前版本仍NOT_APPROVED。
 
 ## 最小保护图修正
 

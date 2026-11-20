@@ -5,7 +5,7 @@
 本轮 preparer 的唯一源码 AST 差量为固定 `CONTROLLER_SHA` 更新；其它 AST 不变。当前固定 SHA 为：
 
 ```text
-ec2f541d4cee799a21a9b21633110a183c8efaf162451876ad5aea415359bde5
+bf7ec85b902ae2474ded779bfad110e7ac791e7d4c244d67ca6f912614d375ab
 ```
 
 仅接受 **`customer-batch-actions-20261120-6Lfttf6o-R3`**、完整 OWNER `6Lfttf6oVWJ8YS69o5FkXQ`、当前 controller SHA 与完整 Config 的当次 fresh capture。R2 scope/d6 capture、历史旧 scope/7fc capture、丢失 JSON 均不可重用。Config 原路径保持，仅追加准确 `/var/lib/dianzi51-private` 保护根；preparer 的对象-only union 检查不能漏掉新根。R3 process rows 新增 `pm2RawMeta` 和 `pm2ReloadReady`，由当前 controller 的严格 schema/identity 验证；不从布尔 ready 或 mock 通过制造发布批准。

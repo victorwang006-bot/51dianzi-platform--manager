@@ -24,3 +24,11 @@
 接续条件：服务器任务先明确容量/备份/路径及调整互斥的安全边界；再由前台完成其最新静态scope并给实际verified durableclosed与明确释放窗口；后台然后以新的完整现网META/两API/HTML/依赖重新构建、封印、独立全包审批、窄scope一次性apply与verified closed。旧8a130协调哈希/f893前台技术回执、旧种子/R1/R2拒绝阶段均不得当新审批或重放。不得削弱前台参数/PDF/store/sourceflags/runtime或客户权限边界。
 
 旧冻结记录若真实原行证据缺失、重叠或歧义，明确拒绝补发，不猜来源、不更换成功/未知请求的UUID。删除保留原上传文件和历史证据；批次关闭后不可继续入库。
+
+## 10:12最终离线收尾（未上线）
+
+上文ec2是R3初版历史；当前实际控制器SHA为 **bf7ec85b902ae2474ded779bfad110e7ac791e7d4c244d67ca6f912614d375ab**，scope仍是从未remote stage/capture/attempt的R3。独立审查发现F1：未知nested普通指数1e400/-1e400解析溢出为inf。主任务只增加6行checked parse_float/math.isfinite并同步preparer pin；所有其它PM2/审批/恢复AST不变，原token不重编码。89 controller、32 preparer再次通过，新增6 pure JSON测试通过，独立F1只读验证6/6通过。完整证据与独立报告在deploy/customer-batch-actions-20261119/evidence/r3-f1-*，整体仍NOT_APPROVED。
+
+原R3 late pm2ReloadReady守卫是受控失败设计，不能称为全阶段零写阻断；未来正式审批前，六own实际Ready必须全部True，并与capture/manifest绑定，还要实证fclone、完整retained byte/source-shape、fresh fullMETA/前台新集合/全包正式审批。现在缺口未齐，不开发布窗。
+
+服务器已识别外部300GiB盘，但分区/根文件系统仍旧约197G99%；快照仅极速可用、OSS尚未全量完成，尚无新成功文件备份，未执行实际文件系统扩容。所有容量/快照/备份及互斥安全条件必须由服务器任务明确，前台B静态105测试/tsc0和seed包也不是现网部署。后台继续不连接ECS、不capture/stage/write/reload/env，不清理/迁移shadow或回退目录。服务器安全解除后先等前台新actualverifiedclosed交接，再后台fresh全审，不重用旧8a130/f893/旧seed/旧pin。

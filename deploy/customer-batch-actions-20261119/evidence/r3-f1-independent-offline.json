@@ -1,0 +1,136 @@
+{
+  "reviewType": "independent_readonly_offline_minimal_F1",
+  "reviewedAt": "2026-11-20T10:08:02+08:00",
+  "status": "F1_STATIC_PASS_OVERALL_NOT_APPROVED",
+  "displayConclusion": "F1小修正静态通过；整体currentNOT_APPROVED",
+  "F1StaticPassed": true,
+  "controllerApproved": false,
+  "ControllerApproved": false,
+  "releaseApproved": false,
+  "finalDeployApproval": false,
+  "DeployApprove": false,
+  "formalApprovalGenerated": false,
+  "reviewRoot": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119",
+  "scope": "customer-batch-actions-20261120-6Lfttf6o-R3",
+  "scopeUnchanged": true,
+  "hashes": {
+    "release.py": "bf7ec85b902ae2474ded779bfad110e7ac791e7d4c244d67ca6f912614d375ab",
+    "evidence/r3-f1-baseline-release.py": "ec2f541d4cee799a21a9b21633110a183c8efaf162451876ad5aea415359bde5",
+    "prepare-local.py": "48fbfaecdb81c65dff8722b88c701fbccf5202457e2d080f0c24cbcd2993aa79",
+    "evidence/r3-f1-baseline-prepare-local.py": "4041d7e102a57b2e95d7d569313070a48c7b4b91757a5b85640010d1eaa5e267",
+    "test_finite_json.py": "2963b03499f1aaffe95dc58fe87e01b110cbac5955c6592422a08ddcb8a42c5c"
+  },
+  "independentSourceChecks": {
+    "controllerExactSixAddedLines": true,
+    "controllerRemovedLines": 0,
+    "allowedControllerChanges": [
+      "import math",
+      "decode内部四行finite_float：float(token)、math.isfinite、NONFINITE_JSON、return",
+      "json.loads的parse_float=finite_float hook"
+    ],
+    "expectedControllerFullBytesEqualActual": true,
+    "allOtherControllerASTUnchanged": true,
+    "unchangedExistingTopLevelControllerASTNodesExcludingDecode": 92,
+    "PM2AndProtocolASTUnchanged": true,
+    "preparerExactPinOnly": true,
+    "allOtherPreparerASTUnchanged": true,
+    "preparerPinEqualsActualControllerSha256": true,
+    "oldEc2CapturePinNotReusableUnderUnchangedCaptureCheck": true,
+    "preparerPinUseLines": [18, 107, 174, 350, 376],
+    "parentDiffMatchesIndependentDiff": true,
+    "parentSourceAndLogHashesIndependentlyMatched": true,
+    "finalReviewedInputBytesUnchanged": true
+  },
+  "F1Verification": {
+    "baselineProbe": "decode(b'{\"opaque\":{\"n\":1e400}}') returns nested +inf",
+    "baselineProbeIndependentlyReproduced": true,
+    "currentSameProbe": "ReleaseError('NONFINITE_JSON')",
+    "currentSameProbeIndependentlyRejected": true,
+    "allDepthFloatTokenHook": true,
+    "finiteFloatParsingSemantics": "原float语义保留，含舍入/下溢；不承诺十进制精确值，不新增safe-integer限制",
+    "originalRetainedTokenBytesNotReencoded": true,
+    "opaqueEscapedStringsPreserved": true,
+    "literalNonfiniteAndDuplicateRejectionPreserved": true
+  },
+  "independentPureTests": {
+    "execution": "仅内存提取controller纯helper AST及原FiniteJsonTests类AST，不执行test文件动态import或模块入口",
+    "count": 6,
+    "passed": 6,
+    "failures": 0,
+    "errors": 0,
+    "summary": "Ran 6 tests in 0.001s; OK",
+    "methods": [
+      "test_positive_and_negative_overflow_at_root",
+      "test_overflow_rejected_at_every_nested_shape",
+      "test_literal_nonfinite_contract_unchanged",
+      "test_finite_decimals_and_exponents_accepted_without_reencoding",
+      "test_opaque_strings_and_escaped_bytes_remain_exact",
+      "test_duplicate_keys_still_rejected_before_any_projection"
+    ],
+    "executedControllerNodes": ["ReleaseError", "need", "decode", "integer", "pm2_top_tokens", "pm2_project", "PM2_RAW_GENERATED"],
+    "productionModuleImported": false,
+    "productionEntrypointExecuted": false,
+    "bytecodeWritingDisabled": true
+  },
+  "existingLogsCheckedNotFullSuitesRerun": {
+    "evidence/r3-f1-finite-tests.txt": {
+      "methodCount": 6,
+      "status": "OK",
+      "sha256": "ab36567b74ef88771992c87875e0f9d1f2ce5eaca7f04d0ed132a3f8b2de6f2b",
+      "originalLogReadOnly": true
+    },
+    "evidence/r3-f1-release-tests.txt": {
+      "methodCount": 89,
+      "status": "OK",
+      "sha256": "6884006387e355ca4076690d901dba290d4bc497f3527b5fd4179fb65b47484b",
+      "independentlyRerun": false
+    },
+    "evidence/r3-f1-prepare-tests.txt": {
+      "methodCount": 32,
+      "status": "OK",
+      "sha256": "7a6dc7efcebb03b304bd7d03e97bc592fac3f82677345628372753a9f8b2c3cb",
+      "independentlyRerun": false
+    }
+  },
+  "holds": [
+    "ECS root 99%与备份失败",
+    "前台方案B静态需求共同暂停"
+  ],
+  "stillMissingNotReaudited": [
+    "实际fclone语义：未知保持",
+    "完整six-ready retained-byte witness",
+    "fresh fullMETA",
+    "fresh包正式独立审批"
+  ],
+  "inheritedHandoffStateNotRemotelyVerified": {
+    "remoteStageCaptureAttemptNeverRun": true,
+    "backendActiveWrites": 0,
+    "backendReloads": 0,
+    "backendDatabaseWrites": 0,
+    "backendEnvWrites": 0,
+    "remoteInspectionPerformedThisReview": false
+  },
+  "thisReviewSafety": {
+    "networkAccess": false,
+    "GitExecuted": false,
+    "SSHExecuted": false,
+    "MCPExecuted": false,
+    "productionCLIOrModuleEntrypointExecuted": false,
+    "locksAcquired": false,
+    "NodeVendorRPCExecuted": false,
+    "actualDatabaseAccess": false,
+    "sourceToolsOrMaterialsModified": false,
+    "productionReads": 0,
+    "productionWrites": 0,
+    "activeWrites": 0,
+    "reloads": 0,
+    "databaseWrites": 0,
+    "envWrites": 0,
+    "nonceCaptureStagePackageAttemptReceiptWindowCreated": false,
+    "businessOrOtherR3StagesReaudited": false,
+    "onlyOutputPaths": [
+      "/home/ubuntu/work/customer-batch/review-f1-offline.md",
+      "/home/ubuntu/work/customer-batch/review-f1-offline.json"
+    ]
+  }
+}

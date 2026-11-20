@@ -1,0 +1,294 @@
+{
+  "schema": "customer-batch-r3-independent-offline-review-v1",
+  "status": "currentNOT_APPROVED",
+  "controllerApproved": false,
+  "releaseApproved": false,
+  "finalDeployApproval": false,
+  "stageOnlyNotReleaseApproval": true,
+  "reviewStartedAt": "2026-11-20T09:52:37+08:00",
+  "sourceAndEvidenceVerificationFinishedAt": "2026-11-20T09:56:56+08:00",
+  "controller": {
+    "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/release.py",
+    "sha256": "ec2f541d4cee799a21a9b21633110a183c8efaf162451876ad5aea415359bde5",
+    "baselinePath": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r3-baseline-release.py",
+    "baselineSha256": "d6f724847e205005060b6d11e0b15d7e31ba0ce373119187d062aba437e4cdec",
+    "owner": "6Lfttf6oVWJ8YS69o5FkXQ",
+    "scope": "customer-batch-actions-20261120-6Lfttf6o-R3",
+    "hashVerifiedAtStartAndSourceVerificationFinish": true,
+    "repoHeadFromTaskHandoffOnly": "fad1856",
+    "repoHeadIndependentlyQueried": false,
+    "uncommittedSixFilesFromTaskHandoffOnly": true
+  },
+  "inheritedReviewScope": {
+    "seedReviewRead": "/home/ubuntu/work/customer-batch/review-seed-independent.md",
+    "r2ReviewRead": "/home/ubuntu/work/customer-batch/review-r2-independent.md",
+    "businessUiFullReviewRepeated": false,
+    "seedSemanticFactsDoNotGrantReleaseApproval": true
+  },
+  "constraints": {
+    "onlyWrittenPaths": [
+      "/home/ubuntu/work/customer-batch/review-r3-offline.md",
+      "/home/ubuntu/work/customer-batch/review-r3-offline.json"
+    ],
+    "sourceOrToolsModified": false,
+    "gitOperations": 0,
+    "sshOperations": 0,
+    "mcpOperations": 0,
+    "networkOperations": 0,
+    "newEcsConnections": 0,
+    "productionConnections": 0,
+    "activeWrites": 0,
+    "productionWrites": 0,
+    "reloads": 0,
+    "databaseAccesses": 0,
+    "databaseWrites": 0,
+    "environmentWrites": 0,
+    "lockOperations": 0,
+    "captureOperations": 0,
+    "remoteStageOperations": 0,
+    "controllerCliExecutions": 0,
+    "preparerCliExecutions": 0,
+    "nodeOrVendorOrGodOrRpcExecutions": 0,
+    "approvalObjectsGenerated": 0,
+    "attemptReceiptOrWindowGenerated": 0,
+    "fullTestSuitesRerun": 0,
+    "pureHelpersExtractedAndExecutedInMemoryOnly": true,
+    "pycacheWritten": false,
+    "realEnvironmentValuesExported": false
+  },
+  "currentHold": {
+    "ecsBackupFailureAndServerCauseAdjustmentPaused": true,
+    "frontendBadgeCancellationPaused": true,
+    "frontendPlanBPureStaticPaused": true,
+    "backendOfflineOnlyNoNewConnectionCaptureStageWriteReload": true,
+    "oldFrontendClosedCoordOrReceiptIsFutureApproval": false,
+    "oldFrontendClosedCoordPrefix": "8a130",
+    "oldFrontendReceiptPrefix": "f893",
+    "r3RemoteStageCapturePayloadAttemptReceiptWindowAbsentFromTaskHandoff": true,
+    "remoteAbsenceIndependentlyProbed": false,
+    "holdLiftAuthorizedByThisReview": false
+  },
+  "independentAstVerification": {
+    "changedExistingTopLevelNodes": [
+      "Config",
+      "Controller",
+      "assign:SCOPE",
+      "identity",
+      "raw_semantics",
+      "snapshot_rows",
+      "transport"
+    ],
+    "unchangedExistingTopLevelCount": 79,
+    "deletedTopLevelNodes": [],
+    "addedTopLevelNodes": [
+      "assign:PM2_GENERATION_PINS",
+      "assign:PM2_RAW_GENERATED",
+      "pm2_meta_transition",
+      "pm2_project",
+      "pm2_raw_binding",
+      "pm2_top_tokens",
+      "raw_values"
+    ],
+    "changedControllerMethods": [
+      "reload_one",
+      "state_invariants"
+    ],
+    "configOnlyChangedMember": "extra_protected",
+    "configOriginalTwoEnvEntriesAstExact": true,
+    "configExactPrivateRootAppended": "/var/lib/dianzi51-private",
+    "preparerOnlyChangedNode": "assign:CONTROLLER_SHA",
+    "preparerPinMatchesController": true,
+    "rpcBytesExact": true,
+    "rpcSha256": "089d6af98a983ecc11e6feb1c0cd909c5aafba627fd7856eadd9935fec5da0c3",
+    "inventoryUnionAndOtherControllerProtocolAstUnchanged": true,
+    "sixFileHashesMatchedAndStableAtVerificationFinish": true
+  },
+  "sixFileHashes": {
+    "README.md": "4333866188566a2ef344f4f5ac2e31e4a4c2879283bddd238f3519668ae8cf2b",
+    "prepare-local.README.md": "0cdb55197c7369941fbbcee702cf54806f35ef76f9dd50816b76803f4bd6179c",
+    "prepare-local.py": "4041d7e102a57b2e95d7d569313070a48c7b4b91757a5b85640010d1eaa5e267",
+    "release.py": "ec2f541d4cee799a21a9b21633110a183c8efaf162451876ad5aea415359bde5",
+    "test_prepare_local.py": "91f2f078bfd6759a3dc1bb89013fc826801b2975f09a73b41eefafcbe58c013b",
+    "test_release.py": "57e089aa2cb90ff3c6fb2ce5eb21a67d6c7b3d12417b6bc183ae3f114e186157"
+  },
+  "sourceEvidence": {
+    "generationSourceRecordsPath": "/home/ubuntu/work/customer-batch/pm2-live-source/source-records.json",
+    "generationSourceRecordsSha256": "f6c211ac662ecac437aa2034dec47e16a418a429ac9345f20cf16db6900d0f32",
+    "generationFilesActualHashAndSizeVerified": 31,
+    "hardGenerationPinsVerified": 8,
+    "relationsPath": "/home/ubuntu/work/customer-batch/pm2-relations-readonly.json",
+    "relationsSha256": "8c0f9b1ec60401e452ef31413442f5fb35655edfd9b7e7b3238d6afdce73bed8",
+    "sixRelationIds": [190, 191, 192, 193, 194, 200],
+    "identityFiveRelationsVerified": true,
+    "numericIntegerMonitorMatchingFields": [
+      "pm_uptime",
+      "created_at",
+      "restart_time",
+      "pm_id",
+      "unstable_restarts"
+    ],
+    "relevantAppOverridesAbsentInSuppliedRelationEvidence": true,
+    "rootAndSixLoaderFlagsEmptyAtEvidenceTime": true,
+    "relationsProvePrevRestartDelayOrFullRetainedByteWitness": false,
+    "actualSixPm2ReloadReadyValuesSupplied": false,
+    "rpcClosurePath": "/home/ubuntu/work/customer-batch/pm2-dependency-closure/closure.json",
+    "rpcClosureSha256": "917f632e0ab4fa0a2b705d5ad8bd1c6b4d80d68c3f3a8bb8fd2aac2665ba507e",
+    "rpcClosureFilesActualHashAndSizeVerified": 31,
+    "rpcClosureEdges": 62,
+    "rpcLiteralRequireExpressionsMatchedToEdgeMultiset": 62,
+    "rpcAllRecordsReachableFromFixedRoots": true,
+    "rpcAllRecordsBeneathExactPm2Base": true,
+    "rpcClosureDynamicRequires": [],
+    "rpcClosureOutsidePm2Base": [],
+    "rpcClosureUnresolved": [],
+    "rpcClosureIsGenerationCloneClosure": false,
+    "utilityCloneSourceReference": "Utility.js:11,92-95 -> ../modules/fclone",
+    "actualFcloneSourceSupplied": false,
+    "pythonDeepcopyProvesActualFclone": false,
+    "newEcsReadRequestedOrPerformedToCloseGap": false
+  },
+  "staticSafetyFacts": {
+    "privateRootUsesOriginalFullMetaInventorySemantics": true,
+    "privateRootActualFreshInventoryBound": false,
+    "originalAliasesPm2BaseNodeRuntimeFlagsProtected": true,
+    "vendorFullTreeAndFullMetaRulesUnchanged": true,
+    "genericInventoryRecordsLinksAndNlinkRatherThanRejectingEveryLink": true,
+    "rootLoaderGateBeforeAnyNodeProbe": "release.py:598-599",
+    "rootLoaderEnvUnsetOrFallbackAdded": false,
+    "exactGeneratedTopIntegerTokenFields": [
+      "pm_uptime",
+      "restart_time",
+      "created_at",
+      "unstable_restarts",
+      "prev_restart_delay"
+    ],
+    "generatedTokensRequireCanonicalNonnegativeSafeIntegers": true,
+    "stablePmIdNotExempted": true,
+    "retainedEnvUnknownNestedEscapesAndOuterValuesRemainByteBound": true,
+    "recursiveCanonicalizationOrBroadLifecycleWhitelistAdded": false,
+    "envIdentityGenerationContainerOverridesRejected": true,
+    "forecastIsRejectionGateNotActualCloneProof": true,
+    "unrolledOwnAndUnownedSlotsFullRawHashExact": true,
+    "otherElevenRowsExactBeforeEvent": true,
+    "sourceTransportPermissionsFullMetaSetCheckedBeforeObservedEvent": "release.py:1639-1641",
+    "legalObservationAfterAdapterErrorMayRecordTransportPassedFalse": true,
+    "transportIntentAloneAcceptedAsSuccess": false,
+    "uncertainObservedCheckpointBlocksContinuation": true,
+    "stateInvariantsReadBackExactIntentAndAllTwelveBeforeRows": "release.py:1335-1397",
+    "fullContiguousPreviousShaChainVerifiedByRestoreJournal": "release.py:1761-1785"
+  },
+  "readinessGateAssessment": {
+    "classification": "confirmed_existing_late_gate_controlled_failure_design",
+    "rawAcceptanceBypassFound": false,
+    "actualSixSlotReadinessKnown": false,
+    "legalBooleanFalseAcceptedByIdentity": true,
+    "identityLines": "release.py:685-689",
+    "falseReadyCapturePrepareSealBlockedByAllReadyCondition": false,
+    "falseReadyAutomaticallyRejectedByValidateReview": false,
+    "validateReviewLines": "release.py:924-936",
+    "falseReadyPreflightCanReturnPassedUnderOtherwiseValidStableInput": true,
+    "preflightLines": "release.py:1257-1266",
+    "applyMayCreateAttemptOpenWindowAddAssetsAndApiCasBeforeFalseReadyRejection": true,
+    "applyOrderLines": "release.py:1694-1729",
+    "soleExplicitAllRelevantTargetReadyNeed": "release.py:1605",
+    "targetFalseRejectedBeforeItsReloadIntentAndAdapter": true,
+    "intentLine": 1609,
+    "existingControlledFailureTest": "test_release.py:1227-1234",
+    "knownFalsePackageCanBeSafelyFullyApproved": false,
+    "futureFormalApprovalRequiresExactSixOwnReadyAllTrueBeforeApproval": true,
+    "allTrueIsSufficientByItself": false,
+    "futureAllTrueRequiresActualCloneRetainedBytesFullMetaFreshPackageAndIndependentReview": true,
+    "optionalMinimalEarlyGuardIfSeparatelyAuthorized": "preflight/apply before attempt/open/assets/API CAS; preserve diagnostic capture false and existing per-slot guard",
+    "protocolRewriteRequiredByThisReview": false
+  },
+  "findings": [
+    {
+      "id": "R3-OFFLINE-F1",
+      "classification": "confirmed_narrow_validation_contract_defect",
+      "severity": "low",
+      "title": "Strict JSON entry does not reject finite-token exponent overflow at arbitrary depth",
+      "locations": [
+        "release.py:53-64, especially 61-62",
+        "release.py:423",
+        "release.py:451-462"
+      ],
+      "minimalInputs": [
+        "{\"opaque\":{\"n\":1e400}}",
+        "{\"opaque\":[-1e400]}"
+      ],
+      "observedPureHelperResult": "pm2_top_tokens accepts parsed positive/negative infinity; pm2_project preserves original raw bytes",
+      "pm2RawBindingUnknownTopSubtreeProbe": "semantic/meta returned with ready=false",
+      "envSubtreeOverflowProbe": "downstream encode allow_nan=false raises ValueError",
+      "generatedIntegerFieldGuardBypassed": false,
+      "retainedBytesCanonicalizedOrLost": false,
+      "reloadAcceptanceOrSuccessBypassDemonstrated": false,
+      "productionOccurrenceProven": false,
+      "decodeAstWasChangedInR3": false,
+      "inIncrementalScopeBecauseNewR3HelperClaimsWholeJsonFiniteValidation": true,
+      "minimalSuggestion": "checked parse_float or parsed-tree finite float validation raising ReleaseError; do not reserialize or widen generated-field policy",
+      "necessaryOfflineTests": [
+        "positive and negative exponent overflow at top/unknown nested/env",
+        "finite decimal and exponent tokens remain byte-retained"
+      ],
+      "sourceModified": false
+    }
+  ],
+  "testEvidence": {
+    "finalControllerMockTests": 89,
+    "finalPreparerMockTests": 32,
+    "finalLogsReadAndHashesVerified": true,
+    "logs": {
+      "r3-release-tests.txt": "e8f05671687c5be3967f04313d557bb4c6197c3430ec311e13d6c8ca8daf22d8",
+      "r3-prepare-tests.txt": "0a818c470cce0b92da935dbe8419a79f32b6447282715c2d7c01b6574605630a"
+    },
+    "suiteRerun": false,
+    "newWorkWasAstHashGraphChecksAndPureInMemoryProbesOnly": true,
+    "pureProbeFacts": [
+      "exact five-field synthetic transition retains semantic hash and validates transition",
+      "application escape byte drift changes semantic hash and readiness becomes false",
+      "duplicate keys and literal NaN/Infinity refused",
+      "positive/negative exponent overflow accepted by strict entry",
+      "unknown top overflow can yield ready=false",
+      "six legal false readiness rows accepted by identity"
+    ],
+    "probeHarnessIntermediateError": "one insertion accidentally placed overflow under env; expected downstream ValueError occurred; separate top-only probe completed",
+    "mockOrPureProbeIsProductionCompatibilityProof": false
+  },
+  "blockers": [
+    {
+      "id": "HOLD",
+      "detail": "Current user ECS/front new-demand hold prohibits new connection/capture/stage/write/reload and is not lifted by old frontend receipt or this review"
+    },
+    {
+      "id": "F1",
+      "detail": "Strict JSON arbitrary-depth finite-value entry contract incomplete for exponent overflow; narrow offline correction/tests require separate source modification authorization"
+    },
+    {
+      "id": "READINESS",
+      "detail": "Actual six-slot full retained-byte/source-shape witness and six all-true readiness not supplied; known false must be rejected before formal approval, not accepted because per-slot reload later blocks"
+    },
+    {
+      "id": "CLONE",
+      "detail": "Actual modules/fclone semantic source absent; Python deepcopy is not proof of actual clone"
+    },
+    {
+      "id": "FRESH_PROTECTION",
+      "detail": "Actual R3 private full tree/META/set and original frontend protected set not bound by fresh capture"
+    },
+    {
+      "id": "PACKAGE_APPROVAL",
+      "detail": "No new complete fresh package/manifest/packageFiles/source/tool pins/nonce/TTL/currentcoord and formal independent approval; seed/R2 cannot be transplanted"
+    }
+  ],
+  "nextStepsWithinScope": [
+    "Maintain offline-only ECS hold; no new frontend badge/Plan B/server-adjustment work",
+    "If separately authorized, only add narrow finite exponent overflow validation and targeted pure tests",
+    "Document/test public entry false/mixed readiness ordering; if optional early guard separately authorized, assert zero attempt/open/assets/API CAS/intent/adapter before rejection",
+    "Do not seek new ECS reads or real reload to close fclone/full retained-byte witness gaps; continue only upon authorized local evidence handoff",
+    "Only after explicit future hold lift and new-stage authorization consider fresh full protection/package/TTL/coord and independent delta review; do not repeat unchanged business full review"
+  ],
+  "reportPaths": {
+    "markdown": "/home/ubuntu/work/customer-batch/review-r3-offline.md",
+    "json": "/home/ubuntu/work/customer-batch/review-r3-offline.json"
+  }
+}

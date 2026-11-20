@@ -1,0 +1,41 @@
+{
+  "status": "F1_OFFLINE_CORRECTED_NOT_APPROVED",
+  "controllerBeforeSha256": "ec2f541d4cee799a21a9b21633110a183c8efaf162451876ad5aea415359bde5",
+  "controllerAfterSha256": "bf7ec85b902ae2474ded779bfad110e7ac791e7d4c244d67ca6f912614d375ab",
+  "preparerSha256": "48fbfaecdb81c65dff8722b88c701fbccf5202457e2d080f0c24cbcd2993aa79",
+  "finiteTestSourceSha256": "2963b03499f1aaffe95dc58fe87e01b110cbac5955c6592422a08ddcb8a42c5c",
+  "sourceChangesOnly": [
+    "import math",
+    "decode nested finite_float and parse_float hook",
+    "preparer CONTROLLER_SHA"
+  ],
+  "allOtherControllerASTUnchanged": true,
+  "allOtherPreparerASTUnchanged": true,
+  "tests": {
+    "finite": {
+      "count": 6,
+      "logSha256": "ab36567b74ef88771992c87875e0f9d1f2ce5eaca7f04d0ed132a3f8b2de6f2b",
+      "status": "OK"
+    },
+    "controller": {
+      "count": 89,
+      "logSha256": "6884006387e355ca4076690d901dba290d4bc497f3527b5fd4179fb65b47484b",
+      "status": "OK"
+    },
+    "preparer": {
+      "count": 32,
+      "logSha256": "7a6dc7efcebb03b304bd7d03e97bc592fac3f82677345628372753a9f8b2c3cb",
+      "status": "OK"
+    }
+  },
+  "scopeUnchanged": "customer-batch-actions-20261120-6Lfttf6o-R3",
+  "scopeNeverCapturedOrAttempted": true,
+  "productionAccess": false,
+  "productionWrites": 0,
+  "reloads": 0,
+  "captureCreated": false,
+  "approvalCreated": false,
+  "controllerApproved": false,
+  "finalDeployApproval": false,
+  "hold": "ECS backup/capacity and frontend latest static scope; clone/retained/fresh/full-package approval still missing"
+}
