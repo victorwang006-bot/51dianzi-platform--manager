@@ -1,0 +1,20 @@
+[WARN] The "pnpm" field in package.json is no longer read by pnpm. The following keys were ignored: "pnpm.patchedDependencies", "pnpm.overrides". See https://pnpm.io/settings for the new home of each setting.
+
+ RUN  v2.1.9 /home/ubuntu/work/resume-frontend/platform
+
+ ✓ client/src/components/home/__tests__/homepageBanner.contract.test.ts (18 tests) 471ms
+ ✓ client/src/components/OfficialMallSearchResults.inline.test.tsx (15 tests) 2089ms
+   ✓ anonymous real checkout/search first-paint chain > the whole displayed multi-page snapshot has inline parameters without viewport resources requests 1543ms
+ ✓ client/src/components/OfficialMaterialResources.SearchPage.test.tsx (11 tests) 1206ms
+   ✓ official material resources synthetic DOM > hides missing and unsafe PDFs, keeps only truthful actions without persistent missing-data prose 375ms
+ ✓ client/src/lib/officialMaterialClient.polish.test.ts (14 tests) 75ms
+ ✓ client/src/hooks/useOfficialMaterial.polish.test.tsx (8 tests) 435ms
+ ✓ client/src/components/home/__tests__/WarmInventoryHero.test.tsx (2 tests) 73ms
+ ✓ client/src/pages/SearchPage.fast-terminal.test.tsx (4 tests) 490ms
+ ✓ client/src/hooks/useGuestQuery.fast.test.ts (3 tests) 36ms
+
+ Test Files  8 passed (8)
+      Tests  75 passed (75)
+   Start at  00:09:14
+   Duration  8.75s (transform 1.34s, setup 0ms, collect 3.18s, tests 4.88s, environment 5.55s, prepare 684ms)
+

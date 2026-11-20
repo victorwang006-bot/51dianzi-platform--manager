@@ -1,0 +1,28 @@
+
+ RUN  v2.1.9 /home/ubuntu/work/resume-frontend/business-notes/patch/workspace
+
+stdout | server/officialTechnicalPrepared.synthetic.test.ts > anonymous bulk store linear work (no DB, no real identities) > 20002 unique models prepare/restart/lookup and pending failure then fresh ready without weakening fences
+ANONYMOUS_STORE_BULK_METRICS {"count":20002,"initialBytes":19201979,"finalBytes":19202029,"initialPrepareMs":2388,"restartLookupMs":1993,"pendingFailureAndSettlementMs":3997,"freshPrepareAndLookupMs":4371,"elapsedMs":12946}
+
+stdout | server/officialTechnicalPrepared.synthetic.test.ts > anonymous bulk store linear work (no DB, no real identities) > 20002 reads reject nonadjacent normalized same-model inconsistent versions, settle only own writers, then fresh identical source is ready
+ANONYMOUS_STORE_INCONSISTENT_METRICS {"count":20002,"elapsedMs":2442,"failedEntries":0,"sourceCount":20001}
+
+ ✓ server/officialTechnicalPrepared.synthetic.test.ts (119 tests) 16514ms
+   ✓ anonymous bulk store linear work (no DB, no real identities) > 20002 unique models prepare/restart/lookup and pending failure then fresh ready without weakening fences 12949ms
+   ✓ anonymous bulk store linear work (no DB, no real identities) > 20002 reads reject nonadjacent normalized same-model inconsistent versions, settle only own writers, then fresh identical source is ready 2448ms
+ ✓ server/officialTechnicalSupplement.test.ts (91 tests) 5710ms
+   ✓ pair preparation preserves all other 20,000 prepared entries and unrelated source byte-equivalent 5340ms
+ ✓ server/officialMallPublicImages.synthetic.test.ts (29 tests) 73ms
+ ✓ client/src/hooks/useGuestQuery.fast.test.ts (3 tests) 50ms
+ ✓ server/officialMallNavigation.test.ts (9 tests) 8ms
+ ✓ client/src/components/OfficialMallSearchResults.inline.test.tsx (15 tests) 2019ms
+   ✓ anonymous real checkout/search first-paint chain > the whole displayed multi-page snapshot has inline parameters without viewport resources requests 1507ms
+ ✓ client/src/components/OfficialMaterialResources.SearchPage.test.tsx (11 tests) 1186ms
+   ✓ official material resources synthetic DOM > hides missing and unsafe PDFs, keeps only truthful actions without persistent missing-data prose 369ms
+ ✓ client/src/pages/SearchPage.fast-terminal.test.tsx (4 tests) 489ms
+
+ Test Files  8 passed (8)
+      Tests  281 passed (281)
+   Start at  00:09:55
+   Duration  34.65s (transform 2.00s, setup 0ms, collect 4.72s, tests 26.05s, environment 1.50s, prepare 631ms)
+

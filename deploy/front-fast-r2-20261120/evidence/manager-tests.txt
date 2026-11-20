@@ -1,0 +1,13 @@
+[WARN] The "pnpm" field in package.json is no longer read by pnpm. The following keys were ignored: "pnpm.patchedDependencies", "pnpm.overrides". See https://pnpm.io/settings for the new home of each setting.
+
+ RUN  v2.1.9 /home/ubuntu/work/resume-frontend/manager
+
+ ✓ server/services/officialTechnicalSupplement.test.ts (91 tests) 5854ms
+   ✓ pair preparation preserves all other 20,000 prepared entries and unrelated source byte-equivalent 5411ms
+ ✓ server/services/adminNewInformationSources/mall.test.ts (24 tests) 55ms
+
+ Test Files  2 passed (2)
+      Tests  115 passed (115)
+   Start at  00:14:27
+   Duration  7.97s (transform 365ms, setup 0ms, collect 1.40s, tests 5.91s, environment 0ms, prepare 158ms)
+

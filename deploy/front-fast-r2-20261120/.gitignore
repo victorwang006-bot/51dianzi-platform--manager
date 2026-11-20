@@ -1,0 +1,6 @@
+package/
+*.tar.gz
+prepared*.json
+source-proof*.json
+capture*.json
+__pycache__/

@@ -1,0 +1,35 @@
+{
+  "status": "pass-private-candidate-real-compiled-worker",
+  "environment": "production-host-private-process-no-active-writes",
+  "storeSha256": "87910d282ec0a2a1b76235bbc4462ef98049d8228b7400de66a8bb6091ef4faf",
+  "entries": 20002,
+  "bytes": 22071742,
+  "coldReadyMs": 937.554862,
+  "warmProof": {
+    "version": "66309:3148325:1795134173354689352:1795134173354689352:22071742",
+    "entries": 20002,
+    "loads": 1,
+    "storeSha256": "87910d282ec0a2a1b76235bbc4462ef98049d8228b7400de66a8bb6091ef4faf",
+    "sourceTicketsDigest": "c33592dc244b93ef7be73723dc2b4b25a0a14a5f819df26b29da7468d1dc9b3a"
+  },
+  "quietReusesIndex": true,
+  "sameSizeMtimeAtomicBadVersionFailClosed": true,
+  "freshVersionRecovers": true,
+  "activeStoreWrites": 0,
+  "businessDatabaseWrites": 0,
+  "environmentWrites": 0,
+  "processReloads": 0,
+  "coldMaxMainThreadHeartbeatDelayMs": 3.066509999999994,
+  "warmThirty": {
+    "p50": 2.0639289999999164,
+    "p95": 3.719074849999992,
+    "max": 7.0909270000001925,
+    "samples": 100
+  },
+  "concurrencyTen": {
+    "p50": 16.614610499999912,
+    "p95": 19.77220655000001,
+    "max": 20.11076900000012,
+    "samples": 100
+  }
+}

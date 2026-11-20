@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createMallNewInformationReader } from "./mall";
 import { createOfficialMallService } from "../officialMall";
 import { assertOfficialRecordAction, loadOfficialAccess, officialActorFromContext, officialTeamPredicate } from "../officialChannelAccess";
-import { ADMIN_NEW_INFORMATION_ACTIVATED_AT } from "../../../../51dianzi-platform/shared/adminNewInformationFacts";
+import { ADMIN_NEW_INFORMATION_ACTIVATED_AT } from "../../../shared/adminNewInformationFacts";
 
 const actor = { adminUserId: 71, sessionVersion: 4 };
 const dialect = new MySqlDialect();

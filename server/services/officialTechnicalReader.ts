@@ -17,7 +17,7 @@ class ReaderWorker {
   constructor(readonly url: URL) {}
   stop() {
     const old = this.worker; this.worker = undefined;
-    for (const task of this.pending.values()) { clearTimeout(task.timer); task.reject(failure()); }
+    for (const task of Array.from(this.pending.values())) { clearTimeout(task.timer); task.reject(failure()); }
     this.pending.clear();
     if (old) void old.terminate();
   }
@@ -69,7 +69,7 @@ function workerPool(options: OfficialTechnicalReaderOptions): ReaderWorker {
 }
 /** Explicit process/test shutdown; the bounded shared idle worker is unref'ed, not discarded. */
 export function closeOfficialTechnicalReaderWorkers() {
-  for (const pool of pools.values()) pool.stop();
+  for (const pool of Array.from(pools.values())) pool.stop();
   pools.clear();
 }
 export function createOfficialTechnicalReader(path: string, options: OfficialTechnicalReaderOptions = {}) {

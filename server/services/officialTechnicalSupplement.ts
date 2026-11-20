@@ -7,7 +7,7 @@ import type { OfficialMaterialDictionary } from "./officialTechnicalTypes";
  * TechDesign is a secondary exact-model cross-check, NEVER a price, MOQ or stock source.
  * Do not generalize to W25N04KV, xxIRU, another suffix/package/temperature/BUF variant. */
 export const W25N04KVZEIR_TECHNICAL_SOURCE = Object.freeze({
-  version: "winbond-w25n04kvzeir-revc-20220207-v3",
+  version: "winbond-w25n04kvzeir-revc-20220207-v4",
   partNumber: "W25N04KVZEIR",
   datasheetUrl: "https://www.winbond.com/resource-files/W25N04KVxxIRU_Datasheet_20220207_RevC.pdf",
   datasheetSha256: "050c3a3c22a8eb8b055307abf930b739860d9f726edd4b69ac607ddb5c8d9976",
@@ -40,6 +40,19 @@ export const W25N04KVZEIR_TECHNICAL_SOURCE = Object.freeze({
     "存储容量": "4Gbit", "工作温度": "-40℃~+85℃", "工作电压": "2.7V~3.6V",
     "待机电流": "20uA", "接口类型": "SPI", "擦写寿命": "6万次", "时钟频率(fc)": "104MHz",
     "写周期时间(Tw)": "-", "块擦除时间(tBE)": "10ms", "页写入时间(Tpp)": "250us", "数据保留 - TDR(年)": "10年",
+  }),
+  // Only these eight absent concepts are appended to the EXACT reviewed 13-field
+  // source. Existing ECC/capacity/temperature/voltage/interface/endurance/clock/
+  // retention labels and values remain verbatim; do not add synonymous rows.
+  preservedSourceAdditions: Object.freeze({
+    "存储类型": "SLC NAND Flash",
+    "温度等级": "工业级",
+    "封装": "WSON-8",
+    "封装尺寸": "8 × 6 mm",
+    "块大小": "128K-Byte",
+    "页大小": "2K-Byte",
+    "绿色封装": "R（绿色封装）",
+    "BUF": "1（固定）",
   }),
 });
 /** ST official product page lists this COMPLETE orderable code and links DS7147 Rev 10.
@@ -87,10 +100,13 @@ export function isReviewedW25N04KVZEIRSupplement(identity: OfficialTechnicalIden
   return eligible(identity) && officialTechnicalDigest(dictionary) === officialTechnicalDigest(dictionaryFor(identity));
 }
 /** Local alias projection for the authenticated, read-only verified 13 existing values.
+ * Accept ONLY the original 13 fields or the exact append-only 21-field result.
  * It NEVER changes the stored/global brand matcher or bypasses original text/URL/field gates. */
 export function isReviewedW25N04KVZEIRExistingSource(identity: OfficialTechnicalIdentity, dictionary: NonNullable<OfficialMaterialDictionary>): boolean {
+  const specsDigest = officialTechnicalDigest(dictionary.specs);
   return matchesW25N04KVZEIRSourceIdentity(identity, dictionary)
-    && officialTechnicalDigest(dictionary.specs) === officialTechnicalDigest(W25N04KVZEIR_TECHNICAL_SOURCE.preservedSpecs);
+    && (specsDigest === officialTechnicalDigest(W25N04KVZEIR_TECHNICAL_SOURCE.preservedSpecs)
+      || specsDigest === officialTechnicalDigest({ ...W25N04KVZEIR_TECHNICAL_SOURCE.preservedSpecs, ...W25N04KVZEIR_TECHNICAL_SOURCE.preservedSourceAdditions }));
 }
 /** Supplement only a proven miss or genuinely empty dictionary. Errors/ambiguity NEVER become ready.
  * Every identity of the exact part shares the same source digest, including incompatible sibling identities.
@@ -115,6 +131,15 @@ export function supplementOfficialTechnicalRead(identity: OfficialTechnicalIdent
   if (original.state === "matched") {
     if (!matchesW25N04KVZEIRSourceIdentity(identity, original.dictionary)) return unchanged;
     if (Object.keys(original.dictionary.specs).length > 0) {
+      // Validate the original dictionary FIRST. Only an authenticated known source
+      // gets append-only facts; corrupt/unknown sources never acquire this exception.
+      if (isReviewedW25N04KVZEIRExistingSource(identity, original.dictionary)) {
+        if (projectPreparedOfficialTechnical(identity, original).state !== "ready") return unchanged;
+        const datasheetUrl = original.dictionary.datasheetUrl == null || original.dictionary.datasheetUrl === ""
+          ? W25N04KVZEIR_TECHNICAL_SOURCE.datasheetUrl : original.dictionary.datasheetUrl;
+        return { ...original, sourceVersion, dictionary: { ...original.dictionary,
+          specs: { ...original.dictionary.specs, ...W25N04KVZEIR_TECHNICAL_SOURCE.preservedSourceAdditions }, datasheetUrl } };
+      }
       if (original.dictionary.datasheetUrl != null && original.dictionary.datasheetUrl !== ""
         || projectPreparedOfficialTechnical(identity, original).state !== "ready") return unchanged;
       return { ...original, sourceVersion, dictionary: { ...original.dictionary, datasheetUrl: W25N04KVZEIR_TECHNICAL_SOURCE.datasheetUrl } };

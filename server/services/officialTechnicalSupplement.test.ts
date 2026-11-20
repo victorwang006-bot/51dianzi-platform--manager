@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { readOfficialTechnicalDictionaryRows, type OfficialTechnicalDictionaryRow } from "./officialTechnicalDictionary";
-import { W25N04KVZEIR_TECHNICAL_SOURCE as source, supplementOfficialTechnicalRead } from "./officialTechnicalSupplement";
+import { W25N04KVZEIR_TECHNICAL_SOURCE as source, supplementOfficialTechnicalRead, isReviewedW25N04KVZEIRExistingSource } from "./officialTechnicalSupplement";
 import { projectPreparedOfficialTechnical, officialTechnicalDigest, type OfficialTechnicalIdentity } from "./officialTechnicalResource";
 import { createOfficialTechnicalPreparedStore } from "./officialTechnicalPreparedStore";
 const identity: OfficialTechnicalIdentity = { publicId: "OM_00000000-0000-4000-8000-000000000001", revision: 1, partNumber: "W25N04KVZEIR", brand: "WINBOND", pkg: "WSON-8" };
@@ -196,30 +196,73 @@ describe("reviewed STM8S003F3P6TR PDF-only recovery",()=>{
 describe("actual W25N04KVZEIR 13-parameter source is not overwritten",()=>{
   const live:OfficialTechnicalIdentity={publicId:"OM_237be1a0-7e70-4040-87d1-499f0d9731c8",revision:7,partNumber:source.partNumber,brand:"Winbond(华邦)",pkg:"WSON-8(6x8)"};
   const actual=()=>row({partNumber:live.partNumber,brand:live.brand,package:live.pkg,name:"W25N04KVZEIR",description:"Original verified description",specs:{...source.preservedSpecs}});
-  it("retains all 13 keys/values and every original metadata field; ONLY adds official PDF",()=>{
+  const completedSpecs = { ...source.preservedSpecs, ...source.preservedSourceAdditions };
+  it("retains all 13 keys/values and metadata; appends only eight absent official concepts and missing PDF",()=>{
     const original=actual(); const read=readOfficialTechnicalDictionaryRows([live],[original])[0];
     if(read.state!=="matched")throw Error("matched expected");
-    expect(read.dictionary.specs).toEqual(source.preservedSpecs); expect(Object.keys(read.dictionary.specs)).toHaveLength(13);
+    expect(read.dictionary.specs).toEqual(completedSpecs); expect(Object.keys(read.dictionary.specs)).toHaveLength(21);
+    for(const [name,value] of Object.entries(source.preservedSpecs))expect(read.dictionary.specs[name]).toBe(value);
+    expect(Object.keys(read.dictionary.specs).slice(0,13)).toEqual(Object.keys(source.preservedSpecs));
     expect(read.dictionary.name).toBe(original.name); expect(read.dictionary.description).toBe(original.description);
     expect(read.dictionary.brand).toBe(original.brand); expect(read.dictionary.package).toBe(original.package);
     const value=projectPreparedOfficialTechnical(live,read); expect(value.state).toBe("ready");
-    expect(value.resource?.parameters).toHaveLength(13); expect(value.resource?.datasheetUrl).toBe(source.datasheetUrl);
-    expect(Object.fromEntries(value.resource!.parameters.map(p=>[p.name,p.value]))).toEqual(source.preservedSpecs);
+    expect(value.resource?.parameters).toHaveLength(21); expect(value.resource?.datasheetUrl).toBe(source.datasheetUrl);
+    expect(Object.fromEntries(value.resource!.parameters.map(p=>[p.name,p.value]))).toEqual(completedSpecs);
+    for(const name of ["接口","最大时钟频率","编程/擦除循环","数据保持"])expect(read.dictionary.specs).not.toHaveProperty(name);
+    expect(source.version).toBe("winbond-w25n04kvzeir-revc-20220207-v4");
+    expect(read.sourceVersion).toBe(officialTechnicalDigest({originalSourceVersion:officialTechnicalDigest([original]),reviewedSupplement:source}));
+  });
+  it("authenticates only original13 or exact merged21, rejects missing/extra/tampered fields before alias projection",()=>{
+    const toDictionary=(specs:Record<string,string>)=>({partNumber:live.partNumber,brand:live.brand,package:live.pkg,name:"W25N04KVZEIR",category:"Flash",description:"Original verified description",specs,datasheetUrl:source.datasheetUrl});
+    for(const specs of [source.preservedSpecs,completedSpecs,Object.fromEntries(Object.entries(completedSpecs).reverse())])expect(isReviewedW25N04KVZEIRExistingSource(live,toDictionary(specs))).toBe(true);
+    const missing={...completedSpecs};delete (missing as Record<string,string>).BUF;
+    for(const specs of [missing,{...completedSpecs,BUF:"0"},{...completedSpecs,"工作电压":"999 V"},{...completedSpecs,MOQ:"100"},{...completedSpecs,unknown:"invented"},{Voltage:"3.3 V"}]){
+      const dictionary=toDictionary(specs);
+      expect(isReviewedW25N04KVZEIRExistingSource(live,dictionary)).toBe(false);
+      expect(projectPreparedOfficialTechnical(live,{state:"matched",sourceVersion:officialTechnicalDigest(specs),dictionary}).state).toBe("unavailable");
+      const read=readOfficialTechnicalDictionaryRows([live],[{...actual(),specs}])[0];
+      expect(projectPreparedOfficialTechnical(live,read).state).toBe("unavailable");
+    }
+  });
+  it("keeps an existing safe PDF unchanged while completing original13 and exact merged21 without duplicate rows",()=>{
+    const datasheetUrl="https://www.winbond.com/resource-files/existing-reviewed.pdf";
+    for(const specs of [source.preservedSpecs,completedSpecs]){
+      const original={...actual(),specs,datasheetUrl};
+      const read=readOfficialTechnicalDictionaryRows([live],[original])[0];
+      if(read.state!=="matched")throw Error("matched expected");
+      expect(read.dictionary).toMatchObject({name:original.name,description:original.description,datasheetUrl,specs:completedSpecs});
+      expect(Object.keys(read.dictionary.specs)).toHaveLength(21);
+      expect(projectPreparedOfficialTechnical(live,read).resource?.datasheetUrl).toBe(datasheetUrl);
+      expect(original.specs).toBe(specs);
+    }
+  });
+  it.each(["W25N04KV","W25N04KVxxIRU","W25N04KVZEIT","W25N04KVZEIR-TR","W25N04KVZEIRU","W25N02KVZEIR"])("never applies the reviewed13 append branch to other ordering code %s",partNumber=>{
+    const item={...live,partNumber};
+    const dictionary={partNumber,brand:item.brand,package:item.pkg,name:partNumber,category:"Flash",description:"",specs:source.preservedSpecs};
+    expect(isReviewedW25N04KVZEIRExistingSource(item,dictionary)).toBe(false);
+    const original={state:"matched" as const,sourceVersion:officialTechnicalDigest(dictionary),dictionary};
+    expect(supplementOfficialTechnicalRead(item,original)).toBe(original);
+  });
+  it("keeps v4 source digest equal for rejected same-model siblings and changes it with fresh original source",()=>{
+    const wrong={...live,publicId:"OM_00000000-0000-4000-8000-000000000002",brand:"TI",pkg:"SOIC-8"};
+    const reads=readOfficialTechnicalDictionaryRows([live,wrong],[actual()]);
+    expect(reads[0].sourceVersion).toBe(reads[1].sourceVersion);
+    expect(reads[0].sourceVersion).not.toBe(readOfficialTechnicalDictionaryRows([live],[{...actual(),updatedAt:"2026-11-20"}])[0].sourceVersion);
   });
   it("keeps mismatched source suffix, brand, package, corrupt specs, unsafe URL and duplicate rows fail closed",()=>{
-    expect(project(live,[{...actual(),partNumber:"W25N04KVZEIT"}]).resource?.parameters).not.toHaveLength(13);
-    expect(project(live,[{...actual(),brand:"TI"}]).resource?.parameters).not.toHaveLength(13);
-    expect(project(live,[{...actual(),package:"SOIC-8"}]).resource?.parameters).not.toHaveLength(13);
+    expect(project(live,[{...actual(),partNumber:"W25N04KVZEIT"}]).resource?.parameters).not.toHaveLength(21);
+    expect(project(live,[{...actual(),brand:"TI"}]).resource?.parameters).not.toHaveLength(21);
+    expect(project(live,[{...actual(),package:"SOIC-8"}]).resource?.parameters).not.toHaveLength(21);
     expect(project(live,[{...actual(),specs:"bad"}]).state).toBe("unavailable");
     expect(project(live,[{...actual(),datasheetUrl:"http://www.winbond.com/a.pdf"}]).state).toBe("unavailable");
     expect(project(live,[actual(),{...actual(),id:2}]).state).toBe("unavailable");
     expect(project(live,[{...actual(),specs:{...source.preservedSpecs,MOQ:"100"}}]).state).toBe("unavailable");
     expect(project(live,[{...actual(),specs:{...source.preservedSpecs,"工作电压":"999 V"}}]).state).toBe("unavailable");
   });
-  it("prepares and recovers the real pair as 13+12 parameters without replacing existing values",async()=>fixture(async path=>{
+  it("prepares and recovers the real pair as 21+12 parameters without replacing existing values",async()=>fixture(async path=>{
     const items=[live,stIdentity], reader=async(items:readonly OfficialTechnicalIdentity[])=>readOfficialTechnicalDictionaryRows(items,[actual(),stRow()]);
     const store=createOfficialTechnicalPreparedStore(path); const values=await store.prepare(items,reader);
-    expect(values.map(value=>value.resource?.parameters.length)).toEqual([13,12]);
+    expect(values.map(value=>value.resource?.parameters.length)).toEqual([21,12]);
     expect(await createOfficialTechnicalPreparedStore(path).lookup(items)).toEqual(values);
   }));
 });
@@ -236,5 +279,5 @@ it("pair preparation preserves all other 20,000 prepared entries and unrelated s
   expect(after.entries).toHaveLength(20002);
   expect(officialTechnicalDigest(after.entries.filter((entry:any)=>entry.identity.partNumber==="PRESERVED-OTHER"))).toBe(officialTechnicalDigest(before.entries));
   for(const key of Object.keys(before.sources))expect(after.sources[key]).toEqual(before.sources[key]);
-  expect((await createOfficialTechnicalPreparedStore(path).lookup([wb,stIdentity])).map(value=>value.resource?.parameters.length)).toEqual([13,12]);
+  expect((await createOfficialTechnicalPreparedStore(path).lookup([wb,stIdentity])).map(value=>value.resource?.parameters.length)).toEqual([21,12]);
 }),60000);

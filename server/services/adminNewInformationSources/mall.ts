@@ -5,7 +5,7 @@ import {
   newInformationFactsInputSchema,
   newInformationFactsResultSchema,
   type NewInformationFactsResult,
-} from "../../../../51dianzi-platform/shared/adminNewInformationFacts";
+} from "../../../shared/adminNewInformationFacts";
 import {
   createOfficialMallService,
   type OfficialMallDependencies,
