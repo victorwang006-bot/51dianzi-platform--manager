@@ -1,0 +1,279 @@
+{
+  "assetSHAs": [
+    "9ff4e9a04ba5a35dccd0d8503f2016242f04ed52260d8248311121b9af111998",
+    "1ed245a23ef0bf14e3730d44125819a05777f895a0e5890d0e72b3a60fc5304c",
+    "298ce2a2ddcfb6807aff373c148d644357222f7c22d1cb14fc44de6f2191bdf5",
+    "e60f515b803a94f10c7f7315950587f43df8333c764f107e1507ce4959e15212",
+    "dac23a53c00c75e4b36d1ade7fb3c3fe1a2797d619dbb154c13b10eb3dc61a5c"
+  ],
+  "captureMetadataSHA": "4a83a02538554a744910c1caf06c791df60e658642ce819a559faa81e8e7c9fa",
+  "captureSHA": "e7c6e312830b89357a0a06bdbe40c78c7bea410a4ec212f25213d62b790b343c",
+  "closedCoordRecord": {
+    "atimeNs": 1795135507396905519,
+    "ctimeNs": 1795165534988967651,
+    "dev": 66309,
+    "gid": 0,
+    "ino": 3270734,
+    "kind": "file",
+    "mtimeNs": 1795135507392905500,
+    "nlink": 1,
+    "sha256": "5f0faee56453b0901c0f01519da3913a3deb9881c107e6336a416c8e6c300e1d",
+    "size": 141021,
+    "statmode": 33152,
+    "uid": 0
+  },
+  "currentFullMachineOrDynamicProcessGraphCertified": false,
+  "htmlSHA": "349cbe260fe908ceb17fe4d04517f6c3ad043ec69d1cf8fe8324935c44a5c19f",
+  "legacyRuntimePolicyStatus": "PENDING_INDEPENDENT_REVIEW",
+  "legacySemanticsClosed": false,
+  "manualReceipt": {
+    "HTMLAssetsRewritten": false,
+    "actualTwoPageConfirmationSHA": "1a402823d82f1e484e1b2ad88352080e1af893f542b6e4cb4de82a86d3b6feb8",
+    "authorization": {
+      "atime": "retain-real-observed-value-other-fields-exact",
+      "choice": "允许按此范围立即恢复并完成上线（推荐）",
+      "decidedAtLocal": "2026-11-20T16:58:53+08:00",
+      "decisionTask": "vqTvVQQw4XVgFkFUshUNCe",
+      "fixedDeadlineUtc": "2026-11-20T09:10:27.488818+00:00",
+      "noBusinessProcessChange": true,
+      "noHTMLOrAssetRewrite": true,
+      "noSecondApply": true,
+      "onlyCurrentOwnedAttempt": true,
+      "releaseOriginalHolderOnlyAfterVerifiedClose": true,
+      "targets": "current-html-and-exact-five-manifest-assets"
+    },
+    "beforeEvidenceSHA": "ac6c8ead2bd82d273fa5c3153fb9ea16a8e0a75b3adf061275c5410b426f94c2",
+    "captureSHA": "e7c6e312830b89357a0a06bdbe40c78c7bea410a4ec212f25213d62b790b343c",
+    "controllerAggregateSHA": "40d2756a31273f03d2c013a50ff12103d41321ace6c1c3e3280b40b7a1254434",
+    "htmlInstalledRecord": {
+      "atimeNs": 1795164126717475017,
+      "ctimeNs": 1795164126487473953,
+      "dev": 66309,
+      "gid": 0,
+      "ino": 3270731,
+      "kind": "file",
+      "mtimeNs": 1795135466499712754,
+      "nlink": 1,
+      "sha256": "349cbe260fe908ceb17fe4d04517f6c3ad043ec69d1cf8fe8324935c44a5c19f",
+      "size": 79142,
+      "statmode": 33188,
+      "uid": 0
+    },
+    "manifestSHA": "93910d8185a1e2e3d6c32eeae2a595a6c4cb423db876fe9771e896aa4df81ca3",
+    "manualConfirmedAtUtc": "2026-11-20T09:05:33.272218+00:00",
+    "noSecondApply": true,
+    "originalApplyStatus": "FAILUREHOLD_NOT_CONFIRMED",
+    "originalFailureEvidenceSHA": "57e2fa7974066883c8b6d55362039b84828f5a3af95add6113197f62bf6134df",
+    "ownerTask": "qp4e5jVmsAp0UHKwymyD5X",
+    "pageConfirmation": [
+      {
+        "actualDOMText": "包装示意 · 非商品实拍\nSTM8S003F3P6TR\n品牌 ST(意法半导体)\n封装 TSSOP-20\n收藏\nPDF规格书\nCPU内核\nSTM8\nCPU最大主频\n16MHz\n程序存储容量\n8KB\n程序存储器类型\nFLASH\nRAM容量\n1KB\n更多参数 ∨\n单价\n库存\n200\n1起\n3.04\n10起\n2.31\n30起\n1.98\n6档 ▾\n数量\n−\n+\n单价\n¥3.04\n小计\n¥3.04\n加入购物车\n聊一聊",
+        "cardCount": 1,
+        "htmlSHA256": "727832592562d941aa4245dc56808baea76d650dcb0e181e2e10b77196ba707f",
+        "name": "self-search-list",
+        "url": "https://51dianzi.com/search?q=STM8S003F3P6TR"
+      },
+      {
+        "actualDOMText": "自营\n自营包装示意，非商品实拍\nSTM8S003F3P6TR\n自营\nST(意法半导体) · TSSOP-20\n品牌/厂牌\nST(意法半导体)\n封装\nTSSOP-20\n起订量 MOQ\n1\n库存\n200\n销售方\n51电子网自营\n联系平台客服\n单价（含税）\n1起\n3.04\n10起\n2.31\n30起\n1.98\n6档 ▾\n数量\n−\n+\n单价\n¥3.04\n小计\n¥3.04\n加入购物车\n聊一聊\n\n当前公开报价：含税。运费及交货方式请联系平台客服确认。\n\n规格参数\n型号\nSTM8S003F3P6TR\n品牌/厂牌\nST(意法半导体)\n封装\nTSSOP-20\n起订量 MOQ\n1\n库存\n200\n可售数量\n200\n技术参数\nCPU位数\n8 Bit\nCPU内核\nSTM8\nI/O数量\n16\nRAM容量\n1KB\nADC(位数)\n10bit\nEEPROM容量\n128Byte\n工作温度\n-40℃~+85℃\n工作电压\n2.95V~5.5V\nCPU最大主频\n16MHz\n振荡器类型\n内置\n程序存储容量\n8KB\n程序存储器类型\nFLASH\n收藏\nPDF规格书",
+        "cardCount": 1,
+        "htmlSHA256": "5e4c1c844e307b5f529593d8999d54f418e265c049525e552c5ac1f36fbb627c",
+        "name": "self-demo-detail",
+        "url": "https://51dianzi.com/product/OM_bba7cf49-fd93-401e-bf11-8ac2ab33eb14"
+      }
+    ],
+    "realObservedAtime": [
+      {
+        "allOtherFieldsExact": true,
+        "installedAtimeNs": 1795164117955434497,
+        "observedAtimeNs": 1795164127517478717,
+        "path": "/opt/releases/20261031-homepage-banner-v39/front/dist/public/assets/official-material-ui-detail-9ff4e9a04ba5a35dccd0d8503f2016242f04ed52260d8248311121b9af111998.js"
+      },
+      {
+        "allOtherFieldsExact": true,
+        "installedAtimeNs": 1795164119443441379,
+        "observedAtimeNs": 1795164129088485982,
+        "path": "/opt/releases/20261031-homepage-banner-v39/front/dist/public/assets/official-cart-material-detail-1ed245a23ef0bf14e3730d44125819a05777f895a0e5890d0e72b3a60fc5304c.js"
+      },
+      {
+        "allOtherFieldsExact": true,
+        "installedAtimeNs": 1795164120959448389,
+        "observedAtimeNs": 1795164129184486426,
+        "path": "/opt/releases/20261031-homepage-banner-v39/front/dist/public/assets/search-official-material-detail-298ce2a2ddcfb6807aff373c148d644357222f7c22d1cb14fc44de6f2191bdf5.js"
+      },
+      {
+        "allOtherFieldsExact": true,
+        "installedAtimeNs": 1795164122472455386,
+        "observedAtimeNs": 1795164128935485274,
+        "path": "/opt/releases/20261031-homepage-banner-v39/front/dist/public/assets/ProductDetail-official-e60f515b803a94f10c7f7315950587f43df8333c764f107e1507ce4959e15212.js"
+      },
+      {
+        "allOtherFieldsExact": true,
+        "installedAtimeNs": 1795164123939462170,
+        "observedAtimeNs": 1795164133537506557,
+        "path": "/opt/releases/20261031-homepage-banner-v39/front/dist/public/assets/official-detail-mark-dac23a53c00c75e4b36d1ade7fb3c3fe1a2797d619dbb154c13b10eb3dc61a5c.webp"
+      },
+      {
+        "allOtherFieldsExact": true,
+        "installedAtimeNs": 1795135467310716540,
+        "observedAtimeNs": 1795164126717475017,
+        "path": "/opt/releases/20261031-homepage-banner-v39/front/dist/public/index.html"
+      }
+    ],
+    "retainedImmutableRecords": {
+      "/opt/releases/20261031-homepage-banner-v39/front/dist/public/assets/ProductDetail-official-e60f515b803a94f10c7f7315950587f43df8333c764f107e1507ce4959e15212.js": {
+        "atimeNs": 1795164128935485274,
+        "ctimeNs": 1795164123097458277,
+        "dev": 66309,
+        "gid": 0,
+        "ino": 3270727,
+        "kind": "file",
+        "mtimeNs": 1795164122472455386,
+        "nlink": 1,
+        "sha256": "e60f515b803a94f10c7f7315950587f43df8333c764f107e1507ce4959e15212",
+        "size": 33582,
+        "statmode": 33188,
+        "uid": 0
+      },
+      "/opt/releases/20261031-homepage-banner-v39/front/dist/public/assets/official-cart-material-detail-1ed245a23ef0bf14e3730d44125819a05777f895a0e5890d0e72b3a60fc5304c.js": {
+        "atimeNs": 1795164129088485982,
+        "ctimeNs": 1795164120089444366,
+        "dev": 66309,
+        "gid": 0,
+        "ino": 3270723,
+        "kind": "file",
+        "mtimeNs": 1795164119443441379,
+        "nlink": 1,
+        "sha256": "1ed245a23ef0bf14e3730d44125819a05777f895a0e5890d0e72b3a60fc5304c",
+        "size": 127811,
+        "statmode": 33188,
+        "uid": 0
+      },
+      "/opt/releases/20261031-homepage-banner-v39/front/dist/public/assets/official-detail-mark-dac23a53c00c75e4b36d1ade7fb3c3fe1a2797d619dbb154c13b10eb3dc61a5c.webp": {
+        "atimeNs": 1795164133537506557,
+        "ctimeNs": 1795164124557465028,
+        "dev": 66309,
+        "gid": 0,
+        "ino": 3270729,
+        "kind": "file",
+        "mtimeNs": 1795164123939462170,
+        "nlink": 1,
+        "sha256": "dac23a53c00c75e4b36d1ade7fb3c3fe1a2797d619dbb154c13b10eb3dc61a5c",
+        "size": 42606,
+        "statmode": 33188,
+        "uid": 0
+      },
+      "/opt/releases/20261031-homepage-banner-v39/front/dist/public/assets/official-material-ui-detail-9ff4e9a04ba5a35dccd0d8503f2016242f04ed52260d8248311121b9af111998.js": {
+        "atimeNs": 1795164127517478717,
+        "ctimeNs": 1795164118605437504,
+        "dev": 66309,
+        "gid": 0,
+        "ino": 3270721,
+        "kind": "file",
+        "mtimeNs": 1795164117955434497,
+        "nlink": 1,
+        "sha256": "9ff4e9a04ba5a35dccd0d8503f2016242f04ed52260d8248311121b9af111998",
+        "size": 591682,
+        "statmode": 33188,
+        "uid": 0
+      },
+      "/opt/releases/20261031-homepage-banner-v39/front/dist/public/assets/search-official-material-detail-298ce2a2ddcfb6807aff373c148d644357222f7c22d1cb14fc44de6f2191bdf5.js": {
+        "atimeNs": 1795164129184486426,
+        "ctimeNs": 1795164121637451525,
+        "dev": 66309,
+        "gid": 0,
+        "ino": 3270725,
+        "kind": "file",
+        "mtimeNs": 1795164120960448394,
+        "nlink": 1,
+        "sha256": "298ce2a2ddcfb6807aff373c148d644357222f7c22d1cb14fc44de6f2191bdf5",
+        "size": 252425,
+        "statmode": 33188,
+        "uid": 0
+      }
+    },
+    "reviewSHA": "b6dd02af18b880b08e80b4a33576736a1965fbb58856f216daaceb75a6931ca0",
+    "schema": "static-production-manual-recovery-receipt-v1",
+    "scope": "self-search-demo-b-20261120-qp4e5jVm-minimal-static-r2",
+    "status": "confirmed-manual-recovery"
+  },
+  "manualVerified": {
+    "actualTwoPageConfirmationSHA": "1a402823d82f1e484e1b2ad88352080e1af893f542b6e4cb4de82a86d3b6feb8",
+    "closedCoordRecord": {
+      "atimeNs": 1795135507396905519,
+      "ctimeNs": 1795165534988967651,
+      "dev": 66309,
+      "gid": 0,
+      "ino": 3270734,
+      "kind": "file",
+      "mtimeNs": 1795135507392905500,
+      "nlink": 1,
+      "sha256": "5f0faee56453b0901c0f01519da3913a3deb9881c107e6336a416c8e6c300e1d",
+      "size": 141021,
+      "statmode": 33152,
+      "uid": 0
+    },
+    "originalApplyNotRelabeledPassed": true,
+    "originalFailurePreserved": true,
+    "ownerTask": "qp4e5jVmsAp0UHKwymyD5X",
+    "receiptSHA": "9ca64d8a57c6698cc5ccccfc1185d1d73603161f86f8b9fd34796d9e58a83c18",
+    "schema": "static-production-manual-recovery-verified-v1",
+    "scope": "self-search-demo-b-20261120-qp4e5jVm-minimal-static-r2",
+    "sourceAggregateSHA": "40d2756a31273f03d2c013a50ff12103d41321ace6c1c3e3280b40b7a1254434",
+    "status": "verified-manual-recovery-closed",
+    "verifiedAtUtc": "2026-11-20T09:05:35.402161+00:00"
+  },
+  "originalApplyStatus": "FAILUREHOLD_NOT_CONFIRMED",
+  "originalHolderExited": true,
+  "originalHolderPid": 2076971,
+  "ownerTask": "qp4e5jVmsAp0UHKwymyD5X",
+  "pageConfirmation": {
+    "candidateInjection": false,
+    "currentGETHashBoundUnchangedStaticCache": 80,
+    "nativePageErrors": [],
+    "nonGETTransport": 0,
+    "status": "ACTUAL_LIST_AND_DETAIL_RENDERED",
+    "views": [
+      {
+        "actualDOMText": "包装示意 · 非商品实拍\nSTM8S003F3P6TR\n品牌 ST(意法半导体)\n封装 TSSOP-20\n收藏\nPDF规格书\nCPU内核\nSTM8\nCPU最大主频\n16MHz\n程序存储容量\n8KB\n程序存储器类型\nFLASH\nRAM容量\n1KB\n更多参数 ∨\n单价\n库存\n200\n1起\n3.04\n10起\n2.31\n30起\n1.98\n6档 ▾\n数量\n−\n+\n单价\n¥3.04\n小计\n¥3.04\n加入购物车\n聊一聊",
+        "cardCount": 1,
+        "htmlSHA256": "727832592562d941aa4245dc56808baea76d650dcb0e181e2e10b77196ba707f",
+        "name": "self-search-list",
+        "url": "https://51dianzi.com/search?q=STM8S003F3P6TR"
+      },
+      {
+        "actualDOMText": "自营\n自营包装示意，非商品实拍\nSTM8S003F3P6TR\n自营\nST(意法半导体) · TSSOP-20\n品牌/厂牌\nST(意法半导体)\n封装\nTSSOP-20\n起订量 MOQ\n1\n库存\n200\n销售方\n51电子网自营\n联系平台客服\n单价（含税）\n1起\n3.04\n10起\n2.31\n30起\n1.98\n6档 ▾\n数量\n−\n+\n单价\n¥3.04\n小计\n¥3.04\n加入购物车\n聊一聊\n\n当前公开报价：含税。运费及交货方式请联系平台客服确认。\n\n规格参数\n型号\nSTM8S003F3P6TR\n品牌/厂牌\nST(意法半导体)\n封装\nTSSOP-20\n起订量 MOQ\n1\n库存\n200\n可售数量\n200\n技术参数\nCPU位数\n8 Bit\nCPU内核\nSTM8\nI/O数量\n16\nRAM容量\n1KB\nADC(位数)\n10bit\nEEPROM容量\n128Byte\n工作温度\n-40℃~+85℃\n工作电压\n2.95V~5.5V\nCPU最大主频\n16MHz\n振荡器类型\n内置\n程序存储容量\n8KB\n程序存储器类型\nFLASH\n收藏\nPDF规格书",
+        "cardCount": 1,
+        "htmlSHA256": "5e4c1c844e307b5f529593d8999d54f418e265c049525e552c5ac1f36fbb627c",
+        "name": "self-demo-detail",
+        "url": "https://51dianzi.com/product/OM_bba7cf49-fd93-401e-bf11-8ac2ab33eb14"
+      }
+    ]
+  },
+  "postcloseStateSHA": "664465cb82610322e3a836f4cabde7a5842a31859484512722012d6a8e5668e7",
+  "receiptSHA": "9ca64d8a57c6698cc5ccccfc1185d1d73603161f86f8b9fd34796d9e58a83c18",
+  "schema": "self-search-demo-b-actual-release-summary-v1",
+  "scope": "self-search-demo-b-20261120-qp4e5jVm-minimal-static-r2",
+  "sharedLocksHeldContinuouslyByInheritedFDs": true,
+  "sharedLocksReleasedAfterVerifiedClose": true,
+  "sourceAggregateSHA": "40d2756a31273f03d2c013a50ff12103d41321ace6c1c3e3280b40b7a1254434",
+  "sourceFiles": {
+    "adapters.py": "3a497db7c90590a821306345766268d352e7cced1109e1c3d82cf9d274de7e6e",
+    "backend_readonly.py": "ebb3751c51a55768999a084dfaa97009efbaa9f8091a1778f9e6aae49479a522",
+    "backend_release_original.py": "2c7047701591af1ee2c21f93fe84593184ff0e6e3ed3d40ad2ee1d0f87dea0f8",
+    "controller.py": "11a54832ac18af1b2b84eccf7df0201b0e779cf9fa7547efce856b5c54207f25",
+    "deploymentpackager.py": "8e38b237e2bfcbe6836834d3eb2a09ab872533f860c730f7ee582fc102e22d4c",
+    "generate_readonly_copy.py": "f03ae291cbd98625e23e027142ab556de8191198c1d84fe97ed7fcd4a80cac4a",
+    "materials/minimal-once-full-baseline.private.json": "4ffbcfbce7c179f08b2a4ab98d06828c383367f5a9ca149a74cf16ef0e64e7ff",
+    "minimal-static-policy.json": "5eb5ce42b82292b3345e685c64940770d7f2ca2eee8c4bf50e4379614b417dd9",
+    "minimal_static.py": "d83be1c48c5a3680b17c85cb756314fca61fd4ecf45ead7a4fb7300402a5b230",
+    "pm2-source-evidence.json": "9ad9a7ffbeb3439797292ae8aa84aac812264039b8e7304a446de90d26e6f2d6",
+    "prepare-policy-template.py": "5c189cff3a1a1c939cb6829fa0f5398357703d0c60bd2b768d72f5d9ac546625",
+    "runtime-policy.json": "cfbf53dbe617ab5f04f324804872e2f5edcfd9576f3b4d52fb00aaa027ddf857",
+    "runtime-readonly-evidence.json": "12e1ffa0b9d6eec42e3c37ff58956e244af876d2b657dcf0bc0eee1858f1a260",
+    "runtime_policy.py": "1470a85b94a8124c678a7f32347480be27e742358b0d55644a855bb5e1f33c53",
+    "safety_core.py": "463d5822c057df2fc0e6f2277c6eb14dd630e5fa71eb2b714b3bdebd38eee01e",
+    "static_scope.py": "05be8cc3825dd366f566271a5d42dee6df259fb9265ab9c02cae932af8d02d70"
+  },
+  "status": "verified-manual-recovery-closed",
+  "verifiedReceiptSHA": "4c9757cf7d08d7693a2566d8c972667c191ff19881cf927b4b3498c8dc19e23f"
+}
