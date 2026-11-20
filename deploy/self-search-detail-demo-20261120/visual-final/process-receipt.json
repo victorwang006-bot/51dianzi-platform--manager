@@ -1,0 +1,370 @@
+{
+  "startedAt": "2026-11-20T03:19:58.202Z",
+  "chromiumPid": 20461,
+  "remoteDebugging": "stdio pipe; no listening port",
+  "httpServiceStarted": false,
+  "externalNetworkPolicy": "All renderer requests intercepted before transport; only exact synthetic harness document and copied assets fulfilled in memory. All other requests failed. DNS mapped NOTFOUND and all transport proxied to a refused loopback port as defense in depth.",
+  "args": [
+    "--headless=new",
+    "--no-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--remote-debugging-pipe",
+    "--no-first-run",
+    "--no-default-browser-check",
+    "--disable-background-networking",
+    "--disable-component-update",
+    "--disable-default-apps",
+    "--disable-sync",
+    "--disable-extensions",
+    "--disable-breakpad",
+    "--disable-client-side-phishing-detection",
+    "--metrics-recording-only",
+    "--safebrowsing-disable-auto-update",
+    "--password-store=basic",
+    "--use-mock-keychain",
+    "--disable-features=MediaRouter,OptimizationHints,AutofillServerCommunication,CertificateTransparencyComponentUpdater",
+    "--host-resolver-rules=MAP * ~NOTFOUND",
+    "--proxy-server=http://127.0.0.1:9",
+    "--proxy-bypass-list=<-loopback>",
+    "--user-data-dir=/home/ubuntu/work/self-row-redesign/visual-final/chromium-profile",
+    "about:blank"
+  ],
+  "browserContextId": "FF2C46513102E7A8B89FF2EE86054805",
+  "isolatedContextCreated": true,
+  "keyboardDisclosure": [
+    {
+      "mode": "list",
+      "width": 1280,
+      "key": "Enter",
+      "opened": true
+    },
+    {
+      "mode": "list",
+      "width": 960,
+      "key": "Enter",
+      "opened": true
+    },
+    {
+      "mode": "list",
+      "width": 768,
+      "key": "Enter",
+      "opened": true
+    },
+    {
+      "mode": "list",
+      "width": 375,
+      "key": "Enter",
+      "opened": true
+    },
+    {
+      "mode": "list",
+      "width": 320,
+      "key": "Enter",
+      "opened": true
+    }
+  ],
+  "originNoAccountState": {
+    "cookie": "",
+    "localStorageLength": 0,
+    "sessionStorageLength": 0,
+    "forbiddenMutations": []
+  },
+  "exitCode": 0,
+  "exitSignal": null,
+  "endedAt": "2026-11-20T03:20:10.419Z",
+  "chromiumExited": true,
+  "contextDisposed": true,
+  "httpServiceEnded": "Not applicable: no HTTP service was started",
+  "sourceChecks": [
+    {
+      "file": "/home/ubuntu/work/resume-frontend/platform/client/src/lib/utils.ts",
+      "before": "d1f1e0d62cb8d8d1e04c26e14de842d8a151f75812d81b046c65b5d1fe8e4b27",
+      "after": "d1f1e0d62cb8d8d1e04c26e14de842d8a151f75812d81b046c65b5d1fe8e4b27",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/resume-frontend/platform/client/src/components/ui/dialog.tsx",
+      "before": "3ffd83bd2940c1191fde091bc47311aebc2b79d78824965a5c446115e58190aa",
+      "after": "3ffd83bd2940c1191fde091bc47311aebc2b79d78824965a5c446115e58190aa",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/resume-frontend/platform/client/src/components/ImageLightbox.tsx",
+      "before": "ab4f11e5c5fc5e48ff4550cb71f89680e57e7662ee2f7ca0e3fd4bd3cdfc6293",
+      "after": "ab4f11e5c5fc5e48ff4550cb71f89680e57e7662ee2f7ca0e3fd4bd3cdfc6293",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/resume-frontend/platform/client/src/components/OfficialSearchImage.tsx",
+      "before": "181e7bcbee0880e29c2586b247a0cdcf6b3229dbccfe76a69d0c214b0279d6b4",
+      "after": "181e7bcbee0880e29c2586b247a0cdcf6b3229dbccfe76a69d0c214b0279d6b4",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/resume-frontend/platform/client/src/lib/officialMaterialClient.ts",
+      "before": "5477ac5fb98f49c80b0a5979e9b6c8f06945f8e71c9d909364a22d51906c2513",
+      "after": "5477ac5fb98f49c80b0a5979e9b6c8f06945f8e71c9d909364a22d51906c2513",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/resume-frontend/platform/client/src/components/OfficialMaterialResources.tsx",
+      "before": "0f4911e8b95ee3a643a3ee9ec7d17a1619a14f93677292467310590496785d57",
+      "after": "0f4911e8b95ee3a643a3ee9ec7d17a1619a14f93677292467310590496785d57",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/resume-frontend/platform/client/src/assets/brand/logo-header-mark.webp",
+      "before": "dac23a53c00c75e4b36d1ade7fb3c3fe1a2797d619dbb154c13b10eb3dc61a5c",
+      "after": "dac23a53c00c75e4b36d1ade7fb3c3fe1a2797d619dbb154c13b10eb3dc61a5c",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/resume-frontend/platform/client/src/assets/brand/logo-home-wordmark.webp",
+      "before": "5e8c12caaa7c388f9bb2d371fe2e13ed550dbd23553e6959c92e5b8faf3cd3b1",
+      "after": "5e8c12caaa7c388f9bb2d371fe2e13ed550dbd23553e6959c92e5b8faf3cd3b1",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/resume-frontend/platform/client/src/assets/homeLogo.ts",
+      "before": "065f08d79b0db77cd954c917a92d051c96673135b39fa7081f4918f27fa6bd77",
+      "after": "065f08d79b0db77cd954c917a92d051c96673135b39fa7081f4918f27fa6bd77",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/resume-frontend/platform/client/src/lib/searchResultCommit.ts",
+      "before": "97c4b2d43d5c3e9703c817b8db49d97462c34bded1014ed6afc9d3f3c916c8a3",
+      "after": "97c4b2d43d5c3e9703c817b8db49d97462c34bded1014ed6afc9d3f3c916c8a3",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/resume-frontend/platform/client/lib/officialCardPresentation.ts",
+      "before": "a3191134b70ef758c0a33b1f5bc9f06021a330edc81314bc44ec43167c0d07a1",
+      "after": "a3191134b70ef758c0a33b1f5bc9f06021a330edc81314bc44ec43167c0d07a1",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/resume-frontend/platform/client/src/components/OfficialMallSearchResults.tsx",
+      "before": "b2129e9517bee32b3edd96f0d41b06ee24297f8054708bb37497ef837f851e3e",
+      "after": "b2129e9517bee32b3edd96f0d41b06ee24297f8054708bb37497ef837f851e3e",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/resume-frontend/platform/client/src/pages/OfficialProductDetail.tsx",
+      "before": "26af704d416bc8442038f6caaa30b6a8b82dc1e4cbd7ea537daf1e3520af76cc",
+      "after": "26af704d416bc8442038f6caaa30b6a8b82dc1e4cbd7ea537daf1e3520af76cc",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/resume-frontend/platform/client/src/index.css",
+      "before": "4235cc782144393738c8c40bf90f7a15b7dcc2b2bf66b6d4b486fe0b846a5973",
+      "after": "4235cc782144393738c8c40bf90f7a15b7dcc2b2bf66b6d4b486fe0b846a5973",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/resume-frontend/platform/client/src/pages/ProductDetail.tsx",
+      "before": "f0c2a4f6930f62f7bfa63f8a45585f1b05107cac7ccc30c774c2fa98868235d2",
+      "after": "f0c2a4f6930f62f7bfa63f8a45585f1b05107cac7ccc30c774c2fa98868235d2",
+      "unchanged": true
+    }
+  ],
+  "allSourcesUnchanged": true,
+  "sourcePinMatched": true,
+  "oldEvidenceChecks": [
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/entry.tsx",
+      "before": "4a684ddb54635831e5cd8b77c626a1ac75c459ee0aad490b29c595521765a34f",
+      "after": "4a684ddb54635831e5cd8b77c626a1ac75c459ee0aad490b29c595521765a34f",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/build.cjs",
+      "before": "9f625d0857908f52ac99e4ddacfabbb6f31f110bc69c8a2a4475483268332de6",
+      "after": "9f625d0857908f52ac99e4ddacfabbb6f31f110bc69c8a2a4475483268332de6",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/build.log",
+      "before": "2b4cc2fe9bd01cd12397630bd56d5a094aa9985c2bb43aec303523b0c5bc1d5b",
+      "after": "2b4cc2fe9bd01cd12397630bd56d5a094aa9985c2bb43aec303523b0c5bc1d5b",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/measure.js",
+      "before": "2f651449de6ae880e3c941adcebf0d25e63c64b8144bffd80ac48d7d9095af2c",
+      "after": "2f651449de6ae880e3c941adcebf0d25e63c64b8144bffd80ac48d7d9095af2c",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/source-bundle.js",
+      "before": "059f8b530b0730d20e5ab04ccb8ba8c0e1e913ad9f28f8f896d82ff0a663eed6",
+      "after": "059f8b530b0730d20e5ab04ccb8ba8c0e1e913ad9f28f8f896d82ff0a663eed6",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/bundle-metafile.json",
+      "before": "205e66e1fcd94598a78cc78836c23f6327184dca5d0500b2345b855dd46fe19b",
+      "after": "205e66e1fcd94598a78cc78836c23f6327184dca5d0500b2345b855dd46fe19b",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/host.css",
+      "before": "64fa70b2fc522452b65f6544f61a0f0ef4b78c6fac58752f2df62efb7f892428",
+      "after": "64fa70b2fc522452b65f6544f61a0f0ef4b78c6fac58752f2df62efb7f892428",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/source-sha256.json",
+      "before": "ddd70e4f994e6b54c83f7bd607b62245790f4cfb9031b66615edd944a435fc71",
+      "after": "ddd70e4f994e6b54c83f7bd607b62245790f4cfb9031b66615edd944a435fc71",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/run.cjs",
+      "before": "d026c852130f91bd4fe8e1f889315d1ea0b53c2ebe5c38a561502dfc91a0a547",
+      "after": "d026c852130f91bd4fe8e1f889315d1ea0b53c2ebe5c38a561502dfc91a0a547",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/run.log",
+      "before": "b1e61bcd61a39a43cf00cb46fc3fa77b44f85d66216fa7a66d0597a59f67aff6",
+      "after": "b1e61bcd61a39a43cf00cb46fc3fa77b44f85d66216fa7a66d0597a59f67aff6",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/chromium-stderr.log",
+      "before": "bec958efcd3a3b42141808a6f337c47c92dc51391dd5a5ce72814ecabeb519b8",
+      "after": "bec958efcd3a3b42141808a6f337c47c92dc51391dd5a5ce72814ecabeb519b8",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/finalize.cjs",
+      "before": "1c9d720c97aa962252934c35033dd349ae8d5b5e25b1ccaa8868b85aef7997b3",
+      "after": "1c9d720c97aa962252934c35033dd349ae8d5b5e25b1ccaa8868b85aef7997b3",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/harness.html",
+      "before": "10cdc6fc1f00b207014d6d1451ef69d7182269472ed849082cdb6c54f155e000",
+      "after": "10cdc6fc1f00b207014d6d1451ef69d7182269472ed849082cdb6c54f155e000",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/geometry.partial.json",
+      "before": "e57828b62686924579c846e5e873565df263d6449e5aa44dea06d05479c7aae0",
+      "after": "e57828b62686924579c846e5e873565df263d6449e5aa44dea06d05479c7aae0",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/final-source-list-desktop.png",
+      "before": "811c8dd77b5d928a9314e9bdd7783f3a2b0cc0b4a32e899e1ac5a6b250d97803",
+      "after": "811c8dd77b5d928a9314e9bdd7783f3a2b0cc0b4a32e899e1ac5a6b250d97803",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/list-desktop-expanded.png",
+      "before": "f6b4215eac5e47978ce67b9c53ae8522ea0ce9f16d303ed95a3baf2be6193076",
+      "after": "f6b4215eac5e47978ce67b9c53ae8522ea0ce9f16d303ed95a3baf2be6193076",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/list-320-expanded-long-quantity.png",
+      "before": "7da6844f05d05de15ebf77d19eddb530cbced30582784a8a3a6a7e2f3b2adf06",
+      "after": "7da6844f05d05de15ebf77d19eddb530cbced30582784a8a3a6a7e2f3b2adf06",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/details-desktop.png",
+      "before": "ec63584dcf80a9c271cdb7d228eefdb228391ab07da767fcffbc9ff33c1e0817",
+      "after": "ec63584dcf80a9c271cdb7d228eefdb228391ab07da767fcffbc9ff33c1e0817",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/details-mobile.png",
+      "before": "c1736fa7b19af060d49eaae401e1c9e3c58d6630064dfc3fb035f25068be4e9d",
+      "after": "c1736fa7b19af060d49eaae401e1c9e3c58d6630064dfc3fb035f25068be4e9d",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/detail-320-expanded-long-quantity.png",
+      "before": "a000da02887d83025262504ff1018f33f4c10eab76d78f867f6ffcd0f6c45c24",
+      "after": "a000da02887d83025262504ff1018f33f4c10eab76d78f867f6ffcd0f6c45c24",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/process-receipt.json",
+      "before": "dc837e073a2fcbc6abc245dff2d3ef0f611feda582910eba2dffaa3e8d3e87be",
+      "after": "dc837e073a2fcbc6abc245dff2d3ef0f611feda582910eba2dffaa3e8d3e87be",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/request-log.json",
+      "before": "32cf447c3f90c8a5f6f97d8b63fecb5d51aab333b4a3261a370fd0d1c2878a37",
+      "after": "32cf447c3f90c8a5f6f97d8b63fecb5d51aab333b4a3261a370fd0d1c2878a37",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/geometry.json",
+      "before": "22dd1a86d560f5fac61544652afcc90790b8ef5208e9d7c0003aca74fc74a4a1",
+      "after": "22dd1a86d560f5fac61544652afcc90790b8ef5208e9d7c0003aca74fc74a4a1",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/details-mobile-purchase-crop.png",
+      "before": "86a08659d141216afe8f411211ad6a243958fc7de38cf8b64e6d13330307b33f",
+      "after": "86a08659d141216afe8f411211ad6a243958fc7de38cf8b64e6d13330307b33f",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/detail-320-long-quantity-crop.png",
+      "before": "757d4a058c66aa96d37a39aa311c2b54fe64ff61ef512a19accece788181aa1a",
+      "after": "757d4a058c66aa96d37a39aa311c2b54fe64ff61ef512a19accece788181aa1a",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/summary.json",
+      "before": "49be1e4d3ae3fd856c812606c51d0e8fc788f66858e734179e3ae2da3b78c1f9",
+      "after": "49be1e4d3ae3fd856c812606c51d0e8fc788f66858e734179e3ae2da3b78c1f9",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/README.md",
+      "before": "9a8d433c612734cbb33e725c7b8db2553834d8d8e940455f42b428ac4f7d7c74",
+      "after": "9a8d433c612734cbb33e725c7b8db2553834d8d8e940455f42b428ac4f7d7c74",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/assets/official-box-clean-thumb-19274af91b0082dd.webp",
+      "before": "19274af91b0082ddf8b45eebd0fd45e7f7e6bc592a8640ced8e12f50f7411abf",
+      "after": "19274af91b0082ddf8b45eebd0fd45e7f7e6bc592a8640ced8e12f50f7411abf",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/assets/official-box-clean-preview-d66e5a0ebe06d68d.webp",
+      "before": "d66e5a0ebe06d68d88c54fb46702ccef55bbff0336bcdd178ac0bc4cf30b41ea",
+      "after": "d66e5a0ebe06d68d88c54fb46702ccef55bbff0336bcdd178ac0bc4cf30b41ea",
+      "unchanged": true
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/visual-check/mocks/runtime.tsx",
+      "before": "10d18ab154a59fb7fcf3ea19b35e0cc614ac75f09d8ebf0e4f9a44d9a72453f0",
+      "after": "10d18ab154a59fb7fcf3ea19b35e0cc614ac75f09d8ebf0e4f9a44d9a72453f0",
+      "unchanged": true
+    }
+  ],
+  "oldEvidenceUnchanged": true,
+  "chromiumPidAbsent": true,
+  "profileCleanupPlanned": true,
+  "independentCleanupCheck": {
+    "checkedAt": "2026-11-20T03:20:10.667Z",
+    "browserPid": 20461,
+    "browserPidAbsent": true,
+    "profileDirectoryAbsent": true,
+    "profileProcessMatches": [],
+    "newListenerAddresses": [],
+    "noNewListeningSockets": true,
+    "sourcePinStillMatches": true,
+    "oldEvidenceStillUnchanged": true,
+    "scope": "Independent local /proc, ps, ss and hash checks; shared sandbox may contain unrelated preexisting services. This harness created no HTTP service."
+  }
+}

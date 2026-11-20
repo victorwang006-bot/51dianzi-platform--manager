@@ -1,0 +1,37 @@
+{
+  "pinnedAt": "2026-11-20T03:17:36.961564+00:00",
+  "pinVerifiedBeforeAndAfterBuild": true,
+  "algorithm": "SHA-256",
+  "capturedAt": "2026-11-20T03:17:37.619Z",
+  "sources": {
+    "/home/ubuntu/work/resume-frontend/platform/client/src/lib/utils.ts": "d1f1e0d62cb8d8d1e04c26e14de842d8a151f75812d81b046c65b5d1fe8e4b27",
+    "/home/ubuntu/work/resume-frontend/platform/client/src/components/ui/dialog.tsx": "3ffd83bd2940c1191fde091bc47311aebc2b79d78824965a5c446115e58190aa",
+    "/home/ubuntu/work/resume-frontend/platform/client/src/components/ImageLightbox.tsx": "ab4f11e5c5fc5e48ff4550cb71f89680e57e7662ee2f7ca0e3fd4bd3cdfc6293",
+    "/home/ubuntu/work/resume-frontend/platform/client/src/components/OfficialSearchImage.tsx": "181e7bcbee0880e29c2586b247a0cdcf6b3229dbccfe76a69d0c214b0279d6b4",
+    "/home/ubuntu/work/resume-frontend/platform/client/src/lib/officialMaterialClient.ts": "5477ac5fb98f49c80b0a5979e9b6c8f06945f8e71c9d909364a22d51906c2513",
+    "/home/ubuntu/work/resume-frontend/platform/client/src/components/OfficialMaterialResources.tsx": "0f4911e8b95ee3a643a3ee9ec7d17a1619a14f93677292467310590496785d57",
+    "/home/ubuntu/work/resume-frontend/platform/client/src/assets/brand/logo-header-mark.webp": "dac23a53c00c75e4b36d1ade7fb3c3fe1a2797d619dbb154c13b10eb3dc61a5c",
+    "/home/ubuntu/work/resume-frontend/platform/client/src/assets/brand/logo-home-wordmark.webp": "5e8c12caaa7c388f9bb2d371fe2e13ed550dbd23553e6959c92e5b8faf3cd3b1",
+    "/home/ubuntu/work/resume-frontend/platform/client/src/assets/homeLogo.ts": "065f08d79b0db77cd954c917a92d051c96673135b39fa7081f4918f27fa6bd77",
+    "/home/ubuntu/work/resume-frontend/platform/client/src/lib/searchResultCommit.ts": "97c4b2d43d5c3e9703c817b8db49d97462c34bded1014ed6afc9d3f3c916c8a3",
+    "/home/ubuntu/work/resume-frontend/platform/client/lib/officialCardPresentation.ts": "a3191134b70ef758c0a33b1f5bc9f06021a330edc81314bc44ec43167c0d07a1",
+    "/home/ubuntu/work/resume-frontend/platform/client/src/components/OfficialMallSearchResults.tsx": "b2129e9517bee32b3edd96f0d41b06ee24297f8054708bb37497ef837f851e3e",
+    "/home/ubuntu/work/resume-frontend/platform/client/src/pages/OfficialProductDetail.tsx": "26af704d416bc8442038f6caaa30b6a8b82dc1e4cbd7ea537daf1e3520af76cc",
+    "/home/ubuntu/work/resume-frontend/platform/client/src/index.css": "4235cc782144393738c8c40bf90f7a15b7dcc2b2bf66b6d4b486fe0b846a5973",
+    "/home/ubuntu/work/resume-frontend/platform/client/src/pages/ProductDetail.tsx": "f0c2a4f6930f62f7bfa63f8a45585f1b05107cac7ccc30c774c2fa98868235d2"
+  },
+  "hostCssRemoteFontImportExcluded": true,
+  "aliases": {
+    "@/lib/trpc": "/home/ubuntu/work/self-row-redesign/visual-final/mocks/runtime.tsx",
+    "@/hooks/useOfficialMaterial": "/home/ubuntu/work/self-row-redesign/visual-final/mocks/runtime.tsx",
+    "wouter": "/home/ubuntu/work/self-row-redesign/visual-final/mocks/runtime.tsx",
+    "@/components/MallNav": "/home/ubuntu/work/self-row-redesign/visual-final/mocks/runtime.tsx",
+    "@/components/OfficialMallCheckoutResults": "/home/ubuntu/work/self-row-redesign/visual-final/mocks/runtime.tsx",
+    "@": "/home/ubuntu/work/resume-frontend/platform/client/src",
+    "@shared": "/home/ubuntu/work/resume-frontend/platform/shared"
+  },
+  "assets": {
+    "official-box-clean-thumb-19274af91b0082dd.webp": "19274af91b0082ddf8b45eebd0fd45e7f7e6bc592a8640ced8e12f50f7411abf",
+    "official-box-clean-preview-d66e5a0ebe06d68d.webp": "d66e5a0ebe06d68d88c54fb46702ccef55bbff0336bcdd178ac0bc4cf30b41ea"
+  }
+}

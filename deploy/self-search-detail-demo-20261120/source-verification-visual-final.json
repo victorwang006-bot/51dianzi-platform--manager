@@ -1,0 +1,55 @@
+{
+  "status": "OFFLINE_SOURCE_ONLY",
+  "merchantBodyExact": true,
+  "merchantBeforeBodySHA256": "ecd83655f83f02e4a93152e9761a8311672eab91b8317c3ca182a8e4de78db65",
+  "merchantAfterBodySHA256": "ecd83655f83f02e4a93152e9761a8311672eab91b8317c3ca182a8e4de78db65",
+  "cardEightOriginalEventCallbacksExact": true,
+  "eventCallbackCount": 8,
+  "callbackHashes": [
+    {
+      "name": "onClick",
+      "sha256": "c26ac09f0f2632e661964610dff65646bf9d9c05f067cbe237dc5351757c3ff0"
+    },
+    {
+      "name": "onFavorite",
+      "sha256": "8389a71b90cd51c976fb327462575486b67c0573fd15c610be93e16899aa4601"
+    },
+    {
+      "name": "onClick",
+      "sha256": "3bddf065b6da06e2e385664d7226c9128bb50b825c69e0e279d21a75e6931d00"
+    },
+    {
+      "name": "onClick",
+      "sha256": "8e6f7090fc546b0674a211177aaf7d979135aefca5e0cf7d67c79ca3d01f0e8e"
+    },
+    {
+      "name": "onChange",
+      "sha256": "94d58fdecdaeb6021855508f034e50764bff6dea20525d59ce58eed64f49c96a"
+    },
+    {
+      "name": "onBlur",
+      "sha256": "38fbd587a436e44c95b21b4a7a8c3a3f72f8dec8e7a5e6b1d6f732096065e91f"
+    },
+    {
+      "name": "onClick",
+      "sha256": "b7e9cef8da10bf1279ef12891f3aa3d4ca09bcb86c7fb71a03ee476bf5effebb"
+    },
+    {
+      "name": "onClick",
+      "sha256": "34803dd4051e33b876a32ee9f5d6a4eb97be61bd661b1c790f6702c5dfd03411"
+    }
+  ],
+  "cardOriginalFinancialDeclarationsExact": true,
+  "financialDeclarationsSHA256": "3f8955e1da35f1891eb29feb5e443da4e51a9033483a4144d9a405667d66c0a1",
+  "files": {
+    "client/src/pages/ProductDetail.tsx": "f0c2a4f6930f62f7bfa63f8a45585f1b05107cac7ccc30c774c2fa98868235d2",
+    "client/src/pages/OfficialProductDetail.tsx": "26af704d416bc8442038f6caaa30b6a8b82dc1e4cbd7ea537daf1e3520af76cc",
+    "client/src/components/OfficialMallSearchResults.tsx": "b2129e9517bee32b3edd96f0d41b06ee24297f8054708bb37497ef837f851e3e",
+    "client/src/components/OfficialMaterialResources.tsx": "0f4911e8b95ee3a643a3ee9ec7d17a1619a14f93677292467310590496785d57",
+    "client/src/pages/OfficialProductDetail.test.tsx": "e07888b56acf5e71e3f29f26012a8d96ed1bb8b5d19a72d04c78a79947e8c4dd",
+    "client/src/pages/ProductDetail.route.test.tsx": "b3f4e04dbb8871370221cd91348ee3cfd7e4b858a4c8d39334c04c0ada1ec174",
+    "client/src/components/OfficialMaterialResources.SearchPage.test.tsx": "29a8cb7cc2856581b7b9fae8e251a123a801ce21aa5c8f302b4e1726ba2a20bd"
+  },
+  "aggregateSourceSHA256": "a93821f237097d24b4b3614623b713cdccae53c10bbc47a0513ab2d86994a8fd",
+  "notDeploymentEvidence": true
+}

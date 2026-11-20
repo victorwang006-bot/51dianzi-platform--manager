@@ -1,0 +1,5 @@
+# 动态运行身份只读探测源码
+
+本工具用于当前任务授权范围内的一次双锁只读身份与执行源码发现，不是生产fullcapture、审批或发布控制器。Node22及PM2源码pin从可信先前实测报告以stdin传入；只执行原已存在transport modules及getMonitorData，不使用PM2 CLI，不执行God、fclone应用入口或任意业务入口，不修改环境/DB/服务，不写生产文件。真实pid由/proc枚举，不将旧推荐PID固定作当前active身份。输出仅身份路径、权限、start、wholeopaque/raw应用环境SHA及源码/库SHA；不输出业务环境值。普通文件使用O_NOATIME并完整readCAS。保持PM2 lifecycle/application env，不剥字段；top monit与pm2_env.axm_monitor仅监测字段单列，完整原始proc环境仍SHA保留。
+
+源码SHA256：`64df69ac84db1a4a662eabc70b91b06f46130f0675d29a1798ebedf0bd440782`。11:17该源码单次执行退出0；它只能证明当次动态观察与源码pin匹配，不能证明推荐worker有序退休或未来状态稳定，更不是最终部署approval。当前观察主12PM2及三个God合计15个node，没有匹配已知推荐bootstrap的active node，旧两PID当次均不存在。完整运行JSON包含私有进程指纹，**不入Git**。本目录仅工具源及去敏事实。正式应用前仍须独立source审查、fresh全状态capture、实际进程依赖闭包与整体包审批。不得重放旧输入冒充当前状态。

@@ -1,0 +1,1835 @@
+{
+  "blockingDefects": false,
+  "summary": {
+    "sampleCount": 50,
+    "expectedSampleCount": 50,
+    "complete50StateMatrix": true,
+    "noRootHorizontalScroll": true,
+    "noMeasuredRegionOverlap": true,
+    "noCrossCardOverlap": true,
+    "quantityWithinCard": true,
+    "quantityWrapConfigured": true,
+    "longQuantityFullValueAndValid": true,
+    "inventoryNeverClipped": true,
+    "listMoreParametersReallyExpanded": true,
+    "tenTiersReallyExpanded": true,
+    "detailFull20Parameters": true,
+    "staleInputReadOnlyAndCartDisabled": true,
+    "allCartButtonsDisabled": true,
+    "longPartNumberWrapsNoOverflow": true,
+    "onlyOneProductImagePerCard": true,
+    "currentImageBoxScalePreserved": true,
+    "smallTextAAPass": true,
+    "namedControlsPass": true,
+    "ariaControlsTargetsPass": true,
+    "keyboardDisclosurePass": true,
+    "noForbiddenMutations": true,
+    "externalAttempts": 0,
+    "externalRequestsAllowed": 0,
+    "sourceFilesUnchanged": true,
+    "sourcePinMatched": true,
+    "oldNonpassEvidenceUnchanged": true,
+    "chromiumExited": true,
+    "chromiumPidAbsent": true,
+    "isolatedContextDisposed": true,
+    "httpServiceStarted": false,
+    "browserErrors": 0,
+    "fatal": null
+  },
+  "defects": [],
+  "accessibility": {
+    "namedControlsPass": true,
+    "ariaControlsTargetsPass": true,
+    "keyboardDisclosure": [
+      {
+        "mode": "list",
+        "width": 1280,
+        "key": "Enter",
+        "opened": true
+      },
+      {
+        "mode": "list",
+        "width": 960,
+        "key": "Enter",
+        "opened": true
+      },
+      {
+        "mode": "list",
+        "width": 768,
+        "key": "Enter",
+        "opened": true
+      },
+      {
+        "mode": "list",
+        "width": 375,
+        "key": "Enter",
+        "opened": true
+      },
+      {
+        "mode": "list",
+        "width": 320,
+        "key": "Enter",
+        "opened": true
+      }
+    ],
+    "keyboardDisclosurePass": true,
+    "contrastThreshold": 4.5,
+    "computedContrastSampleCount": 2640,
+    "contrastChecks": [
+      {
+        "selector": ".omr-image-note",
+        "className": "omr-image-note",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "包装示意 · 非商品实拍",
+        "color": "rgb(89, 102, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.86,
+        "ratioExact": 5.862337677770528,
+        "fontSize": "10px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "list"
+      },
+      {
+        "selector": ".omr-meta",
+        "className": "omr-meta",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "品牌 SYNTH 品牌（内部合成）封装 SYNTH-LQFP64",
+        "color": "rgb(89, 102, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.86,
+        "ratioExact": 5.862337677770528,
+        "fontSize": "12px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "list"
+      },
+      {
+        "selector": ".omr-facts",
+        "className": "omr-facts",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "生产周期 SYNTH-2026交期 5–7天（内部合成）",
+        "color": "rgb(89, 102, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.86,
+        "ratioExact": 5.862337677770528,
+        "fontSize": "12px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "list"
+      },
+      {
+        "selector": ".omr-core-parameters dt",
+        "className": "",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "CPU内核",
+        "color": "rgb(89, 102, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.86,
+        "ratioExact": 5.862337677770528,
+        "fontSize": "12px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "list"
+      },
+      {
+        "selector": ".omr-core-parameters dd",
+        "className": "",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "Synthetic Core",
+        "color": "rgb(57, 67, 78)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 10.06,
+        "ratioExact": 10.06303759999362,
+        "fontSize": "12px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "list"
+      },
+      {
+        "selector": ".omr-price-heading",
+        "className": "omr-price-heading",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "单价库存 2,147,483,647",
+        "color": "rgb(105, 118, 132)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 4.64,
+        "ratioExact": 4.640665026968411,
+        "fontSize": "12px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "list"
+      },
+      {
+        "selector": ".omr-stock",
+        "className": "omr-stock",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "库存 2,147,483,647",
+        "color": "rgb(89, 102, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.86,
+        "ratioExact": 5.862337677770528,
+        "fontSize": "12px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "list"
+      },
+      {
+        "selector": ".omr-tier>span",
+        "className": "",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "10起",
+        "color": "rgb(89, 102, 117)",
+        "background": [
+          255,
+          242,
+          230
+        ],
+        "ratio": 5.33,
+        "ratioExact": 5.330675714661824,
+        "fontSize": "12px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "list"
+      },
+      {
+        "selector": ".omr-tier>span",
+        "className": "",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "20起",
+        "color": "rgb(89, 102, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.86,
+        "ratioExact": 5.862337677770528,
+        "fontSize": "12px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "list"
+      },
+      {
+        "selector": ".omr-unit-price>span:first-child",
+        "className": "",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "¥0.100000",
+        "color": "rgb(67, 77, 89)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 8.59,
+        "ratioExact": 8.590843929941853,
+        "fontSize": "12px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "list"
+      },
+      {
+        "selector": ".omr-extra-parameters dt",
+        "className": "",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "工作电压",
+        "color": "rgb(89, 102, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.86,
+        "ratioExact": 5.862337677770528,
+        "fontSize": "11px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "list"
+      },
+      {
+        "selector": ".omr-extra-parameters dd",
+        "className": "",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "1.8–3.6 V",
+        "color": "rgb(57, 67, 78)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 10.06,
+        "ratioExact": 10.06303759999362,
+        "fontSize": "11px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "list"
+      },
+      {
+        "selector": ".omr-tier>span",
+        "className": "",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "50起",
+        "color": "rgb(89, 102, 117)",
+        "background": [
+          241,
+          246,
+          252
+        ],
+        "ratio": 5.4,
+        "ratioExact": 5.395616402092937,
+        "fontSize": "12px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "list"
+      },
+      {
+        "selector": ".omr-image-note",
+        "className": "omr-image-note",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "自营包装示意，非商品实拍",
+        "color": "rgb(89, 102, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.86,
+        "ratioExact": 5.862337677770528,
+        "fontSize": "11px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "detail"
+      },
+      {
+        "selector": ".omr-meta",
+        "className": "omr-meta",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "SYNTH 品牌（内部合成） · SYNTH-LQFP64",
+        "color": "rgb(89, 102, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.86,
+        "ratioExact": 5.862337677770528,
+        "fontSize": "12px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "detail"
+      },
+      {
+        "selector": ".omr-detail-attrs dt",
+        "className": "",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "品牌/厂牌",
+        "color": "rgb(89, 102, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.86,
+        "ratioExact": 5.862337677770528,
+        "fontSize": "12.5px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "detail"
+      },
+      {
+        "selector": ".omr-detail-attrs dd",
+        "className": "",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "SYNTH 品牌（内部合成）",
+        "color": "rgb(26, 26, 26)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 17.4,
+        "ratioExact": 17.40432753274219,
+        "fontSize": "12.5px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "detail"
+      },
+      {
+        "selector": ".omr-detail-seller>span",
+        "className": "",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "销售方",
+        "color": "rgb(89, 102, 117)",
+        "background": [
+          248,
+          250,
+          253
+        ],
+        "ratio": 5.61,
+        "ratioExact": 5.606601391836025,
+        "fontSize": "12px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "detail"
+      },
+      {
+        "selector": ".omr-price-heading",
+        "className": "omr-price-heading",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "单价（含税）",
+        "color": "rgb(89, 102, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.86,
+        "ratioExact": 5.862337677770528,
+        "fontSize": "12px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "detail"
+      },
+      {
+        "selector": ".omr-tier>span",
+        "className": "",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "10起",
+        "color": "rgb(89, 102, 117)",
+        "background": [
+          232,
+          240,
+          254
+        ],
+        "ratio": 5.12,
+        "ratioExact": 5.1159637439373515,
+        "fontSize": "13px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "detail"
+      },
+      {
+        "selector": ".omr-tier>span",
+        "className": "",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "20起",
+        "color": "rgb(89, 102, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.86,
+        "ratioExact": 5.862337677770528,
+        "fontSize": "13px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "detail"
+      },
+      {
+        "selector": ".omr-unit-price>span:first-child",
+        "className": "",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "¥0.100000",
+        "color": "rgb(67, 77, 89)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 8.59,
+        "ratioExact": 8.590843929941853,
+        "fontSize": "13px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "detail"
+      },
+      {
+        "selector": ".omr-detail-quote-note",
+        "className": "omr-detail-quote-note",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "当前公开报价：含税。运费及交货方式请联系平台客服确认。",
+        "color": "rgb(89, 102, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.86,
+        "ratioExact": 5.862337677770528,
+        "fontSize": "10.5px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "detail"
+      },
+      {
+        "selector": ".omr-detail-base-specs dt",
+        "className": "",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "型号",
+        "color": "rgb(89, 102, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.86,
+        "ratioExact": 5.862337677770528,
+        "fontSize": "12.5px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "detail"
+      },
+      {
+        "selector": ".omr-detail-parameters dt",
+        "className": "",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "CPU内核",
+        "color": "rgb(89, 102, 117)",
+        "background": [
+          255,
+          255,
+          255
+        ],
+        "ratio": 5.86,
+        "ratioExact": 5.862337677770528,
+        "fontSize": "12.5px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "detail"
+      },
+      {
+        "selector": ".omr-tier>span",
+        "className": "",
+        "publicId": "OM_00000000-0000-4000-8000-000000000001",
+        "text": "100起",
+        "color": "rgb(89, 102, 117)",
+        "background": [
+          241,
+          246,
+          252
+        ],
+        "ratio": 5.4,
+        "ratioExact": 5.395616402092937,
+        "fontSize": "13px",
+        "threshold": 4.5,
+        "passesAA": true,
+        "mode": "detail"
+      }
+    ],
+    "contrastFindings": [],
+    "smallTextAAPass": true,
+    "fullWCAGAudit": false
+  },
+  "previousEvidence": {
+    "path": "/home/ubuntu/work/self-row-redesign/visual-check/geometry.json",
+    "blockingDefects": true,
+    "defectCount": 7,
+    "notOverwritten": true
+  },
+  "imageComparison": [
+    {
+      "sample": "list-1280-baseline",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 88,
+        "height": 88
+      },
+      "current": {
+        "width": 88,
+        "height": 88,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-1280-baseline",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 88,
+        "height": 88
+      },
+      "current": {
+        "width": 88,
+        "height": 88,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-1280-expanded",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 88,
+        "height": 88
+      },
+      "current": {
+        "width": 88,
+        "height": 88,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-1280-expanded",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 88,
+        "height": 88
+      },
+      "current": {
+        "width": 88,
+        "height": 88,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-1280-expanded-long-quantity",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 88,
+        "height": 88
+      },
+      "current": {
+        "width": 88,
+        "height": 88,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-1280-expanded-long-quantity",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 88,
+        "height": 88
+      },
+      "current": {
+        "width": 88,
+        "height": 88,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-1280-long-model",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 88,
+        "height": 88
+      },
+      "current": {
+        "width": 88,
+        "height": 88,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-1280-long-model",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 88,
+        "height": 88
+      },
+      "current": {
+        "width": 88,
+        "height": 88,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-1280-stale-read-only",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 88,
+        "height": 88
+      },
+      "current": {
+        "width": 88,
+        "height": 88,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-1280-stale-read-only",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 88,
+        "height": 88
+      },
+      "current": {
+        "width": 88,
+        "height": 88,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-960-baseline",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-960-baseline",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-960-expanded",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-960-expanded",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-960-expanded-long-quantity",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-960-expanded-long-quantity",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-960-long-model",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-960-long-model",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-960-stale-read-only",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-960-stale-read-only",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-768-baseline",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-768-baseline",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-768-expanded",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-768-expanded",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-768-expanded-long-quantity",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-768-expanded-long-quantity",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-768-long-model",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-768-long-model",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-768-stale-read-only",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-768-stale-read-only",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-375-baseline",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-375-baseline",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-375-expanded",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-375-expanded",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-375-expanded-long-quantity",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-375-expanded-long-quantity",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-375-long-model",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-375-long-model",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-375-stale-read-only",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-375-stale-read-only",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-320-baseline",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-320-baseline",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-320-expanded",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-320-expanded",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-320-expanded-long-quantity",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-320-expanded-long-quantity",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-320-long-model",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-320-long-model",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-320-stale-read-only",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "list-320-stale-read-only",
+      "publicId": "OM_00000000-0000-4000-8000-000000000002",
+      "previous": {
+        "width": 72,
+        "height": 72
+      },
+      "current": {
+        "width": 72,
+        "height": 72,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-1280-baseline",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 270,
+        "height": 270
+      },
+      "current": {
+        "width": 270,
+        "height": 270,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-1280-expanded",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 270,
+        "height": 270
+      },
+      "current": {
+        "width": 270,
+        "height": 270,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-1280-expanded-long-quantity",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 270,
+        "height": 270
+      },
+      "current": {
+        "width": 270,
+        "height": 270,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-1280-long-model",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 270,
+        "height": 270
+      },
+      "current": {
+        "width": 270,
+        "height": 270,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-1280-stale-read-only",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 270,
+        "height": 270
+      },
+      "current": {
+        "width": 270,
+        "height": 270,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-960-baseline",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 330,
+        "height": 330
+      },
+      "current": {
+        "width": 330,
+        "height": 330,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-960-expanded",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 330,
+        "height": 330
+      },
+      "current": {
+        "width": 330,
+        "height": 330,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-960-expanded-long-quantity",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 330,
+        "height": 330
+      },
+      "current": {
+        "width": 330,
+        "height": 330,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-960-long-model",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 330,
+        "height": 330
+      },
+      "current": {
+        "width": 330,
+        "height": 330,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-960-stale-read-only",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 330,
+        "height": 330
+      },
+      "current": {
+        "width": 330,
+        "height": 330,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-768-baseline",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 330,
+        "height": 330
+      },
+      "current": {
+        "width": 330,
+        "height": 330,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-768-expanded",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 330,
+        "height": 330
+      },
+      "current": {
+        "width": 330,
+        "height": 330,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-768-expanded-long-quantity",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 330,
+        "height": 330
+      },
+      "current": {
+        "width": 330,
+        "height": 330,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-768-long-model",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 330,
+        "height": 330
+      },
+      "current": {
+        "width": 330,
+        "height": 330,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-768-stale-read-only",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 330,
+        "height": 330
+      },
+      "current": {
+        "width": 330,
+        "height": 330,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-375-baseline",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 321,
+        "height": 321
+      },
+      "current": {
+        "width": 321,
+        "height": 321,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-375-expanded",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 321,
+        "height": 321
+      },
+      "current": {
+        "width": 321,
+        "height": 321,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-375-expanded-long-quantity",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 321,
+        "height": 321
+      },
+      "current": {
+        "width": 321,
+        "height": 321,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-375-long-model",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 321,
+        "height": 321
+      },
+      "current": {
+        "width": 321,
+        "height": 321,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-375-stale-read-only",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 321,
+        "height": 321
+      },
+      "current": {
+        "width": 321,
+        "height": 321,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-320-baseline",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 266,
+        "height": 266
+      },
+      "current": {
+        "width": 266,
+        "height": 266,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-320-expanded",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 266,
+        "height": 266
+      },
+      "current": {
+        "width": 266,
+        "height": 266,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-320-expanded-long-quantity",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 266,
+        "height": 266
+      },
+      "current": {
+        "width": 266,
+        "height": 266,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-320-long-model",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 266,
+        "height": 266
+      },
+      "current": {
+        "width": 266,
+        "height": 266,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    },
+    {
+      "sample": "detail-320-stale-read-only",
+      "publicId": "OM_00000000-0000-4000-8000-000000000001",
+      "previous": {
+        "width": 266,
+        "height": 266
+      },
+      "current": {
+        "width": 266,
+        "height": 266,
+        "productImages": 1,
+        "productTriggers": 1,
+        "inlineWidth": "96px",
+        "inlineHeight": "80px"
+      },
+      "unchanged": true
+    }
+  ]
+}
