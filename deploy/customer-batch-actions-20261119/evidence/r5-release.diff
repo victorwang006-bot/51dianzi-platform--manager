@@ -1,0 +1,384 @@
+--- baseline-4fe/release.py
++++ R5/release.py
+@@ -20,12 +20,13 @@
+ import stat
+ import subprocess
+ import sys
++import time
+ import uuid
+ from contextlib import contextmanager
+ from dataclasses import dataclass
+ 
+ OWNER = '6Lfttf6oVWJ8YS69o5FkXQ'
+-SCOPE = 'customer-batch-actions-20261120-6Lfttf6o-R4'
++SCOPE = 'customer-batch-actions-20261120-6Lfttf6o-R5'
+ API_BASE = '/opt/releases/20261110-customer-workbench-b7f3a2a7e317'
+ FRONT_API = API_BASE + '/front/dist/index.js'
+ ADMIN_API = API_BASE + '/admin/dist/index.js'
+@@ -217,6 +218,9 @@
+                               Path('/var/lib/dianzi51-private'),
+                               Path('/opt/ops/dianzi51-recommendation'),
+                               Path('/opt/releases/20261009T170014Z-memory-isolation/dianzi51-platform'))
++    # Shallow root only: never recurse the 50GiB enterprise shadow or /root.
++    execution_roots: tuple = (Path('/root/enterprise-shadow-20261017-r2'),)
++    execution_sources: tuple = (Path('/opt/ops/dianzi51-recommendation/releases/20261112-forum12-1255b7b84aa3adac09cb8c05/worker-runtime-bootstrap.mjs'),)
+     extra_links: tuple = ()
+     mock: bool = False  # never selectable by CLI
+ 
+@@ -630,7 +634,7 @@
+         need(out.get(str(root / 'index.js'), {}).get('kind') == 'file', 'ADAPTER_INDEX_FILE_REQUIRED')
+     return dict(sorted(out.items()))
+ 
+-# Fixed non-PM2 protection: no CLI selector, discovery, fallback or lifecycle action.
++# Historical fixed-pair pure fixtures only; production uses dynamic_protection below.
+ EXTERNAL_PARENT_PID = 2060125
+ EXTERNAL_CHILD_PID = 2060126
+ EXTERNAL_OPS = Path('/opt/ops/dianzi51-recommendation')
+@@ -742,8 +746,7 @@
+     if cfg.mock and fixture is None:
+         return dict(fixtureOnly=True, processes=[], sources={}, fullSourceMeta={}, rootMeta={})
+     if fixture is None:
+-        need(cfg.proc == Path('/proc'), 'EXTERNAL_FIXED_PRODUCTION_PROC')
+-        ops, cwd, script = EXTERNAL_OPS, EXTERNAL_CWD, EXTERNAL_SCRIPT
++        return dynamic_protection(cfg)
+     else:
+         exact(fixture, 'ops cwd script', 'EXTERNAL_FIXTURE_PATH_SCHEMA')
+         ops, cwd, script = (no_link(fixture[k]) for k in ('ops', 'cwd', 'script'))
+@@ -753,6 +756,337 @@
+     second = external_protection_sample(cfg, ops, cwd, script)
+     need(first == second, 'EXTERNAL_TWO_SAMPLE_DRIFT')
+     return first
++
++# R5 production discovery is pure proc/source reading; legacy fixed helpers above
++# remain historical fixture-only code. No FD/log content, loaders or module runs.
++DYNAMIC_MAX_PROC = 8192
++DYNAMIC_MAX_NODES = 128
++DYNAMIC_MAX_GRAPH = 256
++DYNAMIC_MAX_DEPTH = 64
++DYNAMIC_MAX_SOURCES = 512
++DYNAMIC_PROC_BYTES = 1024 * 1024
++DYNAMIC_SOURCE_BYTES = 256 * 1024 * 1024
++DYNAMIC_TOTAL_BYTES = 2 * 1024 * 1024 * 1024
++DYNAMIC_SECONDS = 120
++OWN_DYNAMIC_IDS = (190, 191, 192, 193, 194, 200)
++
++
++def dynamic_budget():
++    return dict(start=time.monotonic(), bytes=0)
++
++
++def dynamic_check(budget):
++    need(time.monotonic() - budget['start'] <= DYNAMIC_SECONDS,
++         'DYNAMIC_TIME_CAP')
++    need(budget['bytes'] <= DYNAMIC_TOTAL_BYTES, 'DYNAMIC_TOTAL_BYTE_CAP')
++
++
++def dynamic_read(path, limit, budget, source=False):
++    dynamic_check(budget)
++    p = no_link(path)
++    fd = os.open(p, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
++    try:
++        before = os.fstat(fd)
++        need(stat.S_ISREG(before.st_mode), 'DYNAMIC_REGULAR_READ_REQUIRED')
++        if source:
++            need(before.st_nlink == 1 and before.st_size <= limit,
++                 'DYNAMIC_SOURCE_SINGLE_FILE_BYTE_CAP')
++        chunks, count = [], 0
++        while True:
++            dynamic_check(budget)
++            data = os.read(fd, min(65536, limit + 1 - count))
++            if not data:
++                break
++            count += len(data); budget['bytes'] += len(data)
++            need(count <= limit, 'DYNAMIC_SINGLE_FILE_BYTE_CAP')
++            dynamic_check(budget)
++            chunks.append(data)
++        after = os.fstat(fd)
++        need((before.st_dev, before.st_ino, before.st_mode, before.st_uid,
++              before.st_gid, before.st_nlink, before.st_size, before.st_mtime_ns,
++              before.st_ctime_ns) ==
++             (after.st_dev, after.st_ino, after.st_mode, after.st_uid,
++              after.st_gid, after.st_nlink, after.st_size, after.st_mtime_ns,
++              after.st_ctime_ns), 'DYNAMIC_FILE_READ_RACE')
++        need(p.lstat().st_ino == after.st_ino and p.lstat().st_dev == after.st_dev,
++             'DYNAMIC_FILE_RENAME_RACE')
++        return b''.join(chunks)
++    finally:
++        os.close(fd)
++
++
++def dynamic_source(path, budget):
++    p = no_link(path); before = meta(p)
++    need(stat.S_ISREG(before['statmode']) and before['nlink'] == 1,
++         'DYNAMIC_SINGLE_REGULAR_SOURCE')
++    data = dynamic_read(p, DYNAMIC_SOURCE_BYTES, budget, True)
++    need(meta(p) == before, 'DYNAMIC_SOURCE_META_READ_RACE')
++    return dict(before, kind='file', sha256=H(data))
++
++
++def dynamic_identity(cfg, pid, budget):
++    data = dynamic_read(cfg.proc / str(pid) / 'stat', DYNAMIC_PROC_BYTES, budget)
++    head, sep, tail = data.rpartition(b') '); fields = tail.split()
++    prefix = str(pid).encode() + b' ('
++    need(sep and head.startswith(prefix) and len(fields) >= 20
++         and fields[0] in (b'R', b'S', b'D', b'T', b't', b'I')
++         and re.fullmatch(rb'[0-9]+', fields[1])
++         and re.fullmatch(rb'[1-9][0-9]*', fields[19]), 'DYNAMIC_LIVE_STAT_IDENTITY')
++    return dict(pid=pid, ppid=int(fields[1]), startTicks=int(fields[19]),
++                nameSha256=H(head[len(prefix):]))
++
++
++def dynamic_scan(cfg, budget):
++    candidates, count = {}, 0
++    # Bound enumeration itself, not just the final candidate list.
++    for p in cfg.proc.iterdir():
++        dynamic_check(budget); count += 1
++        need(count <= DYNAMIC_MAX_PROC, 'DYNAMIC_PROC_COUNT_CAP')
++        if not re.fullmatch(r'[1-9][0-9]*', p.name):
++            continue
++        exe, cmd = None, None
++        try:
++            exe = os.readlink(p / 'exe')
++        except (FileNotFoundError, ProcessLookupError):
++            pass  # only an as-yet-unclassified transient may disappear
++        selected = exe is not None and Path(exe.removesuffix(' (deleted)')).name.startswith('node')
++        try:
++            cmd = dynamic_read(p / 'cmdline', DYNAMIC_PROC_BYTES, budget)
++        except (FileNotFoundError, ProcessLookupError):
++            need(not selected, 'DYNAMIC_CANDIDATE_DISAPPEARED')
++        selected = selected or (cmd is not None and cmd.startswith(b'PM2 '))
++        if not selected:
++            continue
++        need(exe is not None and cmd is not None, 'DYNAMIC_CANDIDATE_INCOMPLETE')
++        pid = int(p.name)
++        candidates[pid] = dict(identity=dynamic_identity(cfg, pid, budget),
++                               exe=exe, cmdlineSha256=H(cmd))
++        need(len(candidates) <= DYNAMIC_MAX_NODES, 'DYNAMIC_NODE_COUNT_CAP')
++    return dict(sorted(candidates.items()))
++
++
++def dynamic_permissions(status):
++    fields, opaque = {}, []
++    for line in status.splitlines():
++        k, _, v = line.partition(b':')
++        if k in (b'Uid', b'Gid', b'Groups', b'Umask'):
++            need(k not in fields, 'DYNAMIC_PERMISSION_DUPLICATE')
++            fields[k.decode()] = [x.decode('ascii') for x in v.split()]
++            opaque.append(line + b'\n')
++    need(set(fields) == {'Uid', 'Gid', 'Groups', 'Umask'}, 'DYNAMIC_PERMISSION_FIELDS')
++    return H(b''.join(opaque))
++
++
++def dynamic_maps(maps):
++    mapped = {}
++    for line in maps.splitlines():
++        parts = line.split(None, 5)  # final field is the WHOLE path incl spaces
++        need(len(parts) >= 5 and re.fullmatch(rb'[0-9a-f]+-[0-9a-f]+', parts[0])
++             and re.fullmatch(rb'[r-][w-][x-][ps]', parts[1])
++             and re.fullmatch(rb'[0-9a-f]+', parts[2])
++             and re.fullmatch(rb'[0-9a-f]+:[0-9a-f]+', parts[3])
++             and re.fullmatch(rb'[0-9]+', parts[4]), 'DYNAMIC_MAPS_FORMAT')
++        if len(parts) == 6:
++            path = os.fsdecode(parts[5])
++            if path.startswith('/'):
++                need(not path.endswith(' (deleted)') and '\\' not in path,
++                     'DYNAMIC_DELETED_OR_ESCAPED_MAPPING')
++                p = no_link(path)
++                need(str(p) == path and '..' not in p.parts, 'DYNAMIC_MAPPING_CANONICAL')
++                # Anonymous heaps/ASLR addresses are not execution-source identity.
++                segment = [x.decode('ascii') for x in parts[1:5]]
++                mapped.setdefault(path, [])
++                if segment not in mapped[path]:
++                    mapped[path].append(segment)
++            else:
++                need(path.startswith('[') and path.endswith(']'), 'DYNAMIC_UNSUPPORTED_MAPPING')
++    return {p: sorted(mapped[p]) for p in sorted(mapped)}
++
++
++def dynamic_proc(cfg, pid, budget):
++    identity = dynamic_identity(cfg, pid, budget)
++    proc = no_link(cfg.proc / str(pid)); proc_meta = meta(proc)
++    exe = external_proc_link(cfg, pid, 'exe'); cwd = external_proc_link(cfg, pid, 'cwd')
++    links = {n: meta(proc / n) for n in ('exe', 'cwd')}
++    cwd_meta = describe(cwd)
++    need(cwd_meta['kind'] == 'directory', 'DYNAMIC_SHALLOW_CWD_DIRECTORY')
++    cmd = dynamic_read(proc / 'cmdline', DYNAMIC_PROC_BYTES, budget)
++    raw = dynamic_read(proc / 'environ', DYNAMIC_PROC_BYTES, budget)
++    status = dynamic_read(proc / 'status', DYNAMIC_PROC_BYTES, budget)
++    maps = dynamic_read(proc / 'maps', DYNAMIC_PROC_BYTES, budget)
++    need(cmd and cmd.endswith(b'\0') and (not raw or raw.endswith(b'\0')),
++         'DYNAMIC_OPAQUE_NUL_REQUIRED')
++    permission_hash = dynamic_permissions(status)
++    scripts = set()
++    for arg in cmd[:-1].split(b'\0'):
++        if arg.startswith(b'/') and arg.endswith((b'.js', b'.mjs', b'.cjs')):
++            path = os.fsdecode(arg); p = no_link(path)
++            need(str(p) == path and '..' not in p.parts, 'DYNAMIC_SCRIPT_CANONICAL')
++            scripts.add(path)
++    mapped = dynamic_maps(maps)
++    record = dict(identity, exe=str(exe), cwd=str(cwd), procMeta=proc_meta,
++                  kernelLinkMeta=links, cwdMeta=cwd_meta, rawSha256=H(raw),
++                  cmdlineSha256=H(cmd), permissionsSha256=permission_hash,
++                  mappedSourceIdentity=mapped, scriptPaths=sorted(scripts), mappedSourcePaths=sorted(mapped))
++    need(dynamic_identity(cfg, pid, budget) == identity and meta(proc) == proc_meta
++         and external_proc_link(cfg, pid, 'exe') == exe
++         and external_proc_link(cfg, pid, 'cwd') == cwd
++         and {n: meta(proc / n) for n in ('exe', 'cwd')} == links
++         and describe(cwd) == cwd_meta
++         and dynamic_read(proc / 'cmdline', DYNAMIC_PROC_BYTES, budget) == cmd
++         and dynamic_read(proc / 'environ', DYNAMIC_PROC_BYTES, budget) == raw
++         and dynamic_permissions(dynamic_read(proc / 'status', DYNAMIC_PROC_BYTES, budget)) == permission_hash
++         and dynamic_maps(dynamic_read(proc / 'maps', DYNAMIC_PROC_BYTES, budget)) == mapped,
++         'DYNAMIC_FULL_PROC_READ_RACE')
++    return record, raw, cmd
++
++
++def dynamic_owned(cfg, record, raw, main, node_meta, node_hash):
++    # This is exemption routing, NOT readiness or normalized environment proof.
++    if record['ppid'] != main:
++        return None
++    outer = raw_values(raw)
++    if b'pm2_env' not in outer:
++        return None
++    value, _, _ = pm2_top_tokens(outer[b'pm2_env'])
++    slot = value.get('pm_id')
++    claims_own = (integer(slot) and slot in OWN_DYNAMIC_IDS) or value.get('name') in ('dianzi51', 'dianzi51-admin')
++    if not claims_own:
++        return None
++    need(integer(slot) and slot in OWN_DYNAMIC_IDS, 'DYNAMIC_OWN_SLOT_SPOOF')
++    admin = slot in (191, 192); script = cfg.admin_api if admin else cfg.front_api
++    name = 'dianzi51-admin' if admin else 'dianzi51'
++    current_cwd = value.get('pm_cwd')
++    need(isinstance(current_cwd, str) and current_cwd.startswith('/')
++         and str(no_link(current_cwd)) == current_cwd and '..' not in Path(current_cwd).parts,
++         'DYNAMIC_OWN_SERIALIZED_CWD_CANONICAL')
++    need(value.get('name') == name and value.get('exec_mode') == 'cluster_mode'
++         and value.get('pm_exec_path') == str(script)
++         and record['cwd'] == current_cwd
++         and record['exe'] == str(cfg.node)
++         and node_meta['sha256'] == node_hash,
++         'DYNAMIC_OWN_KERNEL_AND_SERIALIZED_BINDING')
++    return dict(id=slot, name=name, script=str(script), cwd=current_cwd,
++                execMode='cluster_mode', daemonPpid=main, exe=str(cfg.node),
++                exeSha256=node_meta['sha256'],
++                executionSourcePaths=sorted({record['exe'], *record['scriptPaths'], *record['mappedSourcePaths']}),
++                mappedSourceIdentity=record['mappedSourceIdentity'])
++
++
++def dynamic_protection_sample(cfg, ops, cwd, script, budget):
++    roots = {str(p): describe(no_link(p)) for p in sorted({ops, cwd, *cfg.execution_roots})}
++    need(all(r['kind'] == 'directory' for r in roots.values()), 'DYNAMIC_ROOT_DIRECTORIES')
++    pidfile = dynamic_source(cfg.pm2_home / 'pm2.pid', budget)
++    pidraw = dynamic_read(cfg.pm2_home / 'pm2.pid', DYNAMIC_PROC_BYTES, budget)
++    need(re.fullmatch(rb'[1-9][0-9]*\s*', pidraw), 'DYNAMIC_MAIN_DAEMON_PID')
++    main = int(pidraw.strip()); candidates = dynamic_scan(cfg, budget)
++    need(main in candidates, 'DYNAMIC_MAIN_GOD_NOT_IN_NODE_SET')
++    full, payloads = {}, {}
++    def collect(pid):
++        if pid not in full:
++            need(len(full) < DYNAMIC_MAX_GRAPH, 'DYNAMIC_GRAPH_COUNT_CAP')
++            full[pid], raw, cmd = dynamic_proc(cfg, pid, budget)
++            payloads[pid] = (raw, cmd)
++        return full[pid]
++    for pid in candidates:
++        row = collect(pid)
++        need(row['exe'] == candidates[pid]['exe'] and row['cmdlineSha256'] == candidates[pid]['cmdlineSha256']
++             and {k: row[k] for k in candidates[pid]['identity']} == candidates[pid]['identity'],
++             'DYNAMIC_SCAN_TO_RECORD_DRIFT')
++        seen, current = set(), pid
++        for depth in range(DYNAMIC_MAX_DEPTH):
++            need(current not in seen, 'DYNAMIC_PARENT_CYCLE'); seen.add(current)
++            child = collect(current); parent = child['ppid']
++            if current == 1:
++                need(parent == 0, 'DYNAMIC_PID1_ROOT_PARENT'); break
++            need(parent > 0, 'DYNAMIC_UNKNOWN_PARENT_CHAIN')
++            prow = collect(parent)
++            need(prow['startTicks'] <= child['startTicks'], 'DYNAMIC_PARENT_START_ORDER')
++            current = parent
++        else:
++            raise ReleaseError('DYNAMIC_PARENT_DEPTH_CAP')
++    daemon = full[main]; daemon_raw, daemon_cmd = payloads[main]
++    daemon_env = raw_values(daemon_raw)
++    need(daemon['exe'] == str(cfg.node) and daemon_cmd.startswith(b'PM2 ')
++         and daemon_env.get(b'PM2_HOME', os.fsencode(cfg.pm2_home)) == os.fsencode(cfg.pm2_home)
++         and daemon_cmd.split(b'\0')[0].endswith(b'God Daemon (' + os.fsencode(cfg.pm2_home) + b')'),
++         'DYNAMIC_MAIN_GOD_BINDING')
++    paths = {cfg.node, script, *cfg.execution_sources}
++    for row in full.values():
++        paths.update(Path(p) for p in (row['exe'], *row['scriptPaths'], *row['mappedSourcePaths']))
++    need(len(paths) <= DYNAMIC_MAX_SOURCES, 'DYNAMIC_SOURCE_COUNT_CAP')
++    source_meta = {str(p): dynamic_source(p, budget) for p in sorted(paths)}
++    for row in full.values():
++        for path, segments in row['mappedSourceIdentity'].items():
++            sm = source_meta[path]
++            for perms, offset, device, inode in segments:
++                major, minor = (int(v, 16) for v in device.split(':'))
++                need(int(inode) == sm['ino'] and major == os.major(sm['dev'])
++                     and minor == os.minor(sm['dev']), 'DYNAMIC_MAPPING_FILE_IDENTITY')
++    own, own_pids = {}, set()
++    for pid in candidates:
++        row = full[pid]
++        # cfg.node bytes are fresh and full-META bound, not basename trust.
++        own_row = dynamic_owned(cfg, row, payloads[pid][0], main, source_meta[row['exe']], source_meta[str(cfg.node)]['sha256'])
++        if own_row is not None:
++            need(own_row['id'] not in own, 'DYNAMIC_DUPLICATE_OWN_SLOT')
++            own[own_row['id']] = own_row; own_pids.add(pid)
++    need(set(own) == set(OWN_DYNAMIC_IDS), 'DYNAMIC_ALL_SIX_OWN_REQUIRED')
++    # An owned slot may never hide a foreign parent or become an ancestor itself.
++    need(not any(r['ppid'] in own_pids for r in full.values()), 'DYNAMIC_OWN_HAS_CHILD_NO_EXEMPTION')
++    known = []
++    for pid in candidates:
++        row = full[pid]
++        if str(script) in row['scriptPaths']:
++            parent = full[row['ppid']]
++            need(Path(row['exe']).name.startswith('node') and row['exe'] == str(cfg.node)
++                 and row['cwd'] == str(cwd) and Path(parent['exe']).name == 'flock'
++                 and payloads[pid][1] == os.fsencode(cfg.node) + b'\0' + os.fsencode(script) + b'\0',
++                 'DYNAMIC_KNOWN_ACTIVE_PARENT_SCRIPT_BINDING')
++            known.append(dict(pid=pid, ppid=row['ppid'], startTicks=row['startTicks'],
++                              parentStartTicks=parent['startTicks'], script=str(script), cwd=str(cwd)))
++    # Close source/root phases with COMPLETE proc+set, then source/root rereads.
++    need({str(p): describe(p) for p in sorted({ops, cwd, *cfg.execution_roots})} == roots,
++         'DYNAMIC_ROOT_PHASE_META_DRIFT')
++    need(dynamic_scan(cfg, budget) == candidates, 'DYNAMIC_NODE_SET_END_DRIFT')
++    for pid, row in full.items():
++        need(dynamic_proc(cfg, pid, budget)[0] == row, 'DYNAMIC_FINAL_FULL_PROC_DRIFT')
++    need({str(p): dynamic_source(p, budget) for p in sorted(paths)} == source_meta,
++         'DYNAMIC_FINAL_SOURCE_META_DRIFT')
++    need({str(p): describe(p) for p in sorted({ops, cwd, *cfg.execution_roots})} == roots,
++         'DYNAMIC_FINAL_ROOT_META_DRIFT')
++    need(dynamic_source(cfg.pm2_home / 'pm2.pid', budget) == pidfile,
++         'DYNAMIC_MAIN_PIDFILE_META_DRIFT')
++    need(dynamic_scan(cfg, budget) == candidates, 'DYNAMIC_NODE_SET_FINAL_DRIFT')
++    dynamic_check(budget)
++    return dict(fixtureOnly=cfg.mock, schema='dynamic-foreignproc-r5-v1',
++                processes=[full[p] for p in sorted(full) if p not in own_pids],
++                activeForeignNodePids=sorted(set(candidates) - own_pids),
++                ownedSlotsStable=dict(requiredCount=6, slots=[own[k] for k in sorted(own)]),
++                knownRecommendationObservation=dict(state='observed-active' if known else 'observed-absent-not-retired',
++                                                     matchedActive=known, source=str(script)),
++                sources={p: r['sha256'] for p, r in source_meta.items()},
++                fullSourceMeta=source_meta, rootMeta=roots,
++                sourceGraphReviewRequired=True, semanticsClosed=False,
++                pid1Policy='recorded-full-root-with-ppid-zero')
++
++
++def dynamic_protection(cfg, fixture=None):
++    need(fixture is None or cfg.mock, 'EXTERNAL_FIXTURE_ONLY_NO_PRODUCTION_OVERRIDE')
++    if fixture is None:
++        need(cfg.proc == Path('/proc'), 'EXTERNAL_FIXED_PRODUCTION_PROC')
++        ops, cwd, script = EXTERNAL_OPS, EXTERNAL_CWD, EXTERNAL_SCRIPT
++    else:
++        exact(fixture, 'ops cwd script', 'EXTERNAL_FIXTURE_PATH_SCHEMA')
++        ops, cwd, script = (no_link(fixture[k]) for k in ('ops', 'cwd', 'script'))
++    need(ops in cfg.extra_protected and cwd in cfg.extra_protected and ops in script.parents,
++         'EXTERNAL_REQUIRED_EXACT_ROOTS')
++    budget = dynamic_budget()
++    first = dynamic_protection_sample(cfg, ops, cwd, script, budget)
++    second = dynamic_protection_sample(cfg, ops, cwd, script, budget)
++    need(first == second, 'DYNAMIC_TWO_COMPLETE_SAMPLE_DRIFT')
++    return first
++
+ 
+ def transport(cfg):
+     external = external_protection(cfg)

@@ -1,0 +1,119 @@
+{
+  "changed": [
+    "Config",
+    "external_protection"
+  ],
+  "counts": {
+    "baselineFinite": 6,
+    "baselinePrepare": 36,
+    "baselineRelease": 142,
+    "finite": 6,
+    "newMock": 62,
+    "prepare": 38,
+    "release": 204
+  },
+  "newHelpers": [
+    "dynamic_budget",
+    "dynamic_check",
+    "dynamic_identity",
+    "dynamic_maps",
+    "dynamic_owned",
+    "dynamic_permissions",
+    "dynamic_proc",
+    "dynamic_protection",
+    "dynamic_protection_sample",
+    "dynamic_read",
+    "dynamic_scan",
+    "dynamic_source"
+  ],
+  "retained": {
+    "test_prepare_local.py": {
+      "newCount": 2,
+      "newTests": [
+        "LocalTests.test_r5_old_exact_4fe_controller_capture_not_reusable",
+        "LocalTests.test_r5_old_r4_scope_capture_not_reusable"
+      ],
+      "onlyScopeAssertionChanges": [
+        "LocalTests.test_r3_current_controller_sha_and_scope_fixed"
+      ],
+      "originalCount": 36,
+      "retainedCount": 36,
+      "totalCount": 38
+    },
+    "test_release.py": {
+      "newCount": 62,
+      "newTests": [
+        "R5DynamicTests.test_all_exe_argv_mapped_and_known_source_full_meta",
+        "R5DynamicTests.test_birth_during_final_source_root_phase_rejected_by_last_set_check",
+        "R5DynamicTests.test_byte_perproc_source_total_caps",
+        "R5DynamicTests.test_candidate_incomplete_pm2_title_no_exe_failclosed",
+        "R5DynamicTests.test_config_roots_no_recursive_shadow_and_original_extra_trees_retained",
+        "R5DynamicTests.test_count_proc_node_graph_source_depth_caps",
+        "R5DynamicTests.test_current_15node_absent_old_is_valid_not_retired",
+        "R5DynamicTests.test_deleted_exe_and_unsupported_link_failclosed",
+        "R5DynamicTests.test_final_fullproc_phase_reread_after_source_root",
+        "R5DynamicTests.test_final_source_meta_and_root_phase_reread",
+        "R5DynamicTests.test_foreign_cmd_opaque_drift",
+        "R5DynamicTests.test_foreign_death_fails_guard",
+        "R5DynamicTests.test_foreign_permission_drift",
+        "R5DynamicTests.test_foreign_permission_whitespace_is_opaque_bytes",
+        "R5DynamicTests.test_foreign_pid_reuse_fails_guard",
+        "R5DynamicTests.test_foreign_raw_no_nodeunique_normalization",
+        "R5DynamicTests.test_invalid_dead_stat_failclosed",
+        "R5DynamicTests.test_known_current_active_fresh_pids_and_flock_relation",
+        "R5DynamicTests.test_known_new_active_appearance_exact_guard_reject",
+        "R5DynamicTests.test_known_nonflock_parent_not_approved_or_exempt",
+        "R5DynamicTests.test_known_source_always_protected_while_absent",
+        "R5DynamicTests.test_log_append_content_not_in_stable_source_meta",
+        "R5DynamicTests.test_main_and_extra_gods_remain_exact_foreign",
+        "R5DynamicTests.test_main_pidfile_change_guard_even_other_known_god",
+        "R5DynamicTests.test_main_pm2_home_title_spoof_failclosed",
+        "R5DynamicTests.test_mapping_deleted_and_escaped_failclosed",
+        "R5DynamicTests.test_mapping_path_with_spaces_retained_whole",
+        "R5DynamicTests.test_maps_path_set_drift_guard",
+        "R5DynamicTests.test_matching_birth_during_scan_end_reject",
+        "R5DynamicTests.test_matching_death_during_scan_end_reject",
+        "R5DynamicTests.test_missing_parent_not_silently_ignored",
+        "R5DynamicTests.test_new_unknown_node_birth_fails_guard_equality",
+        "R5DynamicTests.test_nonmatching_transient_can_disappear_but_matching_cannot",
+        "R5DynamicTests.test_nonroot_parent_cycle_reject",
+        "R5DynamicTests.test_owned_api_cas_not_duplicated_into_transport",
+        "R5DynamicTests.test_owned_bad_parent_not_exempt",
+        "R5DynamicTests.test_owned_cwd_is_actual_serialized_kernel_not_script_parent_guess",
+        "R5DynamicTests.test_owned_duplicate_exact_slot_reject",
+        "R5DynamicTests.test_owned_kernel_exe_or_cwd_wrong_no_exemption",
+        "R5DynamicTests.test_owned_kernel_executable_spoof_no_exemption",
+        "R5DynamicTests.test_owned_maps_path_set_drift_guard_even_existing_union",
+        "R5DynamicTests.test_owned_missing_reject_not_false_ready",
+        "R5DynamicTests.test_owned_outer_raw_duplicates_failclosed",
+        "R5DynamicTests.test_owned_roll_between_two_samples_only_stable_slot_mapping",
+        "R5DynamicTests.test_owned_single_roll_stable_transport_and_no_foreign_exemption",
+        "R5DynamicTests.test_owned_spoof_name_cwd_script_mode_id_and_duplicate_json_reject",
+        "R5DynamicTests.test_parent_cycle_reject",
+        "R5DynamicTests.test_parent_raw_drift_exact",
+        "R5DynamicTests.test_ppid_zero_not_silently_roottrusted",
+        "R5DynamicTests.test_production_route_cannot_call_fixed_pid_samples",
+        "R5DynamicTests.test_root_fullmeta_during_final_proc_is_rechecked",
+        "R5DynamicTests.test_source_hash_change_guard",
+        "R5DynamicTests.test_source_same_hash_permission_change_guard",
+        "R5DynamicTests.test_source_same_path_replace_inode_reject",
+        "R5DynamicTests.test_source_symlink_failclosed",
+        "R5DynamicTests.test_status_telemetry_and_anonymous_maps_not_stable_identity",
+        "R5DynamicTests.test_time_cap_monotonic_not_wallclock",
+        "R5DynamicTests.test_unknown_node_capture_is_not_approval",
+        "R5DynamicTests.test_unknown_parent_cwd_shallow_not_recursive",
+        "R5TransportTests.test_foreign_drift_during_mock_transport_node_rejected",
+        "R5TransportTests.test_owned_single_roll_between_transport_collectors_keeps_full_transport",
+        "R5TransportTests.test_pure_collectors_bracket_only_mock_node_calls_then_fullmeta_exact"
+      ],
+      "onlyScopeAssertionChanges": [
+        "SafetyTests.test_new_identity_and_fixed_boundary",
+        "R4ProtectedGraphTests.test_default_exact_roots_no_parentcwd_or_root_recursion"
+      ],
+      "originalCount": 142,
+      "retainedCount": 142,
+      "totalCount": 204
+    }
+  },
+  "sha": "f544c1663d84350df0ff036b7e1b330a8cfcb016e64d705027ff86411a26ed5d"
+}

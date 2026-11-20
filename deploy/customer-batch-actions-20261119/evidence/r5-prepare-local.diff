@@ -1,0 +1,11 @@
+--- baseline-4fe/prepare-local.py
++++ R5/prepare-local.py
+@@ -15,7 +15,7 @@
+ HERE = Path(__file__).absolute().parent
+ REPO = HERE.parent.parent
+ WORK = Path('/home/ubuntu/work/customer-batch')
+-CONTROLLER_SHA = '4fe2ad8a49982a2395a38254da473ebc958cd1ce9bc45310dba1481621fdc121'
++CONTROLLER_SHA = 'f544c1663d84350df0ff036b7e1b330a8cfcb016e64d705027ff86411a26ed5d'
+ NODE = '/usr/bin/node'
+ # Exactly backend-builder.compile's transform options, but read original files twice.
+ BACKEND_HASH_CHECK = """

@@ -1,0 +1,355 @@
+{
+  "allNinePinsSame": true,
+  "baselineSha256": "4fe2ad8a49982a2395a38254da473ebc958cd1ce9bc45310dba1481621fdc121",
+  "configBindingASTAndBytesSame": true,
+  "controllerMethodCount": 30,
+  "controllerMethods": {
+    "__init__": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "74e612a5a06e947d8d1157b20e8511a040b166bedfdd90d5ee108ad1eeb7a057"
+    },
+    "_verify": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "cb64275986f11b553ff87b0820af5f2f311eda853026fd980a7ea67afba239e0"
+    },
+    "add_asset": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "40420a0989bc0c0324ee1f21ad147caec362aa0827b7eb6dbfe82259293cfd50"
+    },
+    "apply": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "33b7a1a8dc11b5411bbfd096e6a22cd46bc18fa98d40208f75b5e36f96d9edf5"
+    },
+    "baseline_guard": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "6c0a36a582183e96b543a60fa3296ab439d5157fc3f6f8b31d1b321a28052e5c"
+    },
+    "bundle": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "3f3b928bd1acd6cca47d70249528e02dc00d48d95a370e5fe2b9fb45f1d8bd55"
+    },
+    "capture": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "5cc8190d59dc50379446b7126b35e74c27494b891f15c234d9c14799fd20e8d6"
+    },
+    "change_coord": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "35013426b02a75950e59165f054a18f5c653b48dda4a056472e77ef7b9fd3aa8"
+    },
+    "change_file": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "554162e3b3531ba5c15333c2cc6125c98eb1ede2691a9739f2aa2178bab51072"
+    },
+    "checkpoint": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "1e1177313e700b03bf6113aa51038aa1748540b97eca8928b9799a702ca4d3b4"
+    },
+    "close": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "41e52c65095579138f0ffee5bb6b94576699599db5320051e3a5ad3fb1d62a40"
+    },
+    "common": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "8eabc862499422d67e31a14bc79df11fd06d96ac1e8096db96e4b9d786994104"
+    },
+    "current_snapshot": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "b4876c0c01869af092e30ae900e1b139dc9f5b22109965dbdb4d7697823fd611"
+    },
+    "durable_success": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "68fc79c21cae3f616b77b183e5ca049aa111f7d9e036eb8cb35b5c3a0a1b1ad2"
+    },
+    "fail": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "cdec51fd9b90de8ee205fe5b633b5f3911a4d64bf19bf795b0bffbed51a7a2ac"
+    },
+    "guard": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "1a7b9c089b6f0923bc340642dfbf626bdd7ff759458db0985c5c81388a27ba86"
+    },
+    "health": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "20bc06b90763537f679be90478a41b0e91e57bd68f8341ef4e63da0534c249a8"
+    },
+    "no_replay": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "f117cd22001d4412f18ade9cf866523c4bd6abcf442f96587824f5244f237799"
+    },
+    "owned_window": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "a1428efe95ded6ab5508912852e79c02c75d3de79272af412331e040e1ecaa98"
+    },
+    "preflight": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "f772e136b988b8641fe00292e346dd8ebff1f8246d5aafedc1c4011b2cbe39bd"
+    },
+    "receipt_proof": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "f6a3939a75bf0b42a452ffbb5ef25a2ddc78ae67e88a0bbccf4f183361fa4b1f"
+    },
+    "reload_one": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "9818dc910be1792ad462199cea85bb2eaa6ce1cea9aeaab05e12ee8fac392bd1"
+    },
+    "restore_journal": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "d8e04241ec2a09af93ab5fdb9529ef7d00c41c07ec3f130c4721e2750710a1d2"
+    },
+    "retain_owned_hold": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "a5ac24f3967f8cc61f435bc34086c3e507d10af52d4cb7ad9a2ac24c2fd214b6"
+    },
+    "rollback": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "9ce1f2520709f6507a4c85e70467c4ef02445a6a41f685839e547038dc8dc652"
+    },
+    "sealed_guard": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "e1df831b906bd812d38aa942a1016a3ec744270e10df31e7673ee81607148b24"
+    },
+    "set_parent": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "256b2b82e78a5f8013926483c549e9753d2e630de7f837ddc042adabec968320"
+    },
+    "snapshot": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "f26c4d45e363fa1d5616341844ad63c4f36120f2b259121e5c45219edb0d4fb4"
+    },
+    "state_invariants": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "99cf7c8da6e368ef03f6e8c65da25e85d0ba5b052758bcd8239b12243ca3e4a9"
+    },
+    "verify": {
+      "astSame": true,
+      "bytesSame": true,
+      "sha256": "e312df001034863229bbededd0930106b1ab441929a8e35c83bc5bf9f8179a83"
+    }
+  },
+  "currentSha256": "f544c1663d84350df0ff036b7e1b330a8cfcb016e64d705027ff86411a26ed5d",
+  "existingConstantsChanged": [
+    "SCOPE"
+  ],
+  "existingDefinitionsASTAndBytesUnchanged": [
+    "ReleaseError",
+    "need",
+    "H",
+    "encode",
+    "decode",
+    "exact",
+    "pin",
+    "integer",
+    "now",
+    "fresh",
+    "rel",
+    "no_link",
+    "meta",
+    "regular",
+    "describe",
+    "private",
+    "fsync_dir",
+    "check_locks",
+    "exclusive",
+    "cas",
+    "locked",
+    "coord_closed",
+    "union",
+    "inventory",
+    "shallow_pm2",
+    "raw_values",
+    "raw_semantics",
+    "pm2_top_tokens",
+    "pm2_project",
+    "pm2_json_domain",
+    "pm2_raw_binding",
+    "pm2_meta_transition",
+    "permissions",
+    "adapter_files",
+    "external_proc_identity",
+    "external_proc_link",
+    "external_source",
+    "external_proc_sample",
+    "external_protection_sample",
+    "transport",
+    "rpc",
+    "snapshot_rows",
+    "identity",
+    "pm2_publish_ready",
+    "get_http",
+    "listener",
+    "utf16_offset",
+    "inverse_patches",
+    "validate_api_source",
+    "native_api",
+    "unb64",
+    "ui_inverse",
+    "file_pin",
+    "tree_files",
+    "manifest_bindings",
+    "validate_review",
+    "seal_candidate",
+    "config_binding",
+    "validate_payload",
+    "Controller",
+    "production_reload",
+    "main"
+  ],
+  "existingDefinitionsChanged": [
+    "Config",
+    "external_protection"
+  ],
+  "inventoryASTAndBytesSame": true,
+  "newConfigFields": [
+    "execution_roots",
+    "execution_sources"
+  ],
+  "newHelpers": [
+    "dynamic_budget",
+    "dynamic_check",
+    "dynamic_identity",
+    "dynamic_maps",
+    "dynamic_owned",
+    "dynamic_permissions",
+    "dynamic_proc",
+    "dynamic_protection",
+    "dynamic_protection_sample",
+    "dynamic_read",
+    "dynamic_scan",
+    "dynamic_source"
+  ],
+  "originalConfigAllFieldsASTAndBytesSame": true,
+  "pins": {
+    "constants.js": "5a4adce0c3c277d4974c0ebdefb22d62ffcad74edcf910bfeeff287dacb8a853",
+    "lib/God.js": "f598e5113890418827e31dd52fc3538e8f19287fad212cafd9388b0216fe500d",
+    "lib/God/ClusterMode.js": "b4a9304e12f468f87a039c174c6ea4a1001f21d9dd1f5317121ed217bc389119",
+    "lib/God/Methods.js": "577a8505074225dfe73ce2c955c844662c6bc9d76c31d8102f809a1691262044",
+    "lib/God/Reload.js": "5e90112e447c4634009ea35005ffd477aab93064f55390288c56b51eee25992e",
+    "lib/ProcessContainer.js": "712b414f248a460f58d4365898fa7b27d39bf7f571ac889359e3a7b6a32419d1",
+    "lib/Utility.js": "66cd15711be69f40f6ee3c3f60adcf07e58d0bcdec9552ec5104530b22ba28f1",
+    "modules/fclone.js": "9b921f33e5d4e36dd030f5d2e736ea2af0c95f4fb795ada696160e2db7fe2fe6",
+    "package.json": "f2819cffb2aae16bb813596575410877570a253be11949260caa33c8038788d6"
+  },
+  "preparerAllDefinitionsASTAndBytesSame": true,
+  "preparerOnlyChangedConstant": "CONTROLLER_SHA",
+  "retainedTests": {
+    "test_prepare_local.py": {
+      "newCount": 2,
+      "newTests": [
+        "LocalTests.test_r5_old_exact_4fe_controller_capture_not_reusable",
+        "LocalTests.test_r5_old_r4_scope_capture_not_reusable"
+      ],
+      "onlyScopeAssertionChanges": [
+        "LocalTests.test_r3_current_controller_sha_and_scope_fixed"
+      ],
+      "originalCount": 36,
+      "retainedCount": 36,
+      "totalCount": 38
+    },
+    "test_release.py": {
+      "newCount": 62,
+      "newTests": [
+        "R5DynamicTests.test_all_exe_argv_mapped_and_known_source_full_meta",
+        "R5DynamicTests.test_birth_during_final_source_root_phase_rejected_by_last_set_check",
+        "R5DynamicTests.test_byte_perproc_source_total_caps",
+        "R5DynamicTests.test_candidate_incomplete_pm2_title_no_exe_failclosed",
+        "R5DynamicTests.test_config_roots_no_recursive_shadow_and_original_extra_trees_retained",
+        "R5DynamicTests.test_count_proc_node_graph_source_depth_caps",
+        "R5DynamicTests.test_current_15node_absent_old_is_valid_not_retired",
+        "R5DynamicTests.test_deleted_exe_and_unsupported_link_failclosed",
+        "R5DynamicTests.test_final_fullproc_phase_reread_after_source_root",
+        "R5DynamicTests.test_final_source_meta_and_root_phase_reread",
+        "R5DynamicTests.test_foreign_cmd_opaque_drift",
+        "R5DynamicTests.test_foreign_death_fails_guard",
+        "R5DynamicTests.test_foreign_permission_drift",
+        "R5DynamicTests.test_foreign_permission_whitespace_is_opaque_bytes",
+        "R5DynamicTests.test_foreign_pid_reuse_fails_guard",
+        "R5DynamicTests.test_foreign_raw_no_nodeunique_normalization",
+        "R5DynamicTests.test_invalid_dead_stat_failclosed",
+        "R5DynamicTests.test_known_current_active_fresh_pids_and_flock_relation",
+        "R5DynamicTests.test_known_new_active_appearance_exact_guard_reject",
+        "R5DynamicTests.test_known_nonflock_parent_not_approved_or_exempt",
+        "R5DynamicTests.test_known_source_always_protected_while_absent",
+        "R5DynamicTests.test_log_append_content_not_in_stable_source_meta",
+        "R5DynamicTests.test_main_and_extra_gods_remain_exact_foreign",
+        "R5DynamicTests.test_main_pidfile_change_guard_even_other_known_god",
+        "R5DynamicTests.test_main_pm2_home_title_spoof_failclosed",
+        "R5DynamicTests.test_mapping_deleted_and_escaped_failclosed",
+        "R5DynamicTests.test_mapping_path_with_spaces_retained_whole",
+        "R5DynamicTests.test_maps_path_set_drift_guard",
+        "R5DynamicTests.test_matching_birth_during_scan_end_reject",
+        "R5DynamicTests.test_matching_death_during_scan_end_reject",
+        "R5DynamicTests.test_missing_parent_not_silently_ignored",
+        "R5DynamicTests.test_new_unknown_node_birth_fails_guard_equality",
+        "R5DynamicTests.test_nonmatching_transient_can_disappear_but_matching_cannot",
+        "R5DynamicTests.test_nonroot_parent_cycle_reject",
+        "R5DynamicTests.test_owned_api_cas_not_duplicated_into_transport",
+        "R5DynamicTests.test_owned_bad_parent_not_exempt",
+        "R5DynamicTests.test_owned_cwd_is_actual_serialized_kernel_not_script_parent_guess",
+        "R5DynamicTests.test_owned_duplicate_exact_slot_reject",
+        "R5DynamicTests.test_owned_kernel_exe_or_cwd_wrong_no_exemption",
+        "R5DynamicTests.test_owned_kernel_executable_spoof_no_exemption",
+        "R5DynamicTests.test_owned_maps_path_set_drift_guard_even_existing_union",
+        "R5DynamicTests.test_owned_missing_reject_not_false_ready",
+        "R5DynamicTests.test_owned_outer_raw_duplicates_failclosed",
+        "R5DynamicTests.test_owned_roll_between_two_samples_only_stable_slot_mapping",
+        "R5DynamicTests.test_owned_single_roll_stable_transport_and_no_foreign_exemption",
+        "R5DynamicTests.test_owned_spoof_name_cwd_script_mode_id_and_duplicate_json_reject",
+        "R5DynamicTests.test_parent_cycle_reject",
+        "R5DynamicTests.test_parent_raw_drift_exact",
+        "R5DynamicTests.test_ppid_zero_not_silently_roottrusted",
+        "R5DynamicTests.test_production_route_cannot_call_fixed_pid_samples",
+        "R5DynamicTests.test_root_fullmeta_during_final_proc_is_rechecked",
+        "R5DynamicTests.test_source_hash_change_guard",
+        "R5DynamicTests.test_source_same_hash_permission_change_guard",
+        "R5DynamicTests.test_source_same_path_replace_inode_reject",
+        "R5DynamicTests.test_source_symlink_failclosed",
+        "R5DynamicTests.test_status_telemetry_and_anonymous_maps_not_stable_identity",
+        "R5DynamicTests.test_time_cap_monotonic_not_wallclock",
+        "R5DynamicTests.test_unknown_node_capture_is_not_approval",
+        "R5DynamicTests.test_unknown_parent_cwd_shallow_not_recursive",
+        "R5TransportTests.test_foreign_drift_during_mock_transport_node_rejected",
+        "R5TransportTests.test_owned_single_roll_between_transport_collectors_keeps_full_transport",
+        "R5TransportTests.test_pure_collectors_bracket_only_mock_node_calls_then_fullmeta_exact"
+      ],
+      "onlyScopeAssertionChanges": [
+        "SafetyTests.test_new_identity_and_fixed_boundary",
+        "R4ProtectedGraphTests.test_default_exact_roots_no_parentcwd_or_root_recursion"
+      ],
+      "originalCount": 142,
+      "retainedCount": 142,
+      "totalCount": 204
+    }
+  },
+  "rpcLiteralASTAndBytesSame": true,
+  "transportASTAndBytesSame": true,
+  "wholeControllerASTAndBytesSame": true
+}

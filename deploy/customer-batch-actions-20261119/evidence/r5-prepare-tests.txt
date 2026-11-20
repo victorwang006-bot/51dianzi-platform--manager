@@ -1,0 +1,43 @@
+test_builder_source_bytes_pin_refused (test_prepare_local.LocalTests.test_builder_source_bytes_pin_refused) ... ok
+test_capture_config_and_meta_mismatch_refused (test_prepare_local.LocalTests.test_capture_config_and_meta_mismatch_refused) ... ok
+test_capture_expired_refused (test_prepare_local.LocalTests.test_capture_expired_refused) ... ok
+test_current_baseline_hash_mismatch_refused (test_prepare_local.LocalTests.test_current_baseline_hash_mismatch_refused) ... ok
+test_empty_and_missing_report_hash_refused (test_prepare_local.LocalTests.test_empty_and_missing_report_hash_refused) ... ok
+test_existing_file_is_not_overwritten (test_prepare_local.LocalTests.test_existing_file_is_not_overwritten) ... ok
+test_foreign_open_capture_coord_refused (test_prepare_local.LocalTests.test_foreign_open_capture_coord_refused) ... ok
+test_freeze_source_inventory_mismatch_refused (test_prepare_local.LocalTests.test_freeze_source_inventory_mismatch_refused) ... ok
+test_freeze_source_path_escape_refused (test_prepare_local.LocalTests.test_freeze_source_path_escape_refused) ... ok
+test_frozen_compiled_output_drift_refused (test_prepare_local.LocalTests.test_frozen_compiled_output_drift_refused) ... ok
+test_missing_baseline_refused (test_prepare_local.LocalTests.test_missing_baseline_refused) ... ok
+test_no_replay_existing_directory_before_subprocess (test_prepare_local.LocalTests.test_no_replay_existing_directory_before_subprocess) ... ok
+test_no_replay_partial_failure (test_prepare_local.LocalTests.test_no_replay_partial_failure) ... ok
+test_old_7fc9_controller_capture_is_not_reusable (test_prepare_local.LocalTests.test_old_7fc9_controller_capture_is_not_reusable) ... ok
+test_old_failed_stage_scope_capture_is_not_reusable (test_prepare_local.LocalTests.test_old_failed_stage_scope_capture_is_not_reusable) ... ok
+test_original_controller_pin_refused (test_prepare_local.LocalTests.test_original_controller_pin_refused) ... ok
+test_original_source_and_compilation_drifts_refused (test_prepare_local.LocalTests.test_original_source_and_compilation_drifts_refused) ... ok
+test_paths_and_argument_rejection (test_prepare_local.LocalTests.test_paths_and_argument_rejection) ... ok
+test_private_nonce_required (test_prepare_local.LocalTests.test_private_nonce_required) ... ok
+test_public_helpers_reject_fake_native_records (test_prepare_local.LocalTests.test_public_helpers_reject_fake_native_records) ... ok
+test_r2_scope_and_d6_controller_capture_not_reusable_in_r3 (test_prepare_local.LocalTests.test_r2_scope_and_d6_controller_capture_not_reusable_in_r3) ... ok
+test_r3_current_controller_sha_and_scope_fixed (test_prepare_local.LocalTests.test_r3_current_controller_sha_and_scope_fixed) ... ok
+test_r3_private_root_union_cannot_be_omitted_from_capture (test_prepare_local.LocalTests.test_r3_private_root_union_cannot_be_omitted_from_capture) ... ok
+test_r3_scope_and_bf7_capture_not_reusable_in_r4 (test_prepare_local.LocalTests.test_r3_scope_and_bf7_capture_not_reusable_in_r4) ... ok
+test_r4_both_external_exact_roots_cannot_be_omitted (test_prepare_local.LocalTests.test_r4_both_external_exact_roots_cannot_be_omitted) ... ok
+test_r4_domain_false_readiness_diagnostic_inputs_not_publication_approval (test_prepare_local.LocalTests.test_r4_domain_false_readiness_diagnostic_inputs_not_publication_approval) ... ok
+test_r4_domain_old_8dc_capture_pin_not_reusable (test_prepare_local.LocalTests.test_r4_domain_old_8dc_capture_pin_not_reusable) ... ok
+test_r5_old_exact_4fe_controller_capture_not_reusable (test_prepare_local.LocalTests.test_r5_old_exact_4fe_controller_capture_not_reusable) ... ok
+test_r5_old_r4_scope_capture_not_reusable (test_prepare_local.LocalTests.test_r5_old_r4_scope_capture_not_reusable) ... ok
+test_report_hash_mismatch (test_prepare_local.LocalTests.test_report_hash_mismatch) ... ok
+test_report_input_does_not_implicitly_seal (test_prepare_local.LocalTests.test_report_input_does_not_implicitly_seal) ... ok
+test_seal_calls_only_candidate_with_hash_bound_external_input (test_prepare_local.LocalTests.test_seal_calls_only_candidate_with_hash_bound_external_input) ... ok
+test_seal_without_report_is_refused_before_build (test_prepare_local.LocalTests.test_seal_without_report_is_refused_before_build) ... ok
+test_source_inventory_parser_refuses_dynamic_expressions (test_prepare_local.LocalTests.test_source_inventory_parser_refuses_dynamic_expressions) ... ok
+test_spec_sources_evidence_and_no_production_alias (test_prepare_local.LocalTests.test_spec_sources_evidence_and_no_production_alias) ... ok
+test_symlink_input_refused (test_prepare_local.LocalTests.test_symlink_input_refused) ... ok
+test_symlink_output_refused (test_prepare_local.LocalTests.test_symlink_output_refused) ... ok
+test_ui_compiler_source_pin_refused (test_prepare_local.LocalTests.test_ui_compiler_source_pin_refused) ... ok
+
+----------------------------------------------------------------------
+Ran 38 tests in 1.276s
+
+OK

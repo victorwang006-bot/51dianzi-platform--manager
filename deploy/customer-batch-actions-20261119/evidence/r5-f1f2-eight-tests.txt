@@ -1,0 +1,13 @@
+test_file_backed_map_multiplicity_preserved_not_aslr_address (test_release.R5F1F2Tests.test_file_backed_map_multiplicity_preserved_not_aslr_address) ... ok
+test_foreign_duplicate_mapping_between_samples_rejected (test_release.R5F1F2Tests.test_foreign_duplicate_mapping_between_samples_rejected) ... ok
+test_normal_owned_decimal_unique_roll_still_noninterfering (test_release.R5F1F2Tests.test_normal_owned_decimal_unique_roll_still_noninterfering) ... ok
+test_owned_duplicate_mapping_between_samples_rejected (test_release.R5F1F2Tests.test_owned_duplicate_mapping_between_samples_rejected) ... ok
+test_same_pid_malformed_serialized_env_not_owned_exempt (test_release.R5F1F2Tests.test_same_pid_malformed_serialized_env_not_owned_exempt) ... ok
+test_same_pid_missing_env_not_owned_exempt (test_release.R5F1F2Tests.test_same_pid_missing_env_not_owned_exempt) ... ok
+test_same_pid_missing_node_unique_not_owned_exempt (test_release.R5F1F2Tests.test_same_pid_missing_node_unique_not_owned_exempt) ... ok
+test_same_pid_nondecimal_node_unique_not_owned_exempt (test_release.R5F1F2Tests.test_same_pid_nondecimal_node_unique_not_owned_exempt) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.812s
+
+OK

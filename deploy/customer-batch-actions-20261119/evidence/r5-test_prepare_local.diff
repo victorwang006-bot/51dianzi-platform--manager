@@ -1,0 +1,33 @@
+--- baseline-4fe/test_prepare_local.py
++++ R5/test_prepare_local.py
+@@ -435,8 +435,8 @@
+ 
+     def test_r3_current_controller_sha_and_scope_fixed(self):
+         self.assertEqual(P.CONTROLLER_SHA, P.sha((HERE/'release.py').read_bytes()))
+-        self.assertEqual(R.SCOPE, 'customer-batch-actions-20261120-6Lfttf6o-R4')
+-        self.assertEqual(str(R.Config().stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R4')
++        self.assertEqual(R.SCOPE, 'customer-batch-actions-20261120-6Lfttf6o-R5')
++        self.assertEqual(str(R.Config().stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R5')
+         self.assertEqual(R.OWNER, '6Lfttf6oVWJ8YS69o5FkXQ')
+ 
+     def test_old_failed_stage_scope_capture_is_not_reusable(self):
+@@ -505,5 +505,19 @@
+         self.assertTrue(all(row['pm2ReloadReady'] is False for row in result[3]['processes'][:6]))
+         self.assertEqual(self.calls, []); self.assertFalse(self.out.exists())
+ 
++    def test_r5_old_r4_scope_capture_not_reusable(self):
++        self.cap['scope'] = 'customer-batch-actions-20261120-6Lfttf6o-R4'
++        self.save_capture()
++        with self.assertRaisesRegex(P.PrepareError, 'fixed production capture binding'):
++            P.inputs(self.args, R)
++        self.assertEqual(self.calls, []); self.assertFalse(self.out.exists())
++
++    def test_r5_old_exact_4fe_controller_capture_not_reusable(self):
++        self.cap['controllerSha256'] = '4fe2ad8a49982a2395a38254da473ebc958cd1ce9bc45310dba1481621fdc121'
++        self.save_capture()
++        with self.assertRaisesRegex(P.PrepareError, 'fixed production capture binding'):
++            P.inputs(self.args, R)
++        self.assertEqual(self.calls, []); self.assertFalse(self.out.exists())
++
+ if __name__ == '__main__':
+     unittest.main()

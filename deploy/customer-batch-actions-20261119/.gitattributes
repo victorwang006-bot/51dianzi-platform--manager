@@ -3,3 +3,4 @@ evidence/*.diff -whitespace
 # Raw unittest progress output can end in a space before an injected error.
 # Preserve logged bytes; actual Python/TypeScript source whitespace remains checked.
 evidence/*-tests*.txt -whitespace
+evidence/r5-*-prefix.md -whitespace

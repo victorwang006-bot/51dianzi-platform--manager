@@ -1,0 +1,24 @@
+# 客户批次 R5：动态 foreignproc 最小保护（NOT_APPROVED）
+
+当前 OWNER `6Lfttf6oVWJ8YS69o5FkXQ` 不变；全新 SCOPE **`customer-batch-actions-20261120-6Lfttf6o-R5`**。release SHA **`f544c1663d84350df0ff036b7e1b330a8cfcb016e64d705027ff86411a26ed5d`**，preparer 固 pin 同步。先准确保存 4fe 原六文件到 `evidence/r5-baseline-4fe/`，基线 **142/36/6** 全通过；最终 **204/38/6** 全通过，包括新增 **62** 动态/transport mock 方法和 **2** preparer 旧 R4 scope/4fe pin 拒绝方法。完整当前源码/测试日志 SHA 与 AST/字节核对在 `evidence/r5-source-and-safety.json`、`evidence/r5-ast-diff.json`；实质实现与剩余阻碍详见 **`evidence/r5-report.md`**。
+
+R5 只解除 production transport 对旧 fixed PID2060125/2060126 的当前 mandatory 依赖。保留全部历史 pure fixed-pair helpers/tests，不删除 known bootstrap/Ops/childcwd source。只通过有界 `/proc` 枚举实际 exe basename 以 node 开头或 cmd 以 PM2 开头的当前完整集合及父 closure。unknown Node 一样记录。PID/start/PPID/env/cmd/权限原字节 SHA、proc/exe/cwd/link META、actual absolute argv script/mapped execution source 的全 H/fullMETA、shallow root META 均精确保护；maps 最后完整 path 字段支持空格，并绑定 dev/inode。不加载 app modules、递归 deps、读 FD/log 内容 SHA；不遍历 `/root` 或 50GiB enterprise-shadow。Config 原所有字段、完整 extraProtect 两树不改，只加 bootstrap execution_sources 和 shadow shallow execution_roots；inventory 原方法 AST/字节不改，动态 sources 用 transport equality 逐 path 保护。
+
+六 own 当前严格识别 **190/191/192/193/194/200**：191/192 admin、其它 front，kernel exe 与 cfg.node/H、strict outer pm2_env 的 slot/name/cluster/script、实际 kernel cwd 与 serialized pm_cwd、cfg.pm2_home/pm2.pid fullMETA/H 绑定 main God 一致，每槽恰好一进程。不是从脚本目录猜 cwd。transport 只记录 stable slot/mapping/requiredCount=6，不把 own PID/start/raw/permissions/proc/cwd META 当 foreign 指纹；原 snapshot_rows/identity/reload_one 对六 own 的精确证据链完整保留。main God/extra God/其余六 PM2/ancestors 均 full exact foreign。allSixOwnfound 不能替代原 six-Ready literal True pregate。
+
+known bootstrap 始终 source/fullMETA protected；当前无精确 known argv 匹配可为 **`observed-absent-not-retired`**，不证明退休/owner。matching active 时捕获当次实际 Node＋父 flock/start/PPID/cwd/script，不要求旧 PID；实际父非 flock/unsupported argv 拒绝。known/unknown 新出现、消失、复用、重启或 env/cmd/permission/map/source/root 集合变化，exact guard 必拒。未知 loaded JS dependencies 仍须实际完整 source-graph 独立审查，`sourceGraphReviewRequired=true`、`semanticsClosed=false`，不由 opaque 稳定 SHA 或 mock 通过制造 trusted/approval。
+
+collector 两遍完整有限样本 equality，每遍有候选集合复查、末端 fullproc/source/root 复核；不是内核原子或持续冻结。cap 为 proc8192/node128/graph256/depth64/source512、proc-file1MiB/source-file256MiB/总2GiB/monotonic120秒，超界拒绝。生产 Node 数量不固定 14/15。pure collector 完成后才接原 transport 既有 Node 调用，Node 结束再 pure collector 对照；本轮所有此类调用均 mock。
+
+Controller **全部 30 methods AST/bytes 相同**；原 transport、RPC literal/function、完整 12slot/6own raw、JSON domain、pregate/appenv、预算、source/loader、inventory/config_binding、CAS/receipt/journal/approval/recovery 不改；原 8 source pins＋fclone 第9 pin 全相同。preparer 唯一生产改动为 CONTROLLER_SHA。业务/UI/TS/JS builder、test_finite_json.py 不改。
+
+11:12 旧 proc ENOENT/不完整 six，以及已协调提供的 11:17 实际 15-Node discovery/known bootstrap 缺席事实，不是 formal capture、退休或审批。本轮仅只读归档 `probe-live-runtime.py` SOURCE（SHA `64df69ac84db1a4a662eabc70b91b06f46130f0675d29a1798ebedf0bd440782`）与 README，从未 import/run 该 top-level MAIN。
+
+**controllerApproved=false；releaseApproved=false；finalDeployApproval=false；reloadApproved=false；NOT_APPROVED。** actual fresh **all current Node（非固定14）**、six actual Ready all literal True、typed-byte/retained witness/fullMETA、新 fullpkg/actual execution source graph/independent review 和明确部署许可仍待主任务；当前 front 列表＋详情优先未 closed。R4 从未 remote/stage/capture/attempt；历史 code 不 approvable。本轮 **0 server/production/probe/network/SSH/MCP/Git/实际 CLI/Node/God/app-module/DB/reload/capture/stage/attempt**。
+
+---
+
+## 以下全部为 R4／R3 历史记录（不是 R5 当前 pin、动态 schema 或部署许可）
+
+旧段落的 fixed14/fixedpair、旧 scope、旧 pin、旧测试数量只描述当时源码；当前要求以上方 R5、`evidence/r5-report.md` 与当前审计为准。保留历史，不复用其 capture/witness/approval。
+

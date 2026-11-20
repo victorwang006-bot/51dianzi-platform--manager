@@ -1,0 +1,11 @@
+# R5 F1/F2最小修正记录
+
+**仍NOT_APPROVED。当前controller SHA为36706f932e6284a1192ef213d85836d25b4c9a7a7023309c11454c4d2dfdfe14，准备器固定pin同步。历史f544不作为当前版本。** OWNER和未尝试R5scope不变，无R5远程stage/capture/attempt/window/activewrite/reload。
+
+独立审查发现两项纯TempDirectory接受反例：自有同PID的serialized env变非object或outer NODE_UNIQUE_ID缺失/非decimal仍被dynamic_owned豁免；foreign同源文件相同权限/offset/dev/inode在不同地址新增mapping被去重掩盖。F1仅新collector分类漏拒，原pm2_raw_binding及raw_semantics仍拒绝异常形状，不是已实现完整发布绕过。F2是映射multiplicity漂移，不要求把ASLR绝对地址作固定身份。
+
+已仅修dynamic_owned两条need（env须dict、outer NODE_UNIQUE_ID须decimal）；dynamic_maps只去掉dedup条件无条件append再sort，保留真实重复数。无原始环境清洗/metadata例外/forecasts变更。Controller全部30methods、所有其它既有topdefinition/9pins/RPC/roots/domain/pregate AST与源码bytes相同，原204测试全部定义不变，test_prepare源码未改，preparer只有pin改变。准确baseline六文件在r5-f1f2-baseline-f544；r5-f1f2-controller.diff和source-and-safety.json可复算。
+
+实际纯本地测试212controller/38preparer/6finite全部pass，八个新方法另8/8pass。新增方法覆盖env数组/字符串/null/bool/number/缺失、NodeUnique非decimal/缺失、正常自有单槽roll非干涉、maps重复条目计数且地址移动本身不影响身份、foreign/own不同地址同identity新mapping拒绝。所有操作仅TempDirectory/mock，无productionNode/CLI/锁/模块/环境/服务器IO。r5-f1f2-audit.py证明原方法字节和pin/source/logSHAs，正式独立复核报告随后归档，段通过不能当全包审批。
+
+当前动态active集合与knownbootstrap absence只记录本次观察，不假退休；完整Ops推荐+childcwd源码树保留。真正发布仍须前台列表+详情newactualverifiedclosed和明确交接后fresh全Node/父closure/source依赖当前META、sixReady全部literalTrue、typed/fullretained完整字节见证、两API/adminHTML新鲜增量与全包独立审批；用户已明确扩容结束可以上线，无需重复授权，但不能用mock/旧seed/部分只读/旧closed作审批。

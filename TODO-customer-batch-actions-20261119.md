@@ -50,3 +50,11 @@ R4完整OWNER不变，SCOPE customer-batch-actions-20261120-6Lfttf6o-R4；当前
 此结果只说明旧PID2060125已不存，不能推断推荐worker故障或合法retired。当前R4固定旧PID保护不得用于发布；推荐Ops与childcwd全树保护继续保留，不删历史代码/目录。前台正向服务器任务询已有生命周期/owner来源记录、将在其static adapter中fresh核对动态actualnode/flockparent与knownbootstrap/cwd；不让服务器重scan或接管。明确暂不追加六RPC许可、不新增ECS连接，后台只离线等待新actual身份及前台列表+详情actualverifiedclosed/明确交接，再做必要护图调整和fresh全审。
 
 auxfix独立增量复核已静态PASS，原105top/Controller30/九pins/domain/pregate全字节保持，142/36/6日志一致；报告evidence/r4-independent-auxfix.md/.json。段静态PASS不是实际META/Ready见证或整体审批，所有审批仍False。
+
+## 11:43 R5动态保护最终准备（未上线）
+
+已自然ff前台01043d6及去敏动态source64df，后仅离线改R5。旧固定PIDpair不再生产mandatory，原全部purefixedhelpers/historytests保留；currentactualallNode+完整父closure有限双sample保护foreignopaque/env/cmd/start/权限/exe/maps/script/sourcefullH/META，严格六ownstable slot映射不把合法rollPID/raw/start塞foreign记录，原30个Controller/transport/RPC/9pins/6ownraw/appenv/CAS/receipt/Readygate全部bytes保持。knownbootstrap当次absence仅not-retired，完整推荐Ops/cwd保护不删。unknownactualsourcegraph须新完整独立审，不自动approve。
+
+当前controller **36706f932e6284a1192ef213d85836d25b4c9a7a7023309c11454c4d2dfdfe14**，SCOPE customer-batch-actions-20261120-6Lfttf6o-R5，完整OWNER不变；preparerpin同步。独立发现F1非objectserializedenv/缺失或非decimalNodeUnique仍享新collectorown分类（原raw链仍阻断非pub绕过），F2重复同identity执行map去重丢multiplicity，已只两helper最窄修；212controller/38preparer/6JSON及八新反例全部实际puremock通过，原204测试定义ASTbyte不动、原全部协议不动，准确evidence/r5-f1f2-*。窄修独立复核完成后另归档，不用它代fresh全包approve。
+
+前台list+detailcandidate NOT_APPROVED，正在自身actualruntime source依赖/HOME/3God/脚本闭包/fullNativeBrowser证据，不追加我forecasthelper，后台不改变其固定收件输入/预算、不新probe或capture。R5未任何remote stage/capture/attempt/window/activewrite/reload。用户10:31‘扩容结束，可以上线’授权仍有效，待前台newactualstaticverifiedclosed+明确交接后自行freshactualsixReady/retainedTypedWitness/allNode sourcegraph/META/新两API+adminHTML/全pkg审，再窄scope发布；不复用旧技术closed或只读partial数据，也不重复要求用户授权。

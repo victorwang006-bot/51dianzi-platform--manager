@@ -1,0 +1,103 @@
+{
+  "actualAppModuleExecuted": false,
+  "actualDatabaseAccess": false,
+  "actualNodeExecuted": false,
+  "actualProcReads": 0,
+  "actualRpcExecuted": false,
+  "astEvidenceSha256": "7e7cc9f0fd9c5f90b862f64c5bf67618316b2817ff9c96251250e421d365c1b2",
+  "attemptExecuted": false,
+  "baseline": {
+    "README.md": "7b1bef7dfecec3b10fef9df5e9a52a133c7d4dd41bc83d832f30575d4dcd4943",
+    "prepare-local.README.md": "6fbbc18c5ba48f07f37e9a1119a91c8b6bd9f8ba4cf38e7a0344948747e7d793",
+    "prepare-local.py": "47013f3e2ab1c56936475c15e2e64743153f951b2adfa48fa6afe419187c0973",
+    "release.py": "4fe2ad8a49982a2395a38254da473ebc958cd1ce9bc45310dba1481621fdc121",
+    "test_prepare_local.py": "3f588fe155b0c717df3f8b9f00057a803548a4054d8b1c3651b026eea14ccc6f",
+    "test_release.py": "3cee69ea36fd3d5a1755788887f20485f40483146538a21e0ad647c3b5261790"
+  },
+  "captureExecuted": false,
+  "cliExecuted": false,
+  "controllerApproved": false,
+  "current": {
+    "README.md": "c9725540d9b7f8c7d8f7f7b5c74e28c3eae220c06d0ba3c47a8b4dfce9b83822",
+    "prepare-local.README.md": "08988ff77e8009fb380adf9f15dcc671dcbc4e217149677d178733657b2084a1",
+    "prepare-local.py": "60ca8e9e922b72b52cd446dd16f35e5cdfeafb0ccb2f71707e6800b08196a59d",
+    "release.py": "f544c1663d84350df0ff036b7e1b330a8cfcb016e64d705027ff86411a26ed5d",
+    "test_prepare_local.py": "8e59403a2483d43d9372b08b82ccf80a1dff48babfd55bd439c9267ce5ebfe57",
+    "test_release.py": "155cdb754af78971284bcf7cc4769e5c9af21012ed7a94f7c38a2112dcfa88f7"
+  },
+  "finalDeployApproval": false,
+  "gitExecuted": false,
+  "mcpExecuted": false,
+  "networkAccess": false,
+  "notes": [
+    "TemporaryDirectory mocks only; unchanged tests use local fixture locks, never production locks.",
+    "Two finite complete samples; not a kernel-atomic snapshot or continuous stability guarantee.",
+    "Unknown actual loaded JS dependencies remain mandatory independent source-graph review, not semantics-closed.",
+    "Mutable owned API files remain protected by the unchanged inventory/full-CAS chain; normal cluster container argv/maps sources remain transport-fullMETA pinned."
+  ],
+  "ownerTask": "6Lfttf6oVWJ8YS69o5FkXQ",
+  "probeExecuted": false,
+  "productionReads": 0,
+  "productionWrites": 0,
+  "releaseApproved": false,
+  "reloadApproved": false,
+  "reloadExecuted": false,
+  "reviewGenerated": false,
+  "scope": "customer-batch-actions-20261120-6Lfttf6o-R5",
+  "serverExecutions": 0,
+  "sourceDiscoveryReference": {
+    "approval": false,
+    "executed": false,
+    "formalCapture": false,
+    "imported": false,
+    "path": "/home/ubuntu/51-manager/deploy/self-search-detail-demo-20261120/read-only/probe-live-runtime.py",
+    "readOnlySource": true,
+    "sha256": "64df69ac84db1a4a662eabc70b91b06f46130f0675d29a1798ebedf0bd440782"
+  },
+  "sshExecuted": false,
+  "stageExecuted": false,
+  "tests": {
+    "baselineFinite": {
+      "count": 6,
+      "passed": true,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r5-baseline-finite-tests.txt",
+      "sha256": "c6b9b1f09add0403cc07e90bfdf272129b1ddfa2f8f7675ea8218862f2516371"
+    },
+    "baselinePrepare": {
+      "count": 36,
+      "passed": true,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r5-baseline-prepare-tests.txt",
+      "sha256": "614a63f3f6a779345625b9e58f48fb3c623f7171450dfa1835dcfaa8cc633b04"
+    },
+    "baselineRelease": {
+      "count": 142,
+      "passed": true,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r5-baseline-release-tests.txt",
+      "sha256": "23c1ec7c8985c2b7bb772c84bd3243243a38002265ff316d11e55e0df995c952"
+    },
+    "finite": {
+      "count": 6,
+      "passed": true,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r5-finite-tests.txt",
+      "sha256": "edec8cf160371d77ec8d26ff409bcd0cb40ce127c71d474f0ab01c24e17e9f67"
+    },
+    "newMock": {
+      "count": 62,
+      "passed": true,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r5-new-tests.txt",
+      "sha256": "88c2aecad14fb2c69ae0f8a484e9a4a2527ba9e679fab29e93054b7a7fd1b1c1"
+    },
+    "prepare": {
+      "count": 38,
+      "passed": true,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r5-prepare-tests.txt",
+      "sha256": "90d2c3a4ebfacef91387867c175305858db80286bd688eda4a9339ffd7a464bf"
+    },
+    "release": {
+      "count": 204,
+      "passed": true,
+      "path": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r5-release-tests.txt",
+      "sha256": "542255c807467083e656de4a1fed4df9b36141ef2b35c9e12b08671d60db3051"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+--- f544-baseline-release.py
++++ 3670-current-release.py
+@@ -896,8 +896,7 @@
+                 # Anonymous heaps/ASLR addresses are not execution-source identity.
+                 segment = [x.decode('ascii') for x in parts[1:5]]
+                 mapped.setdefault(path, [])
+-                if segment not in mapped[path]:
+-                    mapped[path].append(segment)
++                mapped[path].append(segment)  # retain real mapping multiplicity
+             else:
+                 need(path.startswith('[') and path.endswith(']'), 'DYNAMIC_UNSUPPORTED_MAPPING')
+     return {p: sorted(mapped[p]) for p in sorted(mapped)}
+@@ -954,6 +953,9 @@
+     if not claims_own:
+         return None
+     need(integer(slot) and slot in OWN_DYNAMIC_IDS, 'DYNAMIC_OWN_SLOT_SPOOF')
++    need(isinstance(value.get('env'), dict), 'DYNAMIC_OWN_ENV_OBJECT_REQUIRED')
++    need(b'NODE_UNIQUE_ID' in outer and re.fullmatch(rb'[0-9]+', outer[b'NODE_UNIQUE_ID']),
++         'DYNAMIC_OWN_NODE_UNIQUE_ID_DECIMAL_REQUIRED')
+     admin = slot in (191, 192); script = cfg.admin_api if admin else cfg.front_api
+     name = 'dianzi51-admin' if admin else 'dianzi51'
+     current_cwd = value.get('pm_cwd')
