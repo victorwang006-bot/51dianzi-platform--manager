@@ -1,0 +1,11 @@
+test_two_existing_locks_release (__main__.ReadonlyTests.test_two_existing_locks_release) ... ok
+test_missing_lock_never_created (__main__.ReadonlyTests.test_missing_lock_never_created) ... ok
+test_contended_lock_nonblocking (__main__.ReadonlyTests.test_contended_lock_nonblocking) ... ok
+test_lock_replaced_inode_rejected (__main__.ReadonlyTests.test_lock_replaced_inode_rejected) ... ok
+test_lock_directory_alias_binds_real_files (__main__.ReadonlyTests.test_lock_directory_alias_binds_real_files) ... ok
+test_lock_directory_alias_retarget_rejected (__main__.ReadonlyTests.test_lock_directory_alias_retarget_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.008s
+
+OK

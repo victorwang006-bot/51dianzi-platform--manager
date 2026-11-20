@@ -1,0 +1,15 @@
+test_actual_frozen_importmap_migration (test_compatibility.Compatibility.test_actual_frozen_importmap_migration) ... ok
+test_actual_new_code_dependencies_already_have_bytes (test_compatibility.Compatibility.test_actual_new_code_dependencies_already_have_bytes) ... ok
+test_captured_hash_conflict_rejected (test_compatibility.Compatibility.test_captured_hash_conflict_rejected) ... ok
+test_duplicate_scope_snapshot_rejected (test_compatibility.Compatibility.test_duplicate_scope_snapshot_rejected) ... ok
+test_external_scope_target_rejected (test_compatibility.Compatibility.test_external_scope_target_rejected) ... ok
+test_html_only_ref_uses_fresh_full_hash (test_compatibility.Compatibility.test_html_only_ref_uses_fresh_full_hash) ... ok
+test_legacy_imports_change_kept (test_compatibility.Compatibility.test_legacy_imports_change_kept) ... ok
+test_missing_html_capture_record_rejected (test_compatibility.Compatibility.test_missing_html_capture_record_rejected) ... ok
+test_new_code_import_still_requires_reviewed_bytes (test_compatibility.Compatibility.test_new_code_import_still_requires_reviewed_bytes) ... ok
+test_wrong_scope_before_rejected (test_compatibility.Compatibility.test_wrong_scope_before_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.107s
+
+OK

@@ -1,0 +1,17 @@
+{
+  "status": "TRANSPORT_COMPLETED",
+  "exitCode": 2,
+  "elapsedSeconds": 64.87687182426453,
+  "SSHExited": true,
+  "stdoutBytes": 195,
+  "stdoutSHA256": "481185566229b0f4b5bf013dc9a4661eef61f09fb2c150cea7b9de8e2be64702",
+  "stderrSHA256": "8b60b99763b643c461c4658a227703509dbe9a0d16cc102a70c966e3c8180a6f",
+  "productionApply": false,
+  "remoteFilesUploaded": 0,
+  "collectionSourceSHA256": "04ecce6d8e50209ed1312e11ecfeba7ff1330979f95e4452fd30ab04f677419e",
+  "completeJSON": true,
+  "resultStatus": "ABORTED_NO_APPROVAL",
+  "errorCode": "READONLY_PROBE_REJECTED",
+  "factsComplete": false,
+  "statistics": null
+}

@@ -1,0 +1,71 @@
+{
+  "productionWrites": 0,
+  "deployed": false,
+  "runtimeReady": false,
+  "files": {
+    "static-production/safety_core.py": {
+      "sha256": "463d5822c057df2fc0e6f2277c6eb14dd630e5fa71eb2b714b3bdebd38eee01e",
+      "size": 11553
+    },
+    "static-production/controller.py": {
+      "sha256": "b1616bad4ca01313304f1aecbe00cb1b08194a47a505c38b357c1083fd1f9627",
+      "size": 34633
+    },
+    "static-production/test_writer_identity.py": {
+      "sha256": "038fc42d92adf7803977dbd23021db12033c43eddc8474456552d78a99003637",
+      "size": 7514
+    },
+    "runtime-completion/collect-runtime.py": {
+      "sha256": "b296e78bbd1e408bf9b5d499dba1f9ccefc1877b6287c9d90c519175caca00cb",
+      "size": 57306
+    },
+    "runtime-completion/test-runtime-completion.py": {
+      "sha256": "0ffae4d476e2affddef081e92bf1d0e4994a765665cf47c110d38a351dafc631",
+      "size": 13834
+    },
+    "production-package-final/pack.py": {
+      "sha256": "317dfec089be5fdc3302047a1b250c52e53bbaa01774deb706b347be54e24d39",
+      "size": 17639
+    },
+    "production-package-final/test_compatibility.py": {
+      "sha256": "2742506d6651232159cabb288b608a58d79f3832a76efc564c8c2896565dadb1",
+      "size": 3779
+    },
+    "production-package-final/compatibility-tests.log": {
+      "sha256": "b8b0929537d75c71d6655ad2f22941f9d09df2fc32dfc91b23a9a5be38567b43",
+      "size": 1323
+    },
+    "production-package-final/fixture-result.json": {
+      "sha256": "ab975f5ffceb2990f7bac54e49077c526ac6a1104c266a0a65c575927fe2ad38",
+      "size": 354
+    },
+    "production-package-final/RESUME-NECESSARY-ONLY.md": {
+      "sha256": "1f9d190f0a1fed17eae1abc7c50da1c9148cea7635c21102c6ee8f1e898e2fa5",
+      "size": 3660
+    },
+    "native-full-review/final-build-report.json": {
+      "sha256": "3a2c5a8c824e978296862c785dc5205ecdeae8cffebbce67783effc529586964",
+      "size": 17593
+    },
+    "native-full-review/final-build-supplement.md": {
+      "sha256": "0d39824912394c3862071b27efe58bb272c3b8ccc81f1f9a038222da15595877",
+      "size": 4225
+    },
+    "writer-fix-1305/final-17-focused.log": {
+      "sha256": "20a85f70b031943a8543cdb920a27b9364fa359b2ae815c6b83f32eefa72c399",
+      "size": 2619
+    },
+    "runtime-proof-1309/lock-fix-focused.log": {
+      "sha256": "973e96a73206fdc227ba4bf8d57cbd29e00ee8faf61146fd8e2f09aab494f449",
+      "size": 724
+    },
+    "runtime-proof-1339/focused-typeerror-fix.log": {
+      "sha256": "9b3eebf0428094062cdf7636285019006417c869c1b83377cf0ce89256b05d8d",
+      "size": 568
+    },
+    "runtime-proof-1339/transport-result.json": {
+      "sha256": "0273223ffdaf43517c80cc24e482dd1eee2df036c58c5b660f87fe1bd62f3546",
+      "size": 616
+    }
+  }
+}
