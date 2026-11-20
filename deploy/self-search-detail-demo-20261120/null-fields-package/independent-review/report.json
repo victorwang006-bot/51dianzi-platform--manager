@@ -1,0 +1,154 @@
+{
+  "schema": "independent-null-fields-frontend-incremental-review-v1",
+  "reviewedAt": "2026-11-20T04:10:29.892130+00:00",
+  "status": "LOCAL_FIX_PASS",
+  "localFixStatus": "PASS",
+  "releaseStatus": "NOT_DEPLOYED",
+  "approval": "NOT_APPROVED",
+  "releaseApproved": false,
+  "deployable": false,
+  "captureApplyAuthorized": false,
+  "reviewerIndependentOfBuilder": true,
+  "scope": {
+    "onlyWriteDirectory": "/home/ubuntu/work/self-row-redesign/null-fields-independent-review",
+    "sourceModified": false,
+    "candidateModified": false,
+    "builderModified": false,
+    "otherReviewModified": false,
+    "gitAccess": false,
+    "browserRun": false,
+    "networkAccess": false,
+    "SSH": false,
+    "ECS": false,
+    "API": false,
+    "DB": false,
+    "serverReview": false,
+    "runtimepolicyReview": false,
+    "productionWrites": 0,
+    "fullSourceGraphReaudit": false,
+    "transitiveClosureReaudit": false,
+    "fullRebuildRerun": false
+  },
+  "bindings": {
+    "oldPackage": "/home/ubuntu/work/self-row-redesign/detail-native-builder/candidate-visual-final",
+    "oldManifestSHA256": "5d5611feaf70b7d5eb36fe703fb62346bf94454789dcd4600008798cf6343988",
+    "oldPackageRole": "PRE_FIX_BASELINE_NOT_RELEASE_CANDIDATE",
+    "package": "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/candidate-visual-final",
+    "manifestSHA256": "91863042689520a9f8b0cdf5f88d0575a96416f32b43482cb88044a589547c7e",
+    "sourceManifest": "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/source-sha-visual-final.json",
+    "sourceManifestSHA256": "7d5f541f19e97064f9235ccaf9c5f64819030040e69c3fb96a3095d79572c166",
+    "sourceFileCount": 19,
+    "sourceTestFileCount": 6,
+    "newSearchSHA256": "3e3e355de1bccc0327318ef0a5139b2b28b79c072c91cd445e09474af04680bc",
+    "oldIndependentReview": "/home/ubuntu/work/self-row-redesign/native-full-review/report.json",
+    "oldReviewRole": "UNCHANGED_BOUNDARIES_ONLY_NOT_PRODUCTION_APPROVAL"
+  },
+  "checks": [
+    {
+      "id": "EXACT_SOURCE_INCREMENT",
+      "status": "PASS_INDEPENDENT",
+      "fact": "19 source + 6 test files rehashed. Only Search source and detail test changed. Replacing exactly the two display regions restores entire old Search source bytes. Removing exactly the two added tests restores the old test bytes. Other source4 files exact.",
+      "location": "client/src/components/OfficialMallSearchResults.tsx:259-263,329; client/src/pages/OfficialProductDetail.test.tsx:183-201",
+      "evidence": "independent-evidence.json:sourceRows,testRows,sourceDiffRegions"
+    },
+    {
+      "id": "NULL_DISPLAY_AND_ZERO",
+      "status": "PASS_LOCAL_FIX",
+      "fact": "Null/empty/whitespace display attributes omitted; missing MOQ/stock not formatted into placeholder strings. SPQ and sale quantity use conditional spreads with == null, retaining known zero. Transaction eligibility/financial logic unmodified.",
+      "evidence": "independent-evidence.json:sourceDiffRegions; supplied two new source tests"
+    },
+    {
+      "id": "EXACT_NEW5_AND_HASH_CHAIN",
+      "status": "PASS_INDEPENDENT",
+      "fact": "Exactly 4 JS + 1 WebP, real SHA/size/content-address filenames checked. Leaf changes restricted to two compiled display regions. Rest of leaf exact; wrapper/search/detail and HTML equal old bytes after exact new-to-old asset URL substitutions; logo exact to old and source.",
+      "evidence": "independent-evidence.json:assets,leafNonCardBytesExact,compiledOnlyTwoDisplayRegions,otherJSOnlyHashChain,htmlOnlyHashChain,logoBytesExact"
+    },
+    {
+      "id": "CARD_EIGHT_EVENTS_AND_FINANCE",
+      "status": "PASS_INDEPENDENT",
+      "fact": "Whole-Card AST inventory independently compares all eight event arrow property names and complete expression bytes, each one occurrence, including tierRow price click. Source and compiled inventories exact to old package. Finance declaration slice exact and sourceverification hash-bound. No new event callback permitted by the filter adapter.",
+      "evidence": "independent-evidence.json:sourceEvents,compiledEvents,financeDeclarationsSHA256"
+    },
+    {
+      "id": "NINE_MERCHANT_FUNCTIONS",
+      "status": "PASS_INDEPENDENT",
+      "fact": "All nine compiled merchant whole-function bytes compare exact old/new, bound to new manifest rows; merchant source remains among unchanged pinned source files.",
+      "evidence": "independent-evidence.json:merchantFunctions,sourceRows"
+    },
+    {
+      "id": "PRODUCTION_BYTE_RANGES_AND_INVERSE",
+      "status": "PASS_INDEPENDENT",
+      "fact": "One independent forward+reverse byte verification from existing local production-seed bytes. Old patch source ranges, before bytes and reasons exact; 12 leaf / 1 wrapper / 1 search / 35 detail / 20 HTML. No authorized patch span increase. This does not assert current production filesystem META.",
+      "evidence": "independent-evidence.json:byteproofs"
+    },
+    {
+      "id": "NARROW_TOOL_INCREMENT",
+      "status": "PASS_INDEPENDENT",
+      "fact": "Only snapshot-source, build-native-detail and detail-compile-core changed. Current builder/support SHA pins match manifest. Snapshot and builder restore exactly to old bytes after expected directory/Search pin/entry/Card-option reversal.",
+      "evidence": "independent-evidence.json:toolRows,currentToolPinsMatchManifest; guard-evidence.json"
+    },
+    {
+      "id": "EXACT_NULL_FILTER_ADAPTER",
+      "status": "PASS_INDEPENDENT_ISOLATED",
+      "fact": "Canonical literal exact, parent .filter with one sole argument, default option zero, Card-only explicit one and exact count one. Old map/IIFE predicates unchanged. Supplied 6 positive/negative tests reviewed; independent isolated guard tests 1 accepted + 10 rejected, including event substitution and old-event mutation. Exact guard and canonical source executed with independent parse/patch primitives, not application/build/runtime dependencies.",
+      "evidence": "guard-evidence.json; detail-native-null-fields/null-filter-tool-tests.json"
+    },
+    {
+      "id": "SUPPLIED_REBUILD_READONLY_VM_NEGATIVES",
+      "status": "PASS_SUPPLIED_BOUND_NOT_RERUN",
+      "fact": "Current verify and readonly reports bind manifest/source SHA. Full rebuild parity true; all original ten negatives reject; 480 default + 240 search Resources, 84 Card/quantity, 12 detail Resource, 7 route, 4 page, 20 mocked request-fence, 2 cart-click cases pass. Readonly enforcement reports zero filesystem-write attempts and zero network attempts.",
+      "evidence": "independent-evidence.json:suppliedRebuild"
+    },
+    {
+      "id": "SUPPLIED_SOURCE_TEST_EXECUTION",
+      "status": "PASS_SUPPLIED_BOUND_NOT_RERUN",
+      "fact": "Six suites / 148 tests pass in supplied vitest log, source aggregate SHA rebound. Typecheck log has no TS diagnostics; exit 0 is parent-reported, not independently encoded in the warning-only log. No source headless/native browser equivalence claimed.",
+      "evidence": "independent-evidence.json:suppliedSourceExecution; detail-implementation/vitest-null-fields.log; detail-implementation/typecheck-null-fields.log"
+    }
+  ],
+  "findings": [],
+  "inheritedUnchangedBoundaries": {
+    "from": "native-full-review/report.json (PASS_CONDITIONAL / not prod)",
+    "boundaries": [
+      "existing eight event groups",
+      "merchant whole functions",
+      "financial/non-hook behavior",
+      "default Resource parity",
+      "existing native identity/route/import boundaries",
+      "original byteproof and HTML20 scopes",
+      "19-source freeze"
+    ],
+    "method": "Exact old/new source and compiled non-target byte preservation plus pinned supplied current verification. No repeat 774-file/3187-AST-edge/transitive-fullheadnode audit.",
+    "notInherited": [
+      "production approval",
+      "new manifest browser execution/capture",
+      "runtimepolicy completion",
+      "fresh protected production META"
+    ]
+  },
+  "releaseLimitations": [
+    {
+      "id": "RUNTIMEPOLICY_NOT_COMPLETE",
+      "status": "RELEASE_BLOCKED_NOT_REVIEWED",
+      "fact": "Parent states runtimepolicy remains incomplete. This frontend-only local-fix PASS cannot authorize release or set releaseApproved true."
+    },
+    {
+      "id": "NO_NEW_BROWSER_CAPTURE_CLAIM",
+      "status": "NOT_EXECUTED_BY_REVIEWER",
+      "fact": "No browser run or new browser result consumed. Any previous/future independent browser PASS must be separately bound to this manifest; it is not a new capture, approval or deployment."
+    },
+    {
+      "id": "NO_PRODUCTION_PERMISSION",
+      "status": "NOT_AUTHORIZED",
+      "fact": "No production filesystem protection, server/runtimepolicy, stage/window, capture/apply or deploy review performed. No production approval exists in packager. Existing broader release blockers are not closed by this incremental review."
+    }
+  ],
+  "artifacts": {
+    "README": "/home/ubuntu/work/self-row-redesign/null-fields-independent-review/README.md",
+    "independentEvidence": "/home/ubuntu/work/self-row-redesign/null-fields-independent-review/independent-evidence.json",
+    "guardEvidence": "/home/ubuntu/work/self-row-redesign/null-fields-independent-review/guard-evidence.json",
+    "filePins": "/home/ubuntu/work/self-row-redesign/null-fields-independent-review/filepinproof.json",
+    "reviewScript": "/home/ubuntu/work/self-row-redesign/null-fields-independent-review/review.mjs",
+    "isolatedGuardScript": "/home/ubuntu/work/self-row-redesign/null-fields-independent-review/guard-check.mjs"
+  }
+}

@@ -1,0 +1,70 @@
+[
+  {
+    "file": "/home/ubuntu/work/self-row-redesign/native-browser-check/public-dto-002.json",
+    "fileSHA256": "f2c1e1c5b8e2f9e7d76363ca81f06a6750d42716dcd2bf70e27be772ecaaa3fe",
+    "url": "https://51dianzi.com/api/trpc/officialMall.list?input=%7B%22json%22%3A%7B%22partNumber%22%3A%22STM8S003F3P6TR%22%2C%22brand%22%3Anull%2C%22page%22%3A1%2C%22pageSize%22%3A100%7D%2C%22meta%22%3A%7B%22values%22%3A%7B%22brand%22%3A%5B%22undefined%22%5D%7D%7D%7D",
+    "procedure": "officialMall.list",
+    "decodedInput": {
+      "json": {
+        "partNumber": "STM8S003F3P6TR",
+        "brand": null,
+        "page": 1,
+        "pageSize": 100
+      },
+      "meta": {
+        "values": {
+          "brand": [
+            "undefined"
+          ]
+        }
+      }
+    },
+    "originalWireSHA256": "f71ed7b270248e8b4b541c274f0a61c0b9f2fb7092abb75a65e7a174119f98ea",
+    "reencodedBodySHA256": "f71ed7b270248e8b4b541c274f0a61c0b9f2fb7092abb75a65e7a174119f98ea",
+    "wireHashDifferent": false,
+    "parsedObjectDeepEquality": true,
+    "classification": "recorded-public-response-replay/NOT_FRESH_API"
+  },
+  {
+    "file": "/home/ubuntu/work/self-row-redesign/native-browser-check/public-dto-004.json",
+    "fileSHA256": "9cfbc8f13d09cc3bf1797990e670d4b05b65c039f5c86103370c98880be225a6",
+    "url": "https://51dianzi.com/api/trpc/officialMall.detail?input=%7B%22json%22%3A%7B%22publicId%22%3A%22OM_bba7cf49-fd93-401e-bf11-8ac2ab33eb14%22%7D%7D",
+    "procedure": "officialMall.detail",
+    "decodedInput": {
+      "json": {
+        "publicId": "OM_bba7cf49-fd93-401e-bf11-8ac2ab33eb14"
+      }
+    },
+    "originalWireSHA256": "8d855d050c700380541503af3aa8d37c80fa6d2a3418cca3d9e76dc894c2c66b",
+    "reencodedBodySHA256": "8d855d050c700380541503af3aa8d37c80fa6d2a3418cca3d9e76dc894c2c66b",
+    "wireHashDifferent": false,
+    "parsedObjectDeepEquality": true,
+    "classification": "recorded-public-response-replay/NOT_FRESH_API"
+  },
+  {
+    "file": "/home/ubuntu/work/self-row-redesign/native-browser-check/public-dto-001.json",
+    "fileSHA256": "65deaf1682a3b3f8a0bbb6405764b4a554bf179572c88ba5f58a9dcd5b2a2bcf",
+    "url": "https://51dianzi.com/api/trpc/officialMall.list?input=%7B%22json%22%3A%7B%22partNumber%22%3A%22W25N04KVZEIR%22%2C%22brand%22%3Anull%2C%22page%22%3A1%2C%22pageSize%22%3A100%7D%2C%22meta%22%3A%7B%22values%22%3A%7B%22brand%22%3A%5B%22undefined%22%5D%7D%7D%7D",
+    "procedure": "officialMall.list",
+    "decodedInput": {
+      "json": {
+        "partNumber": "W25N04KVZEIR",
+        "brand": null,
+        "page": 1,
+        "pageSize": 100
+      },
+      "meta": {
+        "values": {
+          "brand": [
+            "undefined"
+          ]
+        }
+      }
+    },
+    "originalWireSHA256": "d4977343bca3458bc4451aeb686ce4c5b0f30b225a978b1a446b648ed6656c7b",
+    "reencodedBodySHA256": "d4977343bca3458bc4451aeb686ce4c5b0f30b225a978b1a446b648ed6656c7b",
+    "wireHashDifferent": false,
+    "parsedObjectDeepEquality": true,
+    "classification": "recorded-public-response-replay/NOT_FRESH_API"
+  }
+]

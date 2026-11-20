@@ -1,0 +1,126 @@
+{
+  "status": "PASS_AFFECTED_ST_DETAIL_REPLAY_ONLY",
+  "notProduction": true,
+  "releaseApproved": false,
+  "captureApplyAuthorized": false,
+  "allNativeAcceptanceComplete": false,
+  "manifestSHA256": "91863042689520a9f8b0cdf5f88d0575a96416f32b43482cb88044a589547c7e",
+  "searchSourceSHA256": "3e3e355de1bccc0327318ef0a5139b2b28b79c072c91cd445e09474af04680bc",
+  "checks": [
+    {
+      "name": "st-detail-1280",
+      "width": 1280,
+      "domSHA256": "e7cbd44f54a585dbd97e8a4eec109da7bba2b464a7671022c619795f6b738756",
+      "screenshotSHA256": "42a21ab1faf020c9d448eb7dd2bcdc93b173ddc0914d85cabb664318d4c8a250",
+      "blankAttributeRowsAbsent": true,
+      "parameters": 12,
+      "originalBrandPackageMOQStockRetained": true,
+      "correctPDF": true,
+      "noHorizontalOverflow": true
+    },
+    {
+      "name": "st-detail-375",
+      "width": 375,
+      "domSHA256": "035ed36e7d9d9253c3d7f635631065a3f761807000f7ba202c27c687f3013a33",
+      "screenshotSHA256": "4a28a28d895ab918dd1e7ec70997c69406e75d3b9d59793a6c55547519afbde9",
+      "blankAttributeRowsAbsent": true,
+      "parameters": 12,
+      "originalBrandPackageMOQStockRetained": true,
+      "correctPDF": true,
+      "noHorizontalOverflow": true
+    }
+  ],
+  "dataClassification": "Previously recorded real public DTO semantic replay; NOT_FRESH_API",
+  "DTOFileProof": [
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/native-browser-check/public-dto-002.json",
+      "fileSHA256": "f2c1e1c5b8e2f9e7d76363ca81f06a6750d42716dcd2bf70e27be772ecaaa3fe",
+      "url": "https://51dianzi.com/api/trpc/officialMall.list?input=%7B%22json%22%3A%7B%22partNumber%22%3A%22STM8S003F3P6TR%22%2C%22brand%22%3Anull%2C%22page%22%3A1%2C%22pageSize%22%3A100%7D%2C%22meta%22%3A%7B%22values%22%3A%7B%22brand%22%3A%5B%22undefined%22%5D%7D%7D%7D",
+      "procedure": "officialMall.list",
+      "decodedInput": {
+        "json": {
+          "partNumber": "STM8S003F3P6TR",
+          "brand": null,
+          "page": 1,
+          "pageSize": 100
+        },
+        "meta": {
+          "values": {
+            "brand": [
+              "undefined"
+            ]
+          }
+        }
+      },
+      "originalWireSHA256": "f71ed7b270248e8b4b541c274f0a61c0b9f2fb7092abb75a65e7a174119f98ea",
+      "reencodedBodySHA256": "f71ed7b270248e8b4b541c274f0a61c0b9f2fb7092abb75a65e7a174119f98ea",
+      "wireHashDifferent": false,
+      "parsedObjectDeepEquality": true,
+      "classification": "recorded-public-response-replay/NOT_FRESH_API"
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/native-browser-check/public-dto-004.json",
+      "fileSHA256": "9cfbc8f13d09cc3bf1797990e670d4b05b65c039f5c86103370c98880be225a6",
+      "url": "https://51dianzi.com/api/trpc/officialMall.detail?input=%7B%22json%22%3A%7B%22publicId%22%3A%22OM_bba7cf49-fd93-401e-bf11-8ac2ab33eb14%22%7D%7D",
+      "procedure": "officialMall.detail",
+      "decodedInput": {
+        "json": {
+          "publicId": "OM_bba7cf49-fd93-401e-bf11-8ac2ab33eb14"
+        }
+      },
+      "originalWireSHA256": "8d855d050c700380541503af3aa8d37c80fa6d2a3418cca3d9e76dc894c2c66b",
+      "reencodedBodySHA256": "8d855d050c700380541503af3aa8d37c80fa6d2a3418cca3d9e76dc894c2c66b",
+      "wireHashDifferent": false,
+      "parsedObjectDeepEquality": true,
+      "classification": "recorded-public-response-replay/NOT_FRESH_API"
+    },
+    {
+      "file": "/home/ubuntu/work/self-row-redesign/native-browser-check/public-dto-001.json",
+      "fileSHA256": "65deaf1682a3b3f8a0bbb6405764b4a554bf179572c88ba5f58a9dcd5b2a2bcf",
+      "url": "https://51dianzi.com/api/trpc/officialMall.list?input=%7B%22json%22%3A%7B%22partNumber%22%3A%22W25N04KVZEIR%22%2C%22brand%22%3Anull%2C%22page%22%3A1%2C%22pageSize%22%3A100%7D%2C%22meta%22%3A%7B%22values%22%3A%7B%22brand%22%3A%5B%22undefined%22%5D%7D%7D%7D",
+      "procedure": "officialMall.list",
+      "decodedInput": {
+        "json": {
+          "partNumber": "W25N04KVZEIR",
+          "brand": null,
+          "page": 1,
+          "pageSize": 100
+        },
+        "meta": {
+          "values": {
+            "brand": [
+              "undefined"
+            ]
+          }
+        }
+      },
+      "originalWireSHA256": "d4977343bca3458bc4451aeb686ce4c5b0f30b225a978b1a446b648ed6656c7b",
+      "reencodedBodySHA256": "d4977343bca3458bc4451aeb686ce4c5b0f30b225a978b1a446b648ed6656c7b",
+      "wireHashDifferent": false,
+      "parsedObjectDeepEquality": true,
+      "classification": "recorded-public-response-replay/NOT_FRESH_API"
+    }
+  ],
+  "realNetworkRequests": 0,
+  "APINetworkRequests": 0,
+  "productionWrites": 0,
+  "DOMInjection": false,
+  "candidateByteChanges": false,
+  "isolatedAnonymousContext": true,
+  "cleanup": {
+    "allOwnedChromiumPIDsAbsent": true,
+    "allSourcesAndCandidateUnchanged": true,
+    "profilesRemoved": true,
+    "tmpRemoved": true
+  },
+  "earlierFailuresRetained": [
+    "Chromium long socket path; no navigation",
+    "ST list Link detached while rerendering; click did not complete",
+    "Targeted harness wrong prior-observed-link proof path; pre-navigation assertion; corrected with original recorded real navigation report"
+  ],
+  "remaining": [
+    "W25 isolated list did not stabilize; not passed",
+    "Two raw legacy preload modules absent from fully-offline cache; exact URLs in native browser errors",
+    "Fresh production dependencies/META/runtime policy/full release review and coordination window; not performed"
+  ]
+}

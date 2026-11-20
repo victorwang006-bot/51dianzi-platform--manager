@@ -1,0 +1,10 @@
+{
+  "kind": "LOCAL_ENGINEERING_PACKAGE_NOT_APPROVED_NOT_DEPLOYED",
+  "archiveSHA256": "6d2d44d0512714a1ca63c097cda0620933cdf5c7bae216cf90b920442bfe80c3",
+  "archiveBytes": 516951,
+  "fileCount": 53,
+  "manifestSHA256": "91863042689520a9f8b0cdf5f88d0575a96416f32b43482cb88044a589547c7e",
+  "independentReviewSHA256": "875363d75780f7e7638a02a43bf6a415443b0a8745ed2c85088885c8e2e12434",
+  "affectedReplayReportSHA256": "11306bf67d4d7c8dc78442b10736d917d7a41aa480559f5ebeea74a040b516c3",
+  "noProductionSnapshotOrSecretIncluded": true
+}

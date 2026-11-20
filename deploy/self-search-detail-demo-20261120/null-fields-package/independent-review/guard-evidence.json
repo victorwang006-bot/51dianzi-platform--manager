@@ -1,0 +1,76 @@
+{
+  "status": "PASS",
+  "scope": "Isolated local rendering-syntax adapter only; not runtime permission/security control",
+  "coreSHA256": "990b7a90a3186e01c9984aedbd671c3042f101974b8ce324c24fb11c3ec70c22",
+  "builderSHA256": "ebbd76fbce5794d83b622baa54abd1ccf37e26244e11dc145008b8773b25ee99",
+  "snapshotSHA256": "5e22727ebfa9f71f79989acd250929d0f561b32a3f7298d74a8533bfb2eff52d",
+  "snapshotOnlyExpectedChanges": true,
+  "builderOnlyExpectedChanges": true,
+  "oldMapPredicateExact": true,
+  "oldIIFEPredicateExact": true,
+  "defaultZero": true,
+  "cardOnlyOptionOne": true,
+  "exactCanonicalFilter": true,
+  "parentFilterSingleArgument": true,
+  "exactCountOne": true,
+  "isolatedTests": [
+    {
+      "case": "exact pure filter, explicit Card option",
+      "result": "PASS",
+      "error": null
+    },
+    {
+      "case": "changed condition",
+      "result": "REJECT",
+      "error": "UNKNOWN_OR_CHANGED_CALLBACK __demoB_entry => __demoB_entry[1] !== null && __demoB_entry[1].trim().length >= 0"
+    },
+    {
+      "case": "side effect",
+      "result": "REJECT",
+      "error": "UNKNOWN_OR_CHANGED_CALLBACK __demoB_entry => (touch(), __demoB_entry[1] !== null && __demoB_entry[1].trim().length > 0)"
+    },
+    {
+      "case": "renamed parameter",
+      "result": "REJECT",
+      "error": "UNKNOWN_OR_CHANGED_CALLBACK other => other[1] !== null && other[1].trim().length > 0"
+    },
+    {
+      "case": "extra exact filter",
+      "result": "REJECT",
+      "error": "EXACT_NULL_ATTRIBUTE_FILTER_COUNT"
+    },
+    {
+      "case": "default option rejects",
+      "result": "REJECT",
+      "error": "UNKNOWN_OR_CHANGED_CALLBACK __demoB_entry => __demoB_entry[1] !== null && __demoB_entry[1].trim().length > 0"
+    },
+    {
+      "case": "wrong parent method",
+      "result": "REJECT",
+      "error": "UNKNOWN_OR_CHANGED_CALLBACK __demoB_entry => __demoB_entry[1] !== null && __demoB_entry[1].trim().length > 0"
+    },
+    {
+      "case": "second filter argument",
+      "result": "REJECT",
+      "error": "UNKNOWN_OR_CHANGED_CALLBACK __demoB_entry => __demoB_entry[1] !== null && __demoB_entry[1].trim().length > 0"
+    },
+    {
+      "case": "event property cannot substitute filter",
+      "result": "REJECT",
+      "error": "UNKNOWN_OR_CHANGED_CALLBACK __demoB_entry => __demoB_entry[1] !== null && __demoB_entry[1].trim().length > 0"
+    },
+    {
+      "case": "option 1 requires exactly one filter",
+      "result": "REJECT",
+      "error": "EXACT_NULL_ATTRIBUTE_FILTER_COUNT"
+    },
+    {
+      "case": "old event callback mutation still rejects",
+      "result": "REJECT",
+      "error": "UNKNOWN_OR_CHANGED_CALLBACK () => hacked()"
+    }
+  ],
+  "applicationCodeExecuted": false,
+  "toolDependenciesImported": false,
+  "helperBoundary": "Exact guard/canonical source with independent parse/patch primitives; no builder/import/application execution, Git, filesystem mutation or network capability in VM"
+}

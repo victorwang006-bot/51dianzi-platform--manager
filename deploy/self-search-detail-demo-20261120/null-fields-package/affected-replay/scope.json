@@ -1,0 +1,8 @@
+{
+  "reason": "Affected null-field detail revalidation only; prior link click was detached during list rerender and remains recorded as failed",
+  "directDetailURLPreviouslyObservedInActualDOM": true,
+  "networkDisabledAtBrowserAndPythonGateway": true,
+  "originalCandidateUnchanged": true,
+  "authResponsesNotFabricated": true,
+  "publicDTOReplayedNotFreshAPI": true
+}

@@ -1,0 +1,118 @@
+{
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/candidate-visual-final/manifest.json": {
+    "sha256": "91863042689520a9f8b0cdf5f88d0575a96416f32b43482cb88044a589547c7e",
+    "bytes": 242773
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/candidate-visual-final/index.html": {
+    "sha256": "349cbe260fe908ceb17fe4d04517f6c3ad043ec69d1cf8fe8324935c44a5c19f",
+    "bytes": 79142
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/candidate-visual-final/assets/official-material-ui-detail-9ff4e9a04ba5a35dccd0d8503f2016242f04ed52260d8248311121b9af111998.js": {
+    "sha256": "9ff4e9a04ba5a35dccd0d8503f2016242f04ed52260d8248311121b9af111998",
+    "bytes": 591682
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/candidate-visual-final/assets/official-cart-material-detail-1ed245a23ef0bf14e3730d44125819a05777f895a0e5890d0e72b3a60fc5304c.js": {
+    "sha256": "1ed245a23ef0bf14e3730d44125819a05777f895a0e5890d0e72b3a60fc5304c",
+    "bytes": 127811
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/candidate-visual-final/assets/search-official-material-detail-298ce2a2ddcfb6807aff373c148d644357222f7c22d1cb14fc44de6f2191bdf5.js": {
+    "sha256": "298ce2a2ddcfb6807aff373c148d644357222f7c22d1cb14fc44de6f2191bdf5",
+    "bytes": 252425
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/candidate-visual-final/assets/ProductDetail-official-e60f515b803a94f10c7f7315950587f43df8333c764f107e1507ce4959e15212.js": {
+    "sha256": "e60f515b803a94f10c7f7315950587f43df8333c764f107e1507ce4959e15212",
+    "bytes": 33582
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/candidate-visual-final/assets/official-detail-mark-dac23a53c00c75e4b36d1ade7fb3c3fe1a2797d619dbb154c13b10eb3dc61a5c.webp": {
+    "sha256": "dac23a53c00c75e4b36d1ade7fb3c3fe1a2797d619dbb154c13b10eb3dc61a5c",
+    "bytes": 42606
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/input-visual-final/client/lib/officialCardPresentation.ts": {
+    "sha256": "a3191134b70ef758c0a33b1f5bc9f06021a330edc81314bc44ec43167c0d07a1",
+    "bytes": 3090
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/input-visual-final/client/src/App.tsx": {
+    "sha256": "632f39cef8ce409f3741192af2c8e9c990649734b2b01ab97d6a1e055af8e73f",
+    "bytes": 9744
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/input-visual-final/client/src/assets/brand/logo-header-mark.webp": {
+    "sha256": "dac23a53c00c75e4b36d1ade7fb3c3fe1a2797d619dbb154c13b10eb3dc61a5c",
+    "bytes": 42606
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/input-visual-final/client/src/assets/homeLogo.ts": {
+    "sha256": "065f08d79b0db77cd954c917a92d051c96673135b39fa7081f4918f27fa6bd77",
+    "bytes": 1613
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/input-visual-final/client/src/components/ImageLightbox.tsx": {
+    "sha256": "ab4f11e5c5fc5e48ff4550cb71f89680e57e7662ee2f7ca0e3fd4bd3cdfc6293",
+    "bytes": 12260
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/input-visual-final/client/src/components/OfficialMallCheckoutResults.tsx": {
+    "sha256": "f571d856bb747e684299111a23acde2d5a32fc93ffb708fc9b15fb68a6e003c4",
+    "bytes": 3744
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/input-visual-final/client/src/components/OfficialMallSearchResults.tsx": {
+    "sha256": "3e3e355de1bccc0327318ef0a5139b2b28b79c072c91cd445e09474af04680bc",
+    "bytes": 38438
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/input-visual-final/client/src/components/OfficialMaterialFavorites.tsx": {
+    "sha256": "d0f765fd386d6c2a0ebd41c60b79b7eff3d0714bb68a0bfb500f2b758ea4c4f9",
+    "bytes": 9742
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/input-visual-final/client/src/components/OfficialMaterialResources.tsx": {
+    "sha256": "0f4911e8b95ee3a643a3ee9ec7d17a1619a14f93677292467310590496785d57",
+    "bytes": 10303
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/input-visual-final/client/src/components/OfficialSearchImage.tsx": {
+    "sha256": "181e7bcbee0880e29c2586b247a0cdcf6b3229dbccfe76a69d0c214b0279d6b4",
+    "bytes": 7417
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/input-visual-final/client/src/hooks/useGuestQuery.ts": {
+    "sha256": "61452782ba91b9fa10e166ff86ada5db52b300975d706b97da82910e700c43f5",
+    "bytes": 6091
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/input-visual-final/client/src/hooks/useOfficialMaterial.ts": {
+    "sha256": "0a3be889f55695f70587d0a246233714435a5713bd4a2b4c321a4efa03d18c29",
+    "bytes": 12152
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/input-visual-final/client/src/hooks/useSearchResultCommit.ts": {
+    "sha256": "b3431135591d44eddcebe90f0f6910bc69bc091283356bb309d7357eeb9dea73",
+    "bytes": 2810
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/input-visual-final/client/src/lib/authSessionEvents.ts": {
+    "sha256": "5e84cb4d8418333f32d770c65ea6e7b9925a2715dfb52f9dfe9da63b07532f01",
+    "bytes": 1653
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/input-visual-final/client/src/lib/officialMaterialClient.ts": {
+    "sha256": "5477ac5fb98f49c80b0a5979e9b6c8f06945f8e71c9d909364a22d51906c2513",
+    "bytes": 16830
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/input-visual-final/client/src/lib/searchResultCommit.ts": {
+    "sha256": "97c4b2d43d5c3e9703c817b8db49d97462c34bded1014ed6afc9d3f3c916c8a3",
+    "bytes": 1573
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/input-visual-final/client/src/pages/OfficialProductDetail.tsx": {
+    "sha256": "26af704d416bc8442038f6caaa30b6a8b82dc1e4cbd7ea537daf1e3520af76cc",
+    "bytes": 3391
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/input-visual-final/client/src/pages/ProductDetail.tsx": {
+    "sha256": "f0c2a4f6930f62f7bfa63f8a45585f1b05107cac7ccc30c774c2fa98868235d2",
+    "bytes": 36301
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/input-visual-final/client/src/pages/SearchCompactHeaderControls.tsx": {
+    "sha256": "babf37f9e97f6c650b23449639ba9574e45844af97c1ad2c25906689a6c37bd1",
+    "bytes": 3710
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/source-sha-visual-final.json": {
+    "sha256": "7d5f541f19e97064f9235ccaf9c5f64819030040e69c3fb96a3095d79572c166",
+    "bytes": 4960
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/verify-nullfields.json": {
+    "sha256": "077520faca9d128a7425eb950a8507b47b1952b91607506362b42959d3376e85",
+    "bytes": 3626
+  },
+  "/home/ubuntu/work/self-row-redesign/detail-native-null-fields/readonly-nullfields.json": {
+    "sha256": "d8dc7055e87a6bd03295f9c978c9e9079fd2acf68a17a27e61f8fb58a6abefef",
+    "bytes": 3784
+  }
+}
