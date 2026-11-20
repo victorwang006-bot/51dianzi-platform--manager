@@ -1,0 +1,339 @@
+{
+  "reviewKind": "independent-readonly-R5-F1-F2-narrow-fix-offline",
+  "status": "PASS_NARROW_FIX_ONLY",
+  "newSubstantiveFindings": [],
+  "incrementalSafetyAccepted": true,
+  "fullPackageApprovalPerformed": false,
+  "allApprove": false,
+  "allApprovalsRemainFalse": true,
+  "controllerApproved": false,
+  "releaseApproved": false,
+  "finalDeployApproval": false,
+  "finalApprove": false,
+  "reloadApproved": false,
+  "reloadTrue": false,
+  "source": {
+    "currentPath": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/release.py",
+    "currentSha256": "36706f932e6284a1192ef213d85836d25b4c9a7a7023309c11454c4d2dfdfe14",
+    "baselinePath": "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r5-f1f2-baseline-f544/release.py",
+    "baselineSha256": "f544c1663d84350df0ff036b7e1b330a8cfcb016e64d705027ff86411a26ed5d",
+    "expectedShaMatched": true
+  },
+  "independentChecks": {
+    "changedExistingTopDefinitions": [
+      "dynamic_maps",
+      "dynamic_owned"
+    ],
+    "allOtherTopLevelNodesASTAndBytesUnchanged": true,
+    "controllerMethodCount": 30,
+    "wholeControllerASTAndBytesUnchanged": true,
+    "allNinePinsASTAndBytesUnchanged": true,
+    "pins": {
+      "lib/God.js": "f598e5113890418827e31dd52fc3538e8f19287fad212cafd9388b0216fe500d",
+      "lib/God/ClusterMode.js": "b4a9304e12f468f87a039c174c6ea4a1001f21d9dd1f5317121ed217bc389119",
+      "lib/God/Reload.js": "5e90112e447c4634009ea35005ffd477aab93064f55390288c56b51eee25992e",
+      "lib/God/Methods.js": "577a8505074225dfe73ce2c955c844662c6bc9d76c31d8102f809a1691262044",
+      "lib/Utility.js": "66cd15711be69f40f6ee3c3f60adcf07e58d0bcdec9552ec5104530b22ba28f1",
+      "lib/ProcessContainer.js": "712b414f248a460f58d4365898fa7b27d39bf7f571ac889359e3a7b6a32419d1",
+      "constants.js": "5a4adce0c3c277d4974c0ebdefb22d62ffcad74edcf910bfeeff287dacb8a853",
+      "package.json": "f2819cffb2aae16bb813596575410877570a253be11949260caa33c8038788d6",
+      "modules/fclone.js": "9b921f33e5d4e36dd030f5d2e736ea2af0c95f4fb795ada696160e2db7fe2fe6"
+    },
+    "RPCAndAllConstantsASTAndBytesUnchanged": true,
+    "transportRootsDomainPregateASTAndBytesUnchanged": true,
+    "preparerOnlyControllerPinChanged": true,
+    "oldTestDefinitionsCount": 204,
+    "currentTestDefinitionsCount": 212,
+    "allOldTestDefinitionsASTAndBytesUnchanged": true,
+    "testPrepareSourceUnchanged": true,
+    "newTestNames": [
+      "test_same_pid_malformed_serialized_env_not_owned_exempt",
+      "test_same_pid_missing_env_not_owned_exempt",
+      "test_same_pid_nondecimal_node_unique_not_owned_exempt",
+      "test_same_pid_missing_node_unique_not_owned_exempt",
+      "test_normal_owned_decimal_unique_roll_still_noninterfering",
+      "test_file_backed_map_multiplicity_preserved_not_aslr_address",
+      "test_foreign_duplicate_mapping_between_samples_rejected",
+      "test_owned_duplicate_mapping_between_samples_rejected"
+    ],
+    "sourceDiffMatchesEvidence": true,
+    "auditOutputMatchesSafetyJSON": true,
+    "files": {
+      "release.py": {
+        "sha256": "36706f932e6284a1192ef213d85836d25b4c9a7a7023309c11454c4d2dfdfe14",
+        "bytes": 141526,
+        "matchesProvidedEvidence": true
+      },
+      "prepare-local.py": {
+        "sha256": "1768a83b391e3cb05d75a23ac91c426039eb4610575cc95a369f1821c312f862",
+        "bytes": 22260,
+        "matchesProvidedEvidence": true
+      },
+      "test_release.py": {
+        "sha256": "bff0446a2c86964330ae0702b461fc220a5f12952219e45f69e5eaebee8b0d0e",
+        "bytes": 152881,
+        "matchesProvidedEvidence": true
+      },
+      "test_prepare_local.py": {
+        "sha256": "8e59403a2483d43d9372b08b82ccf80a1dff48babfd55bd439c9267ce5ebfe57",
+        "bytes": 29673,
+        "matchesProvidedEvidence": true
+      },
+      "evidence/r5-f1f2-eight-tests.txt": {
+        "sha256": "ec440e28c37ee5bff7531e7aef077865b1a8dcefdc63a4f7d5571d1794fd88eb",
+        "bytes": 1238,
+        "matchesProvidedEvidence": true
+      },
+      "evidence/r5-f1f2-release-tests.txt": {
+        "sha256": "040618c8b79a70afaa160d8f5e6370a931c2cdb1f4b7a91259f843e82bba54e3",
+        "bytes": 30557,
+        "matchesProvidedEvidence": true
+      },
+      "evidence/r5-f1f2-prepare-tests.txt": {
+        "sha256": "2e51f99fff4b6f5659d1aeac004cfe5e2a60c1e0a505f0e896bf83c2b11134e0",
+        "bytes": 4559,
+        "matchesProvidedEvidence": true
+      },
+      "evidence/r5-f1f2-finite-tests.txt": {
+        "sha256": "ab36567b74ef88771992c87875e0f9d1f2ce5eaca7f04d0ed132a3f8b2de6f2b",
+        "bytes": 906,
+        "matchesProvidedEvidence": true
+      },
+      "evidence/r5-f1f2-audit.py": {
+        "sha256": "0118888662f2c29b8f64c2e14b3d0669eb7b82063cb7dc875a5476c413fc3886",
+        "bytes": 2733
+      },
+      "evidence/r5-f1f2-audit-output.txt": {
+        "sha256": "dbcf6bc81d47d7f29082fcf855e4a27e10e7e762630326593b4ee80ed4492f1c",
+        "bytes": 1949
+      },
+      "evidence/r5-f1f2-source-and-safety.json": {
+        "sha256": "dbcf6bc81d47d7f29082fcf855e4a27e10e7e762630326593b4ee80ed4492f1c",
+        "bytes": 1949
+      },
+      "evidence/r5-f1f2-controller.diff": {
+        "sha256": "1e0d230011b2a540b38e693f7ca01f3a34c0507d705193c81ba77c3e4833b633",
+        "bytes": 1183
+      }
+    },
+    "logs": {
+      "eight": {
+        "count": 8,
+        "reportedOkLines": 8,
+        "finalOK": true,
+        "sha256": "ec440e28c37ee5bff7531e7aef077865b1a8dcefdc63a4f7d5571d1794fd88eb",
+        "shaMatched": true,
+        "reviewReranSuite": false
+      },
+      "release": {
+        "count": 212,
+        "reportedOkLines": 212,
+        "finalOK": true,
+        "sha256": "040618c8b79a70afaa160d8f5e6370a931c2cdb1f4b7a91259f843e82bba54e3",
+        "shaMatched": true,
+        "reviewReranSuite": false
+      },
+      "prepare": {
+        "count": 38,
+        "reportedOkLines": 38,
+        "finalOK": true,
+        "sha256": "2e51f99fff4b6f5659d1aeac004cfe5e2a60c1e0a505f0e896bf83c2b11134e0",
+        "shaMatched": true,
+        "reviewReranSuite": false
+      },
+      "finite": {
+        "count": 6,
+        "reportedOkLines": 6,
+        "finalOK": true,
+        "sha256": "ab36567b74ef88771992c87875e0f9d1f2ce5eaca7f04d0ed132a3f8b2de6f2b",
+        "shaMatched": true,
+        "reviewReranSuite": false
+      }
+    },
+    "probes": {
+      "F1": {
+        "samePID": 10000,
+        "envVariants": [
+          {
+            "variant": "list",
+            "baselineAcceptedStable": true,
+            "currentRejected": "DYNAMIC_OWN_ENV_OBJECT_REQUIRED"
+          },
+          {
+            "variant": "scalar",
+            "baselineAcceptedStable": true,
+            "currentRejected": "DYNAMIC_OWN_ENV_OBJECT_REQUIRED"
+          },
+          {
+            "variant": "null",
+            "baselineAcceptedStable": true,
+            "currentRejected": "DYNAMIC_OWN_ENV_OBJECT_REQUIRED"
+          },
+          {
+            "variant": "bool",
+            "baselineAcceptedStable": true,
+            "currentRejected": "DYNAMIC_OWN_ENV_OBJECT_REQUIRED"
+          },
+          {
+            "variant": "integer",
+            "baselineAcceptedStable": true,
+            "currentRejected": "DYNAMIC_OWN_ENV_OBJECT_REQUIRED"
+          },
+          {
+            "variant": "missing",
+            "baselineAcceptedStable": true,
+            "currentRejected": "DYNAMIC_OWN_ENV_OBJECT_REQUIRED"
+          }
+        ],
+        "nodeUniqueVariants": [
+          {
+            "variant": "not-decimal",
+            "baselineAcceptedStable": true,
+            "currentRejected": "DYNAMIC_OWN_NODE_UNIQUE_ID_DECIMAL_REQUIRED"
+          },
+          {
+            "variant": "",
+            "baselineAcceptedStable": true,
+            "currentRejected": "DYNAMIC_OWN_NODE_UNIQUE_ID_DECIMAL_REQUIRED"
+          },
+          {
+            "variant": "-1",
+            "baselineAcceptedStable": true,
+            "currentRejected": "DYNAMIC_OWN_NODE_UNIQUE_ID_DECIMAL_REQUIRED"
+          },
+          {
+            "variant": "1.0",
+            "baselineAcceptedStable": true,
+            "currentRejected": "DYNAMIC_OWN_NODE_UNIQUE_ID_DECIMAL_REQUIRED"
+          },
+          {
+            "variant": "+1",
+            "baselineAcceptedStable": true,
+            "currentRejected": "DYNAMIC_OWN_NODE_UNIQUE_ID_DECIMAL_REQUIRED"
+          },
+          {
+            "variant": "missing",
+            "baselineAcceptedStable": true,
+            "currentRejected": "DYNAMIC_OWN_NODE_UNIQUE_ID_DECIMAL_REQUIRED"
+          }
+        ]
+      },
+      "F2": {
+        "differentAddress": "9000-a000",
+        "baselineAcceptedStable": true,
+        "currentProtectionChanged": true,
+        "libraryMultiplicityBefore": 1,
+        "libraryMultiplicityAfter": 2,
+        "mappingLinesBefore": 2,
+        "mappingLinesAfter": 3,
+        "ASLRRelocationNoninterfering": true,
+        "rowOrderNoninterfering": true,
+        "deletionRestoresBaseline": true,
+        "betweenCompleteSamplesRejected": [
+          {
+            "pid": 11000,
+            "error": "DYNAMIC_TWO_COMPLETE_SAMPLE_DRIFT"
+          },
+          {
+            "pid": 10000,
+            "error": "DYNAMIC_TWO_COMPLETE_SAMPLE_DRIFT"
+          }
+        ]
+      },
+      "legalRoll": {
+        "slot": 190,
+        "pidBefore": 10000,
+        "pidAfter": 25000,
+        "startTicksBefore": 5000,
+        "startTicksAfter": 8000,
+        "rawNodeUniqueChanged": true,
+        "permissionBytesChanged": true,
+        "completeCollectorStable": true
+      },
+      "mutableAPILocalReplaceNoninterfering": true,
+      "realOwnedArgvProcessContainerSourceStillFullMeta": true
+    },
+    "sourceRecheckedUnchangedAtEnd": true
+  },
+  "findingDisposition": [
+    {
+      "id": "R5-F1",
+      "status": "CLOSED_FOR_THIS_NARROW_COLLECTOR_DEFECT",
+      "currentLines": [
+        956,
+        957,
+        958
+      ],
+      "effect": "serialized env must be dict; outer NODE_UNIQUE_ID must exist and fullmatch ASCII decimal before own exemption",
+      "scopeLimit": "Original finding was malformed own classification/transport acceptance, not a demonstrated complete publication bypass. pm2_raw_binding/raw_semantics/snapshot/identity and all Controller protocol remain unchanged. This fix does not establish Ready, complete normalized environment equivalence, typed witness or publication approval."
+    },
+    {
+      "id": "R5-F2",
+      "status": "CLOSED_FOR_THIS_MAPPING_MULTIPLICITY_DEFECT",
+      "currentLines": [
+        897,
+        898,
+        899,
+        902
+      ],
+      "effect": "Every protected file-backed map contributes an identity; sorted repetitions preserve multiplicity while absolute ASLR addresses remain excluded",
+      "scopeLimit": "Protects projected file-backed mapping multiplicity, not loaded JS semantics closure, address topology or an atomic kernel snapshot."
+    }
+  ],
+  "logVerificationMethod": "Independently recomputed SHA256/byte size against supplied safety JSON; count and per-test ok lines/final OK verified for 8/212/38/6. Provided audit script read but not executed. Original suites/test modules not imported or rerun; bounded AST-extracted helpers executed separately against synthetic TempDir fixtures.",
+  "executionSafety": {
+    "sourceModified": false,
+    "testsModified": false,
+    "providedAuditExecuted": false,
+    "wholeControllerImportedOrRun": false,
+    "testModuleImportedOrRun": false,
+    "actualNodeExecuted": false,
+    "actualGodExecuted": false,
+    "actualAppModuleExecuted": false,
+    "actualRpcExecuted": false,
+    "prodCliExecuted": false,
+    "actualProcReads": 0,
+    "sshExecuted": false,
+    "mcpExecuted": false,
+    "gitExecuted": false,
+    "networkAccess": false,
+    "serverExecutions": 0,
+    "actualDatabaseAccess": false,
+    "locksAcquired": 0,
+    "stageExecutions": 0,
+    "captureExecutions": 0,
+    "windowExecutions": 0,
+    "attemptExecutions": 0,
+    "reloadExecutions": 0,
+    "serverWrites": 0,
+    "productionWrites": 0,
+    "allFixtureInputsSyntheticTemporaryDirectory": true,
+    "onlyIntendedOutputs": [
+      "/home/ubuntu/work/customer-batch/review-r5-f1f2-offline.md",
+      "/home/ubuntu/work/customer-batch/review-r5-f1f2-offline.json"
+    ]
+  },
+  "notProven": {
+    "actualSixReadyVerified": false,
+    "retainedRawTypedWitnessVerified": false,
+    "currentFullMetaVerified": false,
+    "currentFullPackageApproved": false,
+    "frontNewStaticClosedVerified": false,
+    "frontActualClosedVerified": false,
+    "sourceGraphReviewedForCurrentFullPackage": false,
+    "loadedDependenciesSemanticsClosed": false,
+    "kernelAtomicSnapshot": false,
+    "continuousMonitoring": false
+  },
+  "remainingPrerequisitesOwnedByParent": [
+    "six actual Ready literal True",
+    "retained raw/typed witness and typed bytes",
+    "current fullMETA and new API/HTML fullpackage",
+    "fresh all-active dynamic baseline and independent current fullpackage sourcegraph review",
+    "front new static closed and actual list/detail closed"
+  ],
+  "unknownProcessPolicy": "known/unknown capabilities remain pending genuine independent sourcegraph review; neither automatically trusted nor permanently unapprovable",
+  "finiteSamplingLimit": "Two complete equal samples plus finite rechecks do not atomically freeze the kernel or prove continuous stability. ASLR-address exclusion and maps/argv collection do not prove loaded dependency semantic closure.",
+  "authorizationNote": "User deployment authorization already exists; no repeated authorization requested. This report grants no fullpackage/controller/release/finalDeploy/reload approval.",
+  "reportPath": "/home/ubuntu/work/customer-batch/review-r5-f1f2-offline.md"
+}

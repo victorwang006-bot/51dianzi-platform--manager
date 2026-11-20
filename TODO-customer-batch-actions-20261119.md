@@ -58,3 +58,9 @@ auxfix独立增量复核已静态PASS，原105top/Controller30/九pins/domain/pr
 当前controller **36706f932e6284a1192ef213d85836d25b4c9a7a7023309c11454c4d2dfdfe14**，SCOPE customer-batch-actions-20261120-6Lfttf6o-R5，完整OWNER不变；preparerpin同步。独立发现F1非objectserializedenv/缺失或非decimalNodeUnique仍享新collectorown分类（原raw链仍阻断非pub绕过），F2重复同identity执行map去重丢multiplicity，已只两helper最窄修；212controller/38preparer/6JSON及八新反例全部实际puremock通过，原204测试定义ASTbyte不动、原全部协议不动，准确evidence/r5-f1f2-*。窄修独立复核完成后另归档，不用它代fresh全包approve。
 
 前台list+detailcandidate NOT_APPROVED，正在自身actualruntime source依赖/HOME/3God/脚本闭包/fullNativeBrowser证据，不追加我forecasthelper，后台不改变其固定收件输入/预算、不新probe或capture。R5未任何remote stage/capture/attempt/window/activewrite/reload。用户10:31‘扩容结束，可以上线’授权仍有效，待前台newactualstaticverifiedclosed+明确交接后自行freshactualsixReady/retainedTypedWitness/allNode sourcegraph/META/新两API+adminHTML/全pkg审，再窄scope发布；不复用旧技术closed或只读partial数据，也不重复要求用户授权。
+
+## 11:45最新独立收尾结论与剩余发布条件
+
+R5 F1/F2独立窄审PASS_NARROW_FIX_ONLY，无新实质bug；AST/bytes仅两helper，原204测试方法不变，8/212/38/6保存日志核对一致，合法own滚动和mutableAPI本地替换非干涉实证成立。报告evidence/r5-independent-f1f2.md/.json；当前controller36706f...、R5scope和完整OWNER不变，所有总approveFalse，不授整体包批准。
+
+源码已成功保存manager8baff，前台已自然保留，sourceinputs/sealedcandidate不变。前台当下仍0newpubstage/fullcapture/window/HTML资产write/reload，独立语义仅PASS_CONDITIONAL；51directdep GET200/fullH已收，但更深transitive闭包/fullNativeBrowser/runtime实际准入未完，故尚无newactualclosed可交接。双方明确不能完成准入时如实未上线，不强行开窗或自动放行后台。后台不重复ECS读取或probe，用户恢复上线授权有效；离线准备完成不等于当前actualsixReady/retainedTypedWitness/sourcegraph/META/新fullpkg审批完成，待新的实际闭窗交接后续核验和窄scope发布。
