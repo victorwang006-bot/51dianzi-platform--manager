@@ -1,0 +1,11 @@
+test_finite_extremes_underflow_and_integers_preserved (__main__.FiniteTests.test_finite_extremes_underflow_and_integers_preserved) ... ok
+test_negative_exponent_overflow_rejected (__main__.FiniteTests.test_negative_exponent_overflow_rejected) ... ok
+test_nested_overflow_and_duplicate_keys_rejected (__main__.FiniteTests.test_nested_overflow_and_duplicate_keys_rejected) ... ok
+test_nonfinite_json_constants_rejected (__main__.FiniteTests.test_nonfinite_json_constants_rejected) ... ok
+test_opaque_strings_and_finite_unicode_roundtrip_preserved (__main__.FiniteTests.test_opaque_strings_and_finite_unicode_roundtrip_preserved) ... ok
+test_positive_exponent_overflow_rejected (__main__.FiniteTests.test_positive_exponent_overflow_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.002s
+
+OK

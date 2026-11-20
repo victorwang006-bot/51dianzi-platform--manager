@@ -1,0 +1,410 @@
+--- r8-baseline-a555/release.py
++++ current/release.py
+@@ -26,7 +26,7 @@
+ from dataclasses import dataclass
+ 
+ OWNER = '6Lfttf6oVWJ8YS69o5FkXQ'
+-SCOPE = 'customer-batch-actions-20261120-6Lfttf6o-R7'
++SCOPE = 'customer-batch-actions-20261120-6Lfttf6o-R8'
+ API_BASE = '/opt/releases/20261110-customer-workbench-b7f3a2a7e317'
+ FRONT_API = API_BASE + '/front/dist/index.js'
+ ADMIN_API = API_BASE + '/admin/dist/index.js'
+@@ -969,11 +969,40 @@
+     return {p: sorted(mapped[p]) for p in sorted(mapped)}
+ 
+ 
++def dynamic_proc_virtual_meta(cfg, pid, path):
++    """Only PID directory/exe/cwd cache-instance metadata, never real FS META.
++    proc_pid_make_inode generates ino and initial mtime/ctime anew on cache
++    recreation. Task identity, actual link targets and all real sources remain
++    independently bound by dynamic_proc's unchanged complete rereads.
++    """
++    need(integer(pid) and pid > 0, 'DYNAMIC_PROC_VIRTUAL_PID')
++    root = Path(cfg.proc); p = Path(path); proc = root / str(pid)
++    need(root.is_absolute() and '..' not in root.parts
++         and '..' not in p.parts and str(root) == os.fspath(cfg.proc)
++         and str(p) == os.fspath(path),
++         'DYNAMIC_PROC_VIRTUAL_CANONICAL_PATH')
++    if p == proc:
++        kind, parent = 'directory', root
++    else:
++        need(p.parent == proc and p.name in ('exe', 'cwd'),
++             'DYNAMIC_PROC_VIRTUAL_EXACT_PATH')
++        kind, parent = 'symlink', proc
++    no_link(proc)
++    record = meta(p)
++    exact(record, 'dev ino statmode uid gid nlink size mtimeNs ctimeNs',
++          'DYNAMIC_PROC_VIRTUAL_META_SCHEMA')
++    need(all(integer(v) for v in record.values()), 'DYNAMIC_PROC_VIRTUAL_META_SCHEMA')
++    need(stat.S_ISDIR(record['statmode']) if kind == 'directory'
++         else stat.S_ISLNK(record['statmode']), 'DYNAMIC_PROC_VIRTUAL_KIND')
++    return dict(schema='proc-virtual-meta-r8', path=str(p), parent=str(parent), kind=kind,
++                **{k: record[k] for k in ('dev', 'statmode', 'uid', 'gid', 'nlink', 'size')})
++
++
+ def dynamic_proc(cfg, pid, budget):
+     identity = dynamic_identity(cfg, pid, budget)
+-    proc = no_link(cfg.proc / str(pid)); proc_meta = meta(proc)
++    proc = no_link(cfg.proc / str(pid)); proc_meta = dynamic_proc_virtual_meta(cfg, pid, proc)
+     exe = external_proc_link(cfg, pid, 'exe'); cwd = external_proc_link(cfg, pid, 'cwd')
+-    links = {n: meta(proc / n) for n in ('exe', 'cwd')}
++    links = {n: dynamic_proc_virtual_meta(cfg, pid, proc / n) for n in ('exe', 'cwd')}
+     cwd_meta = describe(cwd)
+     need(cwd_meta['kind'] == 'directory', 'DYNAMIC_SHALLOW_CWD_DIRECTORY')
+     cmd = dynamic_read(proc / 'cmdline', DYNAMIC_PROC_BYTES, budget)
+@@ -996,10 +1025,11 @@
+                   cmdlineSha256=H(cmd), permissionsSha256=permission_hash,
+                   kernelAnonymousMappings=kernel,
+                   mappedSourceIdentity=mapped, scriptPaths=sorted(scripts), mappedSourcePaths=sorted(mapped))
+-    need(dynamic_identity(cfg, pid, budget) == identity and meta(proc) == proc_meta
++    need(dynamic_identity(cfg, pid, budget) == identity
++         and dynamic_proc_virtual_meta(cfg, pid, proc) == proc_meta
+          and external_proc_link(cfg, pid, 'exe') == exe
+          and external_proc_link(cfg, pid, 'cwd') == cwd
+-         and {n: meta(proc / n) for n in ('exe', 'cwd')} == links
++         and {n: dynamic_proc_virtual_meta(cfg, pid, proc / n) for n in ('exe', 'cwd')} == links
+          and describe(cwd) == cwd_meta
+          and dynamic_read(proc / 'cmdline', DYNAMIC_PROC_BYTES, budget) == cmd
+          and dynamic_read(proc / 'environ', DYNAMIC_PROC_BYTES, budget) == raw
+--- r8-baseline-a555/test_release.py
++++ current/test_release.py
+@@ -295,7 +295,7 @@
+     def test_new_identity_and_fixed_boundary(self):
+         cfg = r.Config()
+         self.assertEqual(r.OWNER, '6Lfttf6oVWJ8YS69o5FkXQ')
+-        self.assertEqual(str(cfg.stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R7')
++        self.assertEqual(str(cfg.stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R8')
+         self.assertEqual(len(cfg.aliases), 7)
+         self.assertEqual(r.identity(self.cfg,self.cap['processes']), list(range(6)))
+         with self.assertRaisesRegex(r.ReleaseError,'PRODUCTION_ADAPTER_INJECTION_REFUSED'):
+@@ -1804,7 +1804,7 @@
+         cfg=r.Config(); self.assertEqual(cfg.extra_protected[-2:],(r.EXTERNAL_OPS,r.EXTERNAL_CWD))
+         self.assertNotIn(Path('/root'),cfg.extra_protected); self.assertNotIn(Path('/'),cfg.extra_protected)
+         self.assertEqual(r.EXTERNAL_SCRIPT,r.EXTERNAL_OPS/'releases/20261112-forum12-1255b7b84aa3adac09cb8c05/worker-runtime-bootstrap.mjs')
+-        self.assertEqual(r.SCOPE,'customer-batch-actions-20261120-6Lfttf6o-R7')
++        self.assertEqual(r.SCOPE,'customer-batch-actions-20261120-6Lfttf6o-R8')
+ 
+ 
+ class R4DomainTests(unittest.TestCase):
+@@ -3038,5 +3038,228 @@
+         self.assertEqual(alias.stat().st_nlink, 2)
+ 
+ 
++class R8ProcVirtualMetaTests(unittest.TestCase):
++    """Synthetic exact cfg.proc/PID fixtures only; no actual proc or runtime."""
++    setUp = R5DynamicTests.setUp
++    proc = R5DynamicTests.proc
++    ownproc = R5DynamicTests.ownproc
++    collect = R5DynamicTests.collect
++    second = R5DynamicTests.second
++    remove = R5DynamicTests.remove
++
++    def paths(self):
++        proc = self.cfg.proc/'1'
++        return (proc, proc/'exe', proc/'cwd')
++
++    def regenerate(self, path, value, count):
++        return dict(value, ino=value['ino']+count,
++                    mtimeNs=value['mtimeNs']+count, ctimeNs=value['ctimeNs']+count)
++
++    def reject_virtual_field(self, field):
++        real = r.meta
++        for target in self.paths():
++            calls = []
++            def meta(path):
++                value = real(path)
++                if Path(path) == target:
++                    calls.append(1)
++                    if len(calls) == 2: value = dict(value, **{field: value[field]+1})
++                return value
++            with self.subTest(path=target, field=field), patch.object(r, 'meta', side_effect=meta), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_FULL_PROC_READ_RACE'):
++                r.dynamic_proc(self.cfg, 1, r.dynamic_budget())
++            self.assertEqual(len(calls), 2)
++
++    def reject_identity(self, field):
++        real = r.dynamic_identity; calls = []
++        def identity(*args):
++            value = real(*args); calls.append(1)
++            if len(calls) == 2:
++                value = dict(value, **{field: r.H(b'changed comm') if field == 'nameSha256' else value[field]+1})
++            return value
++        with patch.object(r, 'dynamic_identity', side_effect=identity), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_FULL_PROC_READ_RACE'):
++            r.dynamic_proc(self.cfg, 1, r.dynamic_budget())
++        self.assertEqual(len(calls), 2)
++
++    def reject_real_cwd_field(self, field):
++        real = r.meta; calls = []
++        def meta(path):
++            value = real(path)
++            if Path(path) == self.root:
++                calls.append(1)
++                if len(calls) == 2: value = dict(value, **{field: value[field]+1})
++            return value
++        with patch.object(r, 'meta', side_effect=meta), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_FULL_PROC_READ_RACE'):
++            r.dynamic_proc(self.cfg, 1, r.dynamic_budget())
++        self.assertEqual(len(calls), 2)
++
++    def test_exact_schema_path_parent_kind_and_six_retained_fields(self):
++        expected = {'schema', 'path', 'parent', 'kind', 'dev', 'statmode', 'uid', 'gid', 'nlink', 'size'}
++        for path in self.paths():
++            value = r.dynamic_proc_virtual_meta(self.cfg, 1, path); raw = r.meta(path)
++            self.assertEqual(set(value), expected)
++            self.assertEqual(value['schema'], 'proc-virtual-meta-r8')
++            self.assertEqual(value['path'], str(path)); self.assertEqual(value['parent'], str(path.parent))
++            self.assertEqual(value['kind'], 'directory' if path == self.paths()[0] else 'symlink')
++            for key in ('dev', 'statmode', 'uid', 'gid', 'nlink', 'size'): self.assertEqual(value[key], raw[key])
++
++    def test_all_proc_entries_regenerate_three_fields_every_read_full_graph_passes(self):
++        before = self.collect(); real = r.meta; counts = {}
++        allowed = {p for directory in self.cfg.proc.iterdir() for p in (directory, directory/'exe', directory/'cwd')}
++        def meta(path):
++            value = real(path); path = Path(path)
++            if path in allowed:
++                counts[path] = counts.get(path, 0)+1
++                value = self.regenerate(path, value, counts[path])
++            return value
++        with patch.object(r, 'meta', side_effect=meta): self.assertEqual(self.collect(), before)
++        self.assertTrue(all(p in counts and counts[p] >= 2 for p in self.paths()))
++        self.assertFalse(before['semanticsClosed']); self.assertTrue(before['sourceGraphReviewRequired'])
++        self.assertNotIn(b'synthetic-secret', r.encode(before))
++
++    def test_real_fakeproc_symlink_recreation_same_targets_complete_samples_pass(self):
++        before = self.collect(); real = r.dynamic_protection_sample; calls = []
++        def sample(*args):
++            calls.append(1)
++            if len(calls) == 2:
++                for path in self.paths()[1:]:
++                    target = os.readlink(path); path.unlink(); path.symlink_to(target)
++            return real(*args)
++        with patch.object(r, 'dynamic_protection_sample', side_effect=sample): self.assertEqual(self.collect(), before)
++        self.assertEqual(len(calls), 2)
++
++    def test_directory_cache_fields_only_regenerated_preserves_exact_path_parent(self):
++        path = self.paths()[0]; before = r.dynamic_proc_virtual_meta(self.cfg, 1, path); raw = r.meta(path)
++        with patch.object(r, 'meta', return_value=self.regenerate(path, raw, 100)):
++            self.assertEqual(r.dynamic_proc_virtual_meta(self.cfg, 1, path), before)
++
++    def test_outside_exact_three_paths_rejected_before_meta(self):
++        other = self.root/'proc-other/1/exe'
++        paths = (self.cfg.proc, self.cfg.proc/'11', self.cfg.proc/'11/exe', self.cfg.proc/'01',
++                 self.cfg.proc/'1/stat', self.cfg.proc/'1/maps', self.cfg.proc/'1/exe/nested',
++                 self.cfg.proc/'1/cwd-extra', other, self.node, self.root, self.cfg.proc/'2/cwd')
++        for path in paths:
++            with self.subTest(path=path), patch.object(r, 'meta', side_effect=AssertionError('OUTSIDE_META_FORBIDDEN')), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_PROC_VIRTUAL_EXACT_PATH'):
++                r.dynamic_proc_virtual_meta(self.cfg, 1, path)
++
++    def test_noncanonical_path_relative_root_and_invalid_pid_rejected(self):
++        for pid in (0, -1, True, '1'):
++            with self.subTest(pid=pid), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_PROC_VIRTUAL_PID'):
++                r.dynamic_proc_virtual_meta(self.cfg, pid, self.paths()[0])
++        for path in (str(self.cfg.proc)+'/1/../1/exe', str(self.cfg.proc)+'/1//exe'):
++            with self.subTest(path=path), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_PROC_VIRTUAL_CANONICAL_PATH'):
++                r.dynamic_proc_virtual_meta(self.cfg, 1, path)
++        with self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_PROC_VIRTUAL_CANONICAL_PATH'):
++            r.dynamic_proc_virtual_meta(replace(self.cfg, proc=Path('relative-proc')), 1, Path('relative-proc/1'))
++
++    def test_directory_kind_requires_os_directory_not_regular_or_link(self):
++        target = self.paths()[0]; raw = r.meta(target)
++        for mode in (stat.S_IFREG|0o755, stat.S_IFLNK|0o777):
++            with self.subTest(mode=mode), patch.object(r, 'meta', return_value=dict(raw, statmode=mode)), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_PROC_VIRTUAL_KIND'):
++                r.dynamic_proc_virtual_meta(self.cfg, 1, target)
++
++    def test_exe_cwd_kind_require_os_symlink_not_regular_or_directory(self):
++        for target in self.paths()[1:]:
++            raw = r.meta(target)
++            for mode in (stat.S_IFREG|0o777, stat.S_IFDIR|0o777):
++                with self.subTest(path=target, mode=mode), patch.object(r, 'meta', return_value=dict(raw, statmode=mode)), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_PROC_VIRTUAL_KIND'):
++                    r.dynamic_proc_virtual_meta(self.cfg, 1, target)
++
++    def test_exact_raw_meta_schema_missing_each_field_and_extra_rejected(self):
++        path = self.paths()[0]; raw = r.meta(path)
++        for key in raw:
++            bad = {k: v for k, v in raw.items() if k != key}
++            with self.subTest(missing=key), patch.object(r, 'meta', return_value=bad), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_PROC_VIRTUAL_META_SCHEMA'):
++                r.dynamic_proc_virtual_meta(self.cfg, 1, path)
++        with patch.object(r, 'meta', return_value=dict(raw, unknown=0)), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_PROC_VIRTUAL_META_SCHEMA'):
++            r.dynamic_proc_virtual_meta(self.cfg, 1, path)
++
++    def test_raw_meta_noninteger_values_rejected_even_excluded_cache_keys(self):
++        path = self.paths()[0]; raw = r.meta(path)
++        for key in raw:
++            for value in (True, '1', None):
++                with self.subTest(key=key, value=value), patch.object(r, 'meta', return_value=dict(raw, **{key: value})), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_PROC_VIRTUAL_META_SCHEMA'):
++                    r.dynamic_proc_virtual_meta(self.cfg, 1, path)
++
++    def test_proc_directory_parent_symlink_escape_rejected(self):
++        alias = self.root/'proc-alias'; alias.symlink_to(self.cfg.proc, target_is_directory=True)
++        cfg = replace(self.cfg, proc=alias)
++        with self.assertRaisesRegex(r.ReleaseError, 'SYMLINK_ESCAPE'):
++            r.dynamic_proc_virtual_meta(cfg, 1, alias/'1/exe')
++
++    def test_dev_drift_directory_exe_cwd_rejected(self): self.reject_virtual_field('dev')
++    def test_permission_mode_drift_directory_exe_cwd_rejected(self): self.reject_virtual_field('statmode')
++    def test_uid_drift_directory_exe_cwd_rejected(self): self.reject_virtual_field('uid')
++    def test_gid_drift_directory_exe_cwd_rejected(self): self.reject_virtual_field('gid')
++    def test_nlink_drift_directory_exe_cwd_rejected(self): self.reject_virtual_field('nlink')
++    def test_size_drift_directory_exe_cwd_rejected(self): self.reject_virtual_field('size')
++    def test_startticks_pidreuse_during_closed_read_rejected(self):
++        self.reject_identity('pid'); self.reject_identity('startTicks')
++    def test_ppid_during_closed_read_rejected(self): self.reject_identity('ppid')
++    def test_comm_hash_during_closed_read_rejected(self): self.reject_identity('nameSha256')
++
++    def test_exe_and_cwd_target_drift_rejected_with_same_virtual_meta(self):
++        real = r.external_proc_link
++        for name, changed in (('exe', self.flock), ('cwd', self.shadow)):
++            calls = []
++            def link(cfg, pid, entry):
++                value = real(cfg, pid, entry)
++                if entry == name:
++                    calls.append(1)
++                    if len(calls) == 2: value = changed
++                return value
++            with self.subTest(name=name), patch.object(r, 'external_proc_link', side_effect=link), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_FULL_PROC_READ_RACE'):
++                r.dynamic_proc(self.cfg, 1, r.dynamic_budget())
++            self.assertEqual(len(calls), 2)
++
++    def test_real_cwd_ino_still_rejected(self): self.reject_real_cwd_field('ino')
++    def test_real_cwd_mtime_still_rejected(self): self.reject_real_cwd_field('mtimeNs')
++    def test_real_cwd_ctime_still_rejected(self): self.reject_real_cwd_field('ctimeNs')
++
++    def test_real_source_ino_mtime_ctime_still_full_meta_rejected(self):
++        real = r.meta
++        for field in ('ino', 'mtimeNs', 'ctimeNs'):
++            calls = []
++            def meta(path):
++                value = real(path)
++                if Path(path) == self.lib:
++                    calls.append(1)
++                    if len(calls) == 2: value = dict(value, **{field: value[field]+1})
++                return value
++            with self.subTest(field=field), patch.object(r, 'meta', side_effect=meta), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_SOURCE_META_READ_RACE'):
++                r.dynamic_source(self.lib, r.dynamic_budget())
++            self.assertEqual(len(calls), 2)
++
++    def test_late_final_fullproc_cache_regeneration_passes_not_semantic_approval(self):
++        before = self.collect(); real_source = r.dynamic_source; real_meta = r.meta; active = []
++        def source(path, budget):
++            value = real_source(path, budget)
++            if Path(path) == self.script: active.append(1)
++            return value
++        def meta(path):
++            value = real_meta(path)
++            if active and Path(path) in self.paths(): value = self.regenerate(path, value, len(active))
++            return value
++        with patch.object(r, 'dynamic_source', side_effect=source), patch.object(r, 'meta', side_effect=meta):
++            self.assertEqual(self.collect(), before)
++        self.assertTrue(active); self.assertFalse(before['semanticsClosed'])
++
++    def test_late_final_fullproc_retained_virtual_meta_drift_still_rejected(self):
++        real_source = r.dynamic_source; real_meta = r.meta; active = []
++        def source(path, budget):
++            value = real_source(path, budget)
++            if Path(path) == self.script: active.append(1)
++            return value
++        def meta(path):
++            value = real_meta(path)
++            if active and Path(path) == self.cfg.proc/'1/exe': value = dict(value, dev=value['dev']+1)
++            return value
++        with patch.object(r, 'dynamic_source', side_effect=source), patch.object(r, 'meta', side_effect=meta), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_FINAL_FULL_PROC_DRIFT'):
++            self.collect()
++        self.assertTrue(active)
++
++    def test_pid_reuse_between_complete_samples_rejected_despite_cache_regeneration(self):
++        self.second(lambda: (self.cfg.proc/'11000/stat').write_bytes(r4_stat(11000, 1279, 99999, 'node-22')))
++
++
+ if __name__ == '__main__':
+     unittest.main()
+--- r8-baseline-a555/prepare-local.py
++++ current/prepare-local.py
+@@ -15,7 +15,7 @@
+ HERE = Path(__file__).absolute().parent
+ REPO = HERE.parent.parent
+ WORK = Path('/home/ubuntu/work/customer-batch')
+-CONTROLLER_SHA = 'a555022329eed9c2b72efa2aa0668b9a84d33148da4bee5cc9ba5bd579866e5b'
++CONTROLLER_SHA = '586166f7ddf48235b6a28e2237d7b1f64cbf3709d1af484388a67b086f0ecaef'
+ NODE = '/usr/bin/node'
+ # Exactly backend-builder.compile's transform options, but read original files twice.
+ BACKEND_HASH_CHECK = """
+--- r8-baseline-a555/test_prepare_local.py
++++ current/test_prepare_local.py
+@@ -435,8 +435,8 @@
+ 
+     def test_r3_current_controller_sha_and_scope_fixed(self):
+         self.assertEqual(P.CONTROLLER_SHA, P.sha((HERE/'release.py').read_bytes()))
+-        self.assertEqual(R.SCOPE, 'customer-batch-actions-20261120-6Lfttf6o-R7')
+-        self.assertEqual(str(R.Config().stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R7')
++        self.assertEqual(R.SCOPE, 'customer-batch-actions-20261120-6Lfttf6o-R8')
++        self.assertEqual(str(R.Config().stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R8')
+         self.assertEqual(R.OWNER, '6Lfttf6oVWJ8YS69o5FkXQ')
+ 
+     def test_old_failed_stage_scope_capture_is_not_reusable(self):
+@@ -559,5 +559,24 @@
+             P.inputs(self.args, R)
+         self.assertEqual(self.calls, []); self.assertFalse(self.out.exists())
+ 
++    def test_r8_old_r7_scope_capture_not_reusable(self):
++        self.cap['scope'] = 'customer-batch-actions-20261120-6Lfttf6o-R7'
++        self.save_capture()
++        with self.assertRaisesRegex(P.PrepareError, 'fixed production capture binding'):
++            P.inputs(self.args, R)
++        self.assertEqual(self.calls, []); self.assertFalse(self.out.exists())
++
++    def test_r8_old_exact_a555_source_and_capture_pin_rejected_without_import(self):
++        old = (HERE/'evidence/r8-baseline-a555/release.py').read_bytes()
++        self.assertEqual(P.sha(old), 'a555022329eed9c2b72efa2aa0668b9a84d33148da4bee5cc9ba5bd579866e5b')
++        with patch.object(P, 'read', return_value=old), patch.object(P.importlib.util, 'spec_from_file_location', side_effect=AssertionError('OLD_SOURCE_NOT_IMPORTED')):
++            with self.assertRaisesRegex(P.PrepareError, 'controller drift'):
++                REAL_LOADER()
++        self.cap['controllerSha256'] = P.sha(old)
++        self.save_capture()
++        with self.assertRaisesRegex(P.PrepareError, 'fixed production capture binding'):
++            P.inputs(self.args, R)
++        self.assertEqual(self.calls, []); self.assertFalse(self.out.exists())
++
+ if __name__ == '__main__':
+     unittest.main()
+--- r8-baseline-a555/README.md
++++ current/README.md
+@@ -1,4 +1,20 @@
+-# 客户批次 R6：精确 io_uring kernel anonymous mapping（NOT_APPROVED）
++# 客户批次 R8：proc 虚拟 metadata 缓存假漂移最窄修复（NOT_APPROVED）
++
++当前唯一 SCOPE 为 **`customer-batch-actions-20261120-6Lfttf6o-R8`**，OWNER `6Lfttf6oVWJ8YS69o5FkXQ` 不变；controller SHA256 **`586166f7ddf48235b6a28e2237d7b1f64cbf3709d1af484388a67b086f0ecaef`**，preparer 固 pin 同步。默认 stage 仅按新 scope 派生，本轮没有访问或创建真实 stage，不覆盖 R7 source/stage/upload。
++
++准确 a555 R7 六文件已先逐字节备份到 `evidence/r8-baseline-a555/` 并附 `SHA256SUMS`。依据父任务实际字段差异及已有官方引用 `evidence/r8-proc-virtual-source.md`（本轮未改原字节），唯一已证实实际拒绝是 PID1 exe/cwd 的 proc cache-generated ino/初始化 mtime/ctime 再生，而不是该次 Node 集合漂移；不能据此倒推所有历史错误。
++
++`dynamic_proc_virtual_meta(cfg,pid,path)` 只接受准确 `cfg.proc/PID` 目录及该目录的 `exe`/`cwd` 两个链接，拒绝其它路径、非 canonical 路径与错误 OS kind，严格验证原九字段 schema。只排除 **ino/mtimeNs/ctimeNs**；保留 **dev/statmode/uid/gid/nlink/size**，并显式记录 `schema=proc-virtual-meta-r8`、exact path/parent/kind。mock 仍仅使用原 test-only cfg.mock 的 TemporaryDirectory 结构，无新 CLI、fallback、statfs、O_PATH 保持、权限提升或运行时调整。
++
++仅 `dynamic_proc` 原四处虚拟节点 meta 调用换用新 helper；其余 AST 完全相同。实际 exe/cwd 仍用原 `external_proc_link` 解析，deleted/noncanonical/真实目标 symlink 仍拒绝，readlink 目标前后 equality、PID/PPID/startTicks/comm、cmd/env 全 bytes/hash、permission、mapped dev/ino、source fullH/fullMETA 及全部 finite end-phase reread 不改。真实 CWD/root/source/lock/API/inventory/transport META 仍保留三个字段。外层 schema、Controller30、9 pins、Config/RPC/domain/CAS/Root/inventory/transport/six-own stable 与 native hardlink/io_uring 守卫均原 AST/字节不变。
++
++修改前 **276/42** 全 pass；修改后 **304/44** 全 pass，新增 **28 controller＋2 preparer** 项独立 pass，原 276/42 方法全保留，仅三个既有测试方法里的 current scope/stage 断言同步。限定 `evidence/r8-finite-tests.py` 的 **6 项**对准确 baseline 与当前 decoder 均 pass；为遵守六文件范围，未读取或执行独立第七文件 `test_finite_json.py`，不可把此再验证冒称该历史 suite 的执行。decoder 原 AST/字节完全不变。
++
++**PROC_VIRTUAL_META_FIX_NOT_APPROVED；controllerApproved=false；releaseApproved=false；finalDeployApproval=false；reloadApproved=false；typedSemanticsApproved=false；sourceGraphApproved=false；fullPackageApproved=false。** 纯本地测试和元数据类型修复不是实际 fresh/fullMETA/Typed/unknown source graph/new full package 审批。无 Git/MCP/SSH/Node/真实 proc 或 proc environ/FD 内容/server/capture CLI/reload/生产写；生产写 **0**。完整事实、测试与 caveat 见 [R8 报告](evidence/r8-report.md)，逐函数核验见 `evidence/r8-ast-diff.json`，六文件直接差异见 `evidence/r8-six-files.patch`，source/log H 见 `evidence/r8-source-and-safety.json`。
++
++## 以下 R7/R6 及更早段落全部是历史快照，不是当前 pin/scope/批准
++
++## 历史客户批次 R6：精确 io_uring kernel anonymous mapping（NOT_APPROVED）
+ 
+ 当前全新 SCOPE 为 **`customer-batch-actions-20261120-6Lfttf6o-R6`**，OWNER 仍为 `6Lfttf6oVWJ8YS69o5FkXQ`。当前 release SHA256 为 **`fbb5302cf59974433d9775de3e0ee5e788eb58ec13916fa5101655d2badb7348`**，preparer 固 pin 同步；派生 stage 为 `/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R6`，本离线任务未创建或访问真实 stage，不覆盖旧 R5 stage/source。
+ 
+--- r8-baseline-a555/prepare-local.README.md
++++ current/prepare-local.README.md
+@@ -1,4 +1,16 @@
+-# 客户批次 R6：仅本地准备器（NOT_APPROVED）
++# 客户批次 R8：仅离线准备器（NOT_APPROVED）
++
++当前固定 **CONTROLLER_SHA=`586166f7ddf48235b6a28e2237d7b1f64cbf3709d1af484388a67b086f0ecaef`**，全新 **SCOPE=`customer-batch-actions-20261120-6Lfttf6o-R8`** 仍直接取 `release.SCOPE`，OWNER `6Lfttf6oVWJ8YS69o5FkXQ` 不变。本轮 `prepare-local.py` 除固定 pin 外所有顶层节点、函数/CLI/行为 AST 和原 source 段字节完全不变；无 preparer schema 额外变更。
++
++先准确备份 a555 R7 六文件到 `evidence/r8-baseline-a555/`，原 **276 controller/42 preparer** 重跑通过。当前 **304/44** 全 pass，新增 **28/2** 独立 pass；原 preparer 42 方法全部保留，仅 current scope/stage 断言同步。新增两项 TempDir 拒绝反例证明：旧准确 R7 scope/capture 不复用，准确 a555 source 在 import 前因 pin 拒绝，旧 capture controllerSha 在 inputs 阶段拒绝，无输出、无 builder 调用。限定 r8 evidence 的六项 finite decoder 双版本再验证通过；未访问第七历史 finite test 文件，不冒称运行该独立 suite。
++
++R8 只消除准确 cfg.proc/PID 目录与 exe/cwd 链接 cache-instance ino/初始化 mtime/ctime 的假漂移表达，不弱化真实 FS META 或身份、readlink target、raw env/cmd、permission、mapped/source、dynamic scan dictionary、native/io_uring、六 own stable 与 finite 末端检查。不允许输入 override、mock fallback、真 proc 读取、O_PATH 持久缓存、系统运行时改动。Controller30/9 pins/Config/RPC/domain/CAS/Root/inventory/transport 不变；全新真实 source/fullMETA/new package/独立审批仍需父任务推进，不复用 R7 stage/source/upload/capture/review。
++
++**PROC_VIRTUAL_META_FIX_NOT_APPROVED；全部批准标志 false；生产写 0。** 详见 `README.md`、[R8 报告](evidence/r8-report.md)、`evidence/r8-ast-diff.json`、`evidence/r8-source-and-safety.json`、`evidence/r8-six-files.patch`。父写 `evidence/r8-proc-virtual-source.md` 原字节未改，未重搜索或读取实际诊断/真实 env。
++
++## 以下 R7/R6 及更早说明仅为历史，不是当前 source pin/scope/批准
++
++## 历史客户批次 R6：仅本地准备器（NOT_APPROVED）
+ 
+ 当前 **CONTROLLER_SHA = `fbb5302cf59974433d9775de3e0ee5e788eb58ec13916fa5101655d2badb7348`**，全新 SCOPE **`customer-batch-actions-20261120-6Lfttf6o-R6`** 直接取 `release.SCOPE`；OWNER `6Lfttf6oVWJ8YS69o5FkXQ` 不变。本轮 preparer 所有函数 AST/字节完全不变，仅固定 controller pin 更新。不得复用旧 R5 stage/source、capture/seed/review 或准确 36706f 历史 source pin。
+ 

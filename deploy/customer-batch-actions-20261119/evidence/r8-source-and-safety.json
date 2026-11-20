@@ -1,0 +1,73 @@
+{
+  "ASTAuditSha256": "9ea335181223e44f8efde678a3dd841c9df4fdcd315760b3bb180fe8a047dfb4",
+  "GitUsed": false,
+  "MCPUsed": false,
+  "NodeExecuted": false,
+  "SSHUsed": false,
+  "actualFDContentRead": false,
+  "actualProcEnvRead": false,
+  "actualProcRead": false,
+  "controllerApproved": false,
+  "controllerSha256": "586166f7ddf48235b6a28e2237d7b1f64cbf3709d1af484388a67b086f0ecaef",
+  "directDiffSha256": "2ffad80d2b6a16dd9568b76bc71e335ffca8d29a4f5ee2ae9c1b9c41ac8ba290",
+  "finalDeployApproval": false,
+  "finiteCaveat": "Separate historical seventh test_finite_json.py was not accessed; six finite methods in allowlisted r8 evidence revalidated exact baseline/current decoder. This is not a claim that that separate historical suite was executed.",
+  "fullPackageApproved": false,
+  "logs": {
+    "r8-baseline-prepare-tests.txt": "971c428b92c704db6b72edf1f756065288c6dfdc639c3a08358a2f1db2799b2e",
+    "r8-baseline-release-tests.txt": "82d0f983eaf652075ba7f1651b34b4e8cfdb2d4463b07c3aff19e4b3f5cea53e",
+    "r8-finite-tests.txt": "18eaa0147a2f6f91aa7a6d01b96b95e572faeaa632dedc63da54a0188f3bfc6d",
+    "r8-new-prepare-tests.txt": "233a3f59d13b9631152705ef7f7ea7914dd85fb28927c7f3c4008141b90ccf73",
+    "r8-new-release-tests.txt": "a3f82b9097c704871436096b0bdc9cf5da934cb7f65ed9e0485b202a27f6c7fe",
+    "r8-prepare-tests.txt": "b97146e2c7b6846b60383c71b21df8be1d84e05fa56c21cf975b9013088e0299",
+    "r8-release-tests.txt": "12c4380654c35f0c9cd02cd8041d5bab602821d91cec2c066625dc0cb8e8dd56"
+  },
+  "owner": "6Lfttf6oVWJ8YS69o5FkXQ",
+  "parentProcSourceReportSha256": "394012ef7ca71c92315323e6d3c4080c1d3242166beb10943fb5f7e1d215f710",
+  "preparerFixedPinMatches": true,
+  "productionCaptureInvoked": false,
+  "productionWrites": 0,
+  "releaseApproved": false,
+  "reloadApproved": false,
+  "reloadInvoked": false,
+  "scope": "customer-batch-actions-20261120-6Lfttf6o-R8",
+  "serverInvoked": false,
+  "sixFiles": {
+    "README.md": {
+      "baselineSha256": "0e52179cd2bfb1413481ad6bb8729ed989c4ce9423cc98d28b04f53450885ba9",
+      "currentSha256": "3038f3d588293eba5aaa1c06fe79d13e8bf7a87294ffc69bc0683f05bae6a5ee"
+    },
+    "prepare-local.README.md": {
+      "baselineSha256": "4331efb0ddb849b3a1a6aa2e919fc83f31a0955da9031535146e7c734443788f",
+      "currentSha256": "4b8b60e2b38c4602f0f75b87749d62c33344d669589f5fa633300402b8f19158"
+    },
+    "prepare-local.py": {
+      "baselineSha256": "36e8864ab357a3a5721ede54bcd02104ac30d357bf6350dd4e4fb354530847f9",
+      "currentSha256": "44c7328ead7bcfb4ba27a70d04a3af90a2801c5aff5bd09cfacd33c537c51334"
+    },
+    "release.py": {
+      "baselineSha256": "a555022329eed9c2b72efa2aa0668b9a84d33148da4bee5cc9ba5bd579866e5b",
+      "currentSha256": "586166f7ddf48235b6a28e2237d7b1f64cbf3709d1af484388a67b086f0ecaef"
+    },
+    "test_prepare_local.py": {
+      "baselineSha256": "389f9ad45dcca82df47ea72bf6f408de0990be9d3e8e7c3a92e20c414c815457",
+      "currentSha256": "db5e83033892b1ac5dd7f808f3e2e33520368b5ab4137f1b6df6558ea740d3f0"
+    },
+    "test_release.py": {
+      "baselineSha256": "c012e795727d065f8cfb9f19a22e2bc4c35f0e15e59bfb07b179c632a043379e",
+      "currentSha256": "889ff675ef4d59a129b6644792921ec93d93c5c0eee9783eaf90f6ef9abbc2fc"
+    }
+  },
+  "sourceGraphApproved": false,
+  "status": "PROC_VIRTUAL_META_FIX_NOT_APPROVED",
+  "testCounts": {
+    "baselinePreparer": 42,
+    "baselineRelease": 276,
+    "currentPreparer": 44,
+    "currentRelease": 304,
+    "finiteRevalidationMethodsOnBaselineAndCurrent": 6,
+    "newPreparer": 2,
+    "newRelease": 28
+  },
+  "typedSemanticsApproved": false
+}

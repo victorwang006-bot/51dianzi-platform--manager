@@ -1,4 +1,20 @@
-# 客户批次 R6：精确 io_uring kernel anonymous mapping（NOT_APPROVED）
+# 客户批次 R8：proc 虚拟 metadata 缓存假漂移最窄修复（NOT_APPROVED）
+
+当前唯一 SCOPE 为 **`customer-batch-actions-20261120-6Lfttf6o-R8`**，OWNER `6Lfttf6oVWJ8YS69o5FkXQ` 不变；controller SHA256 **`586166f7ddf48235b6a28e2237d7b1f64cbf3709d1af484388a67b086f0ecaef`**，preparer 固 pin 同步。默认 stage 仅按新 scope 派生，本轮没有访问或创建真实 stage，不覆盖 R7 source/stage/upload。
+
+准确 a555 R7 六文件已先逐字节备份到 `evidence/r8-baseline-a555/` 并附 `SHA256SUMS`。依据父任务实际字段差异及已有官方引用 `evidence/r8-proc-virtual-source.md`（本轮未改原字节），唯一已证实实际拒绝是 PID1 exe/cwd 的 proc cache-generated ino/初始化 mtime/ctime 再生，而不是该次 Node 集合漂移；不能据此倒推所有历史错误。
+
+`dynamic_proc_virtual_meta(cfg,pid,path)` 只接受准确 `cfg.proc/PID` 目录及该目录的 `exe`/`cwd` 两个链接，拒绝其它路径、非 canonical 路径与错误 OS kind，严格验证原九字段 schema。只排除 **ino/mtimeNs/ctimeNs**；保留 **dev/statmode/uid/gid/nlink/size**，并显式记录 `schema=proc-virtual-meta-r8`、exact path/parent/kind。mock 仍仅使用原 test-only cfg.mock 的 TemporaryDirectory 结构，无新 CLI、fallback、statfs、O_PATH 保持、权限提升或运行时调整。
+
+仅 `dynamic_proc` 原四处虚拟节点 meta 调用换用新 helper；其余 AST 完全相同。实际 exe/cwd 仍用原 `external_proc_link` 解析，deleted/noncanonical/真实目标 symlink 仍拒绝，readlink 目标前后 equality、PID/PPID/startTicks/comm、cmd/env 全 bytes/hash、permission、mapped dev/ino、source fullH/fullMETA 及全部 finite end-phase reread 不改。真实 CWD/root/source/lock/API/inventory/transport META 仍保留三个字段。外层 schema、Controller30、9 pins、Config/RPC/domain/CAS/Root/inventory/transport/six-own stable 与 native hardlink/io_uring 守卫均原 AST/字节不变。
+
+修改前 **276/42** 全 pass；修改后 **304/44** 全 pass，新增 **28 controller＋2 preparer** 项独立 pass，原 276/42 方法全保留，仅三个既有测试方法里的 current scope/stage 断言同步。限定 `evidence/r8-finite-tests.py` 的 **6 项**对准确 baseline 与当前 decoder 均 pass；为遵守六文件范围，未读取或执行独立第七文件 `test_finite_json.py`，不可把此再验证冒称该历史 suite 的执行。decoder 原 AST/字节完全不变。
+
+**PROC_VIRTUAL_META_FIX_NOT_APPROVED；controllerApproved=false；releaseApproved=false；finalDeployApproval=false；reloadApproved=false；typedSemanticsApproved=false；sourceGraphApproved=false；fullPackageApproved=false。** 纯本地测试和元数据类型修复不是实际 fresh/fullMETA/Typed/unknown source graph/new full package 审批。无 Git/MCP/SSH/Node/真实 proc 或 proc environ/FD 内容/server/capture CLI/reload/生产写；生产写 **0**。完整事实、测试与 caveat 见 [R8 报告](evidence/r8-report.md)，逐函数核验见 `evidence/r8-ast-diff.json`，六文件直接差异见 `evidence/r8-six-files.patch`，source/log H 见 `evidence/r8-source-and-safety.json`。
+
+## 以下 R7/R6 及更早段落全部是历史快照，不是当前 pin/scope/批准
+
+## 历史客户批次 R6：精确 io_uring kernel anonymous mapping（NOT_APPROVED）
 
 当前全新 SCOPE 为 **`customer-batch-actions-20261120-6Lfttf6o-R6`**，OWNER 仍为 `6Lfttf6oVWJ8YS69o5FkXQ`。当前 release SHA256 为 **`fbb5302cf59974433d9775de3e0ee5e788eb58ec13916fa5101655d2badb7348`**，preparer 固 pin 同步；派生 stage 为 `/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R6`，本离线任务未创建或访问真实 stage，不覆盖旧 R5 stage/source。
 
@@ -220,3 +236,13 @@ PYTHONDONTWRITEBYTECODE=1 python3 -B test_prepare_local.py -v
 临时目录真 `os.link`、合成 ELF bytes 的新增测试覆盖别名写入、metadata/linkadd/unlink、同字节 clone、九字段读竞态、mapped dev/ino、full source JSON、两个完整采样和最终源重读；六 own roll 与本地 file/API CAS 的非干涉保持。完整日志与精确 AST/source 差量见 `evidence/r7-*`。
 
 不扫描全文件系统的 86 个 alias 名称，也不承诺其 namespace 已全文审查；同 inode 的 bytes/meta/nlink/ctime 变化通过固定 pin 和采样记录检测。此证据只描述有限当前观测，依赖原 cooperative shared locks/full-CAS 发布协议，不是内核原子 CAS 或持续冻结。**SOURCE_TYPE_FIX_NOT_APPROVED；controllerApproved=false；releaseApproved=false；finalDeployApproval=false；reloadApproved=false。** 实际 R7 fresh capture/fullMETA、未知 JS/source graph、Typed/retained witness、sixReady、真实新完整包和独立批准全部待父任务。本轮无生产采集、模块执行、库加载、DB、发布写、reload 或网络。
+
+## 当前 R9（2026-11-20 14:26）：一次发布进行中
+
+当前 controller=`2c7047701591af1ee2c21f93fe84593184ff0e6e3ed3d40ad2ee1d0f87dea0f8`，scope=`customer-batch-actions-20261120-6Lfttf6o-R9`；前文均为对应时点历史。用户允许本次TTL3600/精确supplier.timer维护max3600，保留逐步META/source/CAS/权限/双锁/回退；后又明确接受技术库STMF407 revision2→9、同参数/PDF的当前保护H，不重建/回滚该库，不把sourceVerifier返回CURRENT_SOURCE_VERSION_MISMATCH改称通过。
+
+预算阶段只有SCOPE/TTL及preparerpin变化，8项通过；之后seal实证误拒已审CSS的三条@media，当前仅2行接受三个exact既有包装900/600/640px，内部selector及未知media/font/supports继续原拒绝，CSS和业务字节不变，8项窄测试通过，其余controller AST完全相同。预算AST用例固定预算阶段原件，CSS差量由独立CSS用例负责。
+
+当前实际fresh capture=`3c7cc2260a6502d87684916ce8d0d586c528a75e1fea9ad7ee3ac2c38034e549`，83054记录/六Ready true；唯一机械绑定核103包/33源，manifest=`21b2e77fa4eb594f7a144e955f5ec78d4eca788bd99657f6eab4d284d4e96c84`，review=`0271f8a239ec065c2ba1a06bc1badbe6620b56a0f5944b8b7ca11c65ab0cff19`。已通过内容/API/UI/正逆字节结果复用，只两个工具source和当前capture重绑定，不重新构建业务/不全dist。apply原严格noReplay/bundle/baseline_guard/health/baseline_guard/sameFS前置全部执行，不再另重复一次相同preflight。真实capture/env/ownerNonce/包/review/receipt不入Git。
+
+**此说明保存时尚无verified持久闭窗回执，独立包绑定和apply启动不等于已上线。** 本次入口是不可变新source `release-2c7047701591af1e.py`，旧同scope文件只保留，不重放attempt。终态以实际receipt为准。

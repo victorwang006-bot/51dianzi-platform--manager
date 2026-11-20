@@ -1,0 +1,13 @@
+test_actual_samebyte_approved_stylesheet (__main__.CSSNarrowTests.test_actual_samebyte_approved_stylesheet) ... ok
+test_font_and_supports_still_rejected (__main__.CSSNarrowTests.test_font_and_supports_still_rejected) ... ok
+test_preparer_only_new_pin (__main__.CSSNarrowTests.test_preparer_only_new_pin) ... ok
+test_scope_ttl_capture_reload_every_other_ast_exact (__main__.CSSNarrowTests.test_scope_ttl_capture_reload_every_other_ast_exact) ... ok
+test_three_only_exact_known_wrappers (__main__.CSSNarrowTests.test_three_only_exact_known_wrappers) ... ok
+test_unknown_media_still_rejected (__main__.CSSNarrowTests.test_unknown_media_still_rejected) ... ok
+test_unscoped_comma_still_rejected (__main__.CSSNarrowTests.test_unscoped_comma_still_rejected) ... ok
+test_unscoped_inside_known_media_still_rejected (__main__.CSSNarrowTests.test_unscoped_inside_known_media_still_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.228s
+
+OK

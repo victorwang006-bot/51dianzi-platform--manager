@@ -1,0 +1,25 @@
+{
+  "schema": "customer-batch-r9-authorized-budget-v1",
+  "userApprovedAt": "2026-11-20T13:52:25+08:00",
+  "scope": "customer-batch-actions-20261120-6Lfttf6o-R9",
+  "ttlSeconds": 3600,
+  "supplierTimerMaxPauseSeconds": 3600,
+  "controllerSha256": "8726734aa3ac2f9b09d14f437c598a25b22007a0dda1975e5f2cea9b9548f85f",
+  "preparerSha256": "0dc453ab834cc19ffec2058ea998e32279bb189ef03bd06313e549267355eda2",
+  "controllerAstChangesOnly": [
+    "SCOPE",
+    "TTL"
+  ],
+  "preparerAstChangesOnly": [
+    "CONTROLLER_SHA"
+  ],
+  "existingGuardsAllUnchanged": true,
+  "budgetTests": {
+    "count": 8,
+    "passed": true,
+    "logSha256": "473ca52dae8c831149b4e1761a394f103fef8244fdd6180da464c18a5700869d"
+  },
+  "old900FrameRejected": true,
+  "productionApplied": false,
+  "storeSourceVerificationPending": true
+}

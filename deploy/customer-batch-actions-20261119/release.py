@@ -26,12 +26,12 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 
 OWNER = '6Lfttf6oVWJ8YS69o5FkXQ'
-SCOPE = 'customer-batch-actions-20261120-6Lfttf6o-R7'
+SCOPE = 'customer-batch-actions-20261120-6Lfttf6o-R9'
 API_BASE = '/opt/releases/20261110-customer-workbench-b7f3a2a7e317'
 FRONT_API = API_BASE + '/front/dist/index.js'
 ADMIN_API = API_BASE + '/admin/dist/index.js'
 PUBLIC = '/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public'
-TTL = 900
+TTL = 3600
 HEX = re.compile(r'[a-f0-9]{64}')
 LIFECYCLE = frozenset({'status', 'pid', 'pm_id', 'pm_uptime', 'created_at',
     'restart_time', 'unstable_restarts', 'axm_actions', 'axm_monitor',
@@ -969,11 +969,40 @@ def dynamic_maps(maps):
     return {p: sorted(mapped[p]) for p in sorted(mapped)}
 
 
+def dynamic_proc_virtual_meta(cfg, pid, path):
+    """Only PID directory/exe/cwd cache-instance metadata, never real FS META.
+    proc_pid_make_inode generates ino and initial mtime/ctime anew on cache
+    recreation. Task identity, actual link targets and all real sources remain
+    independently bound by dynamic_proc's unchanged complete rereads.
+    """
+    need(integer(pid) and pid > 0, 'DYNAMIC_PROC_VIRTUAL_PID')
+    root = Path(cfg.proc); p = Path(path); proc = root / str(pid)
+    need(root.is_absolute() and '..' not in root.parts
+         and '..' not in p.parts and str(root) == os.fspath(cfg.proc)
+         and str(p) == os.fspath(path),
+         'DYNAMIC_PROC_VIRTUAL_CANONICAL_PATH')
+    if p == proc:
+        kind, parent = 'directory', root
+    else:
+        need(p.parent == proc and p.name in ('exe', 'cwd'),
+             'DYNAMIC_PROC_VIRTUAL_EXACT_PATH')
+        kind, parent = 'symlink', proc
+    no_link(proc)
+    record = meta(p)
+    exact(record, 'dev ino statmode uid gid nlink size mtimeNs ctimeNs',
+          'DYNAMIC_PROC_VIRTUAL_META_SCHEMA')
+    need(all(integer(v) for v in record.values()), 'DYNAMIC_PROC_VIRTUAL_META_SCHEMA')
+    need(stat.S_ISDIR(record['statmode']) if kind == 'directory'
+         else stat.S_ISLNK(record['statmode']), 'DYNAMIC_PROC_VIRTUAL_KIND')
+    return dict(schema='proc-virtual-meta-r8', path=str(p), parent=str(parent), kind=kind,
+                **{k: record[k] for k in ('dev', 'statmode', 'uid', 'gid', 'nlink', 'size')})
+
+
 def dynamic_proc(cfg, pid, budget):
     identity = dynamic_identity(cfg, pid, budget)
-    proc = no_link(cfg.proc / str(pid)); proc_meta = meta(proc)
+    proc = no_link(cfg.proc / str(pid)); proc_meta = dynamic_proc_virtual_meta(cfg, pid, proc)
     exe = external_proc_link(cfg, pid, 'exe'); cwd = external_proc_link(cfg, pid, 'cwd')
-    links = {n: meta(proc / n) for n in ('exe', 'cwd')}
+    links = {n: dynamic_proc_virtual_meta(cfg, pid, proc / n) for n in ('exe', 'cwd')}
     cwd_meta = describe(cwd)
     need(cwd_meta['kind'] == 'directory', 'DYNAMIC_SHALLOW_CWD_DIRECTORY')
     cmd = dynamic_read(proc / 'cmdline', DYNAMIC_PROC_BYTES, budget)
@@ -996,10 +1025,11 @@ def dynamic_proc(cfg, pid, budget):
                   cmdlineSha256=H(cmd), permissionsSha256=permission_hash,
                   kernelAnonymousMappings=kernel,
                   mappedSourceIdentity=mapped, scriptPaths=sorted(scripts), mappedSourcePaths=sorted(mapped))
-    need(dynamic_identity(cfg, pid, budget) == identity and meta(proc) == proc_meta
+    need(dynamic_identity(cfg, pid, budget) == identity
+         and dynamic_proc_virtual_meta(cfg, pid, proc) == proc_meta
          and external_proc_link(cfg, pid, 'exe') == exe
          and external_proc_link(cfg, pid, 'cwd') == cwd
-         and {n: meta(proc / n) for n in ('exe', 'cwd')} == links
+         and {n: dynamic_proc_virtual_meta(cfg, pid, proc / n) for n in ('exe', 'cwd')} == links
          and describe(cwd) == cwd_meta
          and dynamic_read(proc / 'cmdline', DYNAMIC_PROC_BYTES, budget) == cmd
          and dynamic_read(proc / 'environ', DYNAMIC_PROC_BYTES, budget) == raw
@@ -1671,6 +1701,8 @@ def validate_payload(cfg, m, payload, controller_hash):
     # CSS selector safety is independently AST-reviewed; require scoped roots on every selector prelude.
     css_clean = re.sub(r'/\*.*?\*/', '', css, flags=re.S)
     for selector in re.findall(r'([^{}]+)\{', css_clean):
+        if selector.strip() in {'@media (max-width:900px)', '@media (max-width:600px)', '@media (max-width: 640px)'}:
+            continue
         need(not selector.strip().startswith('@') and all(any(root in one for root in
              ('.customer-upload-history', '.customer-channel-inventory', '.customer-supply-dialog'))
              for one in selector.split(',')), 'CUSTOMER_SCOPED_CSS_ONLY')

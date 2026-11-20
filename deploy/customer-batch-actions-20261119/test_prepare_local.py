@@ -70,7 +70,7 @@ class LocalTests(unittest.TestCase):
                          scope='synthetic-frontend-owner', closedAtUtc=R.now()), window_history=[]))
         paths, links = R.union(cfg, R.decode(coord))
         self.cap = dict(schema='customer-batch-capture-v1', ownerTask=R.OWNER, scope=R.SCOPE, nonce='b' * 32,
-                        capturedAtUtc=R.now(), ttlSeconds=900, controllerSha256=P.CONTROLLER_SHA,
+                        capturedAtUtc=R.now(), ttlSeconds=R.TTL, controllerSha256=P.CONTROLLER_SHA,
                         config=R.config_binding(cfg), coordBase64=base64.b64encode(coord).decode(),
                         coordRecord=dict(sha256=P.sha(coord)), protectedFiles=protected, processes=rows, transport={},
                         protectionUnion=dict(paths=[str(p) for p in paths], links={str(a): str(t) for a, t in links.items()}),
@@ -435,8 +435,8 @@ class LocalTests(unittest.TestCase):
 
     def test_r3_current_controller_sha_and_scope_fixed(self):
         self.assertEqual(P.CONTROLLER_SHA, P.sha((HERE/'release.py').read_bytes()))
-        self.assertEqual(R.SCOPE, 'customer-batch-actions-20261120-6Lfttf6o-R7')
-        self.assertEqual(str(R.Config().stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R7')
+        self.assertEqual(R.SCOPE, 'customer-batch-actions-20261120-6Lfttf6o-R9')
+        self.assertEqual(str(R.Config().stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R9')
         self.assertEqual(R.OWNER, '6Lfttf6oVWJ8YS69o5FkXQ')
 
     def test_old_failed_stage_scope_capture_is_not_reusable(self):
@@ -550,6 +550,25 @@ class LocalTests(unittest.TestCase):
     def test_r7_old_exact_fbb_source_and_capture_pin_rejected_without_import(self):
         old = (HERE/'evidence/r7-baseline/release.py').read_bytes()
         self.assertEqual(P.sha(old), 'fbb5302cf59974433d9775de3e0ee5e788eb58ec13916fa5101655d2badb7348')
+        with patch.object(P, 'read', return_value=old), patch.object(P.importlib.util, 'spec_from_file_location', side_effect=AssertionError('OLD_SOURCE_NOT_IMPORTED')):
+            with self.assertRaisesRegex(P.PrepareError, 'controller drift'):
+                REAL_LOADER()
+        self.cap['controllerSha256'] = P.sha(old)
+        self.save_capture()
+        with self.assertRaisesRegex(P.PrepareError, 'fixed production capture binding'):
+            P.inputs(self.args, R)
+        self.assertEqual(self.calls, []); self.assertFalse(self.out.exists())
+
+    def test_r8_old_r7_scope_capture_not_reusable(self):
+        self.cap['scope'] = 'customer-batch-actions-20261120-6Lfttf6o-R7'
+        self.save_capture()
+        with self.assertRaisesRegex(P.PrepareError, 'fixed production capture binding'):
+            P.inputs(self.args, R)
+        self.assertEqual(self.calls, []); self.assertFalse(self.out.exists())
+
+    def test_r8_old_exact_a555_source_and_capture_pin_rejected_without_import(self):
+        old = (HERE/'evidence/r8-baseline-a555/release.py').read_bytes()
+        self.assertEqual(P.sha(old), 'a555022329eed9c2b72efa2aa0668b9a84d33148da4bee5cc9ba5bd579866e5b')
         with patch.object(P, 'read', return_value=old), patch.object(P.importlib.util, 'spec_from_file_location', side_effect=AssertionError('OLD_SOURCE_NOT_IMPORTED')):
             with self.assertRaisesRegex(P.PrepareError, 'controller drift'):
                 REAL_LOADER()

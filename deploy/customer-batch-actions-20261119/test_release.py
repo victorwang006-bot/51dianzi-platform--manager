@@ -295,7 +295,7 @@ class SafetyTests(unittest.TestCase):
     def test_new_identity_and_fixed_boundary(self):
         cfg = r.Config()
         self.assertEqual(r.OWNER, '6Lfttf6oVWJ8YS69o5FkXQ')
-        self.assertEqual(str(cfg.stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R7')
+        self.assertEqual(str(cfg.stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R8')
         self.assertEqual(len(cfg.aliases), 7)
         self.assertEqual(r.identity(self.cfg,self.cap['processes']), list(range(6)))
         with self.assertRaisesRegex(r.ReleaseError,'PRODUCTION_ADAPTER_INJECTION_REFUSED'):
@@ -1804,7 +1804,7 @@ class R4ProtectedGraphTests(unittest.TestCase):
         cfg=r.Config(); self.assertEqual(cfg.extra_protected[-2:],(r.EXTERNAL_OPS,r.EXTERNAL_CWD))
         self.assertNotIn(Path('/root'),cfg.extra_protected); self.assertNotIn(Path('/'),cfg.extra_protected)
         self.assertEqual(r.EXTERNAL_SCRIPT,r.EXTERNAL_OPS/'releases/20261112-forum12-1255b7b84aa3adac09cb8c05/worker-runtime-bootstrap.mjs')
-        self.assertEqual(r.SCOPE,'customer-batch-actions-20261120-6Lfttf6o-R7')
+        self.assertEqual(r.SCOPE,'customer-batch-actions-20261120-6Lfttf6o-R9')
 
 
 class R4DomainTests(unittest.TestCase):
@@ -3036,6 +3036,229 @@ class R7NativeTransportTests(unittest.TestCase):
         self.native_hook = roll
         self.assertEqual(r.transport(self.cfg), before)
         self.assertEqual(alias.stat().st_nlink, 2)
+
+
+class R8ProcVirtualMetaTests(unittest.TestCase):
+    """Synthetic exact cfg.proc/PID fixtures only; no actual proc or runtime."""
+    setUp = R5DynamicTests.setUp
+    proc = R5DynamicTests.proc
+    ownproc = R5DynamicTests.ownproc
+    collect = R5DynamicTests.collect
+    second = R5DynamicTests.second
+    remove = R5DynamicTests.remove
+
+    def paths(self):
+        proc = self.cfg.proc/'1'
+        return (proc, proc/'exe', proc/'cwd')
+
+    def regenerate(self, path, value, count):
+        return dict(value, ino=value['ino']+count,
+                    mtimeNs=value['mtimeNs']+count, ctimeNs=value['ctimeNs']+count)
+
+    def reject_virtual_field(self, field):
+        real = r.meta
+        for target in self.paths():
+            calls = []
+            def meta(path):
+                value = real(path)
+                if Path(path) == target:
+                    calls.append(1)
+                    if len(calls) == 2: value = dict(value, **{field: value[field]+1})
+                return value
+            with self.subTest(path=target, field=field), patch.object(r, 'meta', side_effect=meta), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_FULL_PROC_READ_RACE'):
+                r.dynamic_proc(self.cfg, 1, r.dynamic_budget())
+            self.assertEqual(len(calls), 2)
+
+    def reject_identity(self, field):
+        real = r.dynamic_identity; calls = []
+        def identity(*args):
+            value = real(*args); calls.append(1)
+            if len(calls) == 2:
+                value = dict(value, **{field: r.H(b'changed comm') if field == 'nameSha256' else value[field]+1})
+            return value
+        with patch.object(r, 'dynamic_identity', side_effect=identity), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_FULL_PROC_READ_RACE'):
+            r.dynamic_proc(self.cfg, 1, r.dynamic_budget())
+        self.assertEqual(len(calls), 2)
+
+    def reject_real_cwd_field(self, field):
+        real = r.meta; calls = []
+        def meta(path):
+            value = real(path)
+            if Path(path) == self.root:
+                calls.append(1)
+                if len(calls) == 2: value = dict(value, **{field: value[field]+1})
+            return value
+        with patch.object(r, 'meta', side_effect=meta), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_FULL_PROC_READ_RACE'):
+            r.dynamic_proc(self.cfg, 1, r.dynamic_budget())
+        self.assertEqual(len(calls), 2)
+
+    def test_exact_schema_path_parent_kind_and_six_retained_fields(self):
+        expected = {'schema', 'path', 'parent', 'kind', 'dev', 'statmode', 'uid', 'gid', 'nlink', 'size'}
+        for path in self.paths():
+            value = r.dynamic_proc_virtual_meta(self.cfg, 1, path); raw = r.meta(path)
+            self.assertEqual(set(value), expected)
+            self.assertEqual(value['schema'], 'proc-virtual-meta-r8')
+            self.assertEqual(value['path'], str(path)); self.assertEqual(value['parent'], str(path.parent))
+            self.assertEqual(value['kind'], 'directory' if path == self.paths()[0] else 'symlink')
+            for key in ('dev', 'statmode', 'uid', 'gid', 'nlink', 'size'): self.assertEqual(value[key], raw[key])
+
+    def test_all_proc_entries_regenerate_three_fields_every_read_full_graph_passes(self):
+        before = self.collect(); real = r.meta; counts = {}
+        allowed = {p for directory in self.cfg.proc.iterdir() for p in (directory, directory/'exe', directory/'cwd')}
+        def meta(path):
+            value = real(path); path = Path(path)
+            if path in allowed:
+                counts[path] = counts.get(path, 0)+1
+                value = self.regenerate(path, value, counts[path])
+            return value
+        with patch.object(r, 'meta', side_effect=meta): self.assertEqual(self.collect(), before)
+        self.assertTrue(all(p in counts and counts[p] >= 2 for p in self.paths()))
+        self.assertFalse(before['semanticsClosed']); self.assertTrue(before['sourceGraphReviewRequired'])
+        self.assertNotIn(b'synthetic-secret', r.encode(before))
+
+    def test_real_fakeproc_symlink_recreation_same_targets_complete_samples_pass(self):
+        before = self.collect(); real = r.dynamic_protection_sample; calls = []
+        def sample(*args):
+            calls.append(1)
+            if len(calls) == 2:
+                for path in self.paths()[1:]:
+                    target = os.readlink(path); path.unlink(); path.symlink_to(target)
+            return real(*args)
+        with patch.object(r, 'dynamic_protection_sample', side_effect=sample): self.assertEqual(self.collect(), before)
+        self.assertEqual(len(calls), 2)
+
+    def test_directory_cache_fields_only_regenerated_preserves_exact_path_parent(self):
+        path = self.paths()[0]; before = r.dynamic_proc_virtual_meta(self.cfg, 1, path); raw = r.meta(path)
+        with patch.object(r, 'meta', return_value=self.regenerate(path, raw, 100)):
+            self.assertEqual(r.dynamic_proc_virtual_meta(self.cfg, 1, path), before)
+
+    def test_outside_exact_three_paths_rejected_before_meta(self):
+        other = self.root/'proc-other/1/exe'
+        paths = (self.cfg.proc, self.cfg.proc/'11', self.cfg.proc/'11/exe', self.cfg.proc/'01',
+                 self.cfg.proc/'1/stat', self.cfg.proc/'1/maps', self.cfg.proc/'1/exe/nested',
+                 self.cfg.proc/'1/cwd-extra', other, self.node, self.root, self.cfg.proc/'2/cwd')
+        for path in paths:
+            with self.subTest(path=path), patch.object(r, 'meta', side_effect=AssertionError('OUTSIDE_META_FORBIDDEN')), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_PROC_VIRTUAL_EXACT_PATH'):
+                r.dynamic_proc_virtual_meta(self.cfg, 1, path)
+
+    def test_noncanonical_path_relative_root_and_invalid_pid_rejected(self):
+        for pid in (0, -1, True, '1'):
+            with self.subTest(pid=pid), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_PROC_VIRTUAL_PID'):
+                r.dynamic_proc_virtual_meta(self.cfg, pid, self.paths()[0])
+        for path in (str(self.cfg.proc)+'/1/../1/exe', str(self.cfg.proc)+'/1//exe'):
+            with self.subTest(path=path), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_PROC_VIRTUAL_CANONICAL_PATH'):
+                r.dynamic_proc_virtual_meta(self.cfg, 1, path)
+        with self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_PROC_VIRTUAL_CANONICAL_PATH'):
+            r.dynamic_proc_virtual_meta(replace(self.cfg, proc=Path('relative-proc')), 1, Path('relative-proc/1'))
+
+    def test_directory_kind_requires_os_directory_not_regular_or_link(self):
+        target = self.paths()[0]; raw = r.meta(target)
+        for mode in (stat.S_IFREG|0o755, stat.S_IFLNK|0o777):
+            with self.subTest(mode=mode), patch.object(r, 'meta', return_value=dict(raw, statmode=mode)), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_PROC_VIRTUAL_KIND'):
+                r.dynamic_proc_virtual_meta(self.cfg, 1, target)
+
+    def test_exe_cwd_kind_require_os_symlink_not_regular_or_directory(self):
+        for target in self.paths()[1:]:
+            raw = r.meta(target)
+            for mode in (stat.S_IFREG|0o777, stat.S_IFDIR|0o777):
+                with self.subTest(path=target, mode=mode), patch.object(r, 'meta', return_value=dict(raw, statmode=mode)), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_PROC_VIRTUAL_KIND'):
+                    r.dynamic_proc_virtual_meta(self.cfg, 1, target)
+
+    def test_exact_raw_meta_schema_missing_each_field_and_extra_rejected(self):
+        path = self.paths()[0]; raw = r.meta(path)
+        for key in raw:
+            bad = {k: v for k, v in raw.items() if k != key}
+            with self.subTest(missing=key), patch.object(r, 'meta', return_value=bad), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_PROC_VIRTUAL_META_SCHEMA'):
+                r.dynamic_proc_virtual_meta(self.cfg, 1, path)
+        with patch.object(r, 'meta', return_value=dict(raw, unknown=0)), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_PROC_VIRTUAL_META_SCHEMA'):
+            r.dynamic_proc_virtual_meta(self.cfg, 1, path)
+
+    def test_raw_meta_noninteger_values_rejected_even_excluded_cache_keys(self):
+        path = self.paths()[0]; raw = r.meta(path)
+        for key in raw:
+            for value in (True, '1', None):
+                with self.subTest(key=key, value=value), patch.object(r, 'meta', return_value=dict(raw, **{key: value})), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_PROC_VIRTUAL_META_SCHEMA'):
+                    r.dynamic_proc_virtual_meta(self.cfg, 1, path)
+
+    def test_proc_directory_parent_symlink_escape_rejected(self):
+        alias = self.root/'proc-alias'; alias.symlink_to(self.cfg.proc, target_is_directory=True)
+        cfg = replace(self.cfg, proc=alias)
+        with self.assertRaisesRegex(r.ReleaseError, 'SYMLINK_ESCAPE'):
+            r.dynamic_proc_virtual_meta(cfg, 1, alias/'1/exe')
+
+    def test_dev_drift_directory_exe_cwd_rejected(self): self.reject_virtual_field('dev')
+    def test_permission_mode_drift_directory_exe_cwd_rejected(self): self.reject_virtual_field('statmode')
+    def test_uid_drift_directory_exe_cwd_rejected(self): self.reject_virtual_field('uid')
+    def test_gid_drift_directory_exe_cwd_rejected(self): self.reject_virtual_field('gid')
+    def test_nlink_drift_directory_exe_cwd_rejected(self): self.reject_virtual_field('nlink')
+    def test_size_drift_directory_exe_cwd_rejected(self): self.reject_virtual_field('size')
+    def test_startticks_pidreuse_during_closed_read_rejected(self):
+        self.reject_identity('pid'); self.reject_identity('startTicks')
+    def test_ppid_during_closed_read_rejected(self): self.reject_identity('ppid')
+    def test_comm_hash_during_closed_read_rejected(self): self.reject_identity('nameSha256')
+
+    def test_exe_and_cwd_target_drift_rejected_with_same_virtual_meta(self):
+        real = r.external_proc_link
+        for name, changed in (('exe', self.flock), ('cwd', self.shadow)):
+            calls = []
+            def link(cfg, pid, entry):
+                value = real(cfg, pid, entry)
+                if entry == name:
+                    calls.append(1)
+                    if len(calls) == 2: value = changed
+                return value
+            with self.subTest(name=name), patch.object(r, 'external_proc_link', side_effect=link), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_FULL_PROC_READ_RACE'):
+                r.dynamic_proc(self.cfg, 1, r.dynamic_budget())
+            self.assertEqual(len(calls), 2)
+
+    def test_real_cwd_ino_still_rejected(self): self.reject_real_cwd_field('ino')
+    def test_real_cwd_mtime_still_rejected(self): self.reject_real_cwd_field('mtimeNs')
+    def test_real_cwd_ctime_still_rejected(self): self.reject_real_cwd_field('ctimeNs')
+
+    def test_real_source_ino_mtime_ctime_still_full_meta_rejected(self):
+        real = r.meta
+        for field in ('ino', 'mtimeNs', 'ctimeNs'):
+            calls = []
+            def meta(path):
+                value = real(path)
+                if Path(path) == self.lib:
+                    calls.append(1)
+                    if len(calls) == 2: value = dict(value, **{field: value[field]+1})
+                return value
+            with self.subTest(field=field), patch.object(r, 'meta', side_effect=meta), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_SOURCE_META_READ_RACE'):
+                r.dynamic_source(self.lib, r.dynamic_budget())
+            self.assertEqual(len(calls), 2)
+
+    def test_late_final_fullproc_cache_regeneration_passes_not_semantic_approval(self):
+        before = self.collect(); real_source = r.dynamic_source; real_meta = r.meta; active = []
+        def source(path, budget):
+            value = real_source(path, budget)
+            if Path(path) == self.script: active.append(1)
+            return value
+        def meta(path):
+            value = real_meta(path)
+            if active and Path(path) in self.paths(): value = self.regenerate(path, value, len(active))
+            return value
+        with patch.object(r, 'dynamic_source', side_effect=source), patch.object(r, 'meta', side_effect=meta):
+            self.assertEqual(self.collect(), before)
+        self.assertTrue(active); self.assertFalse(before['semanticsClosed'])
+
+    def test_late_final_fullproc_retained_virtual_meta_drift_still_rejected(self):
+        real_source = r.dynamic_source; real_meta = r.meta; active = []
+        def source(path, budget):
+            value = real_source(path, budget)
+            if Path(path) == self.script: active.append(1)
+            return value
+        def meta(path):
+            value = real_meta(path)
+            if active and Path(path) == self.cfg.proc/'1/exe': value = dict(value, dev=value['dev']+1)
+            return value
+        with patch.object(r, 'dynamic_source', side_effect=source), patch.object(r, 'meta', side_effect=meta), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_FINAL_FULL_PROC_DRIFT'):
+            self.collect()
+        self.assertTrue(active)
+
+    def test_pid_reuse_between_complete_samples_rejected_despite_cache_regeneration(self):
+        self.second(lambda: (self.cfg.proc/'11000/stat').write_bytes(r4_stat(11000, 1279, 99999, 'node-22')))
 
 
 if __name__ == '__main__':

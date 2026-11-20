@@ -1,0 +1,13 @@
+{
+  "controllerSha256": "2c7047701591af1ee2c21f93fe84593184ff0e6e3ed3d40ad2ee1d0f87dea0f8",
+  "scope": "customer-batch-actions-20261120-6Lfttf6o-R9",
+  "ttlSeconds": 3600,
+  "budgetTargetedTests": 8,
+  "cssTargetedTests": 8,
+  "cssActualBytesUnchanged": true,
+  "controllerCssDiffOnlyTwoLiteralPreludeLines": true,
+  "productionTerminalReceiptReceived": false,
+  "businessTestsNotRerun": true,
+  "rawCaptureNotArchived": true,
+  "activeSourceVerifierClaim": false
+}

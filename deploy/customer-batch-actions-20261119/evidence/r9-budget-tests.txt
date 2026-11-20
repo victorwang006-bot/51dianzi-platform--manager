@@ -1,0 +1,13 @@
+test_actual_now_and_40minute_frame_accepted (__main__.R9BudgetTests.test_actual_now_and_40minute_frame_accepted) ... ok
+test_every_guard_and_helper_ast_exact_except_two_constants (__main__.R9BudgetTests.test_every_guard_and_helper_ast_exact_except_two_constants) ... ok
+test_exact_user_approved_budget_and_new_scope (__main__.R9BudgetTests.test_exact_user_approved_budget_and_new_scope) ... ok
+test_future_frame_still_refused (__main__.R9BudgetTests.test_future_frame_still_refused) ... ok
+test_original900_frame_cannot_be_reused (__main__.R9BudgetTests.test_original900_frame_cannot_be_reused) ... ok
+test_past3600_frame_still_refused (__main__.R9BudgetTests.test_past3600_frame_still_refused) ... ok
+test_preparer_only_source_pin_changed (__main__.R9BudgetTests.test_preparer_only_source_pin_changed) ... ok
+test_time_zone_and_invalid_fields_still_refused (__main__.R9BudgetTests.test_time_zone_and_invalid_fields_still_refused) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.285s
+
+OK

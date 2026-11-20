@@ -1,4 +1,16 @@
-# 客户批次 R6：仅本地准备器（NOT_APPROVED）
+# 客户批次 R8：仅离线准备器（NOT_APPROVED）
+
+当前固定 **CONTROLLER_SHA=`586166f7ddf48235b6a28e2237d7b1f64cbf3709d1af484388a67b086f0ecaef`**，全新 **SCOPE=`customer-batch-actions-20261120-6Lfttf6o-R8`** 仍直接取 `release.SCOPE`，OWNER `6Lfttf6oVWJ8YS69o5FkXQ` 不变。本轮 `prepare-local.py` 除固定 pin 外所有顶层节点、函数/CLI/行为 AST 和原 source 段字节完全不变；无 preparer schema 额外变更。
+
+先准确备份 a555 R7 六文件到 `evidence/r8-baseline-a555/`，原 **276 controller/42 preparer** 重跑通过。当前 **304/44** 全 pass，新增 **28/2** 独立 pass；原 preparer 42 方法全部保留，仅 current scope/stage 断言同步。新增两项 TempDir 拒绝反例证明：旧准确 R7 scope/capture 不复用，准确 a555 source 在 import 前因 pin 拒绝，旧 capture controllerSha 在 inputs 阶段拒绝，无输出、无 builder 调用。限定 r8 evidence 的六项 finite decoder 双版本再验证通过；未访问第七历史 finite test 文件，不冒称运行该独立 suite。
+
+R8 只消除准确 cfg.proc/PID 目录与 exe/cwd 链接 cache-instance ino/初始化 mtime/ctime 的假漂移表达，不弱化真实 FS META 或身份、readlink target、raw env/cmd、permission、mapped/source、dynamic scan dictionary、native/io_uring、六 own stable 与 finite 末端检查。不允许输入 override、mock fallback、真 proc 读取、O_PATH 持久缓存、系统运行时改动。Controller30/9 pins/Config/RPC/domain/CAS/Root/inventory/transport 不变；全新真实 source/fullMETA/new package/独立审批仍需父任务推进，不复用 R7 stage/source/upload/capture/review。
+
+**PROC_VIRTUAL_META_FIX_NOT_APPROVED；全部批准标志 false；生产写 0。** 详见 `README.md`、[R8 报告](evidence/r8-report.md)、`evidence/r8-ast-diff.json`、`evidence/r8-source-and-safety.json`、`evidence/r8-six-files.patch`。父写 `evidence/r8-proc-virtual-source.md` 原字节未改，未重搜索或读取实际诊断/真实 env。
+
+## 以下 R7/R6 及更早说明仅为历史，不是当前 source pin/scope/批准
+
+## 历史客户批次 R6：仅本地准备器（NOT_APPROVED）
 
 当前 **CONTROLLER_SHA = `fbb5302cf59974433d9775de3e0ee5e788eb58ec13916fa5101655d2badb7348`**，全新 SCOPE **`customer-batch-actions-20261120-6Lfttf6o-R6`** 直接取 `release.SCOPE`；OWNER `6Lfttf6oVWJ8YS69o5FkXQ` 不变。本轮 preparer 所有函数 AST/字节完全不变，仅固定 controller pin 更新。不得复用旧 R5 stage/source、capture/seed/review 或准确 36706f 历史 source pin。
 
