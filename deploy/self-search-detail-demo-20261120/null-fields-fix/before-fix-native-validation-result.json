@@ -1,0 +1,388 @@
+{
+  "status": "BLOCKED_NOT_DEPLOYED",
+  "scope": "candidate-in-memory/not-production; full native HTML/importmap + real React/tRPC/wouter root modules; no mock providers, source bundle, hook overrides, or production upload",
+  "manifestSHA256": "5d5611feaf70b7d5eb36fe703fb62346bf94454789dcd4600008798cf6343988",
+  "htmlSHA256": "780b987230a7e8a1f90d6d6d1a3f5299e0a2cf3619a2700b0c61db618b4b3a48",
+  "immutableFiveAssets": [
+    {
+      "role": "leaf",
+      "url": "/assets/official-material-ui-detail-91808de63d7719523a2adf8a2f01bdf798f89eb4578c7b8275eda548e949af36.js",
+      "sha256": "91808de63d7719523a2adf8a2f01bdf798f89eb4578c7b8275eda548e949af36",
+      "size": 591556,
+      "local": "/home/ubuntu/work/self-row-redesign/detail-native-builder/candidate-visual-final/assets/official-material-ui-detail-91808de63d7719523a2adf8a2f01bdf798f89eb4578c7b8275eda548e949af36.js"
+    },
+    {
+      "role": "wrapper",
+      "url": "/assets/official-cart-material-detail-54e0a77bd75061e319cb492dc67dd38e8afdf907767cc060728fe65ad3b845ab.js",
+      "sha256": "54e0a77bd75061e319cb492dc67dd38e8afdf907767cc060728fe65ad3b845ab",
+      "size": 127811,
+      "local": "/home/ubuntu/work/self-row-redesign/detail-native-builder/candidate-visual-final/assets/official-cart-material-detail-54e0a77bd75061e319cb492dc67dd38e8afdf907767cc060728fe65ad3b845ab.js"
+    },
+    {
+      "role": "search",
+      "url": "/assets/search-official-material-detail-b5c969f05cbeb93d0815d7b7faf8d315e4bc49c9082af2fc908661ca2a7b4c65.js",
+      "sha256": "b5c969f05cbeb93d0815d7b7faf8d315e4bc49c9082af2fc908661ca2a7b4c65",
+      "size": 252425,
+      "local": "/home/ubuntu/work/self-row-redesign/detail-native-builder/candidate-visual-final/assets/search-official-material-detail-b5c969f05cbeb93d0815d7b7faf8d315e4bc49c9082af2fc908661ca2a7b4c65.js"
+    },
+    {
+      "role": "detail",
+      "url": "/assets/ProductDetail-official-7c0c67214d8dfe941e2da907df447f074a32566bc09255135cb2666ff92e837f.js",
+      "sha256": "7c0c67214d8dfe941e2da907df447f074a32566bc09255135cb2666ff92e837f",
+      "size": 33582,
+      "local": "/home/ubuntu/work/self-row-redesign/detail-native-builder/candidate-visual-final/assets/ProductDetail-official-7c0c67214d8dfe941e2da907df447f074a32566bc09255135cb2666ff92e837f.js"
+    },
+    {
+      "role": "logo",
+      "url": "/assets/official-detail-mark-dac23a53c00c75e4b36d1ade7fb3c3fe1a2797d619dbb154c13b10eb3dc61a5c.webp",
+      "sha256": "dac23a53c00c75e4b36d1ade7fb3c3fe1a2797d619dbb154c13b10eb3dc61a5c",
+      "size": 42606,
+      "local": "/home/ubuntu/work/self-row-redesign/detail-native-builder/candidate-visual-final/assets/official-detail-mark-dac23a53c00c75e4b36d1ade7fb3c3fe1a2797d619dbb154c13b10eb3dc61a5c.webp"
+    }
+  ],
+  "checks": {
+    "exactHTMLAndManifestPinned": true,
+    "allCandidatePinsUnchanged": true,
+    "allFiveNewAssetsObservedWithExactSHA": true,
+    "nativeSharedRootRealPhysicalURL": "https://51dianzi.com/assets/main-nav-without-self-1e7f3c8fd3e382b0.js",
+    "nativeSTSearchAndDetailBindingsRendered": true,
+    "uncaughtPageErrors": [],
+    "caughtRouteChunkErrors": [
+      {
+        "literal": "StaticAssetTimeoutError: 页面资源加载超时，请检查网络后重试当前页面。\n    at https://51dianzi.com/assets/main-nav-without-self-1e7f3c8fd3e382b0.js:88:4824",
+        "location": {
+          "url": "https://51dianzi.com/assets/main-nav-without-self-1e7f3c8fd3e382b0.js",
+          "line": 48,
+          "column": 65016,
+          "lineNumber": 48,
+          "columnNumber": 65016
+        }
+      },
+      {
+        "literal": "[RouteChunkBoundary] 路由渲染异常 {name: StaticAssetTimeoutError, message: 页面资源加载超时，请检查网络后重试当前页面。, stack: StaticAssetTimeoutError: 页面资源加载超时，请检查网络后重试当前页面。\n  …main-nav-without-self-1e7f3c8fd3e382b0.js:88:4824, componentStack: \n    at Lazy (<anonymous>)\n    at ET (https://51di…in-nav-without-self-1e7f3c8fd3e382b0.js:18:48137)}",
+        "location": {
+          "url": "https://51dianzi.com/assets/main-nav-without-self-1e7f3c8fd3e382b0.js",
+          "line": 87,
+          "column": 5899,
+          "lineNumber": 87,
+          "columnNumber": 5899
+        }
+      }
+    ],
+    "STPublicIdObservedInActualList": "OM_bba7cf49-fd93-401e-bf11-8ac2ab33eb14",
+    "W25PublicIdObservedInActualList": "OM_237be1a0-7e70-4040-87d1-499f0d9731c8",
+    "onlyOneActualDetailVisited": [
+      {
+        "type": "safe-more-parameters",
+        "target": "STM8S003F3P6TR",
+        "publicId": "OM_bba7cf49-fd93-401e-bf11-8ac2ab33eb14",
+        "url": "https://51dianzi.com/search?q=STM8S003F3P6TR"
+      },
+      {
+        "type": "safe-native-ProductDetail-Link",
+        "target": "STM8S003F3P6TR",
+        "href": "/product/OM_bba7cf49-fd93-401e-bf11-8ac2ab33eb14",
+        "resultURL": "https://51dianzi.com/product/OM_bba7cf49-fd93-401e-bf11-8ac2ab33eb14"
+      }
+    ],
+    "listOldBadgesRemoved": true,
+    "listHasTaxWordOrMOQLabel": false,
+    "listCoreParameterCount": 5,
+    "listExpandedAllPublicParameters": true,
+    "detailAll12TechnicalParametersExactlyMatchActualPublicDTO": true,
+    "detailPDFHrefMatchesPublicDTO": true,
+    "detailPublicPriceAndStock": {
+      "price": "3.04",
+      "stock": 200,
+      "displayedPriceMatches": true,
+      "stockTextPresent": true
+    },
+    "detailBlueWhiteMarks": [
+      [
+        "rgb(24, 95, 165)",
+        "rgb(255, 255, 255)"
+      ],
+      [
+        "rgb(24, 95, 165)",
+        "rgb(255, 255, 255)"
+      ]
+    ],
+    "detailSeller": "51电子网自营",
+    "detailIllustrativeNotRealPhotoLabel": true,
+    "detailNullFieldOmission": {
+      "pass": false,
+      "actual": [
+        {
+          "field": "Date Code",
+          "actualDTOValue": "",
+          "rendered": "待确认"
+        },
+        {
+          "field": "货期",
+          "actualDTOValue": "",
+          "rendered": "待确认"
+        },
+        {
+          "field": "整包数量 SPQ",
+          "actualDTOValue": null,
+          "rendered": "待确认"
+        }
+      ]
+    },
+    "desktopThreeColumns": [
+      {
+        "x": 24,
+        "y": 95.1875,
+        "w": 300,
+        "h": 376
+      },
+      {
+        "x": 340,
+        "y": 95.1875,
+        "w": 620,
+        "h": 219.1875
+      },
+      {
+        "x": 976,
+        "y": 95.1875,
+        "w": 280,
+        "h": 436.59375
+      }
+    ],
+    "mobileStackedColumns": [
+      {
+        "x": 12,
+        "y": 93.1875,
+        "w": 351,
+        "h": 427
+      },
+      {
+        "x": 12,
+        "y": 532.1875,
+        "w": 351,
+        "h": 335.1875
+      },
+      {
+        "x": 12,
+        "y": 879.375,
+        "w": 351,
+        "h": 419.796875
+      }
+    ],
+    "noRootHorizontalOverflow": true,
+    "anonymousActualControls": {
+      "listQuantityReadOnly": false,
+      "listCartDisabled": false,
+      "detailQuantityReadOnly": false,
+      "detailCartDisabled": false,
+      "note": "Actual new anonymous context displays editable quantity and enabled local draft cart CTA. No change or click was performed; authorization/server mutation semantics not exercised."
+    },
+    "listProductImageSamplingIncomplete": true,
+    "detailActualPackagingImageLoaded": true,
+    "nonGETBlockedCount": 9,
+    "nonGETTransportedCount": 0,
+    "noAccountStorageRead": true,
+    "contextClosed": true,
+    "ownedPIDsExited": true,
+    "profileRemoved": true,
+    "newHTTPServices": 0
+  },
+  "issues": [
+    {
+      "type": "confirmed-acceptance-defect",
+      "code": "DETAIL_NULL_FIELDS_NOT_OMITTED",
+      "blocking": true,
+      "literal": "Date Code 待确认 / 货期 待确认 / 整包数量 SPQ 待确认",
+      "DTOEvidence": "public-dto-004.json",
+      "DOMEvidence": [
+        "official-detail-desktop-dom.json",
+        "official-detail-mobile-dom.json"
+      ],
+      "sourceReadOnlyLocation": "input-visual-final/client/src/components/OfficialMallSearchResults.tsx:259-262,328",
+      "explanation": "Actual DTO has dateCode=\"\", leadTime=\"\", spq=null. Both native detail DOMs render placeholder rows instead of omitting them."
+    },
+    {
+      "type": "incomplete-native-sample-not-proven-product-defect",
+      "code": "W25_NOT_RENDERED_WITHIN_BOUNDED_SAMPLE",
+      "blocking": true,
+      "DTOEvidence": "public-dto-001.json",
+      "DOMEvidence": "search-W25N04KVZEIR-desktop-dom.json",
+      "explanation": "Actual officialMall.list HTTP200 returned target item, but desktop/mobile snapshots captured 自营报价加载中. Actual response completed at 03:42:40.464Z after desktop sample 03:42:39 and following the site own route-asset timeout/reload. No quota failure was observed. No synthetic DTO, guessed ID navigation, or guest mutation was allowed."
+    },
+    {
+      "type": "safety-fence-consequence-not-product-defect",
+      "code": "BACKGROUND_GUEST_AND_SEARCH_REQUESTS_BLOCKED",
+      "blocking": false,
+      "explanation": "guestQuery.begin and siteAnalytics.track POSTs aborted; search.popular/search.brands GET batches aborted because outside the strict requested officialMall/auth-me allowlist. Their visible Failed to fetch background region is not labeled an application regression."
+    },
+    {
+      "type": "environment-completeness-limit",
+      "code": "COLD_IMAGE_AND_CAUGHT_CHUNK_TIMEOUT",
+      "blocking": false,
+      "explanation": "List screenshot was captured before public package image completed; detail screenshot shows same real site package image loaded. Cold native route graph triggered caught StaticAssetTimeoutError; no named-export binding failure or uncaught pageerror occurred."
+    }
+  ],
+  "requestSummary": {
+    "count": 427,
+    "decisions": {
+      "candidate-document": 5,
+      "fulfilled-exact-candidate-html-memory-preserving-origin-response-csp": 5,
+      "existing-real-publicGET-cached-by-sha": 226,
+      "fulfilled-exact-candidate-memory": 17,
+      "public-static-get": 116,
+      "public-cdn-static-get": 29,
+      "blocked-all-non-GET": 9,
+      "public-api-get": 10,
+      "blocked-api:auth.me,search.popular,search.brands": 3,
+      "blocked-api:search.popular,search.brands": 7
+    },
+    "newAssetsWithExactSHA": [
+      {
+        "url": "https://51dianzi.com/assets/official-material-ui-detail-91808de63d7719523a2adf8a2f01bdf798f89eb4578c7b8275eda548e949af36.js",
+        "method": "GET",
+        "resourceType": "script",
+        "decision": "fulfilled-exact-candidate-memory",
+        "transported": false,
+        "status": 200,
+        "bodySHA256": "91808de63d7719523a2adf8a2f01bdf798f89eb4578c7b8275eda548e949af36",
+        "bodySize": 591556,
+        "mime": "text/javascript; charset=utf-8",
+        "at": 1795146180.9600394
+      },
+      {
+        "url": "https://51dianzi.com/assets/official-cart-material-detail-54e0a77bd75061e319cb492dc67dd38e8afdf907767cc060728fe65ad3b845ab.js",
+        "method": "GET",
+        "resourceType": "script",
+        "decision": "fulfilled-exact-candidate-memory",
+        "transported": false,
+        "status": 200,
+        "bodySHA256": "54e0a77bd75061e319cb492dc67dd38e8afdf907767cc060728fe65ad3b845ab",
+        "bodySize": 127811,
+        "mime": "text/javascript; charset=utf-8",
+        "at": 1795146180.988458
+      },
+      {
+        "url": "https://51dianzi.com/assets/search-official-material-detail-b5c969f05cbeb93d0815d7b7faf8d315e4bc49c9082af2fc908661ca2a7b4c65.js",
+        "method": "GET",
+        "resourceType": "script",
+        "decision": "fulfilled-exact-candidate-memory",
+        "transported": false,
+        "status": 200,
+        "bodySHA256": "b5c969f05cbeb93d0815d7b7faf8d315e4bc49c9082af2fc908661ca2a7b4c65",
+        "bodySize": 252425,
+        "mime": "text/javascript; charset=utf-8",
+        "at": 1795146180.9907174
+      },
+      {
+        "url": "https://51dianzi.com/assets/ProductDetail-official-7c0c67214d8dfe941e2da907df447f074a32566bc09255135cb2666ff92e837f.js",
+        "method": "GET",
+        "resourceType": "script",
+        "decision": "fulfilled-exact-candidate-memory",
+        "transported": false,
+        "status": 200,
+        "bodySHA256": "7c0c67214d8dfe941e2da907df447f074a32566bc09255135cb2666ff92e837f",
+        "bodySize": 33582,
+        "mime": "text/javascript; charset=utf-8",
+        "at": 1795146195.2175992
+      },
+      {
+        "url": "https://51dianzi.com/assets/official-detail-mark-dac23a53c00c75e4b36d1ade7fb3c3fe1a2797d619dbb154c13b10eb3dc61a5c.webp",
+        "method": "GET",
+        "resourceType": "image",
+        "decision": "fulfilled-exact-candidate-memory",
+        "transported": false,
+        "status": 200,
+        "bodySHA256": "dac23a53c00c75e4b36d1ade7fb3c3fe1a2797d619dbb154c13b10eb3dc61a5c",
+        "bodySize": 42606,
+        "mime": "image/webp",
+        "at": 1795146198.8569236
+      }
+    ],
+    "uniqueSuccessfulJavaScriptURLs": [
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/AgencyCertification-certification-6c504279f1916ad5-copy-cleanup-5f5c26e4eadda930.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/AnonLimitLoginGate-CZZeNOxT.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/ChatActionButton-B0cj8A-6.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/CompanySwitcher-nav-compact-b902faf82fda4c14.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/DailyRecommend-diversity-e17a9acd3fec.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/ForgotPasswordFlow-Bcc_TRum.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/ForumUnreadBadge-DZQ_ajKF.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/Home-BN6jtVy-.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/HomeSearchBrand-EUHA9uOy.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/IcpFooter-TtKWhcMk.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/InquiryEnterpriseChooserDialog-f_IbLRLR.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/MallLoginDialog-B9eOYLSy.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/MallNav-D1XEA1HK.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/MallNav-adaptive-d980ce7810720300.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/MallNavSharedControls-Dana3P5f.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/PaymentMethodIcon-D3E3ZhcR.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/ProductDetail-BRVr2EWO.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/SearchPage-BFLTlYWg.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/SupplierProfileLink-UBWFIMhi.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/SupplierProfileLink-supplier-name-65679bcd61e4-certification-4b28137458bc6324.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/arrow-left-C72QXCm_.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/arrow-right-CvVqph_X.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/beijingTime-DBueo7Bu.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/building-2-T-0IFSIH.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/button-BESZT5BD.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/check-CMoptOOy.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/chevron-down-DgQEGZaj.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/chevron-left-DG_tz5QR.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/chevron-right-BVswar93.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/circle-check-D0KwB7pU.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/clientMessageId-Dp81u44N.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/companyEstablishedAt-CTPBnfmb.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/contentModeration-D1y4uz5X.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/copy-DZfsLvJx.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/dialog-D3PLn_aD.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/erpPermissions-CSvdLTuz.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/index-BFfyu1m-.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/index-DnsGKsJR.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/input-DUE8KHi9.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/inventoryLeadTime-DMSGt-tn.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/inventoryPriceDisplay-rgSHamc3.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/inventoryQuantityDisplay-BqqFZ35u.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/label-C6LfxTIW.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/loader-circle-DY4ypc03.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/logos-r9QRYmTp.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/map-pin-DEkXahg-.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/nav-official-cart-1f53d1e32d6b5bc0f0247aa46d0b5039819e811a0e6227d6101577d337735a94.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/openInNewTab-N0hj7ScK.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/package-search-B7bcCxv5.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/partImages-DjqhGfUN.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/plus-hDW1-Kkx.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/searchHistory-f1qBhbj2.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/searchInput-efgGFg9b.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/shield-check-Cc-Q0NWu.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/supplierDisplayName-CAtMUZO1.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/supplierPhotoWatermark-_Ts00DZi.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/tabs-Bi1lISVz.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/useComposition-BcMWJMD3.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/useEnterpriseInquiryLauncher-o7fpsHZf.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/useGuestQuery-BHlnM91Z.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/useGuestQuery-fast-f50acd02a27d3b9f296b309943791c28197bdeefd756be7c8d972945a16fff2f.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/useLoginScope-zDu11UcI.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/useMaterialExposure-Bvy4wQUG.js",
+      "https://51dianzi.com/assets/20261107-verified-master-search-reference-v24-front-1a960e4a5670/user-round-Cao51Zew.js",
+      "https://51dianzi.com/assets/ChatActionButton-daily-cleanup-eb5fc1113426e3a0.js",
+      "https://51dianzi.com/assets/OfficialMall-public-native-v10-0950ab04107ec94e.js",
+      "https://51dianzi.com/assets/ProductDetail-official-7c0c67214d8dfe941e2da907df447f074a32566bc09255135cb2666ff92e837f.js",
+      "https://51dianzi.com/assets/SelfOperatedMall-ui-v7-ef99355486670c45.js",
+      "https://51dianzi.com/assets/inquiry-reception-20261113/asset-warmer-24164d7b39fcc818.js",
+      "https://51dianzi.com/assets/main-nav-without-self-1e7f3c8fd3e382b0.js",
+      "https://51dianzi.com/assets/official-cart-material-detail-54e0a77bd75061e319cb492dc67dd38e8afdf907767cc060728fe65ad3b845ab.js",
+      "https://51dianzi.com/assets/official-cart-ui-0caa44f169956249d49c314660e96dccd14e5e8e8fa098c37a5c496c94393b4d.js",
+      "https://51dianzi.com/assets/official-material-ui-detail-91808de63d7719523a2adf8a2f01bdf798f89eb4578c7b8275eda548e949af36.js",
+      "https://51dianzi.com/assets/search-official-material-detail-b5c969f05cbeb93d0815d7b7faf8d315e4bc49c9082af2fc908661ca2a7b4c65.js"
+    ],
+    "transitiveClosureClaimed": false
+  },
+  "rawRunResult": "result.json",
+  "rawRequestLog": "request-log.json",
+  "rawConsoleLog": "console-log.json",
+  "cleanupReceipt": "process-cleanup-receipt.json",
+  "sourcePins": "source-pins.json",
+  "navigationPins": "navigation-pins.json",
+  "cachedActualPublicGETPins": "existing-cache-pins.json",
+  "attempt1": "attempt-1/result.json",
+  "productionApprovalGranted": false
+}

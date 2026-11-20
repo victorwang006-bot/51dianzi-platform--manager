@@ -1,0 +1,22 @@
+[WARN] The "pnpm" field in package.json is no longer read by pnpm. The following keys were ignored: "pnpm.patchedDependencies", "pnpm.overrides". See https://pnpm.io/settings for the new home of each setting.
+
+ RUN  v2.1.9 /home/ubuntu/work/resume-frontend/platform
+
+ ✓ client/src/pages/OfficialProductDetail.test.tsx (34 tests) 1257ms
+ ✓ client/src/components/OfficialMaterialResources.SearchPage.test.tsx (11 tests) 1190ms
+   ✓ official material resources synthetic DOM > hides missing and unsafe PDFs, keeps only truthful actions without persistent missing-data prose 371ms
+ ✓ client/src/components/OfficialMallSearchResults.polish.test.tsx (36 tests) 5034ms
+   ✓ same-scope quote snapshot polish (synthetic, no remote operations) > keeps all old pages until the final page succeeds and disables repeated load-more while pending 1225ms
+   ✓ same-scope quote snapshot polish (synthetic, no remote operations) > rejects a malformed total page batch while retaining only the verified read-only snapshot 755ms
+   ✓ same-scope quote snapshot polish (synthetic, no remote operations) > rejects a malformed duplicate page batch while retaining only the verified read-only snapshot 900ms
+   ✓ same-scope quote snapshot polish (synthetic, no remote operations) > rejects a malformed page page batch while retaining only the verified read-only snapshot 860ms
+   ✓ same-scope quote snapshot polish (synthetic, no remote operations) > rejects a malformed pageSize page batch while retaining only the verified read-only snapshot 617ms
+ ✓ client/src/components/OfficialMaterialResources.polish.test.tsx (43 tests) 221ms
+ ✓ client/src/components/OfficialMallSearchResults.inline.test.tsx (15 tests) 2054ms
+   ✓ anonymous real checkout/search first-paint chain > the whole displayed multi-page snapshot has inline parameters without viewport resources requests 1525ms
+ ✓ client/src/pages/ProductDetail.route.test.tsx (9 tests) 104ms
+
+ Test Files  6 passed (6)
+      Tests  148 passed (148)
+   Start at  03:47:26
+   Duration  9.71s (transform 780ms, setup 0ms, collect 2.34s, tests 9.86s, environment 3.65s, prepare 496ms)

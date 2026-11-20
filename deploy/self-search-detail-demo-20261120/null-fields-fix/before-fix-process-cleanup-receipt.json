@@ -1,0 +1,108 @@
+{
+  "startedAt": "2026-11-20T03:41:54Z",
+  "candidateInMemory": true,
+  "productionDeployment": false,
+  "httpServicesStarted": 0,
+  "userProfileUsed": false,
+  "anonymousNewContext": true,
+  "cookieOrAccountStorageRead": false,
+  "mutationTransportAllowed": 0,
+  "browserTransportFence": "All browser requests intercepted; browser DNS denied and transport proxy refused, public HTTP GET gateway only.",
+  "rendererChanges": "none; no injected UI, modules, mocks, hooks, or overrides",
+  "browserVersion": "156.0.8078.73",
+  "ownedChromiumProcesses": [
+    {
+      "pid": 22638,
+      "cmdline": "/usr/lib/chromium/chromium --show-component-extension-options --enable-gpu-rasterization --no-default-browser-check --disable-pings --media-router=0 --disable-dev-shm-usage --enable-remote-extensions --load-extension --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,AvoidCorsURLLoaderRestartOnRedirect,Translate,AutoDeElevate,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --no-sandbox --disable-dev-shm-usage --disable-background-networking --disable-component-update --disable-default-apps --disable-sync --disable-extensions --disable-breakpad --disable-client-side-phishing-detection --metrics-recording-only --safebrowsing-disable-auto-update --password-store=basic --use-mock-keychain --disable-features=MediaRouter,OptimizationHints,AutofillServerCommunication,CertificateTransparencyComponentUpdater --host-resolver-rules=MAP * ~NOTFOUND --proxy-server=http://127.0.0.1:9 --proxy-bypass-list=<-loopback> --user-data-dir=/home/ubuntu/work/self-row-redesign/native-browser-check/tmp/playwright_chromiumdev_profile-2aHUSD --remote-debugging-pipe --no-startup-window --noerrdialogs --ozone-platform=headless --ozone-override-screen-size=800,600 --use-angle=swiftshader-webgl "
+    },
+    {
+      "pid": 22658,
+      "cmdline": "/usr/lib/chromium/chromium --type=zygote --no-zygote-sandbox --no-sandbox --headless --crashpad-handler-pid=0 --enable-crash-reporter=,built on Ubuntu 24.04.5 LTS --noerrdialogs --user-data-dir=/home/ubuntu/work/self-row-redesign/native-browser-check/tmp/playwright_chromiumdev_profile-2aHUSD --change-stack-guard-on-fork=enable --no-first-run --ozone-platform=headless --ozone-override-screen-size=800,600 --use-angle=swiftshader-webgl "
+    },
+    {
+      "pid": 22659,
+      "cmdline": "/usr/lib/chromium/chromium --type=zygote --no-sandbox --headless --crashpad-handler-pid=0 --enable-crash-reporter=,built on Ubuntu 24.04.5 LTS --noerrdialogs --user-data-dir=/home/ubuntu/work/self-row-redesign/native-browser-check/tmp/playwright_chromiumdev_profile-2aHUSD --change-stack-guard-on-fork=enable --no-first-run --ozone-platform=headless --ozone-override-screen-size=800,600 --use-angle=swiftshader-webgl "
+    },
+    {
+      "pid": 22681,
+      "cmdline": "/usr/lib/chromium/chromium --type=gpu-process --gpu-recent-crash-count=0 --no-sandbox --disable-dev-shm-usage --disable-breakpad --enable-gpu-rasterization --headless --ozone-platform=headless --use-angle=swiftshader-webgl --enable-unsafe-swiftshader --crashpad-handler-pid=0 --enable-crash-reporter=,built on Ubuntu 24.04.5 LTS --noerrdialogs --user-data-dir=/home/ubuntu/work/self-row-redesign/native-browser-check/tmp/playwright_chromiumdev_profile-2aHUSD --change-stack-guard-on-fork=enable --gpu-preferences=YAAAAAAAAAAgAAAEAAAAAAAAAAAAAGAASAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAMAAAAAQAAAAAAAAAAAAAACAAAAAAAAAAIAAAAAAAAAA== --shared-files --field-trial-handle=3,i,2039201598719686360,3969486034246752804,262144 --enable-features=CDPScreenshotNewSurface --disable-features=AutofillServerCommunication,CertificateTransparencyComponentUpdater,MediaRouter,OptimizationHints,PaintHolding --variations-seed-version --pseudonymization-salt-handle=7,i,17880271952074915584,14884319965749257939,4 --trace-process-track-uuid=3190708988185955192 "
+    },
+    {
+      "pid": 22684,
+      "cmdline": "/usr/lib/chromium/chromium --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=none --host-resolver-rules=MAP * ~NOTFOUND --no-sandbox --disable-dev-shm-usage --use-angle=swiftshader-webgl --mute-audio --crashpad-handler-pid=0 --enable-crash-reporter=,built on Ubuntu 24.04.5 LTS --noerrdialogs --user-data-dir=/home/ubuntu/work/self-row-redesign/native-browser-check/tmp/playwright_chromiumdev_profile-2aHUSD --change-stack-guard-on-fork=enable --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,2039201598719686360,3969486034246752804,262144 --enable-features=CDPScreenshotNewSurface --disable-features=AutofillServerCommunication,CertificateTransparencyComponentUpdater,MediaRouter,OptimizationHints,PaintHolding --variations-seed-version --pseudonymization-salt-handle=7,i,17880271952074915584,14884319965749257939,4 --trace-process-track-uuid=3190708989122997041 "
+    },
+    {
+      "pid": 22711,
+      "cmdline": "/usr/lib/chromium/chromium --type=utility --utility-sub-type=storage.mojom.StorageService --lang=en-US --service-sandbox-type=utility --host-resolver-rules=MAP * ~NOTFOUND --no-sandbox --disable-dev-shm-usage --use-angle=swiftshader-webgl --mute-audio --crashpad-handler-pid=0 --enable-crash-reporter=,built on Ubuntu 24.04.5 LTS --noerrdialogs --user-data-dir=/home/ubuntu/work/self-row-redesign/native-browser-check/tmp/playwright_chromiumdev_profile-2aHUSD --change-stack-guard-on-fork=enable --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,2039201598719686360,3969486034246752804,262144 --enable-features=CDPScreenshotNewSurface --disable-features=AutofillServerCommunication,CertificateTransparencyComponentUpdater,MediaRouter,OptimizationHints,PaintHolding --variations-seed-version --pseudonymization-salt-handle=7,i,17880271952074915584,14884319965749257939,4 --trace-process-track-uuid=3190708990060038890 "
+    }
+  ],
+  "profilePaths": [
+    "/home/ubuntu/work/self-row-redesign/native-browser-check/tmp/playwright_chromiumdev_profile-2aHUSD"
+  ],
+  "remoteDebugging": "Playwright pipe; no listening port",
+  "contextClosed": true,
+  "browserClosed": true,
+  "processCleanup": [
+    {
+      "pid": 22638,
+      "absent": true
+    },
+    {
+      "pid": 22658,
+      "absent": true
+    },
+    {
+      "pid": 22659,
+      "absent": true
+    },
+    {
+      "pid": 22681,
+      "absent": true
+    },
+    {
+      "pid": 22684,
+      "absent": true
+    },
+    {
+      "pid": 22711,
+      "absent": true
+    }
+  ],
+  "allOwnedChromiumPIDsAbsent": true,
+  "profilesRemoved": true,
+  "tmpRemoved": true,
+  "endedAt": "2026-11-20T03:43:21Z",
+  "afterPins": {
+    "/home/ubuntu/work/self-row-redesign/detail-native-builder/candidate-visual-final/manifest.json": {
+      "size": 242169,
+      "sha256": "5d5611feaf70b7d5eb36fe703fb62346bf94454789dcd4600008798cf6343988"
+    },
+    "/home/ubuntu/work/self-row-redesign/detail-native-builder/candidate-visual-final/index.html": {
+      "size": 79142,
+      "sha256": "780b987230a7e8a1f90d6d6d1a3f5299e0a2cf3619a2700b0c61db618b4b3a48"
+    },
+    "/home/ubuntu/work/self-row-redesign/detail-native-builder/candidate-visual-final/assets/ProductDetail-official-7c0c67214d8dfe941e2da907df447f074a32566bc09255135cb2666ff92e837f.js": {
+      "size": 33582,
+      "sha256": "7c0c67214d8dfe941e2da907df447f074a32566bc09255135cb2666ff92e837f"
+    },
+    "/home/ubuntu/work/self-row-redesign/detail-native-builder/candidate-visual-final/assets/official-cart-material-detail-54e0a77bd75061e319cb492dc67dd38e8afdf907767cc060728fe65ad3b845ab.js": {
+      "size": 127811,
+      "sha256": "54e0a77bd75061e319cb492dc67dd38e8afdf907767cc060728fe65ad3b845ab"
+    },
+    "/home/ubuntu/work/self-row-redesign/detail-native-builder/candidate-visual-final/assets/official-detail-mark-dac23a53c00c75e4b36d1ade7fb3c3fe1a2797d619dbb154c13b10eb3dc61a5c.webp": {
+      "size": 42606,
+      "sha256": "dac23a53c00c75e4b36d1ade7fb3c3fe1a2797d619dbb154c13b10eb3dc61a5c"
+    },
+    "/home/ubuntu/work/self-row-redesign/detail-native-builder/candidate-visual-final/assets/official-material-ui-detail-91808de63d7719523a2adf8a2f01bdf798f89eb4578c7b8275eda548e949af36.js": {
+      "size": 591556,
+      "sha256": "91808de63d7719523a2adf8a2f01bdf798f89eb4578c7b8275eda548e949af36"
+    },
+    "/home/ubuntu/work/self-row-redesign/detail-native-builder/candidate-visual-final/assets/search-official-material-detail-b5c969f05cbeb93d0815d7b7faf8d315e4bc49c9082af2fc908661ca2a7b4c65.js": {
+      "size": 252425,
+      "sha256": "b5c969f05cbeb93d0815d7b7faf8d315e4bc49c9082af2fc908661ca2a7b4c65"
+    }
+  },
+  "allSourcesUnchanged": true,
+  "nonGETAttemptsBlocked": 9,
+  "forbiddenRequestsTransported": 0
+}
