@@ -1,0 +1,17 @@
+{
+  "actualRpcOrReloadTested": false,
+  "controllerApproved": false,
+  "controllerSha256": "ec2f541d4cee799a21a9b21633110a183c8efaf162451876ad5aea415359bde5",
+  "controllerTests": 89,
+  "finalDeployApproval": false,
+  "preparerTests": 32,
+  "pycacheWrittenByCommands": false,
+  "pythonCompileInMemoryPassed": [
+    "release.py",
+    "test_release.py",
+    "prepare-local.py",
+    "test_prepare_local.py"
+  ],
+  "rpcBytesExact": true,
+  "schema": "customer-batch-r3-static-checks-v1"
+}

@@ -1,0 +1,75 @@
+{
+  "actualCoordSha256": "8a130860aefec8087cebfab27d2bc7782f30a6790a300a75546fb48436f0af89",
+  "actualPm2SourceRecordsHashesAndSizesVerified": 31,
+  "actualSixIdentityAndFiveNumericRelationsVerified": true,
+  "after": {
+    "README.md": "4333866188566a2ef344f4f5ac2e31e4a4c2879283bddd238f3519668ae8cf2b",
+    "prepare-local.README.md": "0cdb55197c7369941fbbcee702cf54806f35ef76f9dd50816b76803f4bd6179c",
+    "prepare-local.py": "4041d7e102a57b2e95d7d569313070a48c7b4b91757a5b85640010d1eaa5e267",
+    "release.py": "ec2f541d4cee799a21a9b21633110a183c8efaf162451876ad5aea415359bde5",
+    "test_prepare_local.py": "91f2f078bfd6759a3dc1bb89013fc826801b2975f09a73b41eefafcbe58c013b",
+    "test_release.py": "57e089aa2cb90ff3c6fb2ce5eb21a67d6c7b3d12417b6bc183ae3f114e186157"
+  },
+  "before": {
+    "README.md": "63d4408b45ab4656ae9422dca67618d9242d605e25e0b61e11b6b4e0e69ea29e",
+    "prepare-local.README.md": "ab3b520fb2b51fd51a83771b9265c36d2e16b3f118fdeaa27cd9ad947ef4a717",
+    "prepare-local.py": "f88fc2579b891f873473270b402ad942e9ad5b22c31602fc8880a7a8a0d4b2a5",
+    "release.py": "d6f724847e205005060b6d11e0b15d7e31ba0ce373119187d062aba437e4cdec",
+    "test_prepare_local.py": "025e6a1525920226658b788be294b20d8e6a0f2a657738e842cc556a3982c45f",
+    "test_release.py": "600eb354e651f4570918c9253584f2931445c2baa677204967e20ddd32fe0548"
+  },
+  "blockers": [
+    "Actual complete R3 fresh capture/full private tree and frontend protection set binding absent",
+    "Actual six-slot full retained-byte model-to-fork forecast/reset shape not supplied",
+    "Utility.clone modules/fclone source semantics not in supplied generation or RPC records",
+    "Actual fresh package/manifest/packageFiles/source/tool pins and independent delta approval absent"
+  ],
+  "constraints": {
+    "approvalGenerated": false,
+    "businessOrUiOrJsBuilderModified": false,
+    "businessTestsExecuted": false,
+    "gitOperations": 0,
+    "mcpOperations": 0,
+    "onlySixAllowedFilesAndEvidenceR3Writes": true,
+    "productionConnections": 0,
+    "productionReloads": 0,
+    "productionWrites": 0,
+    "realPrepareExecuted": false,
+    "releaseCliExecuted": false,
+    "sshOperations": 0
+  },
+  "controllerApproved": false,
+  "controllerDiff": "evidence/r3-controller.diff",
+  "controllerIsolatedMockTests": 89,
+  "exactAstEvidence": "evidence/r3-ast-diff.json",
+  "finalDeployApproval": false,
+  "generationSourcePins": {
+    "constants.js": "5a4adce0c3c277d4974c0ebdefb22d62ffcad74edcf910bfeeff287dacb8a853",
+    "lib/God.js": "f598e5113890418827e31dd52fc3538e8f19287fad212cafd9388b0216fe500d",
+    "lib/God/ClusterMode.js": "b4a9304e12f468f87a039c174c6ea4a1001f21d9dd1f5317121ed217bc389119",
+    "lib/God/Methods.js": "577a8505074225dfe73ce2c955c844662c6bc9d76c31d8102f809a1691262044",
+    "lib/God/Reload.js": "5e90112e447c4634009ea35005ffd477aab93064f55390288c56b51eee25992e",
+    "lib/ProcessContainer.js": "712b414f248a460f58d4365898fa7b27d39bf7f571ac889359e3a7b6a32419d1",
+    "lib/Utility.js": "66cd15711be69f40f6ee3c3f60adcf07e58d0bcdec9552ec5104530b22ba28f1",
+    "package.json": "f2819cffb2aae16bb813596575410877570a253be11949260caa33c8038788d6"
+  },
+  "generationSourceRecordsSha256": "f6c211ac662ecac437aa2034dec47e16a418a429ac9345f20cf16db6900d0f32",
+  "notProductionCompatibilityProof": true,
+  "owner": "6Lfttf6oVWJ8YS69o5FkXQ",
+  "preparerIsolatedMockTests": 32,
+  "relationsSha256": "8c0f9b1ec60401e452ef31413442f5fb35655edfd9b7e7b3238d6afdce73bed8",
+  "rootAndSixLoaderFlagsEmptyAtEvidenceTime": true,
+  "rpcDependencyClosureSha256": "917f632e0ab4fa0a2b705d5ad8bd1c6b4d80d68c3f3a8bb8fd2aac2665ba507e",
+  "rpcDependencyEdges": 62,
+  "rpcDependencyFilesVerified": 31,
+  "rpcDynamicRequires": [],
+  "rpcOutsidePm2Base": [],
+  "rpcUnresolved": [],
+  "schema": "customer-batch-r3-source-and-safety-v1",
+  "scope": "customer-batch-actions-20261120-6Lfttf6o-R3",
+  "status": "NOT_APPROVED",
+  "testLogs": {
+    "r3-prepare-tests.txt": "0a818c470cce0b92da935dbe8419a79f32b6447282715c2d7c01b6574605630a",
+    "r3-release-tests.txt": "e8f05671687c5be3967f04313d557bb4c6197c3430ec311e13d6c8ca8daf22d8"
+  }
+}

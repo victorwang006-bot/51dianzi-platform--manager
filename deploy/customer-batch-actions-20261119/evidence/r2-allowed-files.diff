@@ -1,0 +1,407 @@
+--- README.md@before
++++ README.md@R2
+@@ -1,6 +1,31 @@
+ # 客户批次发布控制器：离线恢复与安全单测
+ 
+-## 结论
++## 当前 R2 最小差量（2026-11-20）
++
++当前 OWNER 完整保持 `6Lfttf6oVWJ8YS69o5FkXQ`；SCOPE 改为 **`customer-batch-actions-20261120-6Lfttf6o-R2`**，默认 stage 仅因此派生为 `/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R2`。Config 的其余路径与 CLI 边界不变，不复用失败的旧 stage/capture。
++
++```text
++旧控制器 7fc9（已上传但首次 capture 失败）：
++7fc9ec42ce21f6d0167b36ffbbe7642865a16f70fc31f8b99bf0da4862598423
++当前 R2 release.py（preparer 固定 SHA 同步）：
++d6f724847e205005060b6d11e0b15d7e31ba0ce373119187d062aba437e4cdec
++```
++
++主任务提供：前台已于 08:51 明确 final verified/closed 交接（receipt `f893…`、coord `8a130…`）；后台旧 stage 仅上传 7fc9 controller，首次只读 capture 因不存在的两 vendor `package.json` 抛出 FileNotFoundError，未形成 capture JSON/package/receipt/window，也未 active write/reload。本次子任务不重新读取或操作生产；这些状态是主任务交接上下文，而非本地测试证明。
++
++修正仅在源清单与新增纯 `adapter_files()` helper：保留 Node、`lib/God/Reload.js`、`lib/Daemon.js`，并绑定真实 **PM2 root `package.json`**；替换错误假设的两个 `modules/*/package.json` pin 为两 vendor 目录**全部普通文件内容 hash + 全部文件/目录完整 META 与精确路径集合**。`sources` 包含所有 vendor 普通文件（尤其每个实际 resolved `index.js`），`transport.fullAdapterMeta` 另外绑定两根、`lib`、空目录及所有后代的完整 `describe` 结果；前后重复快照及目录前后枚举/META 检查拒绝变化。
++
++严格仅接受原绝对 specifier 实测的 `modules/pm2-axon/index.js`、`modules/pm2-axon-rpc/index.js` 两项且顺序固定；拒绝错误入口、npm/node_modules fallback、symlink、hardlinked file、special entry 与枚举漂移。没有替换入口、运行模块探针或添加 fallback。原 RPC 字符串（含原 require specifier、遍历 sources hash 的 verify）及 Node/daemon/socket/重载方式均不变。
++
++这是**固定 vendor closure**，不是假造 npm package metadata。真正 transitive 文件继续由既有 `cfg.pm2_base` 整树 full inventory 精确保护，未削弱 inventory 或增加外部依赖许可。helper 不推断或执行动态 require；真实 vendor/lib 的动态外部依赖边界仍须独立差量审基于实际源确认，不能把两个入口的只读存在证据当作整个运行时依赖审计。
++
++原 **43** 安全测试保留（仅固定 stage 期望同步 R2），新增 **17** temp 文件系统 adapter 测试。preparer 原 **27** 项保留，新增 **3** 项同步 pin/拒绝旧 capture 测试。Node/daemon/socket/RPC 子进程仍为 mock；文件树及 helper/transport pin 计算真实使用 temp 文件。**这些测试不证明真实 RPC 可用。**
++
++新证据为 `evidence/r2-before.json`、`r2-controller.diff`、`r2-allowed-files.diff`、`r2-source-and-safety.json`、`r2-release-tests.txt`、`r2-prepare-tests.txt` 与 `r2-report.md`；原证据保留不改。相对 7fc9，所有既有 controller 顶层 AST 仅 `SCOPE`、`transport` 改变，新增 `adapter_files`；RPC/snapshot/raw/locks/CAS/health/apply/verify/rollback 等其余 AST 不变。preparer 仅固定 SHA 常量改变，未执行或修改任何 JS 构建器。
++
++**R2 未批准。必须完成独立差量审和真实只读 capture 后，才可继续另行授权的流程。** 本次只运行隔离单测与内存静态编译，不运行 release CLI capture/preflight/apply，不用 Git/SSH/MCP，不触生产。
++
++## 历史基线恢复结论（7fc9，以下非当前状态）
+ 
+ 已从优先私有原版 `release-07188c50996a3b6b.py` 恢复 `release.py`，适配完整 OWNER `6Lfttf6oVWJ8YS69o5FkXQ` 和新 SCOPE `customer-batch-actions-20261120-6Lfttf6o`。默认 stage 因而为全新 `/opt/ops/customer-batch-actions-20261120-6Lfttf6o`，**本次没有创建或操作此远程目录，也没有复用任何旧 stage**。
+ 
+--- prepare-local.README.md@before
++++ prepare-local.README.md@R2
+@@ -2,17 +2,17 @@
+ 
+ `prepare-local.py` 只把**已交接到本地的 fresh capture 与当前 baseline**交给现有两个限定构建器，收集可复审的真实来源/编译/逆向证据，生成 `release.py seal_candidate` 的公开 candidate spec。默认不封印，不审核，不批准，不部署。
+ 
+-本次只新增 `prepare-local.py`、`test_prepare_local.py` 和本说明。没有修改现有 release/JS/tools/业务代码，没有 Git commit/push、SSH、MCP、生产访问、锁操作或 capture。现有控制器 SHA 固定为：
++当前 R2 差量仅把 preparer 的固定 controller SHA 同步到下列当前字节，并新增拒绝失败旧 scope/旧 SHA 输入测试；preparer 其余 AST 不变。控制器仅新 scope 与 vendor 源清单/META pin 修正，详见 `README.md` 与 `evidence/r2-controller.diff`。不修改或执行 JS/tools/业务代码，不用 Git/SSH/MCP，不访问生产，不执行 capture/preflight/apply CLI。
+ 
+ ```text
+-7fc9ec42ce21f6d0167b36ffbbe7642865a16f70fc31f8b99bf0da4862598423
++d6f724847e205005060b6d11e0b15d7e31ba0ce373119187d062aba437e4cdec
+ ```
+ 
+ ## 先决条件：前台交接与当前输入
+ 
+-前台任务 `qp4e5jVmsAp0UHKwymyD5X` 独占恢复与发布。主任务必须先取得其真实最终 verified/closed 证明和明确交接，再在另行授权的流程中取得全新 capture 与当前基线；本脚本不获取这些资料，也不替调用者核实交接授权的真伪。后台源码已保存/push `ac8ae98` 不代表已交接或已批准上线。
++主任务已提供前台 08:51 最终 verified/closed 明确交接（receipt `f893…`、coord `8a130…`）。旧 `/opt/ops/customer-batch-actions-20261120-6Lfttf6o` 仅已上传 7fc9 controller，首次只读 capture 因 vendor 目录没有 package.json 即拒绝，未形成 capture JSON/package/receipt/window，未 active write/reload。本脚本不获取生产资料，也不替调用者核实交接授权或这些外部证据的真伪。
+ 
+-**当前尚无交接，真实当前 API/native baseline 仍缺失。本次没有运行整条真实构建、真实 candidate 或真实封印；不能把单测当作该结论。**
++**当前仅接受全新 R2 scope `customer-batch-actions-20261120-6Lfttf6o-R2`、对应固定 controller SHA 与其余固定 Config 的 fresh capture；旧 scope/7fc9 输入不可重用。R2 尚未 approved，必须完成独立差量审及主任务随后真实只读 capture；本次没有运行整条真实构建、真实 candidate 或真实封印，不能把 mock 单测当作真实 RPC/完整运行时依赖可用证明。**
+ 
+ 输入必须已经位于 `/home/ubuntu/work/customer-batch` 下，且路径绝对、规范、无 symlink；文件为单链接普通文件。`--base` 目录需要以下文件：
+ 
+@@ -107,8 +107,8 @@
+ PYTHONDONTWRITEBYTECODE=1 python3 -B test_prepare_local.py -v
+ ```
+ 
+-27 项隔离测试通过。全部 capture/baseline/源码 fixture 位于 `TemporaryDirectory`，构建与 candidate 子进程是显式 mock，测试中的 reviewer 文件也只是 temp 合成 fixture，绝非真实报告。覆盖参数拒绝、输入与输出路径界限、source/freeze/builder/编译 hash 绑定和漂移拒绝、spec/baseline evidence 路径、权限、fresh/closed capture 检查、缺报告拒绝封印、报告不隐式封印、仅 candidate 命令白名单、半失败/已有输出 noReplay，以及不解析生产 alias。另用真实纯校验 helper 确认合成空 native records 会拒绝；完整 mock 成功案例不冒充真实 native ABI 验证。
++原 27 项全部保留，新增 3 项当前 R2 pin/scope 固定以及旧 scope/旧 7fc9 capture 拒绝测试。全部 capture/baseline/源码 fixture 位于 `TemporaryDirectory`，构建与 candidate 子进程是显式 mock，测试中的 reviewer 文件也只是 temp 合成 fixture，绝非真实报告。覆盖参数拒绝、输入与输出路径界限、source/freeze/builder/编译 hash 绑定和漂移拒绝、spec/baseline evidence 路径、权限、fresh/closed capture 检查、缺报告拒绝封印、报告不隐式封印、仅 candidate 命令白名单、半失败/已有输出 noReplay，以及不解析生产 alias。另用真实纯校验 helper 确认合成空 native records 会拒绝；完整 mock 成功案例不冒充真实 native ABI 验证。当前结果保存于 `evidence/r2-prepare-tests.txt`。
+ 
+-未重跑既有 43 项 release 控制器安全测试，也未重新审核控制器。运行脚本 `--help` 与 Python 内存 `compile()` 通过；未产生 pycache。真实 fresh capture、当前 HTML/两 API/两 JS、owner nonce、交接证明与当次独立报告仍须由授权主任务补齐。
++本次重跑 release 原 43 项与新增 17 项 adapter 测试，结果见 `evidence/r2-release-tests.txt`；Python 内存 `compile()` 证据见 `evidence/r2-static-checks.json`，不产生 pycache。当前 controller 修正是固定 vendor closure 内容/META 绑定，而非假 package metadata；PM2 root package pin 保留，整个 pm2_base inventory 保护不变。真实 fresh R2 capture、当前 HTML/两 API/两 JS、owner nonce、完整交接证明与当次独立报告仍须由授权主任务补齐；本次不独立批准控制器。
+ 
+ **私有输出含真实 capture/nonce 时绝不进入 Git，也不 commit/push、上传或分享这些资料。**
+--- prepare-local.py@before
++++ prepare-local.py@R2
+@@ -15,7 +15,7 @@
+ HERE = Path(__file__).absolute().parent
+ REPO = HERE.parent.parent
+ WORK = Path('/home/ubuntu/work/customer-batch')
+-CONTROLLER_SHA = '7fc9ec42ce21f6d0167b36ffbbe7642865a16f70fc31f8b99bf0da4862598423'
++CONTROLLER_SHA = 'd6f724847e205005060b6d11e0b15d7e31ba0ce373119187d062aba437e4cdec'
+ NODE = '/usr/bin/node'
+ # Exactly backend-builder.compile's transform options, but read original files twice.
+ BACKEND_HASH_CHECK = """
+--- release.py@before
++++ release.py@R2
+@@ -24,7 +24,7 @@
+ from dataclasses import dataclass
+ 
+ OWNER = '6Lfttf6oVWJ8YS69o5FkXQ'
+-SCOPE = 'customer-batch-actions-20261120-6Lfttf6o'
++SCOPE = 'customer-batch-actions-20261120-6Lfttf6o-R2'
+ API_BASE = '/opt/releases/20261110-customer-workbench-b7f3a2a7e317'
+ FRONT_API = API_BASE + '/front/dist/index.js'
+ ADMIN_API = API_BASE + '/admin/dist/index.js'
+@@ -418,6 +418,38 @@
+ c.call('getMonitorData',{},(err,rows)=>{try{if(err)throw Error('monitor');verify();if(!a.reload){done=true;process.stdout.write(JSON.stringify(rows),()=>{req.close();process.exit(0)});return}target(rows);c.call('reloadProcessId',{id:a.id,env:{}},(err)=>{try{if(err)throw Error('reload');verify();done=true;process.stdout.write('{}',()=>{req.close();process.exit(0)})}catch(_){fail()}})}catch(_){fail()}})}catch(_){fail()}
+ '''
+ 
++def adapter_files(cfg, entries):
++    """Pure fixed vendor closure snapshot, not guessed npm package metadata.
++    Only the two measured absolute index.js resolutions are accepted. Every
++    file and directory (including lib and empty dirs) is full-META bound;
++    symlinks, hardlinked files, special entries and enumeration drift refuse.
++    Actual transitive dependencies remain protected by full pm2_base inventory.
++    """
++    roots = [cfg.pm2_base / 'modules' / n for n in ('pm2-axon', 'pm2-axon-rpc')]
++    need(isinstance(entries, list) and entries == [str(p / 'index.js') for p in roots],
++         'EXACT_VENDORED_ADAPTER_ENTRIES')
++    out = {}
++    def visit(p, root):
++        p = no_link(p)
++        need(p == root or root in p.parents, 'ADAPTER_TREE_ESCAPE')
++        record = describe(p)
++        need(record['kind'] in ('file', 'directory'), 'ADAPTER_FILE_OR_DIRECTORY_ONLY')
++        if record['kind'] == 'file':
++            need(record['nlink'] == 1, 'ADAPTER_SINGLE_REGULAR_REQUIRED')
++        out[str(p)] = record
++        if record['kind'] == 'directory':
++            children = sorted(p.iterdir())
++            for child in children:
++                visit(child, root)
++            need(sorted(p.iterdir()) == children and describe(p) == record,
++                 'ADAPTER_ENUMERATION_META_DRIFT')
++    for root in roots:
++        root = no_link(root)
++        need(describe(root)['kind'] == 'directory', 'ADAPTER_DIRECTORY_REQUIRED')
++        visit(root, root)
++        need(out.get(str(root / 'index.js'), {}).get('kind') == 'file', 'ADAPTER_INDEX_FILE_REQUIRED')
++    return dict(sorted(out.items()))
++
+ def transport(cfg):
+     sock = cfg.pm2_home / 'rpc.sock'
+     r = describe(sock)
+@@ -427,26 +459,27 @@
+     os.kill(int(pid), 0)
+     need((cfg.proc / str(int(pid))).is_dir(), 'DAEMON_PROC_REQUIRED')
+     sources = [cfg.node, cfg.pm2_base / 'lib/God/Reload.js', cfg.pm2_base / 'lib/Daemon.js',
+-               cfg.pm2_base / 'modules/pm2-axon/package.json',
+-               cfg.pm2_base / 'modules/pm2-axon-rpc/package.json']
++               cfg.pm2_base / 'package.json']
+     resolved = subprocess.run([str(cfg.node), '-e',
+         "const b=process.argv[1];process.stdout.write(JSON.stringify(['pm2-axon','pm2-axon-rpc'].map(n=>require.resolve(b+'/modules/'+n))))",
+         str(cfg.pm2_base)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
+     need(resolved.returncode == 0, 'FRESH_ADAPTER_RESOLVE_REQUIRED')
+     entries = decode(resolved.stdout)
+     need(isinstance(entries, list) and len(entries) == 2, 'EXACT_ADAPTER_ENTRIES')
+-    for entry in entries:
+-        p = no_link(Path(entry))
+-        need(cfg.pm2_base in p.parents, 'ADAPTER_ENTRY_ESCAPE')
+-        sources.append(p)
++    adapters = adapter_files(cfg, entries)
++    sources.extend(Path(p) for p, record in adapters.items() if record['kind'] == 'file')
+     pins = {str(p): H(regular(p)) for p in sources}
++    need(all(pins[p] == record['sha256'] for p, record in adapters.items()
++             if record['kind'] == 'file'), 'ADAPTER_SOURCE_SNAPSHOT_DRIFT')
+     # Node cluster primary implementation binds the specifically allowed NODE_UNIQUE_ID exception.
+     result = subprocess.run([str(cfg.node), '-e',
+         "process.stdout.write(process.binding('natives')['internal/cluster/primary'])"],
+         stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
+     need(result.returncode == 0 and b'NODE_UNIQUE_ID' in result.stdout, 'NODE_CLUSTER_SOURCE_REQUIRED')
++    need(adapter_files(cfg, entries) == adapters, 'ADAPTER_FULL_META_SET_DRIFT')
+     return dict(socket=r, daemonPid=int(pid), pidfile=describe(cfg.pm2_home / 'pm2.pid'),
+-                sources=pins, nodeClusterPrimarySha256=H(result.stdout), rpcSourceSha256=H(RPC.encode()))
++                sources=pins, fullAdapterMeta=adapters,
++                nodeClusterPrimarySha256=H(result.stdout), rpcSourceSha256=H(RPC.encode()))
+ 
+ def rpc(cfg, tr, reload_row=None):
+     need(transport(cfg) == tr, 'SOCKET_ADAPTER_SOURCE_DRIFT')
+--- test_prepare_local.py@before
++++ test_prepare_local.py@R2
+@@ -432,6 +432,28 @@
+                 else:
+                     helper({}, b'old', b'new')
+ 
++    def test_r2_current_controller_sha_and_scope_fixed(self):
++        self.assertEqual(P.CONTROLLER_SHA, P.sha((HERE/'release.py').read_bytes()))
++        self.assertEqual(R.SCOPE, 'customer-batch-actions-20261120-6Lfttf6o-R2')
++        self.assertEqual(str(R.Config().stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R2')
++        self.assertEqual(R.OWNER, '6Lfttf6oVWJ8YS69o5FkXQ')
++
++    def test_old_failed_stage_scope_capture_is_not_reusable(self):
++        self.cap['scope'] = 'customer-batch-actions-20261120-6Lfttf6o'
++        self.save_capture()
++        with self.assertRaisesRegex(P.PrepareError, 'fixed production capture binding'):
++            P.prepare(self.args)
++        self.assertFalse(self.out.exists())
++        self.assertEqual(self.calls, [])
++
++    def test_old_7fc9_controller_capture_is_not_reusable(self):
++        self.cap['controllerSha256'] = '7fc9ec42ce21f6d0167b36ffbbe7642865a16f70fc31f8b99bf0da4862598423'
++        self.save_capture()
++        with self.assertRaisesRegex(P.PrepareError, 'fixed production capture binding'):
++            P.prepare(self.args)
++        self.assertFalse(self.out.exists())
++        self.assertEqual(self.calls, [])
++
+ 
+ if __name__ == '__main__':
+     unittest.main()
+--- test_release.py@before
++++ test_release.py@R2
+@@ -276,7 +276,7 @@
+     def test_new_identity_and_fixed_boundary(self):
+         cfg = r.Config()
+         self.assertEqual(r.OWNER, '6Lfttf6oVWJ8YS69o5FkXQ')
+-        self.assertEqual(str(cfg.stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o')
++        self.assertEqual(str(cfg.stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R2')
+         self.assertEqual(len(cfg.aliases), 7)
+         self.assertEqual(r.identity(self.cfg,self.cap['processes']), list(range(6)))
+         with self.assertRaisesRegex(r.ReleaseError,'PRODUCTION_ADAPTER_INJECTION_REFUSED'):
+@@ -848,6 +848,198 @@
+         self.assertEqual(self.cfg.coord.read_bytes(),changed)
+         self.assertFalse((self.cfg.receipt/'failure.json').exists())
+ 
++class AdapterFilesTests(unittest.TestCase):
++    """Real temp filesystem/helper/transport; synthetic Node/socket/daemon only.
++    No Node execution, actual RPC, production paths, capture or release CLI.
++    """
++    def setUp(self):
++        self.tmp = tempfile.TemporaryDirectory(prefix='customer-batch-adapter-r2-')
++        self.addCleanup(self.tmp.cleanup)
++        self.root = Path(self.tmp.name)
++        self.cfg = r.Config(pm2_base=self.root/'pm2', pm2_home=self.root/'home',
++                            node=self.root/'node', proc=self.root/'proc', mock=True)
++        self.cfg.pm2_home.mkdir()
++        (self.cfg.proc/'12345').mkdir(parents=True)
++        self.cfg.node.write_bytes(b'synthetic Node binary')
++        (self.cfg.pm2_home/'pm2.pid').write_bytes(b'12345\n')
++        self.sock = self.cfg.pm2_home/'rpc.sock'
++        self.sock.write_bytes(b'synthetic socket record, never connected')
++        self.roots = [self.cfg.pm2_base/'modules'/n for n in ('pm2-axon', 'pm2-axon-rpc')]
++        self.entries = [str(p/'index.js') for p in self.roots]
++        for i, p in enumerate(self.roots):
++            (p/'lib/nested').mkdir(parents=True)
++            (p/'empty').mkdir()
++            (p/'index.js').write_bytes(b"module.exports = require('./lib');\n" if i == 0 else
++                                      b"exports.Client = require('./lib/client');\n")
++            (p/'lib/client.js').write_bytes(b'// synthetic vendored source\n')
++            (p/'lib/nested/data.txt').write_bytes(b'non-JS file also pinned\n')
++            (p/'README.md').write_bytes(b'all regular files bound\n')
++            self.assertFalse((p/'package.json').exists())
++        (self.cfg.pm2_base/'lib/God').mkdir(parents=True)
++        (self.cfg.pm2_base/'lib/God/Reload.js').write_bytes(b'synthetic God reload source')
++        (self.cfg.pm2_base/'lib/Daemon.js').write_bytes(b'synthetic Daemon source')
++        (self.cfg.pm2_base/'package.json').write_bytes(b'{"name":"pm2","synthetic":true}\n')
++        self.calls = []
++        self.native_hook = None
++        real_describe = r.describe
++        def describe(p):
++            record = real_describe(p)
++            return dict(record, kind='socket', statmode=stat.S_IFSOCK | 0o600) if Path(p) == self.sock else record
++        for guard in [patch.object(r, 'describe', side_effect=describe), patch.object(r.os, 'kill'),
++                      patch.object(r.subprocess, 'run', side_effect=self.fake_run)]:
++            guard.start(); self.addCleanup(guard.stop)
++
++    def fake_run(self, command, **kwargs):
++        self.calls.append(command)
++        self.assertEqual(command[:2], [str(self.cfg.node), '-e'])
++        if command[2] == "const b=process.argv[1];process.stdout.write(JSON.stringify(['pm2-axon','pm2-axon-rpc'].map(n=>require.resolve(b+'/modules/'+n))))":
++            self.assertEqual(command[3:], [str(self.cfg.pm2_base)])
++            self.assertEqual(kwargs['timeout'], 15)
++            return r.subprocess.CompletedProcess(command, 0, r.encode(self.entries), b'')
++        if command[2] == "process.stdout.write(process.binding('natives')['internal/cluster/primary'])":
++            if self.native_hook:
++                self.native_hook()
++            return r.subprocess.CompletedProcess(command, 0, b'// synthetic NODE_UNIQUE_ID primary', b'')
++        self.fail('no Node module execution or RPC allowed in this fixture')
++
++    def test_full_vendor_files_dirs_meta_and_root_package_pins(self):
++        actual = r.adapter_files(self.cfg, self.entries)
++        expected = {str(p) for root in self.roots for p in (root, *root.rglob('*'))}
++        self.assertEqual(set(actual), expected)
++        self.assertEqual(actual, {p: r.describe(Path(p)) for p in sorted(expected)})
++        tr = r.transport(self.cfg)
++        files = {p for p, record in actual.items() if record['kind'] == 'file'}
++        original = {str(self.cfg.node), str(self.cfg.pm2_base/'lib/God/Reload.js'),
++                    str(self.cfg.pm2_base/'lib/Daemon.js'), str(self.cfg.pm2_base/'package.json')}
++        self.assertEqual(set(tr['sources']), files | original)
++        self.assertEqual(tr['fullAdapterMeta'], actual)
++        for p, digest in tr['sources'].items():
++            self.assertEqual(digest, r.H(r.regular(Path(p))))
++        self.assertTrue(set(self.entries) <= set(tr['sources']))
++        self.assertEqual(tr['rpcSourceSha256'], r.H(r.RPC.encode()))
++
++    def test_file_and_empty_directory_set_changes_bound(self):
++        original = r.adapter_files(self.cfg, self.entries)
++        file = self.roots[0]/'new.data'; file.write_bytes(b'added')
++        self.assertNotEqual(r.adapter_files(self.cfg, self.entries), original)
++        file.unlink(); (self.roots[0]/'empty').rmdir()
++        self.assertNotEqual(r.adapter_files(self.cfg, self.entries), original)
++
++    def test_same_bytes_metadata_change_bound(self):
++        tr = r.transport(self.cfg)
++        file = self.roots[0]/'lib/client.js'
++        file.chmod(0o600 if stat.S_IMODE(file.stat().st_mode) != 0o600 else 0o644)
++        after = r.transport(self.cfg)
++        self.assertEqual(tr['sources'], after['sources'])
++        self.assertNotEqual(tr['fullAdapterMeta'], after['fullAdapterMeta'])
++
++    def test_source_change_between_snapshot_and_pins_refused(self):
++        target = self.roots[0]/'lib/client.js'; real = r.regular; reads = []
++        def read(p):
++            if Path(p) == target:
++                reads.append(p)
++                if len(reads) == 2:
++                    target.write_bytes(b'changed between snapshot and source pin')
++            return real(p)
++        with patch.object(r, 'regular', side_effect=read), self.assertRaisesRegex(r.ReleaseError, 'ADAPTER_SOURCE_SNAPSHOT_DRIFT'):
++            r.transport(self.cfg)
++
++    def test_late_source_change_refused(self):
++        self.native_hook = lambda: (self.roots[1]/'lib/client.js').write_bytes(b'late code change')
++        with self.assertRaisesRegex(r.ReleaseError, 'ADAPTER_FULL_META_SET_DRIFT'):
++            r.transport(self.cfg)
++
++    def test_late_file_meta_change_refused(self):
++        self.native_hook = lambda: (self.roots[1]/'lib/client.js').chmod(0o400)
++        with self.assertRaisesRegex(r.ReleaseError, 'ADAPTER_FULL_META_SET_DRIFT'):
++            r.transport(self.cfg)
++
++    def test_late_directory_addition_refused(self):
++        self.native_hook = lambda: (self.roots[1]/'new-empty').mkdir()
++        with self.assertRaisesRegex(r.ReleaseError, 'ADAPTER_FULL_META_SET_DRIFT'):
++            r.transport(self.cfg)
++
++    def test_late_file_deletion_refused(self):
++        self.native_hook = lambda: (self.roots[1]/'lib/client.js').unlink()
++        with self.assertRaisesRegex(r.ReleaseError, 'ADAPTER_FULL_META_SET_DRIFT'):
++            r.transport(self.cfg)
++
++    def test_enumeration_race_refused(self):
++        real = Path.iterdir; changed = []
++        def iterdir(p):
++            children = list(real(p))
++            if p == self.roots[0] and not changed:
++                changed.append(True); (p/'unknown-during-enumeration').write_bytes(b'race')
++            return iter(children)
++        with patch.object(Path, 'iterdir', iterdir), self.assertRaisesRegex(r.ReleaseError, 'ADAPTER_ENUMERATION_META_DRIFT'):
++            r.adapter_files(self.cfg, self.entries)
++
++    def test_symlink_file_and_directory_dependency_escape_refused(self):
++        outside = self.root/'outside'; outside.mkdir(); (outside/'dep.js').write_bytes(b'outside dependency')
++        for target in (outside, outside/'dep.js', self.roots[1]/'lib/client.js'):
++            link = self.roots[0]/'escape'; link.symlink_to(target)
++            with self.subTest(target=target), self.assertRaisesRegex(r.ReleaseError, 'SYMLINK_ESCAPE'):
++                r.adapter_files(self.cfg, self.entries)
++            link.unlink()
++
++    def test_hardlink_dependency_escape_refused(self):
++        outside = self.root/'outside-file'; outside.write_bytes(b'outside hardlinked bytes')
++        os.link(outside, self.roots[0]/'hardlink')
++        with self.assertRaisesRegex(r.ReleaseError, 'ADAPTER_SINGLE_REGULAR_REQUIRED'):
++            r.adapter_files(self.cfg, self.entries)
++
++    def test_special_unknown_entry_refused(self):
++        os.mkfifo(self.roots[0]/'unknown-fifo')
++        with self.assertRaisesRegex(r.ReleaseError, 'SPECIAL_FILE_REFUSED'):
++            r.adapter_files(self.cfg, self.entries)
++
++    def test_wrong_resolved_entries_and_npm_fallback_refused(self):
++        candidates = [[str(self.cfg.pm2_base/'node_modules/pm2-axon/index.js'), self.entries[1]],
++                      [str(self.roots[0]/'lib/client.js'), self.entries[1]],
++                      [str(self.root/'outside.js'), self.entries[1]], self.entries[::-1],
++                      [self.entries[0], self.entries[0]], [self.entries[0]+'/../index.js', self.entries[1]],
++                      [None, self.entries[1]], tuple(self.entries), []]
++        for entries in candidates:
++            with self.subTest(entries=entries), self.assertRaisesRegex(r.ReleaseError, 'EXACT_VENDORED_ADAPTER_ENTRIES'):
++                r.adapter_files(self.cfg, entries)
++
++    def test_failed_resolve_has_no_npm_or_other_fallback(self):
++        with patch.object(r.subprocess, 'run', return_value=r.subprocess.CompletedProcess([], 1, b'', b'failed')) as run:
++            with self.assertRaisesRegex(r.ReleaseError, 'FRESH_ADAPTER_RESOLVE_REQUIRED'):
++                r.transport(self.cfg)
++        self.assertEqual(run.call_count, 1)
++        self.assertIn("require.resolve(b+'/modules/'+n)", run.call_args.args[0][2])
++
++    def test_missing_root_package_never_drops_pin_or_falls_back(self):
++        (self.cfg.pm2_base/'package.json').unlink()
++        with self.assertRaises(FileNotFoundError):
++            r.transport(self.cfg)
++        self.assertEqual(len(self.calls), 1)
++
++    def test_missing_index_is_refused(self):
++        (self.roots[0]/'index.js').unlink()
++        with self.assertRaisesRegex(r.ReleaseError, 'ADAPTER_INDEX_FILE_REQUIRED'):
++            r.adapter_files(self.cfg, self.entries)
++
++    def test_rpc_arguments_keep_original_specifiers_and_all_source_pins(self):
++        tr = r.transport(self.cfg); real_fake = self.fake_run; rpc_args = []
++        def run(command, **kwargs):
++            if command[2] == r.RPC:
++                rpc_args.append(r.decode(command[3].encode()))
++                return r.subprocess.CompletedProcess(command, 0, b'[]', b'')
++            return real_fake(command, **kwargs)
++        with patch.object(r.subprocess, 'run', side_effect=run):
++            self.assertEqual(r.rpc(self.cfg, tr), [])
++        self.assertEqual(len(rpc_args), 1)
++        self.assertEqual(rpc_args[0]['pins'], tr['sources'])
++        self.assertEqual(rpc_args[0]['base'], str(self.cfg.pm2_base))
++        self.assertFalse(rpc_args[0]['reload'])
++        self.assertIn("require(a.base+'/modules/pm2-axon')", r.RPC)
++        self.assertIn("require(a.base+'/modules/pm2-axon-rpc')", r.RPC)
++        self.assertIn('for(const [p,h] of Object.entries(a.pins))', r.RPC)
++        self.assertNotIn('node_modules', r.RPC)
++        # Argument preservation only; never an actual RPC usability assertion.
++
+ 
+ if __name__ == '__main__':
+     unittest.main()

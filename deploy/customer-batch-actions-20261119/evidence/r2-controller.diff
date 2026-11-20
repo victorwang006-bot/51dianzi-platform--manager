@@ -1,0 +1,85 @@
+--- release.py@7fc9ec42ce21f6d0167b36ffbbe7642865a16f70fc31f8b99bf0da4862598423
++++ release.py@d6f724847e205005060b6d11e0b15d7e31ba0ce373119187d062aba437e4cdec
+@@ -24,7 +24,7 @@
+ from dataclasses import dataclass
+ 
+ OWNER = '6Lfttf6oVWJ8YS69o5FkXQ'
+-SCOPE = 'customer-batch-actions-20261120-6Lfttf6o'
++SCOPE = 'customer-batch-actions-20261120-6Lfttf6o-R2'
+ API_BASE = '/opt/releases/20261110-customer-workbench-b7f3a2a7e317'
+ FRONT_API = API_BASE + '/front/dist/index.js'
+ ADMIN_API = API_BASE + '/admin/dist/index.js'
+@@ -418,6 +418,38 @@
+ c.call('getMonitorData',{},(err,rows)=>{try{if(err)throw Error('monitor');verify();if(!a.reload){done=true;process.stdout.write(JSON.stringify(rows),()=>{req.close();process.exit(0)});return}target(rows);c.call('reloadProcessId',{id:a.id,env:{}},(err)=>{try{if(err)throw Error('reload');verify();done=true;process.stdout.write('{}',()=>{req.close();process.exit(0)})}catch(_){fail()}})}catch(_){fail()}})}catch(_){fail()}
+ '''
+ 
++def adapter_files(cfg, entries):
++    """Pure fixed vendor closure snapshot, not guessed npm package metadata.
++    Only the two measured absolute index.js resolutions are accepted. Every
++    file and directory (including lib and empty dirs) is full-META bound;
++    symlinks, hardlinked files, special entries and enumeration drift refuse.
++    Actual transitive dependencies remain protected by full pm2_base inventory.
++    """
++    roots = [cfg.pm2_base / 'modules' / n for n in ('pm2-axon', 'pm2-axon-rpc')]
++    need(isinstance(entries, list) and entries == [str(p / 'index.js') for p in roots],
++         'EXACT_VENDORED_ADAPTER_ENTRIES')
++    out = {}
++    def visit(p, root):
++        p = no_link(p)
++        need(p == root or root in p.parents, 'ADAPTER_TREE_ESCAPE')
++        record = describe(p)
++        need(record['kind'] in ('file', 'directory'), 'ADAPTER_FILE_OR_DIRECTORY_ONLY')
++        if record['kind'] == 'file':
++            need(record['nlink'] == 1, 'ADAPTER_SINGLE_REGULAR_REQUIRED')
++        out[str(p)] = record
++        if record['kind'] == 'directory':
++            children = sorted(p.iterdir())
++            for child in children:
++                visit(child, root)
++            need(sorted(p.iterdir()) == children and describe(p) == record,
++                 'ADAPTER_ENUMERATION_META_DRIFT')
++    for root in roots:
++        root = no_link(root)
++        need(describe(root)['kind'] == 'directory', 'ADAPTER_DIRECTORY_REQUIRED')
++        visit(root, root)
++        need(out.get(str(root / 'index.js'), {}).get('kind') == 'file', 'ADAPTER_INDEX_FILE_REQUIRED')
++    return dict(sorted(out.items()))
++
+ def transport(cfg):
+     sock = cfg.pm2_home / 'rpc.sock'
+     r = describe(sock)
+@@ -427,26 +459,27 @@
+     os.kill(int(pid), 0)
+     need((cfg.proc / str(int(pid))).is_dir(), 'DAEMON_PROC_REQUIRED')
+     sources = [cfg.node, cfg.pm2_base / 'lib/God/Reload.js', cfg.pm2_base / 'lib/Daemon.js',
+-               cfg.pm2_base / 'modules/pm2-axon/package.json',
+-               cfg.pm2_base / 'modules/pm2-axon-rpc/package.json']
++               cfg.pm2_base / 'package.json']
+     resolved = subprocess.run([str(cfg.node), '-e',
+         "const b=process.argv[1];process.stdout.write(JSON.stringify(['pm2-axon','pm2-axon-rpc'].map(n=>require.resolve(b+'/modules/'+n))))",
+         str(cfg.pm2_base)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
+     need(resolved.returncode == 0, 'FRESH_ADAPTER_RESOLVE_REQUIRED')
+     entries = decode(resolved.stdout)
+     need(isinstance(entries, list) and len(entries) == 2, 'EXACT_ADAPTER_ENTRIES')
+-    for entry in entries:
+-        p = no_link(Path(entry))
+-        need(cfg.pm2_base in p.parents, 'ADAPTER_ENTRY_ESCAPE')
+-        sources.append(p)
++    adapters = adapter_files(cfg, entries)
++    sources.extend(Path(p) for p, record in adapters.items() if record['kind'] == 'file')
+     pins = {str(p): H(regular(p)) for p in sources}
++    need(all(pins[p] == record['sha256'] for p, record in adapters.items()
++             if record['kind'] == 'file'), 'ADAPTER_SOURCE_SNAPSHOT_DRIFT')
+     # Node cluster primary implementation binds the specifically allowed NODE_UNIQUE_ID exception.
+     result = subprocess.run([str(cfg.node), '-e',
+         "process.stdout.write(process.binding('natives')['internal/cluster/primary'])"],
+         stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
+     need(result.returncode == 0 and b'NODE_UNIQUE_ID' in result.stdout, 'NODE_CLUSTER_SOURCE_REQUIRED')
++    need(adapter_files(cfg, entries) == adapters, 'ADAPTER_FULL_META_SET_DRIFT')
+     return dict(socket=r, daemonPid=int(pid), pidfile=describe(cfg.pm2_home / 'pm2.pid'),
+-                sources=pins, nodeClusterPrimarySha256=H(result.stdout), rpcSourceSha256=H(RPC.encode()))
++                sources=pins, fullAdapterMeta=adapters,
++                nodeClusterPrimarySha256=H(result.stdout), rpcSourceSha256=H(RPC.encode()))
+ 
+ def rpc(cfg, tr, reload_row=None):
+     need(transport(cfg) == tr, 'SOCKET_ADAPTER_SOURCE_DRIFT')

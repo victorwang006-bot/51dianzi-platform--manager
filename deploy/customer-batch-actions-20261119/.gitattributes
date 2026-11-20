@@ -1,2 +1,5 @@
 # Unified-diff blank context lines intentionally contain their context prefix.
-evidence/adaptation.diff -whitespace
+evidence/*.diff -whitespace
+# Raw unittest progress output can end in a space before an injected error.
+# Preserve logged bytes; actual Python/TypeScript source whitespace remains checked.
+evidence/*-tests*.txt -whitespace

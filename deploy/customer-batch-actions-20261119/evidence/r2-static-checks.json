@@ -1,0 +1,33 @@
+{
+  "captureExecuted": false,
+  "dynamicExternalDependencyAuditPassed": false,
+  "memoryCompilePassed": true,
+  "nodeGodDaemonSourcesUnchanged": true,
+  "parentProvidedSourceProof": {
+    "modules__pm2-axon-rpc__index.js": {
+      "localPath": "/home/ubuntu/work/customer-batch/adapter-source/modules__pm2-axon-rpc__index.js",
+      "sha256": "f5177ff52b4950dc70c5957b677909d34d2bcd9aca797a1a72244d92a4bfb656",
+      "size": 84,
+      "source": "parent-provided readonly production evidence; locally hash-checked only"
+    },
+    "modules__pm2-axon__index.js": {
+      "localPath": "/home/ubuntu/work/customer-batch/adapter-source/modules__pm2-axon__index.js",
+      "sha256": "564748a7a82ddd5cf0e2fbc4204556d1b5078ceea2eba651fb183f8e2c43f4ab",
+      "size": 36,
+      "source": "parent-provided readonly production evidence; locally hash-checked only"
+    },
+    "package.json": {
+      "localPath": "/home/ubuntu/work/customer-batch/adapter-source/package.json",
+      "sha256": "f2819cffb2aae16bb813596575410877570a253be11949260caa33c8038788d6",
+      "size": 3718,
+      "source": "parent-provided readonly production evidence; locally hash-checked only"
+    }
+  },
+  "productionAccess": false,
+  "pycacheCreated": false,
+  "realRpcExecuted": false,
+  "rpcConstantUnchanged": true,
+  "status": "offline-static-checks-passed-not-approved",
+  "transportNonPinSocketDaemonResolveNodeClusterStatementsUnchanged": true,
+  "vendorLibSourcesAvailableLocally": false
+}

@@ -1,64 +1,57 @@
-# 客户批次发布控制器：离线恢复与安全单测
+# 客户批次发布控制器：R3 限定源码与隔离反例
 
-## 结论
+## 状态：NOT_APPROVED（2026-11-20）
 
-已从优先私有原版 `release-07188c50996a3b6b.py` 恢复 `release.py`，适配完整 OWNER `6Lfttf6oVWJ8YS69o5FkXQ` 和新 SCOPE `customer-batch-actions-20261120-6Lfttf6o`。默认 stage 因而为全新 `/opt/ops/customer-batch-actions-20261120-6Lfttf6o`，**本次没有创建或操作此远程目录，也没有复用任何旧 stage**。
+R2 `d6f724847e205005060b6d11e0b15d7e31ba0ce373119187d062aba437e4cdec` 已被独立审确认不可发布：固定保护图遗漏 `/var/lib/dianzi51-private`；真实 PM2 cluster fork 将必变顶部 `pm_uptime` 放入 serialized `pm2_env`，R2 只准 outer `NODE_UNIQUE_ID` 的算法必然误判正常 reload。R2 审计在 `/home/ubuntu/work/customer-batch/review-r2-independent.md` 和 `.json`，不是 R3 批准。
 
-**43 项隔离安全单测通过**，离线 `compile()` 通过且未生成 pycache。测试只使用独立 `TemporaryDirectory` 的合成数据；不会调用 `capture()`，生产 subprocess / HTTP / reload 适配器被阻断，RPC 被合成 monitor 数据替代。未运行 SSH、生产 CLI、生产写入/reload/capture/锁操作、MCP、Git commit/push。不能把这些单测当作新真实发布全流程或生产发布批准。
+R3 OWNER 完整保持 `6Lfttf6oVWJ8YS69o5FkXQ`；SCOPE 为 **`customer-batch-actions-20261120-6Lfttf6o-R3`**，默认 stage 仅因此派生为 `/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R3`。没有创建或操作远程 stage。当前准确 controller/preparer/tool SHA 见 `evidence/r3-source-and-safety.json`；preparer 固 pin 与 controller 字节相符，不重用 R2 capture、旧 scope、旧 pin 或丢失的 capture JSON。
 
-提供的现网上下文仍是前台 `recovery-required`、`shared_release_active=true`、旧 owner `XM2KNK1v`。本次没有读取或改变现网。**不得凭本报告解除该暂停；必须由前台责任方独立恢复并形成完整关闭证明，再另行获得操作授权。**
+本轮只修改六个许可 Python/测试/README 文件及 `evidence/r3-*`。不修改业务、UI、JS builder；不执行真实构建器、Git、SSH、MCP、生产访问或 release CLI。测试里的 apply/preflight/verify/rollback、锁、CAS、receipt 和 reload 全部发生在独立临时目录与 mock adapters 中，不是实际发布流程。
 
-## 恢复依据及 SHA
+## 最小保护图修正
 
-原代码只读保留在 `/home/ubuntu/work/customer-batch/original-controllers/release-07188c50996a3b6b.py`，SHA 已核对：
+`Config.extra_protected` 在原两个 `/opt/config/.../runtime.env` 后追加准确 **`Path('/var/lib/dianzi51-private')`**。没有替换原保护，没有扩大整个 `/var/lib`，没有修改或删除主任务的 technical-store handoff guard。
 
-```text
-原版 07188:
-07188c50996a3b6b90c0f255c054a34e72de815706910d6395ac7ef6eb8cc0ae
-仅替换 OWNER/SCOPE 两行的内存中间版本:
-7ced926b88f3e9bb09fb2c892ec6d55a95b4b288685117d5be35b47294d8a8cb
-最终 release.py:
-7fc9ec42ce21f6d0167b36ffbbe7642865a16f70fc31f8b99bf0da4862598423
-```
+原 `union`、`inventory` 的 AST 不变。新根经既有完整递归 inventory 纳入根、文件、目录、空目录、links/targets、完整 META 与精确路径集合，包含 `official-technical/prepared-v1.json`；任何新增/删除、权限或内容漂移仍由完整 snapshot/guard 阻断。七个原 aliases、全部 runtime/env、Node、整个 PM2 base、nginx/flags、其它脚本与原主存储保护均保留。
 
-`evidence/source-and-safety.json` 记录完整来源、测试 SHA 和静态边界核对；`evidence/adaptation.diff` 是相对 07188 的差异；`evidence/offline-tests.txt` 保存测试结果。历史比较保留了 07188 的历史 `protectedFiles` 非负计数兼容，以及确切的 PM2 adapter package 元数据 pin；没有退回 3edd/e0d。
+## 源码绑定与 Node 启动环境
 
-## 保留的固定协议
+原绝对 RPC specifiers、RPC 字符串、require.resolve-only 探针、existing socket/daemon 校验、调用参数及 no-fallback 行为保持。原 Node、`lib/Daemon.js` pin 与两个 vendor 全部 source/dirs/fullMETA/set 保留；整个 `cfg.pm2_base` inventory 不削弱。
 
-固定生产路径没有泛化，CLI 不能指定 mock/替换生产配置。原 `Config`、CAS、固定 RPC、transport、完整 inventory、12 槽 identity、manifest/source/review payload 校验与 patch scope 的 AST 均与 07188 相同。继续要求 fresh 完整 META、12 个唯一在线进程、7 个固定链接、两 API/后台 HTML/两新 JS/scoped CSS 的限定内容边界，只允许 4 front + 2 admin 捕获槽逐一滚动，源码和 manifest/review 封印、现有双锁、完整字节与 META CAS。
+R3 固定八份已读实际生成/重置源 SHA：`lib/God.js`、`lib/God/ClusterMode.js`、`lib/God/Reload.js`、`lib/God/Methods.js`、`lib/Utility.js`、`lib/ProcessContainer.js`、`constants.js`、PM2 root `package.json`。漂移即拒绝，不重新猜测规则。执行任何 Node `-e` 前，Python 只读断言 root `NODE_OPTIONS` 与 `NODE_PATH` 均缺失或空；非空立即拒绝，不 unset、不替换 subprocess 环境、不 fallback。
 
-任何 `receipt` 目录（空目录、失败尝试或 symlink 也包括）都会拒绝再次 apply/preflight。恢复 journal 必须显式 pin 当前 attempt 和最新连续 hashchain state；不能使用过期 state、篡改历史、猜测 ownership 或自动重放。
+主任务交接的实际六槽布尔关系证据为 `/home/ubuntu/work/customer-batch/pm2-relations-readonly.json`：identity 全匹配、五个顶部数字字段与 monitor 匹配、这些字段无 app.env override、app.pm2_env override 不存在、root/六槽 loader flags 空。只读 RPC 依赖闭包 `/home/ubuntu/work/customer-batch/pm2-dependency-closure/closure.json` 的 31 records / 62 edges 已逐文件核对 SHA/size，dynamic/unresolved/outsidePm2Base 均空。它只证明交接时两 vendor RPC 的 literal require 解析闭包，不是实际 R3 capture 或发布批准，也不是 God 生成链所有依赖的语义证明。
 
-## 本次重点补强
+## 仅 serialized PM2 顶部的精确转换
 
-1. **rename 记忆顺序**：保留原 CAS 中 `os.replace` 后立即调用 `remember(describe(p))`，在目标目录 fsync 前更新内存。测试验证目标目录 fsync 故障后仍持有新字节/META，可在临时目录内用新的完整 CAS 恢复；file/coord 的 checkpoint 故障也必须保留 rename 后内存，而不能误以为旧目标仍在。
-2. **raw 环境只准一项例外**：只对固定 own 槽的 semantic hash 去除唯一、十进制的外层 `NODE_UNIQUE_ID`。非重载槽仍要求 `rawSha256` 完全一致；只有被 journal 证明的 own 单槽重载事件才能接受对应 lifecycle raw 变化。保留 `NODE_APP_INSTANCE`、`NODE_CHANNEL_FD`、nested `pm2_env` 原值以及全部其他 raw key/value，连看似 lifecycle 的环境名也不剥离。权限 hash 独立保留；其他 11 槽逐次精确比较。
-3. **恢复批准独立且 fresh**：rollback 不受原 capture 过期阻碍，但批准必须包含 `approvedAtUtc`（带时区、非未来、900 秒内）和 `ttlSeconds=900`，并绑定 common pins、attempt、最新 state、outcome、packageFiles、targets、仅已加载槽和保留资产。每次 recovery guard 都再次检查时间、批准原始文件 SHA、批准对象与 reviewer report SHA。缺字段、过期、自审、漂移均拒绝。
-4. **成功证明不能靠 status**：`durable_success()` 在 receipt 文件与目录 fsync、读回之后，再核对实际完整关闭 coordinator raw SHA、owner/attempt/review/capture/manifest 绑定、完整 history 末项、durable 最新 state 和 attempt，以及目标与 loaded slots 完整性。公开 verify 也重新证明；仅见 `status=verified/closed`、错 raw SHA、错 journal 或错误健康均不能成功。
-5. **失败只保持 own hold**：失败不会自动 rollback，也不删资产、不清外部锁、不改外部 coord。只有本进程已持正确双锁、窗口属于完整当前 attempt，且实际 coord 字节/META 与最后内存精确匹配时，才允许窄 CAS 标记 own `recovery-required` hold。关闭后 receipt 证明失败也不放行；若无法证明 hold，failure 明示 `successProven=false`、`holdProofError` 和须人工恢复。failure receipt 本身写失败则公开方法明确返回 `*_RECOVERY_REQUIRED_FAILURE_RECEIPT_UNPROVEN`。
-6. **日志不确定性封闭**：checkpoint 创建或目录 fsync 失败会标记 `journalDurabilityUncertain` 和 pending SHA，阻断同对象后续 guard/checkpoint/retry；失败报告保留该事实。不会把已存在的半成功日志覆盖为“重试成功”。
+`pm2_top_tokens` 先严格解析完整 JSON，拒绝任意深度 duplicate key、非 finite 值、错误容器/类型；随后只定位顶部 value token。`pm2_project` 只替换五个源码定义字段的规范安全整数 token：`pm_uptime`、`restart_time`、`created_at`、`unstable_restarts`、`prev_restart_delay`。不删除 key、不排序、不递归重编码，不忽略新增/删除字段或 whitespace/key-order/escape 差异。
 
-## 离线复核
+**这不是通用 LIFECYCLE 删名规则。** 只有固定 own cluster 槽、name/id/script/cwd/mode/version 与当前 monitor 精确匹配的 serialized 容器可取得投影。稳定 `pm_id` exact；generated/identity/container override、类型/coercion 歧义、错误身份拒绝。完整 `pm2_env.env`、其它 nested 值与 nested `NODE_UNIQUE_ID`、应用同名字段、其它 outer raw/opaque string 都逐字节保留。outer `NODE_UNIQUE_ID` 仍限唯一十进制 Node 槽 id，六 own unique 不能碰撞。
 
-仅运行以下本地单测，不执行 release CLI：
+read-current-model/raw 另存不含环境值的 `pm2RawMeta` 和 `pm2ReloadReady`。五字段当前值必须对应 monitor，才可记录；restart_time 不能由 env 覆盖后假装 +1。缺少非首次启动的 reset 字段、monitor 后加字段、预测输出的任意 retained-byte/order/escape 差异产生 not-ready；reload 在写 intent 和调用 adapter 前即拒绝。Python model→fork serialization 仅作保守的 byte-equality 阻断检查，绝不覆盖实际 retained application bytes，也不声称等价于未经审证的实际 JS clone/stringify。
+
+只有绑定当前持久 attempt/准确单 slot intent，PID 改变、restart_time=old+1、Node unique 合法增加、created_at/pm_uptime 落在意图至观测时间范围且顺序合法、unstable_restarts=0、prev_restart_delay=0，并且其余十一槽、source、permissions、全 inventory/META/set exact 时才接受。未滚动 own 槽与其它六槽仍要求完整 raw SHA exact。
+
+## 持久观测与恢复边界
+
+事件新增前/后 PM2 raw metadata、attempt SHA、intent state SHA/sequence 和观测时间。state invariants 读回持久 intent，验证完整十二槽 before 状态、前序 events/loaded 链、准确 API 版本与 current attempt；部分 journal、错槽、旧意图或只伪造 loadedSlots 不能成为观测证明。写 observed event 之前额外证明实际完整 snapshot/source/META/set exact。
+
+非法观测只留下已经持久写入的 intent，不把意图改成成功、不给 loadedSlots 重基线、不能自动解锁或继续。原 uncertain reload、journal fsync 不确定、人工 recovery/rollback 的安全流程保留；原预算、TTL=900、noReplay、receipt 实际闭窗证明、锁/CAS/权限、health 与所有其它业务发布协议不变。具体 AST 保留证据见 `evidence/r3-ast-diff.json`，逐函数源码差异见 `evidence/r3-controller.diff`。
+
+## 离线复核与证据
 
 ```bash
 cd /home/ubuntu/51-manager/deploy/customer-batch-actions-20261119
 PYTHONDONTWRITEBYTECODE=1 python3 -B test_release.py -v
+PYTHONDONTWRITEBYTECODE=1 python3 -B test_prepare_local.py -v
 ```
 
-测试实际调用 public `bundle/preflight/apply/verify/rollback` 与相应 guard/CAS/journal 方法，覆盖源码/manifest/review 封印、raw 唯一例外及其它环境/权限漂移拒绝、完整 coord 关闭/外部 fields/历史保留、preflight 零写、foreign recovery busy 和外部双锁 busy 拒绝、不可重放、rename/fsync/journal CAS 故障、fresh 恢复批准、关闭后回执失败与实际 raw 绑定。合成 apply/reload 只是本地控制器协议测试；合成恢复成功案例仅为 baseline-only own 恢复，不等于真实六槽发布/恢复验收。
+本轮 controller **89/89**、preparer **32/32** 隔离 mock 单测通过，完整日志为 `evidence/r3-release-tests.txt` 和 `evidence/r3-prepare-tests.txt`。原 60/30 测试方法全部保留（只同步新 schema/pins/fixture）；新增反例拒绝 outer 同名应用值、env 内 life-looking 值、nested/opaque 或其转义字节变化、错 identity、duplicate key、类型、未证 top 字段、多 slot、未滚动 raw、source 漂移、部分 journal 伪观测及 loader flags。PM2 已读生成源码只复制到临时 fixture 做内容 pin，不运行这些模块。
 
-## 缺失与阻碍
+`evidence/r3-baseline-release.py` 保存准确 d6 基线；六文件基线及前后 SHA、精确 AST 差量、完整测试日志与阶段报告均在 `evidence/r3-*`。历史 `evidence/r2-*` 及更旧证据未修改。首次扩展测试的失败日志也保留：本地 sandbox 的 NODE_OPTIONS 非空被正确拒绝，随后仅纯 mock fixture 使用临时 patch 并完整恢复本地环境；控制器没有清洗环境来放行。
 
-未运行真实三个 JS 构建器，未验证真实客户源码编译/AST/ABI 或独立 reviewer 的判断，也没有新真实 release package、生产 PM2/Node/RPC、实际监听器/HTTPS、真实 UID/GID 的全链路证据。严格 raw 语义可能在真实 PM2 序列化环境有其它漂移时阻断；这是刻意 fail-closed，不能借部署时机扩大例外。日志或目录 fsync 不确定可能需要独立授权的人工取证恢复，不能通过重放、rebase、强制解锁或旧 stage 接管绕过。
+## 剩余阻碍：不能由 mock 成功改成 APPROVED
 
-**共享目录变化需主任务核对**：本子任务未写入或执行任何 JS；`backend-builder.cjs` 与 `backend-test.cjs` 前后 SHA 一致。但观察到 `build-native.mjs` 从 `d5afe1fb…` 变为 `99dfe488…`，且 Git 显示其外部变化。本子任务没有回退该文件。前后完整 SHA 在 evidence 中，主任务需确认其它共享执行的变更归属，不能据本报告宣称三个构建器整体未变。
+实际六槽的五数字关系证据并未给出全部 retained raw/model 字节 forecast、`prev_restart_delay`、autostart/status/axm 等全部规则的实际满足证明；不以正常 reload 试错补证。Utility.clone 的 `modules/fclone` 源不在当前生成 records 或两 vendor RPC 闭包，Python deepcopy 不是这项源码语义证据。若任一字段/clone/byte-order 规则仍无法证明，必须 fail closed，而非加白名单或递归 canonicalize。
 
-## 主任务接续补充
-
-`build-native.mjs` 的变化由主任务有意新增 `--verify-sources`：只编译既有七个客户叶并检查嵌入失败编辑器，没有生产读取、捕获或写入。2026-11-20已实际运行并通过，无未绑定新标识符或新运行时导入；结果另存 `evidence/source-abi.json`。这只证明源码/native绑定可编译，不代替真实现网ABI、全量META、候选逆向证据及最终独立发布审核。
-
-后台历史失败编辑入口已补齐原列/附注和当前编辑值导出，删除及批次查看沿用原实现。最终五个修改测试文件77项通过；其它原行为八文件238项通过（有交集不加总）。所有测试使用隔离fixture且不连接生产数据库。原控制器安全测试证据保持原样，不能将其子任务的零SSH声明误读为整个主任务：主任务曾仅定向只读取回原三个控制器源码，服务器写入/重载/捕获/锁操作仍为0。
-
-保存源码与生产上线分开。前台任务当前优先持有恢复/发布流程；未收到前台最终verified closed实际回执和明确交接，本任务不得运行capture/preflight/apply。后续必须新鲜现网重建、复审并定向发布，不重放旧stage，不全量覆盖dist，不触生产物料或DDL。
+仍需 R3 当次实际完整 fresh capture/fullMETA/private tree 与前台保护集合绑定、真实 new package/manifest/packageFiles、owner/nonce/source/tool pins、fresh API/UI 正逆字节与独立差量审；不得把旧 R2/种子审计或 mock 通过移植为批准。本轮没有正式 approval、实际 capture、封印、receipt、window、active write 或 reload。**controllerApproved=false；finalDeployApproval=false；NOT_APPROVED。**

@@ -1,0 +1,1140 @@
+--- d6-baseline/release.py
++++ R3/release.py
+@@ -24,7 +24,7 @@
+ from dataclasses import dataclass
+ 
+ OWNER = '6Lfttf6oVWJ8YS69o5FkXQ'
+-SCOPE = 'customer-batch-actions-20261120-6Lfttf6o-R2'
++SCOPE = 'customer-batch-actions-20261120-6Lfttf6o-R3'
+ API_BASE = '/opt/releases/20261110-customer-workbench-b7f3a2a7e317'
+ FRONT_API = API_BASE + '/front/dist/index.js'
+ ADMIN_API = API_BASE + '/admin/dist/index.js'
+@@ -207,7 +207,8 @@
+     pm2_base: Path = Path('/usr/local/lib/node_modules/pm2')
+     node: Path = Path('/usr/bin/node-22')
+     extra_protected: tuple = (Path('/opt/config/dianzi51-admin/runtime.env'),
+-                              Path('/opt/config/dianzi51/runtime.env'),)
++                              Path('/opt/config/dianzi51/runtime.env'),
++                              Path('/var/lib/dianzi51-private'),)
+     extra_links: tuple = ()
+     mock: bool = False  # never selectable by CLI
+ 
+@@ -378,7 +379,22 @@
+     # No recursive application-value interpretation or stripping.
+     return {k: value for k, value in v.items() if k not in LIFECYCLE}
+ 
+-def raw_semantics(data, own=False):
++# These measured generating/reset sources define the ONLY serialized exceptions.
++# Node/Daemon and both complete vendor trees remain separately source/META pinned.
++PM2_GENERATION_PINS = {
++    'lib/God.js': 'f598e5113890418827e31dd52fc3538e8f19287fad212cafd9388b0216fe500d',
++    'lib/God/ClusterMode.js': 'b4a9304e12f468f87a039c174c6ea4a1001f21d9dd1f5317121ed217bc389119',
++    'lib/God/Reload.js': '5e90112e447c4634009ea35005ffd477aab93064f55390288c56b51eee25992e',
++    'lib/God/Methods.js': '577a8505074225dfe73ce2c955c844662c6bc9d76c31d8102f809a1691262044',
++    'lib/Utility.js': '66cd15711be69f40f6ee3c3f60adcf07e58d0bcdec9552ec5104530b22ba28f1',
++    'lib/ProcessContainer.js': '712b414f248a460f58d4365898fa7b27d39bf7f571ac889359e3a7b6a32419d1',
++    'constants.js': '5a4adce0c3c277d4974c0ebdefb22d62ffcad74edcf910bfeeff287dacb8a853',
++    'package.json': 'f2819cffb2aae16bb813596575410877570a253be11949260caa33c8038788d6',
++}
++PM2_RAW_GENERATED = ('pm_uptime', 'restart_time', 'created_at',
++                     'unstable_restarts', 'prev_restart_delay')
++
++def raw_values(data):
+     need(data.endswith(b'\0'), 'RAW_NUL_REQUIRED')
+     values = {}
+     for entry in data[:-1].split(b'\0'):
+@@ -386,15 +402,134 @@
+         k, v = entry.split(b'=', 1)
+         need(k and k not in values, 'RAW_DUPLICATE_OR_EMPTY')
+         values[k] = v
++    return values
++
++def raw_semantics(data, own=False, serialized=None):
++    values = raw_values(data)
+     if own:
+         need(b'NODE_UNIQUE_ID' in values and re.fullmatch(rb'[0-9]+', values[b'NODE_UNIQUE_ID']),
+              'OWN_OUTER_NODE_UNIQUE_ID_DECIMAL')
+-        del values[b'NODE_UNIQUE_ID']  # ONLY the real outer Node cluster lifecycle key
+-    # All other raw environment values are byte-bound, including apparent PM2
+-    # lifecycle names and nested JSON. Non-reloaded slots also require rawSha256.
++        del values[b'NODE_UNIQUE_ID']
++        if serialized is not None:
++            need(b'pm2_env' in values, 'PM2_SERIALIZED_CONTAINER_REQUIRED')
++            values[b'pm2_env'] = serialized
++    # No recursive canonicalization: each retained value is its original byte string.
+     norm = {k.decode('utf8', 'surrogateescape'): v.decode('utf8', 'surrogateescape')
+             for k, v in values.items()}
+     return H(encode(norm))
++
++def pm2_top_tokens(raw):
++    """Strict JSON first; then locate just top value spans without re-encoding them."""
++    value = decode(raw)
++    need(isinstance(value, dict), 'PM2_SERIALIZED_OBJECT')
++    try:
++        text = raw.decode('utf8')
++        scanner = json.JSONDecoder()
++        def ws(i):
++            while i < len(text) and text[i] in ' \t\r\n':
++                i += 1
++            return i
++        i = ws(0)
++        need(text[i:i+1] == '{', 'PM2_TOP_OBJECT')
++        i = ws(i+1); spans = {}
++        while text[i:i+1] != '}':
++            key, i = scanner.raw_decode(text, i)
++            need(isinstance(key, str) and key not in spans, 'PM2_TOP_KEY')
++            i = ws(i); need(text[i:i+1] == ':', 'PM2_TOP_COLON')
++            a = ws(i+1); _, b = scanner.raw_decode(text, a)
++            spans[key] = (a, b)
++            i = ws(b)
++            if text[i:i+1] == '}':
++                break
++            need(text[i:i+1] == ',', 'PM2_TOP_COMMA'); i = ws(i+1)
++        need(text[i:i+1] == '}' and ws(i+1) == len(text) and set(spans) == set(value),
++             'PM2_TOP_COMPLETE')
++        return value, text, spans
++    except (ValueError, UnicodeError, IndexError) as exc:
++        raise ReleaseError('PM2_TOP_INVALID') from exc
++
++def pm2_project(raw):
++    value, text, spans = pm2_top_tokens(raw)
++    replacements = []
++    for key in PM2_RAW_GENERATED:
++        if key in value:
++            a, b = spans[key]
++            need(integer(value[key]) and 0 <= value[key] < 2**53
++                 and re.fullmatch(r'0|[1-9][0-9]*', text[a:b]), 'PM2_GENERATED_INTEGER_TOKEN')
++            replacements.append((a, b))
++    for a, b in sorted(replacements, reverse=True):
++        text = text[:a] + '0' + text[b:]
++    return text.encode('utf8')
++
++def pm2_raw_binding(raw, model):
++    """Source-defined narrow proof; unresolved monitor/fork bytes yield not-ready.
++    No new/deleted top field, application escape or opaque byte gets an exception.
++    """
++    outer = raw_values(raw)
++    need(b'pm2_env' in outer, 'PM2_SERIALIZED_CONTAINER_REQUIRED')
++    data = outer[b'pm2_env']; value, _, _ = pm2_top_tokens(data)
++    e = model['pm2_env']
++    need(isinstance(e, dict) and isinstance(e.get('env'), dict)
++         and isinstance(value.get('env'), dict), 'PM2_ENV_OBJECT_REQUIRED')
++    bindings = {'name': model['name'], 'pm_id': model['pm_id'],
++                'pm_exec_path': e['pm_exec_path'], 'pm_cwd': e['pm_cwd'],
++                'exec_mode': 'cluster_mode', '_pm2_version': '7.0.3'}
++    need(integer(model['pm_id']) and model['pm_id'] >= 0
++         and all(isinstance(bindings[k], str) and bindings[k] for k in
++                 ('name', 'pm_exec_path', 'pm_cwd'))
++         and all(k in value and encode(value[k]) == encode(v) for k, v in bindings.items())
++         and integer(e.get('pm_id')) and e['pm_id'] == model['pm_id']
++         and e.get('name') == model['name']
++         and e.get('exec_mode') == 'cluster_mode', 'PM2_RAW_IDENTITY_BINDING')
++    generated = set(PM2_RAW_GENERATED) | {'status', 'axm_actions', 'axm_monitor', 'axm_options', 'axm_dynamic'}
++    need(not (set(e['env']) & (set(bindings) | generated |
++              {'autostart', 'wait_ready', 'pm2_env', '__proto__'})),
++         'PM2_ENV_OVERRIDE_AMBIGUITY')
++    need(encode(value['env']) == encode(e['env']), 'PM2_RAW_MODEL_ENV_BINDING')
++    need(e.get('autostart') is True and ('wait_ready' not in e or e['wait_ready'] is False)
++         and value.get('autostart') is True
++         and ('wait_ready' not in value or value['wait_ready'] is False)
++         and value.get('status') == 'launching' and e.get('status') == 'online'
++         and value.get('axm_actions') == []
++         and all(value.get(k) == {} for k in ('axm_monitor', 'axm_options', 'axm_dynamic')),
++         'PM2_GENERATION_SOURCE_SHAPE')
++    need(all(k in value for k in ('pm_uptime', 'restart_time', 'created_at')),
++         'PM2_REQUIRED_GENERATED_FIELDS')
++    projected = pm2_project(data)
++    metadata = {k: value.get(k) for k in PM2_RAW_GENERATED}
++    need(all(k not in value or (k in e and encode(value[k]) == encode(e[k]))
++             for k in PM2_RAW_GENERATED), 'PM2_RAW_MODEL_GENERATED_BINDING')
++    need(metadata['pm_uptime'] > 0 and metadata['created_at'] > 0,
++         'PM2_GENERATED_TIME_POSITIVE')
++    # Conservative forecast of Reload -> resetState -> executeApp -> cluster.fork.
++    # Python serialization is used ONLY as a byte-equality gate, never to replace
++    # retained application bytes. A JS/Python escape/order difference blocks.
++    forecast = copy.deepcopy(e)
++    for k, v in e['env'].items():
++        need(not isinstance(v, (dict, list)), 'PM2_ENV_MERGE_COERCION_AMBIGUITY')
++        if v != '[object Object]':
++            forecast[k] = v
++    forecast.update(status='launching', pm_uptime=0, restart_time=0,
++                    created_at=0, unstable_restarts=0, prev_restart_delay=0,
++                    axm_actions=[], axm_monitor={}, axm_options={}, axm_dynamic={})
++    forecast['vizion_running'] = forecast.get('vizion_running', False)
++    forecast['_pm2_version'] = '7.0.3'
++    predicted = json.dumps(forecast, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf8')
++    ready = pm2_project(predicted) == projected
++    return raw_semantics(raw, True, projected), metadata, ready
++
++def pm2_meta_transition(before, after, earliest, latest):
++    exact(before, ' '.join(PM2_RAW_GENERATED), 'PM2_BEFORE_META_SCHEMA')
++    exact(after, ' '.join(PM2_RAW_GENERATED), 'PM2_AFTER_META_SCHEMA')
++    need(all(integer(v) and 0 <= v < 2**53 for v in before.values())
++         and all(integer(v) and 0 <= v < 2**53 for v in after.values()), 'PM2_TRANSITION_META_INTEGER')
++    need(after['restart_time'] == before['restart_time'] + 1
++         and earliest <= after['created_at'] <= after['pm_uptime'] <= latest
++         and after['pm_uptime'] > before['pm_uptime']
++         and after['created_at'] > before['created_at']
++         and after['unstable_restarts'] == after['prev_restart_delay'] == 0,
++         'PM2_SOURCE_DEFINED_EXACT_TRANSITION')
++
+ 
+ def permissions(cfg, pid):
+     fields = {}
+@@ -458,8 +593,10 @@
+     need(re.fullmatch(rb'[1-9][0-9]*', pid), 'DAEMON_PID_REQUIRED')
+     os.kill(int(pid), 0)
+     need((cfg.proc / str(int(pid))).is_dir(), 'DAEMON_PROC_REQUIRED')
+-    sources = [cfg.node, cfg.pm2_base / 'lib/God/Reload.js', cfg.pm2_base / 'lib/Daemon.js',
+-               cfg.pm2_base / 'package.json']
++    sources = [cfg.node, cfg.pm2_base / 'lib/Daemon.js',
++               *(cfg.pm2_base / n for n in PM2_GENERATION_PINS)]
++    need(all(os.environ.get(k) in (None, '') for k in ('NODE_OPTIONS', 'NODE_PATH')),
++         'ROOT_NODE_LOADER_ENV_NOT_EMPTY_NO_NODE_EXECUTION')
+     resolved = subprocess.run([str(cfg.node), '-e',
+         "const b=process.argv[1];process.stdout.write(JSON.stringify(['pm2-axon','pm2-axon-rpc'].map(n=>require.resolve(b+'/modules/'+n))))",
+         str(cfg.pm2_base)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
+@@ -469,6 +606,8 @@
+     adapters = adapter_files(cfg, entries)
+     sources.extend(Path(p) for p, record in adapters.items() if record['kind'] == 'file')
+     pins = {str(p): H(regular(p)) for p in sources}
++    need(all(pins[str(cfg.pm2_base/n)] == h for n, h in PM2_GENERATION_PINS.items()),
++         'PM2_GENERATION_SOURCE_PIN_DRIFT')
+     need(all(pins[p] == record['sha256'] for p, record in adapters.items()
+              if record['kind'] == 'file'), 'ADAPTER_SOURCE_SNAPSHOT_DRIFT')
+     # Node cluster primary implementation binds the specifically allowed NODE_UNIQUE_ID exception.
+@@ -516,11 +655,12 @@
+             need(str(port).isdigit() and 1 <= int(port) <= 65535 and not e.get('wait_ready')
+                  and ('PORT' not in child or str(child['PORT']) == str(port)), 'CAPTURE_LISTENER_PORT_REQUIRED')
+         raw = (cfg.proc / str(pid) / 'environ').read_bytes()
++        semantic, metadata, ready = pm2_raw_binding(raw, r) if own else (raw_semantics(raw), None, None)
+         out.append(dict(id=r['pm_id'], name=r['name'], pid=pid, status=e['status'],
+             script=e['pm_exec_path'], cwd=e['pm_cwd'], execMode=e['exec_mode'],
+             restarts=e.get('restart_time'), listenerPort=int(port) if own else None,
+             topConfigSha256=H(encode(top)), childConfigSha256=H(encode(child)),
+-            rawSha256=H(raw), semanticSha256=raw_semantics(raw, own),
++            rawSha256=H(raw), semanticSha256=semantic, pm2RawMeta=metadata, pm2ReloadReady=ready,
+             nodeUniqueId=int(next(v.split(b'=',1)[1] for v in raw[:-1].split(b'\0')
+                                  if v.startswith(b'NODE_UNIQUE_ID='))) if own else None,
+             permissionsSha256=permissions(cfg, pid)))
+@@ -531,7 +671,7 @@
+          and len({r['pid'] for r in rows}) == 12, 'TWELVE_UNIQUE_SLOTS')
+     for r in rows:
+         exact(r, 'id name pid status script cwd execMode restarts listenerPort topConfigSha256 '
+-              'childConfigSha256 rawSha256 semanticSha256 nodeUniqueId permissionsSha256', 'PROCESS_SCHEMA')
++              'childConfigSha256 rawSha256 semanticSha256 nodeUniqueId permissionsSha256 pm2RawMeta pm2ReloadReady', 'PROCESS_SCHEMA')
+         need(integer(r['id']) and integer(r['pid']) and r['pid'] > 0 and r['status'] == 'online'
+              and integer(r['restarts']) and r['restarts'] >= 0, 'PROCESS_ONLINE_IDENTITY')
+         for k in ('topConfigSha256', 'childConfigSha256', 'rawSha256', 'semanticSha256', 'permissionsSha256'):
+@@ -541,10 +681,19 @@
+         group = [r for r in rows if r['name'] == name]
+         need(len(group) == count and all(r['script'] == str(path) and r['execMode'] == 'cluster_mode'
+              and integer(r['listenerPort']) and 1 <= r['listenerPort'] <= 65535
+-             and integer(r['nodeUniqueId']) and r['nodeUniqueId'] >= 0 for r in group),
++             and integer(r['nodeUniqueId']) and r['nodeUniqueId'] >= 0
++             and type(r['pm2ReloadReady']) is bool and isinstance(r['pm2RawMeta'], dict)
++             and set(r['pm2RawMeta']) == set(PM2_RAW_GENERATED)
++             and r['pm2RawMeta']['restart_time'] == r['restarts']
++             and all(v is None or (integer(v) and 0 <= v < 2**53)
++                     for v in r['pm2RawMeta'].values()) for r in group),
+              'FRESH_UNIQUE_FIXED_EXEC_PATH_SCOPE')
+         need(len({r['listenerPort'] for r in group}) == 1, 'SINGLE_LISTENER_PORT_PER_API')
+         ids.extend(r['id'] for r in group)
++    need(all(r['pm2RawMeta'] is None and r['pm2ReloadReady'] is None
++             for r in rows if r['id'] not in ids), 'UNOWNED_RAW_NO_EXCEPTION')
++    need(len({r['nodeUniqueId'] for r in rows if r['id'] in ids}) == 6,
++         'OWN_NODE_UNIQUE_ID_COLLISION')
+     need(len(set(ids)) == 6, 'EXACT_SIX_OWN_SLOTS')
+     return ids
+ 
+@@ -1184,21 +1333,48 @@
+                      and stat.S_IMODE(current['statmode']) == 0o644 and current['uid'] == hm['uid']
+                      and current['gid'] == hm['gid'] and current['nlink'] == 1, 'STATE_IMMUTABLE_ASSET_BYTES_OWNER')
+         original = {x['id']:x for x in self.b['c']['processes']}
+-        expected = {i:dict(pid=x['pid'],restarts=x['restarts'],rawSha256=x['rawSha256'],nodeUniqueId=x['nodeUniqueId'])
++        expected = {i:dict(pid=x['pid'],restarts=x['restarts'],rawSha256=x['rawSha256'],nodeUniqueId=x['nodeUniqueId'],
++                          pm2RawMeta=x['pm2RawMeta'])
+                     for i,x in original.items()}
+         loaded = set()
+-        for e in st['events']:
++        for event_index, e in enumerate(st['events']):
+             exact(e, 'id rollback beforePid afterPid beforeRestart afterRestart observedPidChange transportPassed '
+-                  'apiSha256 beforeRawSha256 afterRawSha256 semanticSha256 beforeUniqueId afterUniqueId', 'EVENT_EXACT_SCHEMA')
++                  'apiSha256 beforeRawSha256 afterRawSha256 semanticSha256 beforeUniqueId afterUniqueId '
++                  'beforePm2RawMeta afterPm2RawMeta attemptSha256 intentStateSha256 intentSequence observedAtUtc',
++                  'EVENT_EXACT_SCHEMA')
+             i = e['id']
++            need(i in expected and e['beforePm2RawMeta'] == expected[i]['pm2RawMeta'],
++                 'STATE_PM2_META_CHAIN')
++            need(integer(e['intentSequence']) and e['intentSequence'] > 0
++                 and e['attemptSha256'] == self.attempt_hash, 'STATE_DURABLE_INTENT_ATTEMPT')
++            intent_raw = regular(self.cfg.receipt/('state-%06d.json' % e['intentSequence']))
++            intent = decode(intent_raw)
++            need(H(intent_raw) == pin(e['intentStateSha256'])
++                 and intent.get('attemptSha256') == self.attempt_hash
++                 and intent.get('sequence') == e['intentSequence']
++                 and all(intent.get(k) == v for k,v in self.common().items())
++                 and intent.get('operation') == (('rollback-reload-intent-' if e['rollback'] else 'reload-intent-') + str(i))
++                 and intent['state']['events'] == st['events'][:event_index]
++                 and intent['state']['transport'] == self.b['c']['transport']
++                 and intent['state']['processes'] == [dict(original[j], **expected[j]) for j in sorted(original)]
++                 and set(intent['state']['loadedSlots']) == loaded
++                 and len(intent['state']['loadedSlots']) == len(loaded)
++                 and (event_index == 0 or e['intentSequence'] > st['events'][event_index-1]['intentSequence']),
++                 'STATE_DURABLE_SINGLE_SLOT_INTENT')
+             need(i in self.b['ids'] and type(e['rollback']) is bool and type(e['transportPassed']) is bool
+                  and type(e['observedPidChange']) is bool and e['beforePid'] == expected[i]['pid']
+                  and e['beforeRestart'] == expected[i]['restarts'] and e['beforeRawSha256'] == expected[i]['rawSha256']
+                  and e['semanticSha256'] == original[i]['semanticSha256'], 'STATE_EVENT_TRANSITION_BINDING')
+             kind = 'front' if original[i]['script'] == str(self.cfg.front_api) else 'admin'
+             content = self.b['payload'][('before-' if e['rollback'] else 'after-')+kind+'-api.js']
+-            need(e['apiSha256'] == H(content), 'STATE_EVENT_ONLY_OWN_API_PAYLOAD')
++            need(e['apiSha256'] == H(content)
++                 and intent['state']['targets'][kind] == ('before' if e['rollback'] else 'candidate')
++                 and intent['state']['protectedFiles'][original[i]['script']]['sha256'] == e['apiSha256'],
++                 'STATE_EVENT_ONLY_OWN_API_PAYLOAD')
+             if e['observedPidChange']:
++                pm2_meta_transition(e['beforePm2RawMeta'], e['afterPm2RawMeta'],
++                    int(dt.datetime.fromisoformat(intent['recordedAtUtc']).timestamp()*1000),
++                    int(dt.datetime.fromisoformat(e['observedAtUtc']).timestamp()*1000))
+                 need(e['afterPid'] != e['beforePid'] and e['afterRestart'] == e['beforeRestart']+1
+                      and e['beforeUniqueId'] == expected[i]['nodeUniqueId']
+                      and integer(e['afterUniqueId']) and e['afterUniqueId'] > e['beforeUniqueId']
+@@ -1208,10 +1384,12 @@
+             else:
+                 need(e['afterPid'] == e['beforePid'] and e['afterRestart'] == e['beforeRestart']
+                      and e['afterRawSha256'] == e['beforeRawSha256']
+-                     and e['beforeUniqueId'] == e['afterUniqueId'] == expected[i]['nodeUniqueId'], 'STATE_NONTRANSITION_EXACT')
+-            expected[i] = dict(pid=e['afterPid'],restarts=e['afterRestart'],rawSha256=e['afterRawSha256'],nodeUniqueId=e['afterUniqueId'])
++                     and e['beforeUniqueId'] == e['afterUniqueId'] == expected[i]['nodeUniqueId']
++                     and e['beforePm2RawMeta'] == e['afterPm2RawMeta'], 'STATE_NONTRANSITION_EXACT')
++            expected[i] = dict(pid=e['afterPid'],restarts=e['afterRestart'],rawSha256=e['afterRawSha256'],
++                               nodeUniqueId=e['afterUniqueId'],pm2RawMeta=e['afterPm2RawMeta'])
+         need(set(st['loadedSlots']) == loaded and len(st['loadedSlots']) == len(loaded), 'STATE_LOADED_EVENT_PROOF')
+-        ignore = {'pid','restarts','rawSha256','nodeUniqueId'}
++        ignore = {'pid','restarts','rawSha256','nodeUniqueId','pm2RawMeta'}
+         need(set(original) == {x['id'] for x in st['processes']}, 'STATE_PROCESS_ID_SET')
+         for row in st['processes']:
+             old = original[row['id']]
+@@ -1424,10 +1602,12 @@
+         kind = 'front' if before['script'] == str(self.cfg.front_api) else 'admin'
+         need(before['script'] == str(self.cfg.apis[kind]) and self.st['targets'][kind] ==
+              ('before' if rollback else 'candidate'), 'RELOAD_ONLY_OWN_API_VERSION')
++        need(before['pm2ReloadReady'] is True, 'PM2_MODEL_FORK_RETAINED_BYTES_UNPROVEN_NO_RELOAD')
+         # Bind exact target API and all adapter source bytes inside the actual Node RPC.
+         tr = copy.deepcopy(self.st['transport'])
+         # API bytes are already full-CAS guarded. Adapter RPC validates this pin as well.
+-        self.checkpoint('rollback-reload-intent-%d' % slot if rollback else 'reload-intent-%d' % slot)
++        intent = self.checkpoint('rollback-reload-intent-%d' % slot if rollback else 'reload-intent-%d' % slot)
++        intent_sha, intent_sequence = self.state_hash, self.sequence
+         error = None
+         try:
+             if self.cfg.mock:
+@@ -1440,8 +1620,12 @@
+         identity(self.cfg, observed)
+         row = next(r for r in observed if r['id'] == slot)
+         changed = row['pid'] != before['pid']
+-        ignore = {'pid','restarts','rawSha256','nodeUniqueId'}
++        observed_at = now()
++        ignore = {'pid','restarts','rawSha256','nodeUniqueId','pm2RawMeta'}
+         if changed:
++            pm2_meta_transition(before['pm2RawMeta'], row['pm2RawMeta'],
++                int(dt.datetime.fromisoformat(intent['recordedAtUtc']).timestamp()*1000),
++                int(dt.datetime.fromisoformat(observed_at).timestamp()*1000))
+             need(row['restarts'] == before['restarts'] + 1
+                  and row['nodeUniqueId'] > before['nodeUniqueId']
+                  and {k:v for k,v in row.items() if k not in ignore} ==
+@@ -1450,12 +1634,19 @@
+             need(row == before, 'NONTRANSITION_RAW_PROCESS_DRIFT')
+         need([r for r in observed if r['id'] != slot] ==
+              [r for r in self.st['processes'] if r['id'] != slot], 'OTHER_ELEVEN_SLOT_DRIFT')
++        # Prove source, all twelve rows, permissions and full META BEFORE observation
++        # becomes a journal fact. Failed validation leaves only the durable intent.
++        snap = self.current_snapshot()
++        need(snap == dict(processes=observed, protectedFiles=self.st['protectedFiles'], transport=tr),
++             'OBSERVED_SOURCE_FULLMETA_SET_DRIFT')
+         event = dict(id=slot, rollback=rollback, beforePid=before['pid'], afterPid=row['pid'],
+             beforeRestart=before['restarts'], afterRestart=row['restarts'], observedPidChange=changed,
+             transportPassed=error is None, apiSha256=self.st['protectedFiles'][before['script']]['sha256'],
+             beforeRawSha256=before['rawSha256'], afterRawSha256=row['rawSha256'],
+             beforeUniqueId=before['nodeUniqueId'],afterUniqueId=row['nodeUniqueId'],
+-            semanticSha256=row['semanticSha256'])
++            semanticSha256=row['semanticSha256'], beforePm2RawMeta=before['pm2RawMeta'],
++            afterPm2RawMeta=row['pm2RawMeta'], attemptSha256=self.attempt_hash,
++            intentStateSha256=intent_sha, intentSequence=intent_sequence, observedAtUtc=observed_at)
+         self.st['events'].append(event)
+         self.st['processes'] = observed
+         if changed:
+--- d6-baseline/test_release.py
++++ R3/test_release.py
+@@ -9,6 +9,8 @@
+ import datetime as dt
+ import fcntl
+ import importlib.util
++import json
++import time
+ import os
+ from pathlib import Path
+ import stat
+@@ -80,17 +82,24 @@
+             pid = 30000+i
+             proc = self.cfg.proc/str(pid)
+             proc.mkdir()
++            env = dict(CUSTOM_VALUE='synthetic-only', NODE_UNIQUE_ID='nested-must-stay', pid='app-value')
++            e = dict(status='online', name=name, pm_id=i, pm_exec_path=str(script),
++                pm_cwd=str(script.parent.parent), exec_mode='cluster_mode' if own else 'fork_mode',
++                restart_time=0, PORT='5100' if i < 4 else '5200' if own else None,
++                env=env, NODE_APP_INSTANCE=str(i), NODE_CHANNEL_FD='3',
++                autostart=True, pm_uptime=1000000, created_at=900000, unstable_restarts=0,
++                prev_restart_delay=0, axm_actions=[], axm_monitor={}, axm_options={}, axm_dynamic={},
++                vizion_running=False, _pm2_version='7.0.3')
++            e.update(env)
++            serialized = json.dumps(dict(e, status='launching'), ensure_ascii=False, separators=(',', ':')).encode()
+             raw = b'ROLE='+name.encode()+b'\0NODE_APP_INSTANCE='+str(i).encode()+b'\0NODE_CHANNEL_FD=3\0'
+             raw += b'CUSTOM_VALUE=synthetic-only\0pm_uptime=application-value\0'
+-            raw += b'pm2_env={"env":{"NODE_UNIQUE_ID":"nested-must-stay","pid":"app-value"}}\0'
++            raw += b'pm2_env='+serialized+b'\0'
+             if own:
+                 raw += b'NODE_UNIQUE_ID='+str(i+10).encode()+b'\0'
+             (proc/'environ').write_bytes(raw)
+             (proc/'status').write_bytes(b'Uid:\t1000 1000 1000 1000\nGid:\t1000 1000 1000 1000\nGroups:\t1000\nUmask:\t0022\n')
+-            self.raw_rows.append(dict(pm_id=i, name=name, pid=pid, pm2_env=dict(status='online',
+-                pm_exec_path=str(script), pm_cwd=str(script.parent.parent), exec_mode='cluster_mode' if own else 'fork_mode',
+-                restart_time=0, PORT='5100' if i < 4 else '5200' if own else None,
+-                env=dict(CUSTOM_VALUE='synthetic-only'), NODE_APP_INSTANCE=str(i), NODE_CHANNEL_FD='3')))
++            self.raw_rows.append(dict(pm_id=i, name=name, pid=pid, pm2_env=e))
+         self.tr = dict(mockTransport=True, rpcSourceSha256=r.H(r.RPC.encode()))
+         self.reload_calls = []
+         for target, name in [(r.subprocess,'run'), (r.http.client,'HTTPConnection'), (r,'production_reload')]:
+@@ -120,9 +129,18 @@
+         raw = (old/'environ').read_bytes()
+         raw = raw.replace(b'NODE_UNIQUE_ID='+str(before['nodeUniqueId']).encode()+b'\0',
+                           b'NODE_UNIQUE_ID='+str(before['nodeUniqueId']+100).encode()+b'\0')
++        time.sleep(0.002)  # deterministic distinct millis, no production timer/budget change
++        stamp = int(dt.datetime.now(dt.timezone.utc).timestamp()*1000)
++        old_serialized = r.raw_values(raw)[b'pm2_env']
++        serialized = r.decode(old_serialized)
++        serialized.update(pm_uptime=stamp, created_at=stamp,
++                          restart_time=before['restarts']+1, unstable_restarts=0, prev_restart_delay=0)
++        raw = raw.replace(b'pm2_env='+old_serialized+b'\0',
++                          b'pm2_env='+json.dumps(serialized, ensure_ascii=False, separators=(',', ':')).encode()+b'\0')
+         (new/'environ').write_bytes(raw)
+         (new/'status').write_bytes((old/'status').read_bytes())
+-        row['pid'] = newpid; row['pm2_env']['restart_time'] += 1
++        row['pid'] = newpid
++        row['pm2_env'].update({k: serialized[k] for k in r.PM2_RAW_GENERATED})
+ 
+     def api_fixture(self, kind):
+         chunks = [b'// synthetic baseline, unchanged bytes '+b'x'*1200+b'\n']
+@@ -276,7 +294,7 @@
+     def test_new_identity_and_fixed_boundary(self):
+         cfg = r.Config()
+         self.assertEqual(r.OWNER, '6Lfttf6oVWJ8YS69o5FkXQ')
+-        self.assertEqual(str(cfg.stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R2')
++        self.assertEqual(str(cfg.stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R3')
+         self.assertEqual(len(cfg.aliases), 7)
+         self.assertEqual(r.identity(self.cfg,self.cap['processes']), list(range(6)))
+         with self.assertRaisesRegex(r.ReleaseError,'PRODUCTION_ADAPTER_INJECTION_REFUSED'):
+@@ -462,7 +480,7 @@
+         c = self.prepare_state()
+         path = self.cfg.proc/'30000/environ'
+         path.write_bytes(path.read_bytes().replace(b'NODE_UNIQUE_ID=10\0',b'NODE_UNIQUE_ID=11\0'))
+-        with r.locked(self.cfg), self.assertRaisesRegex(r.ReleaseError,'FULLGUARD_FOREIGN_DRIFT'):
++        with r.locked(self.cfg), self.assertRaisesRegex(r.ReleaseError,'FULLGUARD_FOREIGN_DRIFT|OWN_NODE_UNIQUE_ID_COLLISION'):
+             c.guard()
+ 
+     def test_reload_single_mock_slot_accepts_unique_only_and_preserves_other_eleven(self):
+@@ -876,9 +894,12 @@
+             (p/'README.md').write_bytes(b'all regular files bound\n')
+             self.assertFalse((p/'package.json').exists())
+         (self.cfg.pm2_base/'lib/God').mkdir(parents=True)
+-        (self.cfg.pm2_base/'lib/God/Reload.js').write_bytes(b'synthetic God reload source')
++        measured = Path('/home/ubuntu/work/customer-batch/pm2-live-source')
++        for name, digest in r.PM2_GENERATION_PINS.items():
++            file = self.cfg.pm2_base/name; file.parent.mkdir(parents=True, exist_ok=True)
++            data = (measured/name).read_bytes(); self.assertEqual(r.H(data), digest)
++            file.write_bytes(data)  # measured source bytes pinned, never evaluated/imported
+         (self.cfg.pm2_base/'lib/Daemon.js').write_bytes(b'synthetic Daemon source')
+-        (self.cfg.pm2_base/'package.json').write_bytes(b'{"name":"pm2","synthetic":true}\n')
+         self.calls = []
+         self.native_hook = None
+         real_describe = r.describe
+@@ -886,6 +907,7 @@
+             record = real_describe(p)
+             return dict(record, kind='socket', statmode=stat.S_IFSOCK | 0o600) if Path(p) == self.sock else record
+         for guard in [patch.object(r, 'describe', side_effect=describe), patch.object(r.os, 'kill'),
++                      patch.dict(r.os.environ, {'NODE_OPTIONS':'', 'NODE_PATH':''}),
+                       patch.object(r.subprocess, 'run', side_effect=self.fake_run)]:
+             guard.start(); self.addCleanup(guard.stop)
+ 
+@@ -909,8 +931,8 @@
+         self.assertEqual(actual, {p: r.describe(Path(p)) for p in sorted(expected)})
+         tr = r.transport(self.cfg)
+         files = {p for p, record in actual.items() if record['kind'] == 'file'}
+-        original = {str(self.cfg.node), str(self.cfg.pm2_base/'lib/God/Reload.js'),
+-                    str(self.cfg.pm2_base/'lib/Daemon.js'), str(self.cfg.pm2_base/'package.json')}
++        original = {str(self.cfg.node), str(self.cfg.pm2_base/'lib/Daemon.js'),
++                    *(str(self.cfg.pm2_base/n) for n in r.PM2_GENERATION_PINS)}
+         self.assertEqual(set(tr['sources']), files | original)
+         self.assertEqual(tr['fullAdapterMeta'], actual)
+         for p, digest in tr['sources'].items():
+@@ -1041,5 +1063,332 @@
+         # Argument preservation only; never an actual RPC usability assertion.
+ 
+ 
++
++class R3RawTests(unittest.TestCase):
++    """Strict source-derived raw transformations; synthetic bytes, no Node or RPC."""
++    def setUp(self):
++        self.env = dict(APP='A', NODE_UNIQUE_ID='nested-keep', pid='application-pid',
++                        opaque='{"pm_uptime":123,"NODE_UNIQUE_ID":"app"}')
++        self.e = dict(name='dianzi51', pm_id=190, pm_exec_path='/fixed/front/dist/index.js',
++                      pm_cwd='/fixed/front', exec_mode='cluster_mode', status='online',
++                      autostart=True, wait_ready=False, env=self.env.copy(),
++                      pm_uptime=1000, created_at=900, restart_time=2, unstable_restarts=3,
++                      prev_restart_delay=4, axm_actions=[], axm_monitor={}, axm_options={},
++                      axm_dynamic={}, vizion_running=False, _pm2_version='7.0.3',
++                      nested=dict(pm_uptime='app', created_at='app', NODE_UNIQUE_ID='nested'))
++        self.e.update(self.env)
++        self.model = dict(name='dianzi51', pm_id=190, pid=9001, pm2_env=self.e)
++        self.v = dict(self.e, status='launching')
++        self.raw = self.bytes(self.v)
++
++    def bytes(self, value, outer=b'pm_uptime=app\0created_at=app\0restart_time=app\0pid=app\0status=app\0'):
++        return outer+b'pm2_env='+json.dumps(value, ensure_ascii=False, separators=(',', ':')).encode()+b'\0NODE_UNIQUE_ID=15\0'
++
++    def semantic(self, raw, model=None):
++        return r.pm2_raw_binding(raw, model or self.model)[0]
++
++    def test_exact_source_generated_projection_preserves_all_retained_bytes(self):
++        semantic, meta, ready = r.pm2_raw_binding(self.raw, self.model)
++        self.assertTrue(ready)
++        after = dict(self.v, pm_uptime=1201, created_at=1200, restart_time=3,
++                     unstable_restarts=0, prev_restart_delay=0)
++        model = copy.deepcopy(self.model); model['pm2_env'].update({k:after[k] for k in r.PM2_RAW_GENERATED})
++        self.assertEqual(semantic, self.semantic(self.bytes(after), model))
++        r.pm2_meta_transition(meta, {k:after[k] for k in r.PM2_RAW_GENERATED}, 1100, 1300)
++        self.assertNotEqual(r.H(self.raw),r.H(self.bytes(after)))
++        projected=r.pm2_project(r.raw_values(self.raw)[b'pm2_env'])
++        self.assertIn(b'"env":{"APP":"A","NODE_UNIQUE_ID":"nested-keep","pid":"application-pid"',projected)
++        self.assertIn(b'"nested":{"pm_uptime":"app","created_at":"app","NODE_UNIQUE_ID":"nested"}',projected)
++
++    def test_every_outer_lifecycle_looking_application_value_is_byte_exact(self):
++        for key in sorted(r.LIFECYCLE | {'NODE_APP_INSTANCE','NODE_CHANNEL_FD'}):
++            original = self.bytes(self.v, (key+'=app\0').encode())
++            changed = self.bytes(self.v, (key+'=changed\0').encode())
++            with self.subTest(key=key):
++                self.assertNotEqual(self.semantic(original), self.semantic(changed))
++
++    def test_env_lifecycle_values_not_deleted_even_when_monitor_strip_would(self):
++        for key in sorted(r.LIFECYCLE):
++            model=copy.deepcopy(self.model); value=copy.deepcopy(self.v)
++            model['pm2_env']['env'][key]='app'; value['env'][key]='app'
++            raw=self.bytes(value)
++            with self.subTest(key=key):
++                if key in set(r.PM2_RAW_GENERATED) | {'pm_id','status','axm_actions','axm_monitor','axm_dynamic'}:
++                    with self.assertRaisesRegex(r.ReleaseError,'OVERRIDE_AMBIGUITY'):
++                        self.semantic(raw,model)
++                else:
++                    first=self.semantic(raw,model)
++                    value['env'][key]='changed'; model['pm2_env']['env'][key]='changed'
++                    self.assertNotEqual(first,self.semantic(self.bytes(value),model))
++
++    def test_nested_life_values_and_nested_unique_never_transform(self):
++        for key in ('pm_uptime','created_at','NODE_UNIQUE_ID'):
++            value=copy.deepcopy(self.v); value['nested'][key]='changed'
++            with self.subTest(key=key):
++                self.assertNotEqual(self.semantic(self.raw),self.semantic(self.bytes(value)))
++        value=copy.deepcopy(self.v); model=copy.deepcopy(self.model)
++        value['env']['NODE_UNIQUE_ID']='changed'; model['pm2_env']['env']['NODE_UNIQUE_ID']='changed'
++        self.assertNotEqual(self.semantic(self.raw),self.semantic(self.bytes(value),model))
++
++    def test_application_escape_bytes_not_recursive_canonicalized(self):
++        # Identical JSON values, different retained bytes must have different SHA.
++        changed=self.raw.replace(b'"APP":"A"', rb'"APP":"\u0041"')
++        self.assertEqual(r.decode(r.raw_values(self.raw)[b'pm2_env']),r.decode(r.raw_values(changed)[b'pm2_env']))
++        self.assertNotEqual(self.semantic(self.raw),self.semantic(changed))
++        self.assertFalse(r.pm2_raw_binding(changed,self.model)[2])
++        changed=self.raw.replace(b'"pm_uptime":"app"', rb'"pm_uptime":"\u0061pp"')
++        self.assertNotEqual(self.semantic(self.raw),self.semantic(changed))
++        changed=self.raw.replace(b'\"app\"',rb'"\u0061pp"')
++        self.assertNotEqual(self.semantic(self.raw),self.semantic(changed))
++
++    def test_top_order_whitespace_and_unproved_field_exact(self):
++        for raw in (self.raw.replace(b'"nested":',b'"nested" :'),
++                    self.bytes(dict(self.v, node_version='unproved-new')),
++                    self.bytes(dict(self.v, arbitrary='unproved')),
++                    self.raw.replace(b'"vizion_running":false',b'"vizion_running":true')):
++            self.assertNotEqual(self.semantic(self.raw),self.semantic(raw))
++        value=dict(reversed(list(self.v.items())))
++        self.assertNotEqual(self.semantic(self.raw),self.semantic(self.bytes(value)))
++
++    def test_duplicate_keys_at_top_env_nested_and_escaped_alias_rejected(self):
++        old=r.raw_values(self.raw)[b'pm2_env']
++        for changed in (old[:-1]+b',"pm_id":190}',old.replace(b'"APP":"A"',b'"APP":"A","APP":"A"'),
++                        old.replace(b'"pm_uptime":"app"',rb'"pm_uptime":"app","pm_\u0075ptime":"app"')):
++            with self.subTest(raw=changed),self.assertRaisesRegex(r.ReleaseError,'DUPLICATE_JSON_KEY'):
++                self.semantic(self.raw.replace(old,changed))
++
++    def test_generated_integer_types_and_noncanonical_tokens_refused(self):
++        for key in r.PM2_RAW_GENERATED:
++            for bad in (True,None,'1000',1.5,-1,2**53):
++                value=copy.deepcopy(self.v); model=copy.deepcopy(self.model)
++                value[key]=bad; model['pm2_env'][key]=bad
++                with self.subTest(key=key,bad=bad),self.assertRaises(r.ReleaseError):
++                    self.semantic(self.bytes(value),model)
++        for token in (b'1e3',b'1000.0',b'-0'):
++            changed=self.raw.replace(b'"pm_uptime":1000',b'"pm_uptime":'+token)
++            with self.subTest(token=token),self.assertRaises(r.ReleaseError):self.semantic(changed)
++
++    def test_wait_ready_truthiness_type_ambiguity_refused(self):
++        for value in (0,'',None,[],{}):
++            model=copy.deepcopy(self.model); model['pm2_env']['wait_ready']=value
++            with self.subTest(value=value),self.assertRaisesRegex(r.ReleaseError,'SOURCE_SHAPE'):
++                self.semantic(self.bytes(dict(self.v,wait_ready=value)),model)
++
++    def test_stable_identity_and_wrong_container_types_rejected(self):
++        for key,value in [('name','other'),('pm_id','190'),('pm_id',True),('pm_exec_path','/other'),
++                          ('pm_cwd','/other'),('exec_mode','fork_mode'),('_pm2_version','other')]:
++            with self.subTest(key=key),self.assertRaisesRegex(r.ReleaseError,'IDENTITY_BINDING'):
++                self.semantic(self.bytes(dict(self.v,**{key:value})))
++        for value in ([],{}, {'env':[]}):
++            with self.assertRaises(r.ReleaseError):self.semantic(self.bytes(value))
++
++    def test_current_model_generated_relation_required(self):
++        for key in r.PM2_RAW_GENERATED:
++            model=copy.deepcopy(self.model); model['pm2_env'][key]+=1
++            with self.subTest(key=key),self.assertRaisesRegex(r.ReleaseError,'GENERATED_BINDING'):
++                self.semantic(self.raw,model)
++
++    def test_generation_override_and_container_override_ambiguity_refused(self):
++        for key in set(r.PM2_RAW_GENERATED)|{'pm_id','name','pm2_env','__proto__','pm_exec_path'}:
++            value=copy.deepcopy(self.v); model=copy.deepcopy(self.model)
++            model['pm2_env']['env'][key]=value['env'][key]='app'
++            with self.subTest(key=key),self.assertRaisesRegex(r.ReleaseError,'OVERRIDE_AMBIGUITY'):
++                self.semantic(self.bytes(value),model)
++
++    def test_monitor_added_field_is_not_proven_reload_ready(self):
++        model=copy.deepcopy(self.model); model['pm2_env']['version']='monitor-added'
++        self.assertFalse(r.pm2_raw_binding(self.raw,model)[2])
++        value=dict(self.v); value.pop('prev_restart_delay'); model=copy.deepcopy(self.model)
++        model['pm2_env'].pop('prev_restart_delay')
++        self.assertFalse(r.pm2_raw_binding(self.bytes(value),model)[2])
++
++    def test_merge_object_coercion_ambiguity_refused(self):
++        for app in ({'nested':'app'}, ['nested-app']):
++            value=copy.deepcopy(self.v); model=copy.deepcopy(self.model)
++            value['env']['APP']=app; model['pm2_env']['env']['APP']=app
++            with self.assertRaisesRegex(r.ReleaseError,'COERCION_AMBIGUITY'):
++                self.semantic(self.bytes(value),model)
++
++    def test_restart_time_reset_and_time_window_are_exact_not_whitelisted(self):
++        before={k:self.v[k] for k in r.PM2_RAW_GENERATED}
++        good=dict(pm_uptime=1201,created_at=1200,restart_time=3,unstable_restarts=0,prev_restart_delay=0)
++        for key,value in [('restart_time',2),('restart_time',4),('unstable_restarts',1),
++                          ('prev_restart_delay',1),('created_at',900),('created_at',1400),
++                          ('pm_uptime',1000),('pm_uptime',1500),('restart_time',True)]:
++            with self.subTest(key=key,value=value),self.assertRaises(r.ReleaseError):
++                r.pm2_meta_transition(before,dict(good,**{key:value}),1100,1300)
++
++class R3ProtocolTests(unittest.TestCase):
++    def fixture(self):
++        case=SafetyTests('test_new_identity_and_fixed_boundary'); case.setUp()
++        self.addCleanup(case.doCleanups)
++        return case
++
++    def test_no_reload_intent_when_current_model_forecast_unproved(self):
++        case=self.fixture(); case.raw_rows[0]['pm2_env']['version']='monitor-added'
++        case.make_synthetic_package(); c=case.prepare_state()
++        with r.locked(case.cfg):
++            case.open_window(c); c.change_file('front',True,True); sequence=c.sequence
++            with self.assertRaisesRegex(r.ReleaseError,'UNPROVEN_NO_RELOAD'):c.reload_one(0)
++        self.assertEqual(c.sequence,sequence); self.assertEqual(case.reload_calls,[])
++        self.assertEqual(c.st['events'],[]); self.assertEqual(c.st['loadedSlots'],[])
++
++    def test_illegal_observation_leaves_only_intent_never_loaded_or_unlock(self):
++        case=self.fixture(); c=case.prepare_state(); base=case.simulate_reload
++        def adapter(cfg,tr,before):
++            base(cfg,tr,before)
++            row=next(v for v in case.raw_rows if v['pm_id']==before['id'])
++            path=cfg.proc/str(row['pid'])/'environ'
++            path.write_bytes(path.read_bytes().replace(b'pm_uptime=application-value',b'pm_uptime=changed'))
++        c.reload_adapter=adapter
++        with r.locked(case.cfg):
++            case.open_window(c); c.change_file('front',True,True)
++            with self.assertRaisesRegex(r.ReleaseError,'NODE_PM2_ONLY_LIFECYCLE'):c.reload_one(0)
++            latest=r.decode((case.cfg.receipt/('state-%06d.json'%c.sequence)).read_bytes())
++            self.assertEqual(latest['operation'],'reload-intent-0')
++            self.assertEqual(c.st['events'],[]); self.assertEqual(c.st['loadedSlots'],[])
++            self.assertEqual(c.st['processes'][0]['pid'],30000)
++            result=c.fail(r.ReleaseError('illegal raw observation'))
++            self.assertFalse(result['successProven']); self.assertEqual(len(r.ACTIVE_LOCKS),2)
++            self.assertTrue(r.decode(case.cfg.coord.read_bytes())['shared_release_active'])
++
++    def test_uncertain_adapter_error_keeps_only_proved_observation_then_recovery(self):
++        case=self.fixture(); c=case.prepare_state(); base=case.simulate_reload
++        def adapter(cfg,tr,before):
++            base(cfg,tr,before)
++            raise RuntimeError('synthetic transport uncertainty after legal transition')
++        c.reload_adapter=adapter
++        with r.locked(case.cfg):
++            case.open_window(c); c.change_file('front',True,True)
++            with self.assertRaises(RuntimeError):c.reload_one(0)
++            self.assertEqual(c.st['loadedSlots'],[0])
++            self.assertTrue(c.st['events'][0]['observedPidChange'])
++            self.assertFalse(c.st['events'][0]['transportPassed'])
++            c.state_invariants(c.st)
++            failure=c.fail(r.ReleaseError('uncertain reload'))
++            self.assertFalse(failure['successProven'])
++            self.assertTrue(r.decode(case.cfg.coord.read_bytes())['shared_release_active'])
++
++    def test_observation_checkpoint_failure_keeps_memory_and_durable_intent_uncertain(self):
++        case=self.fixture(); c=case.prepare_state(); real=r.exclusive
++        def fail_observed(path,data,*args):
++            if Path(path).name.startswith('state-') and r.decode(data)['operation'].startswith('observed-single-slot-'):
++                raise OSError('synthetic observed journal fault')
++            return real(path,data,*args)
++        with r.locked(case.cfg):
++            case.open_window(c); c.change_file('front',True,True)
++            with patch.object(r,'exclusive',side_effect=fail_observed),self.assertRaises(OSError):c.reload_one(0)
++            self.assertTrue(c.journal_uncertain); self.assertIsNotNone(c.pending_state_hash)
++            self.assertEqual(c.st['loadedSlots'],[0]); self.assertEqual(len(c.st['events']),1)
++            durable=r.decode((case.cfg.receipt/('state-%06d.json'%(c.sequence-1))).read_bytes())
++            self.assertEqual(durable['operation'],'reload-intent-0')
++            self.assertEqual(durable['state']['loadedSlots'],[])
++            with self.assertRaisesRegex(r.ReleaseError,'JOURNAL_DURABILITY_UNCERTAIN'):c.guard()
++            failure=c.fail(r.ReleaseError('observation not durably recorded'))
++            self.assertFalse(failure['successProven']); self.assertTrue(failure['journalDurabilityUncertain'])
++            self.assertTrue(r.decode(case.cfg.coord.read_bytes())['shared_release_active'])
++
++    def test_partial_journal_intent_cannot_forge_observed_transition(self):
++        case=self.fixture(); c=case.prepare_state()
++        with r.locked(case.cfg):
++            case.open_window(c); c.change_file('front',True,True); c.reload_one(0)
++            good=copy.deepcopy(c.st)
++            for field,value in [('intentStateSha256','0'*64),('attemptSha256','0'*64),
++                                ('intentSequence',1),('afterPm2RawMeta',{})]:
++                bad=copy.deepcopy(good); bad['events'][0][field]=value
++                with self.subTest(field=field),self.assertRaises(r.ReleaseError):c.state_invariants(bad)
++            bad=copy.deepcopy(good); bad['events']=[]
++            with self.assertRaises(r.ReleaseError):c.state_invariants(bad)
++
++    def test_multiple_slot_unique_collision_and_unrolled_raw_are_rejected(self):
++        for drift in ('two-pid','own-unique','unowned-raw','own-unrolled-generated'):
++            case=self.fixture(); c=case.prepare_state(); base=case.simulate_reload
++            def adapter(cfg,tr,before):
++                base(cfg,tr,before)
++                if drift=='two-pid':base(cfg,tr,c.st['processes'][1])
++                elif drift=='own-unique':
++                    row=case.raw_rows[0]; path=cfg.proc/str(row['pid'])/'environ'
++                    path.write_bytes(path.read_bytes().replace(b'NODE_UNIQUE_ID=110\0',b'NODE_UNIQUE_ID=11\0'))
++                else:
++                    pid=30011 if drift=='unowned-raw' else 30001
++                    path=cfg.proc/str(pid)/'environ'; path.write_bytes(path.read_bytes()+b'UNROLLED_DRIFT=1\0')
++            c.reload_adapter=adapter
++            with r.locked(case.cfg):
++                case.open_window(c); c.change_file('front',True,True)
++                with self.subTest(drift=drift),self.assertRaises(r.ReleaseError):c.reload_one(0)
++            self.assertEqual(c.st['events'],[]); self.assertEqual(c.st['loadedSlots'],[])
++
++    def test_observed_source_drift_rejected_before_event_is_recorded(self):
++        case=self.fixture(); c=case.prepare_state(); base=case.simulate_reload
++        def adapter(cfg,tr,before):
++            base(cfg,tr,before); case.tr['sourceDrift']='different source'
++        c.reload_adapter=adapter
++        with r.locked(case.cfg):
++            case.open_window(c); c.change_file('front',True,True)
++            with self.assertRaisesRegex(r.ReleaseError,'SOURCE_DRIFT'):c.reload_one(0)
++        self.assertEqual(c.st['events'],[]); self.assertEqual(c.st['loadedSlots'],[])
++
++    def test_exact_default_private_root_keeps_all_prior_protection(self):
++        cfg=r.Config()
++        self.assertEqual(cfg.extra_protected,(Path('/opt/config/dianzi51-admin/runtime.env'),
++            Path('/opt/config/dianzi51/runtime.env'),Path('/var/lib/dianzi51-private')))
++        self.assertNotIn(Path('/var/lib'),cfg.extra_protected)
++        self.assertEqual(len(cfg.aliases),7)
++
++    def test_private_root_full_files_emptydirs_meta_set_and_existing_union(self):
++        case=self.fixture(); root=case.root/'private'; (root/'official-technical').mkdir(parents=True)
++        (root/'empty').mkdir(); store=root/'official-technical/prepared-v1.json'; store.write_bytes(b'{"synthetic":true}')
++        cfg=replace(case.cfg,extra_protected=(root,))
++        paths,links=r.union(cfg,case.original_coord)
++        original=r.inventory(cfg,case.cap['processes'],paths,links)
++        self.assertTrue({str(p) for p in (root,*root.rglob('*'))}<=set(original))
++        self.assertEqual(original[str(root/'empty')],r.describe(root/'empty'))
++        store.chmod(0o600)
++        self.assertNotEqual(r.inventory(cfg,case.cap['processes'],paths,links),original)
++        store.write_bytes(b'{"synthetic":false}')
++        self.assertNotEqual(r.inventory(cfg,case.cap['processes'],paths,links),original)
++        (root/'new-empty').mkdir()
++        self.assertNotEqual(set(r.inventory(cfg,case.cap['processes'],paths,links)),set(original))
++        (root/'empty').rmdir()
++        self.assertNotIn(str(root/'empty'),r.inventory(cfg,case.cap['processes'],paths,links))
++
++    def test_private_root_special_entry_fail_closed(self):
++        case=self.fixture(); root=case.root/'private'; root.mkdir(); os.mkfifo(root/'fifo')
++        with self.assertRaisesRegex(r.ReleaseError,'SPECIAL_FILE_REFUSED'):
++            r.inventory(case.cfg,case.cap['processes'],(root,))
++
++class R3SourcePinTests(unittest.TestCase):
++    setUp = AdapterFilesTests.setUp
++    fake_run = AdapterFilesTests.fake_run
++    def test_generation_pins_all_measured_exact_no_missing_sources(self):
++        tr=r.transport(self.cfg)
++        for name,digest in r.PM2_GENERATION_PINS.items():
++            self.assertEqual(tr['sources'][str(self.cfg.pm2_base/name)],digest)
++        for name in ('lib/God.js','lib/God/ClusterMode.js','lib/God/Methods.js',
++                     'lib/Utility.js','lib/ProcessContainer.js','constants.js'):
++            self.assertIn(name,r.PM2_GENERATION_PINS)
++
++    def test_loader_env_refused_before_any_node_probe_without_unsetting(self):
++        for key in ('NODE_OPTIONS','NODE_PATH'):
++            with self.subTest(key=key),patch.dict(r.os.environ,{key:'synthetic-untrusted-loader'}):
++                before=dict(r.os.environ); self.calls.clear()
++                with self.assertRaisesRegex(r.ReleaseError,'NO_NODE_EXECUTION'):r.transport(self.cfg)
++                self.assertEqual(self.calls,[])
++                self.assertEqual(dict(r.os.environ),before)
++
++    def test_absent_and_empty_loader_env_allowed_only_with_mock_node(self):
++        with patch.dict(r.os.environ,{},clear=True):
++            r.transport(self.cfg)
++        with patch.dict(r.os.environ,{'NODE_OPTIONS':'','NODE_PATH':''}):
++            r.transport(self.cfg)
++        self.assertEqual(len(self.calls),4)
++
++    def test_each_generating_source_drift_fail_closed(self):
++        for name in r.PM2_GENERATION_PINS:
++            path=self.cfg.pm2_base/name; original=path.read_bytes(); path.write_bytes(original+b'\n// drift')
++            with self.subTest(name=name),self.assertRaisesRegex(r.ReleaseError,'GENERATION_SOURCE_PIN_DRIFT'):
++                r.transport(self.cfg)
++            path.write_bytes(original)
++
+ if __name__ == '__main__':
+     unittest.main()
+--- d6-baseline/prepare-local.py
++++ R3/prepare-local.py
+@@ -15,7 +15,7 @@
+ HERE = Path(__file__).absolute().parent
+ REPO = HERE.parent.parent
+ WORK = Path('/home/ubuntu/work/customer-batch')
+-CONTROLLER_SHA = 'd6f724847e205005060b6d11e0b15d7e31ba0ce373119187d062aba437e4cdec'
++CONTROLLER_SHA = 'ec2f541d4cee799a21a9b21633110a183c8efaf162451876ad5aea415359bde5'
+ NODE = '/usr/bin/node'
+ # Exactly backend-builder.compile's transform options, but read original files twice.
+ BACKEND_HASH_CHECK = """
+--- d6-baseline/test_prepare_local.py
++++ R3/test_prepare_local.py
+@@ -63,7 +63,8 @@
+             rows.append(dict(id=i, pid=100 + i, name=('dianzi51' if i < 4 else 'dianzi51-admin') if own else 'synthetic-worker-' + str(i),
+                              status='online', script=str(cfg.apis[kind]) if own else '/synthetic/worker.js',
+                              cwd='/synthetic', execMode='cluster_mode', restarts=0, listenerPort=3000 if own else None,
+-                             nodeUniqueId=i if own else None, **{k: 'a' * 64 for k in
++                             nodeUniqueId=i if own else None, pm2ReloadReady=True if own else None,
++                             pm2RawMeta={k: 0 for k in R.PM2_RAW_GENERATED} if own else None, **{k: 'a' * 64 for k in
+                              ('topConfigSha256', 'childConfigSha256', 'rawSha256', 'semanticSha256', 'permissionsSha256')}))
+         coord = R.encode(dict(shared_release_active=False, window=dict(status='verified', needsOperatorRecovery=False,
+                          scope='synthetic-frontend-owner', closedAtUtc=R.now()), window_history=[]))
+@@ -432,10 +433,10 @@
+                 else:
+                     helper({}, b'old', b'new')
+ 
+-    def test_r2_current_controller_sha_and_scope_fixed(self):
++    def test_r3_current_controller_sha_and_scope_fixed(self):
+         self.assertEqual(P.CONTROLLER_SHA, P.sha((HERE/'release.py').read_bytes()))
+-        self.assertEqual(R.SCOPE, 'customer-batch-actions-20261120-6Lfttf6o-R2')
+-        self.assertEqual(str(R.Config().stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R2')
++        self.assertEqual(R.SCOPE, 'customer-batch-actions-20261120-6Lfttf6o-R3')
++        self.assertEqual(str(R.Config().stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R3')
+         self.assertEqual(R.OWNER, '6Lfttf6oVWJ8YS69o5FkXQ')
+ 
+     def test_old_failed_stage_scope_capture_is_not_reusable(self):
+@@ -455,5 +456,21 @@
+         self.assertEqual(self.calls, [])
+ 
+ 
++    def test_r2_scope_and_d6_controller_capture_not_reusable_in_r3(self):
++        for key,value in [('scope','customer-batch-actions-20261120-6Lfttf6o-R2'),
++                          ('controllerSha256','d6f724847e205005060b6d11e0b15d7e31ba0ce373119187d062aba437e4cdec')]:
++            old=self.cap[key]; self.cap[key]=value; self.save_capture()
++            with self.subTest(key=key),self.assertRaisesRegex(P.PrepareError,'fixed production capture binding'):
++                P.prepare(self.args)
++            self.cap[key]=old
++        self.assertEqual(self.calls,[]); self.assertFalse(self.out.exists())
++
++    def test_r3_private_root_union_cannot_be_omitted_from_capture(self):
++        root='/var/lib/dianzi51-private'
++        self.assertIn(root,self.cap['protectionUnion']['paths'])
++        self.cap['protectionUnion']['paths'].remove(root); self.save_capture()
++        with self.assertRaisesRegex(P.PrepareError,'protection union mismatch'):P.prepare(self.args)
++        self.assertEqual(self.calls,[]); self.assertFalse(self.out.exists())
++
+ if __name__ == '__main__':
+     unittest.main()
+--- d6-baseline/README.md
++++ R3/README.md
+@@ -1,89 +1,57 @@
+-# 客户批次发布控制器：离线恢复与安全单测
++# 客户批次发布控制器：R3 限定源码与隔离反例
+ 
+-## 当前 R2 最小差量（2026-11-20）
++## 状态：NOT_APPROVED（2026-11-20）
+ 
+-当前 OWNER 完整保持 `6Lfttf6oVWJ8YS69o5FkXQ`；SCOPE 改为 **`customer-batch-actions-20261120-6Lfttf6o-R2`**，默认 stage 仅因此派生为 `/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R2`。Config 的其余路径与 CLI 边界不变，不复用失败的旧 stage/capture。
++R2 `d6f724847e205005060b6d11e0b15d7e31ba0ce373119187d062aba437e4cdec` 已被独立审确认不可发布：固定保护图遗漏 `/var/lib/dianzi51-private`；真实 PM2 cluster fork 将必变顶部 `pm_uptime` 放入 serialized `pm2_env`，R2 只准 outer `NODE_UNIQUE_ID` 的算法必然误判正常 reload。R2 审计在 `/home/ubuntu/work/customer-batch/review-r2-independent.md` 和 `.json`，不是 R3 批准。
+ 
+-```text
+-旧控制器 7fc9（已上传但首次 capture 失败）：
+-7fc9ec42ce21f6d0167b36ffbbe7642865a16f70fc31f8b99bf0da4862598423
+-当前 R2 release.py（preparer 固定 SHA 同步）：
+-d6f724847e205005060b6d11e0b15d7e31ba0ce373119187d062aba437e4cdec
+-```
++R3 OWNER 完整保持 `6Lfttf6oVWJ8YS69o5FkXQ`；SCOPE 为 **`customer-batch-actions-20261120-6Lfttf6o-R3`**，默认 stage 仅因此派生为 `/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R3`。没有创建或操作远程 stage。当前准确 controller/preparer/tool SHA 见 `evidence/r3-source-and-safety.json`；preparer 固 pin 与 controller 字节相符，不重用 R2 capture、旧 scope、旧 pin 或丢失的 capture JSON。
+ 
+-主任务提供：前台已于 08:51 明确 final verified/closed 交接（receipt `f893…`、coord `8a130…`）；后台旧 stage 仅上传 7fc9 controller，首次只读 capture 因不存在的两 vendor `package.json` 抛出 FileNotFoundError，未形成 capture JSON/package/receipt/window，也未 active write/reload。本次子任务不重新读取或操作生产；这些状态是主任务交接上下文，而非本地测试证明。
++本轮只修改六个许可 Python/测试/README 文件及 `evidence/r3-*`。不修改业务、UI、JS builder；不执行真实构建器、Git、SSH、MCP、生产访问或 release CLI。测试里的 apply/preflight/verify/rollback、锁、CAS、receipt 和 reload 全部发生在独立临时目录与 mock adapters 中，不是实际发布流程。
+ 
+-修正仅在源清单与新增纯 `adapter_files()` helper：保留 Node、`lib/God/Reload.js`、`lib/Daemon.js`，并绑定真实 **PM2 root `package.json`**；替换错误假设的两个 `modules/*/package.json` pin 为两 vendor 目录**全部普通文件内容 hash + 全部文件/目录完整 META 与精确路径集合**。`sources` 包含所有 vendor 普通文件（尤其每个实际 resolved `index.js`），`transport.fullAdapterMeta` 另外绑定两根、`lib`、空目录及所有后代的完整 `describe` 结果；前后重复快照及目录前后枚举/META 检查拒绝变化。
++## 最小保护图修正
+ 
+-严格仅接受原绝对 specifier 实测的 `modules/pm2-axon/index.js`、`modules/pm2-axon-rpc/index.js` 两项且顺序固定；拒绝错误入口、npm/node_modules fallback、symlink、hardlinked file、special entry 与枚举漂移。没有替换入口、运行模块探针或添加 fallback。原 RPC 字符串（含原 require specifier、遍历 sources hash 的 verify）及 Node/daemon/socket/重载方式均不变。
++`Config.extra_protected` 在原两个 `/opt/config/.../runtime.env` 后追加准确 **`Path('/var/lib/dianzi51-private')`**。没有替换原保护，没有扩大整个 `/var/lib`，没有修改或删除主任务的 technical-store handoff guard。
+ 
+-这是**固定 vendor closure**，不是假造 npm package metadata。真正 transitive 文件继续由既有 `cfg.pm2_base` 整树 full inventory 精确保护，未削弱 inventory 或增加外部依赖许可。helper 不推断或执行动态 require；真实 vendor/lib 的动态外部依赖边界仍须独立差量审基于实际源确认，不能把两个入口的只读存在证据当作整个运行时依赖审计。
++原 `union`、`inventory` 的 AST 不变。新根经既有完整递归 inventory 纳入根、文件、目录、空目录、links/targets、完整 META 与精确路径集合，包含 `official-technical/prepared-v1.json`；任何新增/删除、权限或内容漂移仍由完整 snapshot/guard 阻断。七个原 aliases、全部 runtime/env、Node、整个 PM2 base、nginx/flags、其它脚本与原主存储保护均保留。
+ 
+-原 **43** 安全测试保留（仅固定 stage 期望同步 R2），新增 **17** temp 文件系统 adapter 测试。preparer 原 **27** 项保留，新增 **3** 项同步 pin/拒绝旧 capture 测试。Node/daemon/socket/RPC 子进程仍为 mock；文件树及 helper/transport pin 计算真实使用 temp 文件。**这些测试不证明真实 RPC 可用。**
++## 源码绑定与 Node 启动环境
+ 
+-新证据为 `evidence/r2-before.json`、`r2-controller.diff`、`r2-allowed-files.diff`、`r2-source-and-safety.json`、`r2-release-tests.txt`、`r2-prepare-tests.txt` 与 `r2-report.md`；原证据保留不改。相对 7fc9，所有既有 controller 顶层 AST 仅 `SCOPE`、`transport` 改变，新增 `adapter_files`；RPC/snapshot/raw/locks/CAS/health/apply/verify/rollback 等其余 AST 不变。preparer 仅固定 SHA 常量改变，未执行或修改任何 JS 构建器。
++原绝对 RPC specifiers、RPC 字符串、require.resolve-only 探针、existing socket/daemon 校验、调用参数及 no-fallback 行为保持。原 Node、`lib/Daemon.js` pin 与两个 vendor 全部 source/dirs/fullMETA/set 保留；整个 `cfg.pm2_base` inventory 不削弱。
+ 
+-**R2 未批准。必须完成独立差量审和真实只读 capture 后，才可继续另行授权的流程。** 本次只运行隔离单测与内存静态编译，不运行 release CLI capture/preflight/apply，不用 Git/SSH/MCP，不触生产。
++R3 固定八份已读实际生成/重置源 SHA：`lib/God.js`、`lib/God/ClusterMode.js`、`lib/God/Reload.js`、`lib/God/Methods.js`、`lib/Utility.js`、`lib/ProcessContainer.js`、`constants.js`、PM2 root `package.json`。漂移即拒绝，不重新猜测规则。执行任何 Node `-e` 前，Python 只读断言 root `NODE_OPTIONS` 与 `NODE_PATH` 均缺失或空；非空立即拒绝，不 unset、不替换 subprocess 环境、不 fallback。
+ 
+-## 历史基线恢复结论（7fc9，以下非当前状态）
++主任务交接的实际六槽布尔关系证据为 `/home/ubuntu/work/customer-batch/pm2-relations-readonly.json`：identity 全匹配、五个顶部数字字段与 monitor 匹配、这些字段无 app.env override、app.pm2_env override 不存在、root/六槽 loader flags 空。只读 RPC 依赖闭包 `/home/ubuntu/work/customer-batch/pm2-dependency-closure/closure.json` 的 31 records / 62 edges 已逐文件核对 SHA/size，dynamic/unresolved/outsidePm2Base 均空。它只证明交接时两 vendor RPC 的 literal require 解析闭包，不是实际 R3 capture 或发布批准，也不是 God 生成链所有依赖的语义证明。
+ 
+-已从优先私有原版 `release-07188c50996a3b6b.py` 恢复 `release.py`，适配完整 OWNER `6Lfttf6oVWJ8YS69o5FkXQ` 和新 SCOPE `customer-batch-actions-20261120-6Lfttf6o`。默认 stage 因而为全新 `/opt/ops/customer-batch-actions-20261120-6Lfttf6o`，**本次没有创建或操作此远程目录，也没有复用任何旧 stage**。
++## 仅 serialized PM2 顶部的精确转换
+ 
+-**43 项隔离安全单测通过**，离线 `compile()` 通过且未生成 pycache。测试只使用独立 `TemporaryDirectory` 的合成数据；不会调用 `capture()`，生产 subprocess / HTTP / reload 适配器被阻断，RPC 被合成 monitor 数据替代。未运行 SSH、生产 CLI、生产写入/reload/capture/锁操作、MCP、Git commit/push。不能把这些单测当作新真实发布全流程或生产发布批准。
++`pm2_top_tokens` 先严格解析完整 JSON，拒绝任意深度 duplicate key、非 finite 值、错误容器/类型；随后只定位顶部 value token。`pm2_project` 只替换五个源码定义字段的规范安全整数 token：`pm_uptime`、`restart_time`、`created_at`、`unstable_restarts`、`prev_restart_delay`。不删除 key、不排序、不递归重编码，不忽略新增/删除字段或 whitespace/key-order/escape 差异。
+ 
+-提供的现网上下文仍是前台 `recovery-required`、`shared_release_active=true`、旧 owner `XM2KNK1v`。本次没有读取或改变现网。**不得凭本报告解除该暂停；必须由前台责任方独立恢复并形成完整关闭证明，再另行获得操作授权。**
++**这不是通用 LIFECYCLE 删名规则。** 只有固定 own cluster 槽、name/id/script/cwd/mode/version 与当前 monitor 精确匹配的 serialized 容器可取得投影。稳定 `pm_id` exact；generated/identity/container override、类型/coercion 歧义、错误身份拒绝。完整 `pm2_env.env`、其它 nested 值与 nested `NODE_UNIQUE_ID`、应用同名字段、其它 outer raw/opaque string 都逐字节保留。outer `NODE_UNIQUE_ID` 仍限唯一十进制 Node 槽 id，六 own unique 不能碰撞。
+ 
+-## 恢复依据及 SHA
++read-current-model/raw 另存不含环境值的 `pm2RawMeta` 和 `pm2ReloadReady`。五字段当前值必须对应 monitor，才可记录；restart_time 不能由 env 覆盖后假装 +1。缺少非首次启动的 reset 字段、monitor 后加字段、预测输出的任意 retained-byte/order/escape 差异产生 not-ready；reload 在写 intent 和调用 adapter 前即拒绝。Python model→fork serialization 仅作保守的 byte-equality 阻断检查，绝不覆盖实际 retained application bytes，也不声称等价于未经审证的实际 JS clone/stringify。
+ 
+-原代码只读保留在 `/home/ubuntu/work/customer-batch/original-controllers/release-07188c50996a3b6b.py`，SHA 已核对：
++只有绑定当前持久 attempt/准确单 slot intent，PID 改变、restart_time=old+1、Node unique 合法增加、created_at/pm_uptime 落在意图至观测时间范围且顺序合法、unstable_restarts=0、prev_restart_delay=0，并且其余十一槽、source、permissions、全 inventory/META/set exact 时才接受。未滚动 own 槽与其它六槽仍要求完整 raw SHA exact。
+ 
+-```text
+-原版 07188:
+-07188c50996a3b6b90c0f255c054a34e72de815706910d6395ac7ef6eb8cc0ae
+-仅替换 OWNER/SCOPE 两行的内存中间版本:
+-7ced926b88f3e9bb09fb2c892ec6d55a95b4b288685117d5be35b47294d8a8cb
+-最终 release.py:
+-7fc9ec42ce21f6d0167b36ffbbe7642865a16f70fc31f8b99bf0da4862598423
+-```
++## 持久观测与恢复边界
+ 
+-`evidence/source-and-safety.json` 记录完整来源、测试 SHA 和静态边界核对；`evidence/adaptation.diff` 是相对 07188 的差异；`evidence/offline-tests.txt` 保存测试结果。历史比较保留了 07188 的历史 `protectedFiles` 非负计数兼容，以及确切的 PM2 adapter package 元数据 pin；没有退回 3edd/e0d。
++事件新增前/后 PM2 raw metadata、attempt SHA、intent state SHA/sequence 和观测时间。state invariants 读回持久 intent，验证完整十二槽 before 状态、前序 events/loaded 链、准确 API 版本与 current attempt；部分 journal、错槽、旧意图或只伪造 loadedSlots 不能成为观测证明。写 observed event 之前额外证明实际完整 snapshot/source/META/set exact。
+ 
+-## 保留的固定协议
++非法观测只留下已经持久写入的 intent，不把意图改成成功、不给 loadedSlots 重基线、不能自动解锁或继续。原 uncertain reload、journal fsync 不确定、人工 recovery/rollback 的安全流程保留；原预算、TTL=900、noReplay、receipt 实际闭窗证明、锁/CAS/权限、health 与所有其它业务发布协议不变。具体 AST 保留证据见 `evidence/r3-ast-diff.json`，逐函数源码差异见 `evidence/r3-controller.diff`。
+ 
+-固定生产路径没有泛化，CLI 不能指定 mock/替换生产配置。原 `Config`、CAS、固定 RPC、transport、完整 inventory、12 槽 identity、manifest/source/review payload 校验与 patch scope 的 AST 均与 07188 相同。继续要求 fresh 完整 META、12 个唯一在线进程、7 个固定链接、两 API/后台 HTML/两新 JS/scoped CSS 的限定内容边界，只允许 4 front + 2 admin 捕获槽逐一滚动，源码和 manifest/review 封印、现有双锁、完整字节与 META CAS。
+-
+-任何 `receipt` 目录（空目录、失败尝试或 symlink 也包括）都会拒绝再次 apply/preflight。恢复 journal 必须显式 pin 当前 attempt 和最新连续 hashchain state；不能使用过期 state、篡改历史、猜测 ownership 或自动重放。
+-
+-## 本次重点补强
+-
+-1. **rename 记忆顺序**：保留原 CAS 中 `os.replace` 后立即调用 `remember(describe(p))`，在目标目录 fsync 前更新内存。测试验证目标目录 fsync 故障后仍持有新字节/META，可在临时目录内用新的完整 CAS 恢复；file/coord 的 checkpoint 故障也必须保留 rename 后内存，而不能误以为旧目标仍在。
+-2. **raw 环境只准一项例外**：只对固定 own 槽的 semantic hash 去除唯一、十进制的外层 `NODE_UNIQUE_ID`。非重载槽仍要求 `rawSha256` 完全一致；只有被 journal 证明的 own 单槽重载事件才能接受对应 lifecycle raw 变化。保留 `NODE_APP_INSTANCE`、`NODE_CHANNEL_FD`、nested `pm2_env` 原值以及全部其他 raw key/value，连看似 lifecycle 的环境名也不剥离。权限 hash 独立保留；其他 11 槽逐次精确比较。
+-3. **恢复批准独立且 fresh**：rollback 不受原 capture 过期阻碍，但批准必须包含 `approvedAtUtc`（带时区、非未来、900 秒内）和 `ttlSeconds=900`，并绑定 common pins、attempt、最新 state、outcome、packageFiles、targets、仅已加载槽和保留资产。每次 recovery guard 都再次检查时间、批准原始文件 SHA、批准对象与 reviewer report SHA。缺字段、过期、自审、漂移均拒绝。
+-4. **成功证明不能靠 status**：`durable_success()` 在 receipt 文件与目录 fsync、读回之后，再核对实际完整关闭 coordinator raw SHA、owner/attempt/review/capture/manifest 绑定、完整 history 末项、durable 最新 state 和 attempt，以及目标与 loaded slots 完整性。公开 verify 也重新证明；仅见 `status=verified/closed`、错 raw SHA、错 journal 或错误健康均不能成功。
+-5. **失败只保持 own hold**：失败不会自动 rollback，也不删资产、不清外部锁、不改外部 coord。只有本进程已持正确双锁、窗口属于完整当前 attempt，且实际 coord 字节/META 与最后内存精确匹配时，才允许窄 CAS 标记 own `recovery-required` hold。关闭后 receipt 证明失败也不放行；若无法证明 hold，failure 明示 `successProven=false`、`holdProofError` 和须人工恢复。failure receipt 本身写失败则公开方法明确返回 `*_RECOVERY_REQUIRED_FAILURE_RECEIPT_UNPROVEN`。
+-6. **日志不确定性封闭**：checkpoint 创建或目录 fsync 失败会标记 `journalDurabilityUncertain` 和 pending SHA，阻断同对象后续 guard/checkpoint/retry；失败报告保留该事实。不会把已存在的半成功日志覆盖为“重试成功”。
+-
+-## 离线复核
+-
+-仅运行以下本地单测，不执行 release CLI：
++## 离线复核与证据
+ 
+ ```bash
+ cd /home/ubuntu/51-manager/deploy/customer-batch-actions-20261119
+ PYTHONDONTWRITEBYTECODE=1 python3 -B test_release.py -v
++PYTHONDONTWRITEBYTECODE=1 python3 -B test_prepare_local.py -v
+ ```
+ 
+-测试实际调用 public `bundle/preflight/apply/verify/rollback` 与相应 guard/CAS/journal 方法，覆盖源码/manifest/review 封印、raw 唯一例外及其它环境/权限漂移拒绝、完整 coord 关闭/外部 fields/历史保留、preflight 零写、foreign recovery busy 和外部双锁 busy 拒绝、不可重放、rename/fsync/journal CAS 故障、fresh 恢复批准、关闭后回执失败与实际 raw 绑定。合成 apply/reload 只是本地控制器协议测试；合成恢复成功案例仅为 baseline-only own 恢复，不等于真实六槽发布/恢复验收。
++本轮 controller **89/89**、preparer **32/32** 隔离 mock 单测通过，完整日志为 `evidence/r3-release-tests.txt` 和 `evidence/r3-prepare-tests.txt`。原 60/30 测试方法全部保留（只同步新 schema/pins/fixture）；新增反例拒绝 outer 同名应用值、env 内 life-looking 值、nested/opaque 或其转义字节变化、错 identity、duplicate key、类型、未证 top 字段、多 slot、未滚动 raw、source 漂移、部分 journal 伪观测及 loader flags。PM2 已读生成源码只复制到临时 fixture 做内容 pin，不运行这些模块。
+ 
+-## 缺失与阻碍
++`evidence/r3-baseline-release.py` 保存准确 d6 基线；六文件基线及前后 SHA、精确 AST 差量、完整测试日志与阶段报告均在 `evidence/r3-*`。历史 `evidence/r2-*` 及更旧证据未修改。首次扩展测试的失败日志也保留：本地 sandbox 的 NODE_OPTIONS 非空被正确拒绝，随后仅纯 mock fixture 使用临时 patch 并完整恢复本地环境；控制器没有清洗环境来放行。
+ 
+-未运行真实三个 JS 构建器，未验证真实客户源码编译/AST/ABI 或独立 reviewer 的判断，也没有新真实 release package、生产 PM2/Node/RPC、实际监听器/HTTPS、真实 UID/GID 的全链路证据。严格 raw 语义可能在真实 PM2 序列化环境有其它漂移时阻断；这是刻意 fail-closed，不能借部署时机扩大例外。日志或目录 fsync 不确定可能需要独立授权的人工取证恢复，不能通过重放、rebase、强制解锁或旧 stage 接管绕过。
++## 剩余阻碍：不能由 mock 成功改成 APPROVED
+ 
+-**共享目录变化需主任务核对**：本子任务未写入或执行任何 JS；`backend-builder.cjs` 与 `backend-test.cjs` 前后 SHA 一致。但观察到 `build-native.mjs` 从 `d5afe1fb…` 变为 `99dfe488…`，且 Git 显示其外部变化。本子任务没有回退该文件。前后完整 SHA 在 evidence 中，主任务需确认其它共享执行的变更归属，不能据本报告宣称三个构建器整体未变。
++实际六槽的五数字关系证据并未给出全部 retained raw/model 字节 forecast、`prev_restart_delay`、autostart/status/axm 等全部规则的实际满足证明；不以正常 reload 试错补证。Utility.clone 的 `modules/fclone` 源不在当前生成 records 或两 vendor RPC 闭包，Python deepcopy 不是这项源码语义证据。若任一字段/clone/byte-order 规则仍无法证明，必须 fail closed，而非加白名单或递归 canonicalize。
+ 
+-## 主任务接续补充
+-
+-`build-native.mjs` 的变化由主任务有意新增 `--verify-sources`：只编译既有七个客户叶并检查嵌入失败编辑器，没有生产读取、捕获或写入。2026-11-20已实际运行并通过，无未绑定新标识符或新运行时导入；结果另存 `evidence/source-abi.json`。这只证明源码/native绑定可编译，不代替真实现网ABI、全量META、候选逆向证据及最终独立发布审核。
+-
+-后台历史失败编辑入口已补齐原列/附注和当前编辑值导出，删除及批次查看沿用原实现。最终五个修改测试文件77项通过；其它原行为八文件238项通过（有交集不加总）。所有测试使用隔离fixture且不连接生产数据库。原控制器安全测试证据保持原样，不能将其子任务的零SSH声明误读为整个主任务：主任务曾仅定向只读取回原三个控制器源码，服务器写入/重载/捕获/锁操作仍为0。
+-
+-保存源码与生产上线分开。前台任务当前优先持有恢复/发布流程；未收到前台最终verified closed实际回执和明确交接，本任务不得运行capture/preflight/apply。后续必须新鲜现网重建、复审并定向发布，不重放旧stage，不全量覆盖dist，不触生产物料或DDL。
++仍需 R3 当次实际完整 fresh capture/fullMETA/private tree 与前台保护集合绑定、真实 new package/manifest/packageFiles、owner/nonce/source/tool pins、fresh API/UI 正逆字节与独立差量审；不得把旧 R2/种子审计或 mock 通过移植为批准。本轮没有正式 approval、实际 capture、封印、receipt、window、active write 或 reload。**controllerApproved=false；finalDeployApproval=false；NOT_APPROVED。**
+--- d6-baseline/prepare-local.README.md
++++ R3/prepare-local.README.md
+@@ -1,20 +1,20 @@
+-# 客户批次：仅本地准备器
++# 客户批次：仅本地准备器（R3，NOT_APPROVED）
+ 
+ `prepare-local.py` 只把**已交接到本地的 fresh capture 与当前 baseline**交给现有两个限定构建器，收集可复审的真实来源/编译/逆向证据，生成 `release.py seal_candidate` 的公开 candidate spec。默认不封印，不审核，不批准，不部署。
+ 
+-当前 R2 差量仅把 preparer 的固定 controller SHA 同步到下列当前字节，并新增拒绝失败旧 scope/旧 SHA 输入测试；preparer 其余 AST 不变。控制器仅新 scope 与 vendor 源清单/META pin 修正，详见 `README.md` 与 `evidence/r2-controller.diff`。不修改或执行 JS/tools/业务代码，不用 Git/SSH/MCP，不访问生产，不执行 capture/preflight/apply CLI。
++本轮 preparer 的唯一源码 AST 差量为固定 `CONTROLLER_SHA` 更新；其它 AST 不变。当前固定 SHA 为：
+ 
+ ```text
+-d6f724847e205005060b6d11e0b15d7e31ba0ce373119187d062aba437e4cdec
++ec2f541d4cee799a21a9b21633110a183c8efaf162451876ad5aea415359bde5
+ ```
+ 
+-## 先决条件：前台交接与当前输入
++仅接受 **`customer-batch-actions-20261120-6Lfttf6o-R3`**、完整 OWNER `6Lfttf6oVWJ8YS69o5FkXQ`、当前 controller SHA 与完整 Config 的当次 fresh capture。R2 scope/d6 capture、历史旧 scope/7fc capture、丢失 JSON 均不可重用。Config 原路径保持，仅追加准确 `/var/lib/dianzi51-private` 保护根；preparer 的对象-only union 检查不能漏掉新根。R3 process rows 新增 `pm2RawMeta` 和 `pm2ReloadReady`，由当前 controller 的严格 schema/identity 验证；不从布尔 ready 或 mock 通过制造发布批准。
+ 
+-主任务已提供前台 08:51 最终 verified/closed 明确交接（receipt `f893…`、coord `8a130…`）。旧 `/opt/ops/customer-batch-actions-20261120-6Lfttf6o` 仅已上传 7fc9 controller，首次只读 capture 因 vendor 目录没有 package.json 即拒绝，未形成 capture JSON/package/receipt/window，未 active write/reload。本脚本不获取生产资料，也不替调用者核实交接授权或这些外部证据的真伪。
++R2 已由独立审确认不能上线，R3 仍 **NOT_APPROVED**。本轮只执行本地隔离测试、内存编译与 AST/SHA 核对；不修改/执行 JS builder、业务或 UI，不运行本脚本的真实 prepare，不用 Git/SSH/MCP，不访问生产，不执行 capture/preflight/apply/verify/rollback CLI。控制器 R3 的源码限定转换、source/loader pins 与剩余证据阻碍详见 `README.md`、`evidence/r3-controller.diff` 和 `evidence/r3-report.md`。
+ 
+-**当前仅接受全新 R2 scope `customer-batch-actions-20261120-6Lfttf6o-R2`、对应固定 controller SHA 与其余固定 Config 的 fresh capture；旧 scope/7fc9 输入不可重用。R2 尚未 approved，必须完成独立差量审及主任务随后真实只读 capture；本次没有运行整条真实构建、真实 candidate 或真实封印，不能把 mock 单测当作真实 RPC/完整运行时依赖可用证明。**
++## 输入和路径约束
+ 
+-输入必须已经位于 `/home/ubuntu/work/customer-batch` 下，且路径绝对、规范、无 symlink；文件为单链接普通文件。`--base` 目录需要以下文件：
++输入必须已经位于 `/home/ubuntu/work/customer-batch` 下，且路径绝对、规范、无 symlink；文件为单链接普通文件。`--base` 目录需要：
+ 
+ ```text
+ capture.json
+@@ -25,90 +25,72 @@
+ assets/BusinessWorkbenchPage-upload-manage-<当前hash二>.js
+ ```
+ 
+-仅复制后台 HTML 当前实际引用的两份 JS，不复制全 dist、不接受历史 upload-history 模块。脚本检查 capture 固定 OWNER/SCOPE/controller/config、时间与 TTL=900、完整协调对象已关闭且 scope 不重放、保护 union、12 槽 identity、metadata digest，以及 HTML/两 API/两 baseline JS 的 capture SHA/size/nlink 与 immutable 文件名。这里的生产路径仅用于比对 JSON 对象；`Config.front`、生产 alias resolve、inventory 和任何生产适配器都不会调用。
++仅复制后台 HTML 当前实际引用的两份 JS，不复制全 dist、不接受历史 upload-history 模块。脚本检查 capture 固定 OWNER/SCOPE/controller/config、时间与 TTL=900、完整协调对象已关闭且 scope 不重放、保护 union、12 槽 identity、metadata digest，以及 HTML/两 API/两 baseline JS 的 capture SHA/size/nlink 与 immutable 文件名。生产路径仅用于比对 JSON 对象；`Config.front`、生产 alias resolve、inventory 和任何生产适配器均不调用。
+ 
+-`--owner-nonce-file` 是 WORK 下当前用户所有的 `0600` UTF-8 文件，存放主任务提供的 raw owner nonce（16–4096 字符，可带末尾换行）。它不是 capture nonce；不在命令行直接传 secret，也不在终端输出 nonce/capture 正文。
++`--owner-nonce-file` 是 WORK 下当前用户所有的 `0600` UTF-8 文件，存放主任务提供的 raw owner nonce（16–4096 字符，可带末尾换行）。不是 capture nonce；不在命令行直接传 secret，不在终端输出 nonce/capture 正文。
+ 
+-## 默认：只准备，不封印
++## 默认只准备，不封印
+ 
+-以下是**交接和输入齐备后**的示例，路径中的名称应替换成当次实际目录。此说明没有执行该命令。
++下列是**当次完整证据齐备且另获授权后**的示例，本轮没有执行：
+ 
+ ```bash
+ cd /home/ubuntu/51-manager/deploy/customer-batch-actions-20261119
+ PYTHONDONTWRITEBYTECODE=1 python3 -B prepare-local.py \
+-  --base /home/ubuntu/work/customer-batch/handoff-current \
+-  --owner-nonce-file /home/ubuntu/work/customer-batch/owner-nonce-current.txt \
+-  --out /home/ubuntu/work/customer-batch/backend-prepare-current-001
++  --base /home/ubuntu/work/customer-batch/handoff-current-r3 \
++  --owner-nonce-file /home/ubuntu/work/customer-batch/owner-nonce-current-r3.txt \
++  --out /home/ubuntu/work/customer-batch/backend-prepare-current-r3-001
+ ```
+ 
+-输出必须是 WORK 的**全新直接子目录**，名字匹配 `backend-prepare-[A-Za-z0-9][A-Za-z0-9_-]{0,79}`。这一较窄命名同时满足 `backend-builder.cjs` 的 WORK/backend- 写路径要求；没有 `/opt/ops` override、任意 repo/node/mock 参数或输出泛化。WORK 根目录应已存在。
++输出必须为 WORK 的**全新直接子目录**，名字匹配 `backend-prepare-[A-Za-z0-9][A-Za-z0-9_-]{0,79}`；没有 `/opt/ops` override、任意 repo/node/mock 参数或输出泛化。WORK 根目录应已存在。
+ 
+-所有新输出目录为 `0700`，文件为 `0600`，使用 `umask 077` 与 exclusive 写入。已存在的文件、目录、symlink、半失败输出一律拒绝；不会删除、覆写、恢复、续跑或重放。失败保留私有取证输出，需新输出名和重新核对的 fresh 输入，而不是重跑旧目录。构建超过 capture TTL 时同样拒绝生成 spec/封印；后续发布 freshness 仍由控制器独立检查。
++新目录为 `0700`，文件为 `0600`，使用 `umask 077` 与 exclusive 写入。已存在文件、目录、symlink、半失败输出一律拒绝；不删除、覆写、恢复、续跑或重放。失败保留私有取证输出，需新输出名和重新核对的 fresh 输入。构建超过 capture TTL 时拒绝 spec/封印；发布 freshness 由控制器另行检查。
+ 
+-本地顺序如下：
++脚本既有本地顺序不变：读取 builders 声明的 source inventories；留存原 source/tools/controller/preparer 快照；运行现有 native source-ABI 与 backend 原 source 编译 hash 检查；使用现有 backend freeze/build 和 UI customer-only 增量构建；再核对原/frozen/source/compiled hashes、UI 七叶与内嵌第八叶、native identity/逆向字节及 tool provenance；最后生成待审 spec。它不使用 JS eval 猜 source、不运行 API 入口或生产数据库。
+ 
+-1. 从当前 `backend-builder.cjs FILES` 与 UI 构建器声明源清单取得真实源文件；不执行 JS `eval` 或凭空造 source evidence。
+-2. 留存原始 UI/CSS 和 builder/support/controller/preparer 源码快照，记录前后源码 hash。
+-3. 运行现有 `build-native.mjs --verify-sources`，以及使用与后端 `compile` 完全相同 esbuild transform 选项的**原始源码**编译 hash 检查。
+-4. 使用现有 `backend-builder.cjs freeze/build`。freeze、freeze-inputs、backend-candidate 都在新的 WORK/backend-prepare-* 内；build 自带 Node syntax check 与隔离 native VM tests，不运行捕获的 API 入口或生产数据库。
+-5. 使用 `CUSTOMER_BATCH_BASE=<输出>/baseline`、`CUSTOMER_BATCH_OUT=<输出>/ui` 运行现有 `build-native.mjs`，仅构建 customer 叶增量与 scoped CSS。
+-6. 再次检查原始源码编译 hash，与 UI 七叶 evidence、后端 frozen compiled-source 及 API patch compiled hash 逐一绑定；核对源 hash/冻结来源和 builder/core/test SHA，调用现有纯字节 `native_api` 与 `ui_inverse` 校验 helper。任何漂移拒绝。
+-7. 生成 `candidate-spec.json` 与 `prepare-result.json`，终端只返回状态/路径/no-production 标志。
++准备器既有本地构建子进程使用固定清洁 PATH/locale/no-pycache 与 UI 两路径环境，不继承应用秘密/`NODE_OPTIONS`/`ESBUILD_BINARY_PATH`/`PYTHONPATH`。此既有 preparer 行为与 R3 生产 controller 的 loader **只读拒绝，不 unset/env replacement**规则不同；本轮未更改任一既有 subprocess 环境协议。
+ 
+-子进程不继承应用环境、`NODE_OPTIONS`、`ESBUILD_BINARY_PATH` 或 `PYTHONPATH`；保留的环境仅为固定本地 PATH/locale/no-pycache 和 UI 构建器所需两项路径。
+-
+-## 输出与来源映射
+-
+-主要结构如下：
++## 输出与证据映射
+ 
+ ```text
+ backend-prepare-.../
+-  baseline/                      # 本地 capture、HTML、两 API、两 baseline JS
++  baseline/
+   backend-freeze.json
+-  backend-freeze-inputs/source/   # backend FILES 的真实 freeze 副本
+-  backend-candidate/             # 两限定 candidate、patch records、compiled-source/maps、VM/build evidence
+-  ui/package/                    # 两 customer JS、scoped CSS、前后 HTML、ABI/delta/source evidence
+-  evidence/source/               # 原始 UI/CSS 与 builders/support/controller/preparer 的真实快照
++  backend-freeze-inputs/source/
++  backend-candidate/
++  ui/package/
++  evidence/source/
+   evidence/source-provenance.json
+   evidence/local-preparation.json
+-  evidence/*.command.json        # argv / returncode，无环境值导出
++  evidence/*.command.json
+   evidence/*.stdout.txt
+   evidence/*.stderr.txt
+   candidate-spec.json
+   prepare-result.json
+ ```
+ 
+-spec 顶层严格为 `schema ownerTask ownerNonce capture ui backend sources evidence`；backend 严格为 front/admin，各含 before/after/records。路径均在当次新输出目录内。
++spec 顶层严格为 `schema ownerTask ownerNonce capture ui backend sources evidence`；backend 严格为 front/admin，各含 before/after/records。所有路径在当次新输出目录内。`sources` 使用真实 repo 相对名称并指向原始快照或 backend freeze 副本；source provenance 核对原路径、frozen/source SHA 与来源。`evidence` 包含两旧 JS 完整 baseline、freeze、Node/native VM/build records、实际 compiled JS/maps、前后原 source 编译 hash 日志及零生产/noReplay 标志。
+ 
+-`sources` 使用真实 repo 相对名称：后端指向本次 `backend-freeze-inputs/source/<FILES>`，UI/CSS/support/builder/controller/preparer 指向前构建源码快照，并核对它们仍与当前原 source 一致。source provenance 记录原路径、冻结/快照路径、SHA 与来源。UI `source-files.json sourceHashes` 全集、七叶 `sources.json` 的源 hash、builder SHA 与后端冻结清单均与 spec 来源相绑；不使用空 evidence 或假 source mapping。
++没有 reviewer 时只是待审输入：不满足 seal reviewer evidence，没有 manifest、approval、review.json 或生产 receipt。准备器本地 noReplay 不代替控制器 durable attempt/noReplay；脚本不会检查或触碰生产 receipt。
+ 
+-spec 的 `evidence` 明确包含两份 `evidence/baseline/assets/<原同名JS>`、freeze、Node/native VM/build records、后端实际编译 JS/maps、原始编译 hash 检查日志和 no-production/no-replay 标志。UI package 自带 html/ABI/delta/source-files/sources evidence。`release.py candidate` 封装时将 `sources` 实际字节放入 `evidence/source/`，无需修改 release.py。
++## 外部真实 reviewer 与可选 --seal
+ 
+-没有 reviewer 时 spec 仅为**待审核输入**，不满足封印所需 reviewer evidence，也没有 manifest、approval、review.json 或生产 receipt。`noReplay` 是准备输出不能复用的本地保证；没有检查或触碰生产 receipt，不代替控制器的 durable-attempt no-replay 协议。
++`--reviewer-report` 必须为已存在、真正独立生成的报告，并同时给 `--reviewer-sha256`。脚本只核对非空普通文件、路径和显式 SHA，再逐字节复制；不会生成报告或伪称审核真实性，`externalReviewerAuthenticityVerified=false` 明示边界。必须覆盖当次 R3 current source/native inputs/diff，不能挪用旧 R2/种子报告。
+ 
+-## 外部真实 reviewer 报告与可选 `--seal`
+-
+-可通过 `--reviewer-report` 输入**已存在、真正独立生成的技术报告**，必须同时提供 `--reviewer-sha256`。脚本只检查非空普通文件、路径与显式 SHA，并逐字节复制；不会生成 reviewer 报告，也不会把 hash 匹配伪称为独立性/内容审核。`externalReviewerAuthenticityVerified=false` 明示该边界。调用者必须保证报告真实独立、覆盖当次当前 source/native inputs/diff，不得挪用旧报告。
+-
+-仅提供报告仍然不封印。显式加 `--seal` 才允许调用：
++仅提供报告仍不封印。显式 `--seal` 才允许当次新输出中的唯一 release 操作：
+ 
+ ```text
+-python3 -B release.py candidate --controller-sha256 <固定当前SHA> \
++python3 -B release.py candidate --controller-sha256 <当前固定R3 SHA> \
+   --spec <新输出>/candidate-spec.json --out <新输出>/sealed-candidate
+ ```
+ 
+-这是唯一允许的 release operation。无真实外部报告/明确 SHA 则**构建前即拒绝** `--seal`；封印目标必为当次新输出内的全新目录。配置比对和 protection union 使用只读对象，不访问本地不存在的生产 alias。最终完整 manifest/payload 校验交给未修改的 `release.py seal_candidate`；失败不降级、不强制批准，也不覆写已有输出。
++没有真实外部报告/准确 SHA，构建前即拒绝 `--seal`。失败不降级、不强制批准、不覆写已有输出。候选成功封印也只返回 `candidate-sealed-not-approved`；正式 hash-bound 独立 review/approval 必须在后续独立流程形成。本脚本不生成批准，不执行 capture/preflight/apply/verify/rollback。
+ 
+-**技术报告不等于控制器正式 hash-bound 独立 review/approval。** 即便候选已封印，返回仍为 `candidate-sealed-not-approved`。正式 reviewerScope、reviewerHash 与最终 manifest/capture/packageFiles bindings 必须在独立后续流程中形成，本脚本不生成这些批准对象、不自动 review/approval，也不执行 capture/preflight/apply/verify/rollback。将来任何发布仍属于前台交接后另行授权的主任务流程。
+-
+-## 本次离线测试
++## 本轮隔离复核
+ 
+ ```bash
+ PYTHONDONTWRITEBYTECODE=1 python3 -B test_prepare_local.py -v
+ ```
+ 
+-原 27 项全部保留，新增 3 项当前 R2 pin/scope 固定以及旧 scope/旧 7fc9 capture 拒绝测试。全部 capture/baseline/源码 fixture 位于 `TemporaryDirectory`，构建与 candidate 子进程是显式 mock，测试中的 reviewer 文件也只是 temp 合成 fixture，绝非真实报告。覆盖参数拒绝、输入与输出路径界限、source/freeze/builder/编译 hash 绑定和漂移拒绝、spec/baseline evidence 路径、权限、fresh/closed capture 检查、缺报告拒绝封印、报告不隐式封印、仅 candidate 命令白名单、半失败/已有输出 noReplay，以及不解析生产 alias。另用真实纯校验 helper 确认合成空 native records 会拒绝；完整 mock 成功案例不冒充真实 native ABI 验证。当前结果保存于 `evidence/r2-prepare-tests.txt`。
++原 30 项测试方法保留，新增 R2 scope/d6 pin 拒绝和 R3 private union 漏根拒绝，共 **32/32** 通过。所有 capture/baseline/source/nonce/reviewer fixture 位于 TemporaryDirectory，build/candidate subprocess 完全 mock；真实 pure helper 仍拒绝合成空 native records。这不是实际构建、真实 RPC 或发布证明。完整日志 `evidence/r3-prepare-tests.txt`；controller **89/89** mock 反例日志 `evidence/r3-release-tests.txt`。内存编译及精确 AST 证据在 `evidence/r3-static-checks.json` 和 `evidence/r3-ast-diff.json`，无 pycache。
+ 
+-本次重跑 release 原 43 项与新增 17 项 adapter 测试，结果见 `evidence/r2-release-tests.txt`；Python 内存 `compile()` 证据见 `evidence/r2-static-checks.json`，不产生 pycache。当前 controller 修正是固定 vendor closure 内容/META 绑定，而非假 package metadata；PM2 root package pin 保留，整个 pm2_base inventory 保护不变。真实 fresh R2 capture、当前 HTML/两 API/两 JS、owner nonce、完整交接证明与当次独立报告仍须由授权主任务补齐；本次不独立批准控制器。
+-
+-**私有输出含真实 capture/nonce 时绝不进入 Git，也不 commit/push、上传或分享这些资料。**
++尚缺实际 R3 fresh capture/private tree fullMETA/前台保护集合绑定、retained raw/model 完整 forecast 与 clone 语义证据、真实新 package/manifest/source/tool pins、完整正逆字节和独立差量审。**controllerApproved=false；finalDeployApproval=false；NOT_APPROVED。** 私有输出含真实 capture/nonce 时不可进入 Git，不 commit/push、上传或分享这些资料。

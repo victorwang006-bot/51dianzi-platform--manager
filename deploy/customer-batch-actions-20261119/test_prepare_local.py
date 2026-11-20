@@ -63,7 +63,8 @@ class LocalTests(unittest.TestCase):
             rows.append(dict(id=i, pid=100 + i, name=('dianzi51' if i < 4 else 'dianzi51-admin') if own else 'synthetic-worker-' + str(i),
                              status='online', script=str(cfg.apis[kind]) if own else '/synthetic/worker.js',
                              cwd='/synthetic', execMode='cluster_mode', restarts=0, listenerPort=3000 if own else None,
-                             nodeUniqueId=i if own else None, **{k: 'a' * 64 for k in
+                             nodeUniqueId=i if own else None, pm2ReloadReady=True if own else None,
+                             pm2RawMeta={k: 0 for k in R.PM2_RAW_GENERATED} if own else None, **{k: 'a' * 64 for k in
                              ('topConfigSha256', 'childConfigSha256', 'rawSha256', 'semanticSha256', 'permissionsSha256')}))
         coord = R.encode(dict(shared_release_active=False, window=dict(status='verified', needsOperatorRecovery=False,
                          scope='synthetic-frontend-owner', closedAtUtc=R.now()), window_history=[]))
@@ -432,6 +433,44 @@ class LocalTests(unittest.TestCase):
                 else:
                     helper({}, b'old', b'new')
 
+    def test_r3_current_controller_sha_and_scope_fixed(self):
+        self.assertEqual(P.CONTROLLER_SHA, P.sha((HERE/'release.py').read_bytes()))
+        self.assertEqual(R.SCOPE, 'customer-batch-actions-20261120-6Lfttf6o-R3')
+        self.assertEqual(str(R.Config().stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R3')
+        self.assertEqual(R.OWNER, '6Lfttf6oVWJ8YS69o5FkXQ')
+
+    def test_old_failed_stage_scope_capture_is_not_reusable(self):
+        self.cap['scope'] = 'customer-batch-actions-20261120-6Lfttf6o'
+        self.save_capture()
+        with self.assertRaisesRegex(P.PrepareError, 'fixed production capture binding'):
+            P.prepare(self.args)
+        self.assertFalse(self.out.exists())
+        self.assertEqual(self.calls, [])
+
+    def test_old_7fc9_controller_capture_is_not_reusable(self):
+        self.cap['controllerSha256'] = '7fc9ec42ce21f6d0167b36ffbbe7642865a16f70fc31f8b99bf0da4862598423'
+        self.save_capture()
+        with self.assertRaisesRegex(P.PrepareError, 'fixed production capture binding'):
+            P.prepare(self.args)
+        self.assertFalse(self.out.exists())
+        self.assertEqual(self.calls, [])
+
+
+    def test_r2_scope_and_d6_controller_capture_not_reusable_in_r3(self):
+        for key,value in [('scope','customer-batch-actions-20261120-6Lfttf6o-R2'),
+                          ('controllerSha256','d6f724847e205005060b6d11e0b15d7e31ba0ce373119187d062aba437e4cdec')]:
+            old=self.cap[key]; self.cap[key]=value; self.save_capture()
+            with self.subTest(key=key),self.assertRaisesRegex(P.PrepareError,'fixed production capture binding'):
+                P.prepare(self.args)
+            self.cap[key]=old
+        self.assertEqual(self.calls,[]); self.assertFalse(self.out.exists())
+
+    def test_r3_private_root_union_cannot_be_omitted_from_capture(self):
+        root='/var/lib/dianzi51-private'
+        self.assertIn(root,self.cap['protectionUnion']['paths'])
+        self.cap['protectionUnion']['paths'].remove(root); self.save_capture()
+        with self.assertRaisesRegex(P.PrepareError,'protection union mismatch'):P.prepare(self.args)
+        self.assertEqual(self.calls,[]); self.assertFalse(self.out.exists())
 
 if __name__ == '__main__':
     unittest.main()

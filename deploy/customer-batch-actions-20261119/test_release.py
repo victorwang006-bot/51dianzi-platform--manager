@@ -9,6 +9,8 @@ import copy
 import datetime as dt
 import fcntl
 import importlib.util
+import json
+import time
 import os
 from pathlib import Path
 import stat
@@ -80,17 +82,24 @@ class SafetyTests(unittest.TestCase):
             pid = 30000+i
             proc = self.cfg.proc/str(pid)
             proc.mkdir()
+            env = dict(CUSTOM_VALUE='synthetic-only', NODE_UNIQUE_ID='nested-must-stay', pid='app-value')
+            e = dict(status='online', name=name, pm_id=i, pm_exec_path=str(script),
+                pm_cwd=str(script.parent.parent), exec_mode='cluster_mode' if own else 'fork_mode',
+                restart_time=0, PORT='5100' if i < 4 else '5200' if own else None,
+                env=env, NODE_APP_INSTANCE=str(i), NODE_CHANNEL_FD='3',
+                autostart=True, pm_uptime=1000000, created_at=900000, unstable_restarts=0,
+                prev_restart_delay=0, axm_actions=[], axm_monitor={}, axm_options={}, axm_dynamic={},
+                vizion_running=False, _pm2_version='7.0.3')
+            e.update(env)
+            serialized = json.dumps(dict(e, status='launching'), ensure_ascii=False, separators=(',', ':')).encode()
             raw = b'ROLE='+name.encode()+b'\0NODE_APP_INSTANCE='+str(i).encode()+b'\0NODE_CHANNEL_FD=3\0'
             raw += b'CUSTOM_VALUE=synthetic-only\0pm_uptime=application-value\0'
-            raw += b'pm2_env={"env":{"NODE_UNIQUE_ID":"nested-must-stay","pid":"app-value"}}\0'
+            raw += b'pm2_env='+serialized+b'\0'
             if own:
                 raw += b'NODE_UNIQUE_ID='+str(i+10).encode()+b'\0'
             (proc/'environ').write_bytes(raw)
             (proc/'status').write_bytes(b'Uid:\t1000 1000 1000 1000\nGid:\t1000 1000 1000 1000\nGroups:\t1000\nUmask:\t0022\n')
-            self.raw_rows.append(dict(pm_id=i, name=name, pid=pid, pm2_env=dict(status='online',
-                pm_exec_path=str(script), pm_cwd=str(script.parent.parent), exec_mode='cluster_mode' if own else 'fork_mode',
-                restart_time=0, PORT='5100' if i < 4 else '5200' if own else None,
-                env=dict(CUSTOM_VALUE='synthetic-only'), NODE_APP_INSTANCE=str(i), NODE_CHANNEL_FD='3')))
+            self.raw_rows.append(dict(pm_id=i, name=name, pid=pid, pm2_env=e))
         self.tr = dict(mockTransport=True, rpcSourceSha256=r.H(r.RPC.encode()))
         self.reload_calls = []
         for target, name in [(r.subprocess,'run'), (r.http.client,'HTTPConnection'), (r,'production_reload')]:
@@ -120,9 +129,18 @@ class SafetyTests(unittest.TestCase):
         raw = (old/'environ').read_bytes()
         raw = raw.replace(b'NODE_UNIQUE_ID='+str(before['nodeUniqueId']).encode()+b'\0',
                           b'NODE_UNIQUE_ID='+str(before['nodeUniqueId']+100).encode()+b'\0')
+        time.sleep(0.002)  # deterministic distinct millis, no production timer/budget change
+        stamp = int(dt.datetime.now(dt.timezone.utc).timestamp()*1000)
+        old_serialized = r.raw_values(raw)[b'pm2_env']
+        serialized = r.decode(old_serialized)
+        serialized.update(pm_uptime=stamp, created_at=stamp,
+                          restart_time=before['restarts']+1, unstable_restarts=0, prev_restart_delay=0)
+        raw = raw.replace(b'pm2_env='+old_serialized+b'\0',
+                          b'pm2_env='+json.dumps(serialized, ensure_ascii=False, separators=(',', ':')).encode()+b'\0')
         (new/'environ').write_bytes(raw)
         (new/'status').write_bytes((old/'status').read_bytes())
-        row['pid'] = newpid; row['pm2_env']['restart_time'] += 1
+        row['pid'] = newpid
+        row['pm2_env'].update({k: serialized[k] for k in r.PM2_RAW_GENERATED})
 
     def api_fixture(self, kind):
         chunks = [b'// synthetic baseline, unchanged bytes '+b'x'*1200+b'\n']
@@ -276,7 +294,7 @@ class SafetyTests(unittest.TestCase):
     def test_new_identity_and_fixed_boundary(self):
         cfg = r.Config()
         self.assertEqual(r.OWNER, '6Lfttf6oVWJ8YS69o5FkXQ')
-        self.assertEqual(str(cfg.stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o')
+        self.assertEqual(str(cfg.stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R3')
         self.assertEqual(len(cfg.aliases), 7)
         self.assertEqual(r.identity(self.cfg,self.cap['processes']), list(range(6)))
         with self.assertRaisesRegex(r.ReleaseError,'PRODUCTION_ADAPTER_INJECTION_REFUSED'):
@@ -462,7 +480,7 @@ class SafetyTests(unittest.TestCase):
         c = self.prepare_state()
         path = self.cfg.proc/'30000/environ'
         path.write_bytes(path.read_bytes().replace(b'NODE_UNIQUE_ID=10\0',b'NODE_UNIQUE_ID=11\0'))
-        with r.locked(self.cfg), self.assertRaisesRegex(r.ReleaseError,'FULLGUARD_FOREIGN_DRIFT'):
+        with r.locked(self.cfg), self.assertRaisesRegex(r.ReleaseError,'FULLGUARD_FOREIGN_DRIFT|OWN_NODE_UNIQUE_ID_COLLISION'):
             c.guard()
 
     def test_reload_single_mock_slot_accepts_unique_only_and_preserves_other_eleven(self):
@@ -848,6 +866,529 @@ class SafetyTests(unittest.TestCase):
         self.assertEqual(self.cfg.coord.read_bytes(),changed)
         self.assertFalse((self.cfg.receipt/'failure.json').exists())
 
+class AdapterFilesTests(unittest.TestCase):
+    """Real temp filesystem/helper/transport; synthetic Node/socket/daemon only.
+    No Node execution, actual RPC, production paths, capture or release CLI.
+    """
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(prefix='customer-batch-adapter-r2-')
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        self.cfg = r.Config(pm2_base=self.root/'pm2', pm2_home=self.root/'home',
+                            node=self.root/'node', proc=self.root/'proc', mock=True)
+        self.cfg.pm2_home.mkdir()
+        (self.cfg.proc/'12345').mkdir(parents=True)
+        self.cfg.node.write_bytes(b'synthetic Node binary')
+        (self.cfg.pm2_home/'pm2.pid').write_bytes(b'12345\n')
+        self.sock = self.cfg.pm2_home/'rpc.sock'
+        self.sock.write_bytes(b'synthetic socket record, never connected')
+        self.roots = [self.cfg.pm2_base/'modules'/n for n in ('pm2-axon', 'pm2-axon-rpc')]
+        self.entries = [str(p/'index.js') for p in self.roots]
+        for i, p in enumerate(self.roots):
+            (p/'lib/nested').mkdir(parents=True)
+            (p/'empty').mkdir()
+            (p/'index.js').write_bytes(b"module.exports = require('./lib');\n" if i == 0 else
+                                      b"exports.Client = require('./lib/client');\n")
+            (p/'lib/client.js').write_bytes(b'// synthetic vendored source\n')
+            (p/'lib/nested/data.txt').write_bytes(b'non-JS file also pinned\n')
+            (p/'README.md').write_bytes(b'all regular files bound\n')
+            self.assertFalse((p/'package.json').exists())
+        (self.cfg.pm2_base/'lib/God').mkdir(parents=True)
+        measured = Path('/home/ubuntu/work/customer-batch/pm2-live-source')
+        for name, digest in r.PM2_GENERATION_PINS.items():
+            file = self.cfg.pm2_base/name; file.parent.mkdir(parents=True, exist_ok=True)
+            data = (measured/name).read_bytes(); self.assertEqual(r.H(data), digest)
+            file.write_bytes(data)  # measured source bytes pinned, never evaluated/imported
+        (self.cfg.pm2_base/'lib/Daemon.js').write_bytes(b'synthetic Daemon source')
+        self.calls = []
+        self.native_hook = None
+        real_describe = r.describe
+        def describe(p):
+            record = real_describe(p)
+            return dict(record, kind='socket', statmode=stat.S_IFSOCK | 0o600) if Path(p) == self.sock else record
+        for guard in [patch.object(r, 'describe', side_effect=describe), patch.object(r.os, 'kill'),
+                      patch.dict(r.os.environ, {'NODE_OPTIONS':'', 'NODE_PATH':''}),
+                      patch.object(r.subprocess, 'run', side_effect=self.fake_run)]:
+            guard.start(); self.addCleanup(guard.stop)
+
+    def fake_run(self, command, **kwargs):
+        self.calls.append(command)
+        self.assertEqual(command[:2], [str(self.cfg.node), '-e'])
+        if command[2] == "const b=process.argv[1];process.stdout.write(JSON.stringify(['pm2-axon','pm2-axon-rpc'].map(n=>require.resolve(b+'/modules/'+n))))":
+            self.assertEqual(command[3:], [str(self.cfg.pm2_base)])
+            self.assertEqual(kwargs['timeout'], 15)
+            return r.subprocess.CompletedProcess(command, 0, r.encode(self.entries), b'')
+        if command[2] == "process.stdout.write(process.binding('natives')['internal/cluster/primary'])":
+            if self.native_hook:
+                self.native_hook()
+            return r.subprocess.CompletedProcess(command, 0, b'// synthetic NODE_UNIQUE_ID primary', b'')
+        self.fail('no Node module execution or RPC allowed in this fixture')
+
+    def test_full_vendor_files_dirs_meta_and_root_package_pins(self):
+        actual = r.adapter_files(self.cfg, self.entries)
+        expected = {str(p) for root in self.roots for p in (root, *root.rglob('*'))}
+        self.assertEqual(set(actual), expected)
+        self.assertEqual(actual, {p: r.describe(Path(p)) for p in sorted(expected)})
+        tr = r.transport(self.cfg)
+        files = {p for p, record in actual.items() if record['kind'] == 'file'}
+        original = {str(self.cfg.node), str(self.cfg.pm2_base/'lib/Daemon.js'),
+                    *(str(self.cfg.pm2_base/n) for n in r.PM2_GENERATION_PINS)}
+        self.assertEqual(set(tr['sources']), files | original)
+        self.assertEqual(tr['fullAdapterMeta'], actual)
+        for p, digest in tr['sources'].items():
+            self.assertEqual(digest, r.H(r.regular(Path(p))))
+        self.assertTrue(set(self.entries) <= set(tr['sources']))
+        self.assertEqual(tr['rpcSourceSha256'], r.H(r.RPC.encode()))
+
+    def test_file_and_empty_directory_set_changes_bound(self):
+        original = r.adapter_files(self.cfg, self.entries)
+        file = self.roots[0]/'new.data'; file.write_bytes(b'added')
+        self.assertNotEqual(r.adapter_files(self.cfg, self.entries), original)
+        file.unlink(); (self.roots[0]/'empty').rmdir()
+        self.assertNotEqual(r.adapter_files(self.cfg, self.entries), original)
+
+    def test_same_bytes_metadata_change_bound(self):
+        tr = r.transport(self.cfg)
+        file = self.roots[0]/'lib/client.js'
+        file.chmod(0o600 if stat.S_IMODE(file.stat().st_mode) != 0o600 else 0o644)
+        after = r.transport(self.cfg)
+        self.assertEqual(tr['sources'], after['sources'])
+        self.assertNotEqual(tr['fullAdapterMeta'], after['fullAdapterMeta'])
+
+    def test_source_change_between_snapshot_and_pins_refused(self):
+        target = self.roots[0]/'lib/client.js'; real = r.regular; reads = []
+        def read(p):
+            if Path(p) == target:
+                reads.append(p)
+                if len(reads) == 2:
+                    target.write_bytes(b'changed between snapshot and source pin')
+            return real(p)
+        with patch.object(r, 'regular', side_effect=read), self.assertRaisesRegex(r.ReleaseError, 'ADAPTER_SOURCE_SNAPSHOT_DRIFT'):
+            r.transport(self.cfg)
+
+    def test_late_source_change_refused(self):
+        self.native_hook = lambda: (self.roots[1]/'lib/client.js').write_bytes(b'late code change')
+        with self.assertRaisesRegex(r.ReleaseError, 'ADAPTER_FULL_META_SET_DRIFT'):
+            r.transport(self.cfg)
+
+    def test_late_file_meta_change_refused(self):
+        self.native_hook = lambda: (self.roots[1]/'lib/client.js').chmod(0o400)
+        with self.assertRaisesRegex(r.ReleaseError, 'ADAPTER_FULL_META_SET_DRIFT'):
+            r.transport(self.cfg)
+
+    def test_late_directory_addition_refused(self):
+        self.native_hook = lambda: (self.roots[1]/'new-empty').mkdir()
+        with self.assertRaisesRegex(r.ReleaseError, 'ADAPTER_FULL_META_SET_DRIFT'):
+            r.transport(self.cfg)
+
+    def test_late_file_deletion_refused(self):
+        self.native_hook = lambda: (self.roots[1]/'lib/client.js').unlink()
+        with self.assertRaisesRegex(r.ReleaseError, 'ADAPTER_FULL_META_SET_DRIFT'):
+            r.transport(self.cfg)
+
+    def test_enumeration_race_refused(self):
+        real = Path.iterdir; changed = []
+        def iterdir(p):
+            children = list(real(p))
+            if p == self.roots[0] and not changed:
+                changed.append(True); (p/'unknown-during-enumeration').write_bytes(b'race')
+            return iter(children)
+        with patch.object(Path, 'iterdir', iterdir), self.assertRaisesRegex(r.ReleaseError, 'ADAPTER_ENUMERATION_META_DRIFT'):
+            r.adapter_files(self.cfg, self.entries)
+
+    def test_symlink_file_and_directory_dependency_escape_refused(self):
+        outside = self.root/'outside'; outside.mkdir(); (outside/'dep.js').write_bytes(b'outside dependency')
+        for target in (outside, outside/'dep.js', self.roots[1]/'lib/client.js'):
+            link = self.roots[0]/'escape'; link.symlink_to(target)
+            with self.subTest(target=target), self.assertRaisesRegex(r.ReleaseError, 'SYMLINK_ESCAPE'):
+                r.adapter_files(self.cfg, self.entries)
+            link.unlink()
+
+    def test_hardlink_dependency_escape_refused(self):
+        outside = self.root/'outside-file'; outside.write_bytes(b'outside hardlinked bytes')
+        os.link(outside, self.roots[0]/'hardlink')
+        with self.assertRaisesRegex(r.ReleaseError, 'ADAPTER_SINGLE_REGULAR_REQUIRED'):
+            r.adapter_files(self.cfg, self.entries)
+
+    def test_special_unknown_entry_refused(self):
+        os.mkfifo(self.roots[0]/'unknown-fifo')
+        with self.assertRaisesRegex(r.ReleaseError, 'SPECIAL_FILE_REFUSED'):
+            r.adapter_files(self.cfg, self.entries)
+
+    def test_wrong_resolved_entries_and_npm_fallback_refused(self):
+        candidates = [[str(self.cfg.pm2_base/'node_modules/pm2-axon/index.js'), self.entries[1]],
+                      [str(self.roots[0]/'lib/client.js'), self.entries[1]],
+                      [str(self.root/'outside.js'), self.entries[1]], self.entries[::-1],
+                      [self.entries[0], self.entries[0]], [self.entries[0]+'/../index.js', self.entries[1]],
+                      [None, self.entries[1]], tuple(self.entries), []]
+        for entries in candidates:
+            with self.subTest(entries=entries), self.assertRaisesRegex(r.ReleaseError, 'EXACT_VENDORED_ADAPTER_ENTRIES'):
+                r.adapter_files(self.cfg, entries)
+
+    def test_failed_resolve_has_no_npm_or_other_fallback(self):
+        with patch.object(r.subprocess, 'run', return_value=r.subprocess.CompletedProcess([], 1, b'', b'failed')) as run:
+            with self.assertRaisesRegex(r.ReleaseError, 'FRESH_ADAPTER_RESOLVE_REQUIRED'):
+                r.transport(self.cfg)
+        self.assertEqual(run.call_count, 1)
+        self.assertIn("require.resolve(b+'/modules/'+n)", run.call_args.args[0][2])
+
+    def test_missing_root_package_never_drops_pin_or_falls_back(self):
+        (self.cfg.pm2_base/'package.json').unlink()
+        with self.assertRaises(FileNotFoundError):
+            r.transport(self.cfg)
+        self.assertEqual(len(self.calls), 1)
+
+    def test_missing_index_is_refused(self):
+        (self.roots[0]/'index.js').unlink()
+        with self.assertRaisesRegex(r.ReleaseError, 'ADAPTER_INDEX_FILE_REQUIRED'):
+            r.adapter_files(self.cfg, self.entries)
+
+    def test_rpc_arguments_keep_original_specifiers_and_all_source_pins(self):
+        tr = r.transport(self.cfg); real_fake = self.fake_run; rpc_args = []
+        def run(command, **kwargs):
+            if command[2] == r.RPC:
+                rpc_args.append(r.decode(command[3].encode()))
+                return r.subprocess.CompletedProcess(command, 0, b'[]', b'')
+            return real_fake(command, **kwargs)
+        with patch.object(r.subprocess, 'run', side_effect=run):
+            self.assertEqual(r.rpc(self.cfg, tr), [])
+        self.assertEqual(len(rpc_args), 1)
+        self.assertEqual(rpc_args[0]['pins'], tr['sources'])
+        self.assertEqual(rpc_args[0]['base'], str(self.cfg.pm2_base))
+        self.assertFalse(rpc_args[0]['reload'])
+        self.assertIn("require(a.base+'/modules/pm2-axon')", r.RPC)
+        self.assertIn("require(a.base+'/modules/pm2-axon-rpc')", r.RPC)
+        self.assertIn('for(const [p,h] of Object.entries(a.pins))', r.RPC)
+        self.assertNotIn('node_modules', r.RPC)
+        # Argument preservation only; never an actual RPC usability assertion.
+
+
+
+class R3RawTests(unittest.TestCase):
+    """Strict source-derived raw transformations; synthetic bytes, no Node or RPC."""
+    def setUp(self):
+        self.env = dict(APP='A', NODE_UNIQUE_ID='nested-keep', pid='application-pid',
+                        opaque='{"pm_uptime":123,"NODE_UNIQUE_ID":"app"}')
+        self.e = dict(name='dianzi51', pm_id=190, pm_exec_path='/fixed/front/dist/index.js',
+                      pm_cwd='/fixed/front', exec_mode='cluster_mode', status='online',
+                      autostart=True, wait_ready=False, env=self.env.copy(),
+                      pm_uptime=1000, created_at=900, restart_time=2, unstable_restarts=3,
+                      prev_restart_delay=4, axm_actions=[], axm_monitor={}, axm_options={},
+                      axm_dynamic={}, vizion_running=False, _pm2_version='7.0.3',
+                      nested=dict(pm_uptime='app', created_at='app', NODE_UNIQUE_ID='nested'))
+        self.e.update(self.env)
+        self.model = dict(name='dianzi51', pm_id=190, pid=9001, pm2_env=self.e)
+        self.v = dict(self.e, status='launching')
+        self.raw = self.bytes(self.v)
+
+    def bytes(self, value, outer=b'pm_uptime=app\0created_at=app\0restart_time=app\0pid=app\0status=app\0'):
+        return outer+b'pm2_env='+json.dumps(value, ensure_ascii=False, separators=(',', ':')).encode()+b'\0NODE_UNIQUE_ID=15\0'
+
+    def semantic(self, raw, model=None):
+        return r.pm2_raw_binding(raw, model or self.model)[0]
+
+    def test_exact_source_generated_projection_preserves_all_retained_bytes(self):
+        semantic, meta, ready = r.pm2_raw_binding(self.raw, self.model)
+        self.assertTrue(ready)
+        after = dict(self.v, pm_uptime=1201, created_at=1200, restart_time=3,
+                     unstable_restarts=0, prev_restart_delay=0)
+        model = copy.deepcopy(self.model); model['pm2_env'].update({k:after[k] for k in r.PM2_RAW_GENERATED})
+        self.assertEqual(semantic, self.semantic(self.bytes(after), model))
+        r.pm2_meta_transition(meta, {k:after[k] for k in r.PM2_RAW_GENERATED}, 1100, 1300)
+        self.assertNotEqual(r.H(self.raw),r.H(self.bytes(after)))
+        projected=r.pm2_project(r.raw_values(self.raw)[b'pm2_env'])
+        self.assertIn(b'"env":{"APP":"A","NODE_UNIQUE_ID":"nested-keep","pid":"application-pid"',projected)
+        self.assertIn(b'"nested":{"pm_uptime":"app","created_at":"app","NODE_UNIQUE_ID":"nested"}',projected)
+
+    def test_every_outer_lifecycle_looking_application_value_is_byte_exact(self):
+        for key in sorted(r.LIFECYCLE | {'NODE_APP_INSTANCE','NODE_CHANNEL_FD'}):
+            original = self.bytes(self.v, (key+'=app\0').encode())
+            changed = self.bytes(self.v, (key+'=changed\0').encode())
+            with self.subTest(key=key):
+                self.assertNotEqual(self.semantic(original), self.semantic(changed))
+
+    def test_env_lifecycle_values_not_deleted_even_when_monitor_strip_would(self):
+        for key in sorted(r.LIFECYCLE):
+            model=copy.deepcopy(self.model); value=copy.deepcopy(self.v)
+            model['pm2_env']['env'][key]='app'; value['env'][key]='app'
+            raw=self.bytes(value)
+            with self.subTest(key=key):
+                if key in set(r.PM2_RAW_GENERATED) | {'pm_id','status','axm_actions','axm_monitor','axm_dynamic'}:
+                    with self.assertRaisesRegex(r.ReleaseError,'OVERRIDE_AMBIGUITY'):
+                        self.semantic(raw,model)
+                else:
+                    first=self.semantic(raw,model)
+                    value['env'][key]='changed'; model['pm2_env']['env'][key]='changed'
+                    self.assertNotEqual(first,self.semantic(self.bytes(value),model))
+
+    def test_nested_life_values_and_nested_unique_never_transform(self):
+        for key in ('pm_uptime','created_at','NODE_UNIQUE_ID'):
+            value=copy.deepcopy(self.v); value['nested'][key]='changed'
+            with self.subTest(key=key):
+                self.assertNotEqual(self.semantic(self.raw),self.semantic(self.bytes(value)))
+        value=copy.deepcopy(self.v); model=copy.deepcopy(self.model)
+        value['env']['NODE_UNIQUE_ID']='changed'; model['pm2_env']['env']['NODE_UNIQUE_ID']='changed'
+        self.assertNotEqual(self.semantic(self.raw),self.semantic(self.bytes(value),model))
+
+    def test_application_escape_bytes_not_recursive_canonicalized(self):
+        # Identical JSON values, different retained bytes must have different SHA.
+        changed=self.raw.replace(b'"APP":"A"', rb'"APP":"\u0041"')
+        self.assertEqual(r.decode(r.raw_values(self.raw)[b'pm2_env']),r.decode(r.raw_values(changed)[b'pm2_env']))
+        self.assertNotEqual(self.semantic(self.raw),self.semantic(changed))
+        self.assertFalse(r.pm2_raw_binding(changed,self.model)[2])
+        changed=self.raw.replace(b'"pm_uptime":"app"', rb'"pm_uptime":"\u0061pp"')
+        self.assertNotEqual(self.semantic(self.raw),self.semantic(changed))
+        changed=self.raw.replace(b'\"app\"',rb'"\u0061pp"')
+        self.assertNotEqual(self.semantic(self.raw),self.semantic(changed))
+
+    def test_top_order_whitespace_and_unproved_field_exact(self):
+        for raw in (self.raw.replace(b'"nested":',b'"nested" :'),
+                    self.bytes(dict(self.v, node_version='unproved-new')),
+                    self.bytes(dict(self.v, arbitrary='unproved')),
+                    self.raw.replace(b'"vizion_running":false',b'"vizion_running":true')):
+            self.assertNotEqual(self.semantic(self.raw),self.semantic(raw))
+        value=dict(reversed(list(self.v.items())))
+        self.assertNotEqual(self.semantic(self.raw),self.semantic(self.bytes(value)))
+
+    def test_duplicate_keys_at_top_env_nested_and_escaped_alias_rejected(self):
+        old=r.raw_values(self.raw)[b'pm2_env']
+        for changed in (old[:-1]+b',"pm_id":190}',old.replace(b'"APP":"A"',b'"APP":"A","APP":"A"'),
+                        old.replace(b'"pm_uptime":"app"',rb'"pm_uptime":"app","pm_\u0075ptime":"app"')):
+            with self.subTest(raw=changed),self.assertRaisesRegex(r.ReleaseError,'DUPLICATE_JSON_KEY'):
+                self.semantic(self.raw.replace(old,changed))
+
+    def test_generated_integer_types_and_noncanonical_tokens_refused(self):
+        for key in r.PM2_RAW_GENERATED:
+            for bad in (True,None,'1000',1.5,-1,2**53):
+                value=copy.deepcopy(self.v); model=copy.deepcopy(self.model)
+                value[key]=bad; model['pm2_env'][key]=bad
+                with self.subTest(key=key,bad=bad),self.assertRaises(r.ReleaseError):
+                    self.semantic(self.bytes(value),model)
+        for token in (b'1e3',b'1000.0',b'-0'):
+            changed=self.raw.replace(b'"pm_uptime":1000',b'"pm_uptime":'+token)
+            with self.subTest(token=token),self.assertRaises(r.ReleaseError):self.semantic(changed)
+
+    def test_wait_ready_truthiness_type_ambiguity_refused(self):
+        for value in (0,'',None,[],{}):
+            model=copy.deepcopy(self.model); model['pm2_env']['wait_ready']=value
+            with self.subTest(value=value),self.assertRaisesRegex(r.ReleaseError,'SOURCE_SHAPE'):
+                self.semantic(self.bytes(dict(self.v,wait_ready=value)),model)
+
+    def test_stable_identity_and_wrong_container_types_rejected(self):
+        for key,value in [('name','other'),('pm_id','190'),('pm_id',True),('pm_exec_path','/other'),
+                          ('pm_cwd','/other'),('exec_mode','fork_mode'),('_pm2_version','other')]:
+            with self.subTest(key=key),self.assertRaisesRegex(r.ReleaseError,'IDENTITY_BINDING'):
+                self.semantic(self.bytes(dict(self.v,**{key:value})))
+        for value in ([],{}, {'env':[]}):
+            with self.assertRaises(r.ReleaseError):self.semantic(self.bytes(value))
+
+    def test_current_model_generated_relation_required(self):
+        for key in r.PM2_RAW_GENERATED:
+            model=copy.deepcopy(self.model); model['pm2_env'][key]+=1
+            with self.subTest(key=key),self.assertRaisesRegex(r.ReleaseError,'GENERATED_BINDING'):
+                self.semantic(self.raw,model)
+
+    def test_generation_override_and_container_override_ambiguity_refused(self):
+        for key in set(r.PM2_RAW_GENERATED)|{'pm_id','name','pm2_env','__proto__','pm_exec_path'}:
+            value=copy.deepcopy(self.v); model=copy.deepcopy(self.model)
+            model['pm2_env']['env'][key]=value['env'][key]='app'
+            with self.subTest(key=key),self.assertRaisesRegex(r.ReleaseError,'OVERRIDE_AMBIGUITY'):
+                self.semantic(self.bytes(value),model)
+
+    def test_monitor_added_field_is_not_proven_reload_ready(self):
+        model=copy.deepcopy(self.model); model['pm2_env']['version']='monitor-added'
+        self.assertFalse(r.pm2_raw_binding(self.raw,model)[2])
+        value=dict(self.v); value.pop('prev_restart_delay'); model=copy.deepcopy(self.model)
+        model['pm2_env'].pop('prev_restart_delay')
+        self.assertFalse(r.pm2_raw_binding(self.bytes(value),model)[2])
+
+    def test_merge_object_coercion_ambiguity_refused(self):
+        for app in ({'nested':'app'}, ['nested-app']):
+            value=copy.deepcopy(self.v); model=copy.deepcopy(self.model)
+            value['env']['APP']=app; model['pm2_env']['env']['APP']=app
+            with self.assertRaisesRegex(r.ReleaseError,'COERCION_AMBIGUITY'):
+                self.semantic(self.bytes(value),model)
+
+    def test_restart_time_reset_and_time_window_are_exact_not_whitelisted(self):
+        before={k:self.v[k] for k in r.PM2_RAW_GENERATED}
+        good=dict(pm_uptime=1201,created_at=1200,restart_time=3,unstable_restarts=0,prev_restart_delay=0)
+        for key,value in [('restart_time',2),('restart_time',4),('unstable_restarts',1),
+                          ('prev_restart_delay',1),('created_at',900),('created_at',1400),
+                          ('pm_uptime',1000),('pm_uptime',1500),('restart_time',True)]:
+            with self.subTest(key=key,value=value),self.assertRaises(r.ReleaseError):
+                r.pm2_meta_transition(before,dict(good,**{key:value}),1100,1300)
+
+class R3ProtocolTests(unittest.TestCase):
+    def fixture(self):
+        case=SafetyTests('test_new_identity_and_fixed_boundary'); case.setUp()
+        self.addCleanup(case.doCleanups)
+        return case
+
+    def test_no_reload_intent_when_current_model_forecast_unproved(self):
+        case=self.fixture(); case.raw_rows[0]['pm2_env']['version']='monitor-added'
+        case.make_synthetic_package(); c=case.prepare_state()
+        with r.locked(case.cfg):
+            case.open_window(c); c.change_file('front',True,True); sequence=c.sequence
+            with self.assertRaisesRegex(r.ReleaseError,'UNPROVEN_NO_RELOAD'):c.reload_one(0)
+        self.assertEqual(c.sequence,sequence); self.assertEqual(case.reload_calls,[])
+        self.assertEqual(c.st['events'],[]); self.assertEqual(c.st['loadedSlots'],[])
+
+    def test_illegal_observation_leaves_only_intent_never_loaded_or_unlock(self):
+        case=self.fixture(); c=case.prepare_state(); base=case.simulate_reload
+        def adapter(cfg,tr,before):
+            base(cfg,tr,before)
+            row=next(v for v in case.raw_rows if v['pm_id']==before['id'])
+            path=cfg.proc/str(row['pid'])/'environ'
+            path.write_bytes(path.read_bytes().replace(b'pm_uptime=application-value',b'pm_uptime=changed'))
+        c.reload_adapter=adapter
+        with r.locked(case.cfg):
+            case.open_window(c); c.change_file('front',True,True)
+            with self.assertRaisesRegex(r.ReleaseError,'NODE_PM2_ONLY_LIFECYCLE'):c.reload_one(0)
+            latest=r.decode((case.cfg.receipt/('state-%06d.json'%c.sequence)).read_bytes())
+            self.assertEqual(latest['operation'],'reload-intent-0')
+            self.assertEqual(c.st['events'],[]); self.assertEqual(c.st['loadedSlots'],[])
+            self.assertEqual(c.st['processes'][0]['pid'],30000)
+            result=c.fail(r.ReleaseError('illegal raw observation'))
+            self.assertFalse(result['successProven']); self.assertEqual(len(r.ACTIVE_LOCKS),2)
+            self.assertTrue(r.decode(case.cfg.coord.read_bytes())['shared_release_active'])
+
+    def test_uncertain_adapter_error_keeps_only_proved_observation_then_recovery(self):
+        case=self.fixture(); c=case.prepare_state(); base=case.simulate_reload
+        def adapter(cfg,tr,before):
+            base(cfg,tr,before)
+            raise RuntimeError('synthetic transport uncertainty after legal transition')
+        c.reload_adapter=adapter
+        with r.locked(case.cfg):
+            case.open_window(c); c.change_file('front',True,True)
+            with self.assertRaises(RuntimeError):c.reload_one(0)
+            self.assertEqual(c.st['loadedSlots'],[0])
+            self.assertTrue(c.st['events'][0]['observedPidChange'])
+            self.assertFalse(c.st['events'][0]['transportPassed'])
+            c.state_invariants(c.st)
+            failure=c.fail(r.ReleaseError('uncertain reload'))
+            self.assertFalse(failure['successProven'])
+            self.assertTrue(r.decode(case.cfg.coord.read_bytes())['shared_release_active'])
+
+    def test_observation_checkpoint_failure_keeps_memory_and_durable_intent_uncertain(self):
+        case=self.fixture(); c=case.prepare_state(); real=r.exclusive
+        def fail_observed(path,data,*args):
+            if Path(path).name.startswith('state-') and r.decode(data)['operation'].startswith('observed-single-slot-'):
+                raise OSError('synthetic observed journal fault')
+            return real(path,data,*args)
+        with r.locked(case.cfg):
+            case.open_window(c); c.change_file('front',True,True)
+            with patch.object(r,'exclusive',side_effect=fail_observed),self.assertRaises(OSError):c.reload_one(0)
+            self.assertTrue(c.journal_uncertain); self.assertIsNotNone(c.pending_state_hash)
+            self.assertEqual(c.st['loadedSlots'],[0]); self.assertEqual(len(c.st['events']),1)
+            durable=r.decode((case.cfg.receipt/('state-%06d.json'%(c.sequence-1))).read_bytes())
+            self.assertEqual(durable['operation'],'reload-intent-0')
+            self.assertEqual(durable['state']['loadedSlots'],[])
+            with self.assertRaisesRegex(r.ReleaseError,'JOURNAL_DURABILITY_UNCERTAIN'):c.guard()
+            failure=c.fail(r.ReleaseError('observation not durably recorded'))
+            self.assertFalse(failure['successProven']); self.assertTrue(failure['journalDurabilityUncertain'])
+            self.assertTrue(r.decode(case.cfg.coord.read_bytes())['shared_release_active'])
+
+    def test_partial_journal_intent_cannot_forge_observed_transition(self):
+        case=self.fixture(); c=case.prepare_state()
+        with r.locked(case.cfg):
+            case.open_window(c); c.change_file('front',True,True); c.reload_one(0)
+            good=copy.deepcopy(c.st)
+            for field,value in [('intentStateSha256','0'*64),('attemptSha256','0'*64),
+                                ('intentSequence',1),('afterPm2RawMeta',{})]:
+                bad=copy.deepcopy(good); bad['events'][0][field]=value
+                with self.subTest(field=field),self.assertRaises(r.ReleaseError):c.state_invariants(bad)
+            bad=copy.deepcopy(good); bad['events']=[]
+            with self.assertRaises(r.ReleaseError):c.state_invariants(bad)
+
+    def test_multiple_slot_unique_collision_and_unrolled_raw_are_rejected(self):
+        for drift in ('two-pid','own-unique','unowned-raw','own-unrolled-generated'):
+            case=self.fixture(); c=case.prepare_state(); base=case.simulate_reload
+            def adapter(cfg,tr,before):
+                base(cfg,tr,before)
+                if drift=='two-pid':base(cfg,tr,c.st['processes'][1])
+                elif drift=='own-unique':
+                    row=case.raw_rows[0]; path=cfg.proc/str(row['pid'])/'environ'
+                    path.write_bytes(path.read_bytes().replace(b'NODE_UNIQUE_ID=110\0',b'NODE_UNIQUE_ID=11\0'))
+                else:
+                    pid=30011 if drift=='unowned-raw' else 30001
+                    path=cfg.proc/str(pid)/'environ'; path.write_bytes(path.read_bytes()+b'UNROLLED_DRIFT=1\0')
+            c.reload_adapter=adapter
+            with r.locked(case.cfg):
+                case.open_window(c); c.change_file('front',True,True)
+                with self.subTest(drift=drift),self.assertRaises(r.ReleaseError):c.reload_one(0)
+            self.assertEqual(c.st['events'],[]); self.assertEqual(c.st['loadedSlots'],[])
+
+    def test_observed_source_drift_rejected_before_event_is_recorded(self):
+        case=self.fixture(); c=case.prepare_state(); base=case.simulate_reload
+        def adapter(cfg,tr,before):
+            base(cfg,tr,before); case.tr['sourceDrift']='different source'
+        c.reload_adapter=adapter
+        with r.locked(case.cfg):
+            case.open_window(c); c.change_file('front',True,True)
+            with self.assertRaisesRegex(r.ReleaseError,'SOURCE_DRIFT'):c.reload_one(0)
+        self.assertEqual(c.st['events'],[]); self.assertEqual(c.st['loadedSlots'],[])
+
+    def test_exact_default_private_root_keeps_all_prior_protection(self):
+        cfg=r.Config()
+        self.assertEqual(cfg.extra_protected,(Path('/opt/config/dianzi51-admin/runtime.env'),
+            Path('/opt/config/dianzi51/runtime.env'),Path('/var/lib/dianzi51-private')))
+        self.assertNotIn(Path('/var/lib'),cfg.extra_protected)
+        self.assertEqual(len(cfg.aliases),7)
+
+    def test_private_root_full_files_emptydirs_meta_set_and_existing_union(self):
+        case=self.fixture(); root=case.root/'private'; (root/'official-technical').mkdir(parents=True)
+        (root/'empty').mkdir(); store=root/'official-technical/prepared-v1.json'; store.write_bytes(b'{"synthetic":true}')
+        cfg=replace(case.cfg,extra_protected=(root,))
+        paths,links=r.union(cfg,case.original_coord)
+        original=r.inventory(cfg,case.cap['processes'],paths,links)
+        self.assertTrue({str(p) for p in (root,*root.rglob('*'))}<=set(original))
+        self.assertEqual(original[str(root/'empty')],r.describe(root/'empty'))
+        store.chmod(0o600)
+        self.assertNotEqual(r.inventory(cfg,case.cap['processes'],paths,links),original)
+        store.write_bytes(b'{"synthetic":false}')
+        self.assertNotEqual(r.inventory(cfg,case.cap['processes'],paths,links),original)
+        (root/'new-empty').mkdir()
+        self.assertNotEqual(set(r.inventory(cfg,case.cap['processes'],paths,links)),set(original))
+        (root/'empty').rmdir()
+        self.assertNotIn(str(root/'empty'),r.inventory(cfg,case.cap['processes'],paths,links))
+
+    def test_private_root_special_entry_fail_closed(self):
+        case=self.fixture(); root=case.root/'private'; root.mkdir(); os.mkfifo(root/'fifo')
+        with self.assertRaisesRegex(r.ReleaseError,'SPECIAL_FILE_REFUSED'):
+            r.inventory(case.cfg,case.cap['processes'],(root,))
+
+class R3SourcePinTests(unittest.TestCase):
+    setUp = AdapterFilesTests.setUp
+    fake_run = AdapterFilesTests.fake_run
+    def test_generation_pins_all_measured_exact_no_missing_sources(self):
+        tr=r.transport(self.cfg)
+        for name,digest in r.PM2_GENERATION_PINS.items():
+            self.assertEqual(tr['sources'][str(self.cfg.pm2_base/name)],digest)
+        for name in ('lib/God.js','lib/God/ClusterMode.js','lib/God/Methods.js',
+                     'lib/Utility.js','lib/ProcessContainer.js','constants.js'):
+            self.assertIn(name,r.PM2_GENERATION_PINS)
+
+    def test_loader_env_refused_before_any_node_probe_without_unsetting(self):
+        for key in ('NODE_OPTIONS','NODE_PATH'):
+            with self.subTest(key=key),patch.dict(r.os.environ,{key:'synthetic-untrusted-loader'}):
+                before=dict(r.os.environ); self.calls.clear()
+                with self.assertRaisesRegex(r.ReleaseError,'NO_NODE_EXECUTION'):r.transport(self.cfg)
+                self.assertEqual(self.calls,[])
+                self.assertEqual(dict(r.os.environ),before)
+
+    def test_absent_and_empty_loader_env_allowed_only_with_mock_node(self):
+        with patch.dict(r.os.environ,{},clear=True):
+            r.transport(self.cfg)
+        with patch.dict(r.os.environ,{'NODE_OPTIONS':'','NODE_PATH':''}):
+            r.transport(self.cfg)
+        self.assertEqual(len(self.calls),4)
+
+    def test_each_generating_source_drift_fail_closed(self):
+        for name in r.PM2_GENERATION_PINS:
+            path=self.cfg.pm2_base/name; original=path.read_bytes(); path.write_bytes(original+b'\n// drift')
+            with self.subTest(name=name),self.assertRaisesRegex(r.ReleaseError,'GENERATION_SOURCE_PIN_DRIFT'):
+                r.transport(self.cfg)
+            path.write_bytes(original)
 
 if __name__ == '__main__':
     unittest.main()

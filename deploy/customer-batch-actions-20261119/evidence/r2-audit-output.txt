@@ -1,0 +1,50 @@
+{
+  "controllerSha256": "d6f724847e205005060b6d11e0b15d7e31ba0ce373119187d062aba437e4cdec",
+  "changedNodes": [
+    "SCOPE",
+    "transport"
+  ],
+  "newNodes": [
+    "adapter_files"
+  ],
+  "tests": {
+    "test_release.py": {
+      "originalTests": 43,
+      "originalTestsRetained": true,
+      "modifiedOriginalTests": [
+        "SafetyTests.test_new_identity_and_fixed_boundary"
+      ],
+      "newTests": [
+        "AdapterFilesTests.test_enumeration_race_refused",
+        "AdapterFilesTests.test_failed_resolve_has_no_npm_or_other_fallback",
+        "AdapterFilesTests.test_file_and_empty_directory_set_changes_bound",
+        "AdapterFilesTests.test_full_vendor_files_dirs_meta_and_root_package_pins",
+        "AdapterFilesTests.test_hardlink_dependency_escape_refused",
+        "AdapterFilesTests.test_late_directory_addition_refused",
+        "AdapterFilesTests.test_late_file_deletion_refused",
+        "AdapterFilesTests.test_late_file_meta_change_refused",
+        "AdapterFilesTests.test_late_source_change_refused",
+        "AdapterFilesTests.test_missing_index_is_refused",
+        "AdapterFilesTests.test_missing_root_package_never_drops_pin_or_falls_back",
+        "AdapterFilesTests.test_rpc_arguments_keep_original_specifiers_and_all_source_pins",
+        "AdapterFilesTests.test_same_bytes_metadata_change_bound",
+        "AdapterFilesTests.test_source_change_between_snapshot_and_pins_refused",
+        "AdapterFilesTests.test_special_unknown_entry_refused",
+        "AdapterFilesTests.test_symlink_file_and_directory_dependency_escape_refused",
+        "AdapterFilesTests.test_wrong_resolved_entries_and_npm_fallback_refused"
+      ],
+      "totalTests": 60
+    },
+    "test_prepare_local.py": {
+      "originalTests": 27,
+      "originalTestsRetained": true,
+      "modifiedOriginalTests": [],
+      "newTests": [
+        "LocalTests.test_old_7fc9_controller_capture_is_not_reusable",
+        "LocalTests.test_old_failed_stage_scope_capture_is_not_reusable",
+        "LocalTests.test_r2_current_controller_sha_and_scope_fixed"
+      ],
+      "totalTests": 30
+    }
+  }
+}

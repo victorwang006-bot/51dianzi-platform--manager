@@ -24,7 +24,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 
 OWNER = '6Lfttf6oVWJ8YS69o5FkXQ'
-SCOPE = 'customer-batch-actions-20261120-6Lfttf6o'
+SCOPE = 'customer-batch-actions-20261120-6Lfttf6o-R3'
 API_BASE = '/opt/releases/20261110-customer-workbench-b7f3a2a7e317'
 FRONT_API = API_BASE + '/front/dist/index.js'
 ADMIN_API = API_BASE + '/admin/dist/index.js'
@@ -207,7 +207,8 @@ class Config:
     pm2_base: Path = Path('/usr/local/lib/node_modules/pm2')
     node: Path = Path('/usr/bin/node-22')
     extra_protected: tuple = (Path('/opt/config/dianzi51-admin/runtime.env'),
-                              Path('/opt/config/dianzi51/runtime.env'),)
+                              Path('/opt/config/dianzi51/runtime.env'),
+                              Path('/var/lib/dianzi51-private'),)
     extra_links: tuple = ()
     mock: bool = False  # never selectable by CLI
 
@@ -378,7 +379,22 @@ def shallow_pm2(v):
     # No recursive application-value interpretation or stripping.
     return {k: value for k, value in v.items() if k not in LIFECYCLE}
 
-def raw_semantics(data, own=False):
+# These measured generating/reset sources define the ONLY serialized exceptions.
+# Node/Daemon and both complete vendor trees remain separately source/META pinned.
+PM2_GENERATION_PINS = {
+    'lib/God.js': 'f598e5113890418827e31dd52fc3538e8f19287fad212cafd9388b0216fe500d',
+    'lib/God/ClusterMode.js': 'b4a9304e12f468f87a039c174c6ea4a1001f21d9dd1f5317121ed217bc389119',
+    'lib/God/Reload.js': '5e90112e447c4634009ea35005ffd477aab93064f55390288c56b51eee25992e',
+    'lib/God/Methods.js': '577a8505074225dfe73ce2c955c844662c6bc9d76c31d8102f809a1691262044',
+    'lib/Utility.js': '66cd15711be69f40f6ee3c3f60adcf07e58d0bcdec9552ec5104530b22ba28f1',
+    'lib/ProcessContainer.js': '712b414f248a460f58d4365898fa7b27d39bf7f571ac889359e3a7b6a32419d1',
+    'constants.js': '5a4adce0c3c277d4974c0ebdefb22d62ffcad74edcf910bfeeff287dacb8a853',
+    'package.json': 'f2819cffb2aae16bb813596575410877570a253be11949260caa33c8038788d6',
+}
+PM2_RAW_GENERATED = ('pm_uptime', 'restart_time', 'created_at',
+                     'unstable_restarts', 'prev_restart_delay')
+
+def raw_values(data):
     need(data.endswith(b'\0'), 'RAW_NUL_REQUIRED')
     values = {}
     for entry in data[:-1].split(b'\0'):
@@ -386,15 +402,134 @@ def raw_semantics(data, own=False):
         k, v = entry.split(b'=', 1)
         need(k and k not in values, 'RAW_DUPLICATE_OR_EMPTY')
         values[k] = v
+    return values
+
+def raw_semantics(data, own=False, serialized=None):
+    values = raw_values(data)
     if own:
         need(b'NODE_UNIQUE_ID' in values and re.fullmatch(rb'[0-9]+', values[b'NODE_UNIQUE_ID']),
              'OWN_OUTER_NODE_UNIQUE_ID_DECIMAL')
-        del values[b'NODE_UNIQUE_ID']  # ONLY the real outer Node cluster lifecycle key
-    # All other raw environment values are byte-bound, including apparent PM2
-    # lifecycle names and nested JSON. Non-reloaded slots also require rawSha256.
+        del values[b'NODE_UNIQUE_ID']
+        if serialized is not None:
+            need(b'pm2_env' in values, 'PM2_SERIALIZED_CONTAINER_REQUIRED')
+            values[b'pm2_env'] = serialized
+    # No recursive canonicalization: each retained value is its original byte string.
     norm = {k.decode('utf8', 'surrogateescape'): v.decode('utf8', 'surrogateescape')
             for k, v in values.items()}
     return H(encode(norm))
+
+def pm2_top_tokens(raw):
+    """Strict JSON first; then locate just top value spans without re-encoding them."""
+    value = decode(raw)
+    need(isinstance(value, dict), 'PM2_SERIALIZED_OBJECT')
+    try:
+        text = raw.decode('utf8')
+        scanner = json.JSONDecoder()
+        def ws(i):
+            while i < len(text) and text[i] in ' \t\r\n':
+                i += 1
+            return i
+        i = ws(0)
+        need(text[i:i+1] == '{', 'PM2_TOP_OBJECT')
+        i = ws(i+1); spans = {}
+        while text[i:i+1] != '}':
+            key, i = scanner.raw_decode(text, i)
+            need(isinstance(key, str) and key not in spans, 'PM2_TOP_KEY')
+            i = ws(i); need(text[i:i+1] == ':', 'PM2_TOP_COLON')
+            a = ws(i+1); _, b = scanner.raw_decode(text, a)
+            spans[key] = (a, b)
+            i = ws(b)
+            if text[i:i+1] == '}':
+                break
+            need(text[i:i+1] == ',', 'PM2_TOP_COMMA'); i = ws(i+1)
+        need(text[i:i+1] == '}' and ws(i+1) == len(text) and set(spans) == set(value),
+             'PM2_TOP_COMPLETE')
+        return value, text, spans
+    except (ValueError, UnicodeError, IndexError) as exc:
+        raise ReleaseError('PM2_TOP_INVALID') from exc
+
+def pm2_project(raw):
+    value, text, spans = pm2_top_tokens(raw)
+    replacements = []
+    for key in PM2_RAW_GENERATED:
+        if key in value:
+            a, b = spans[key]
+            need(integer(value[key]) and 0 <= value[key] < 2**53
+                 and re.fullmatch(r'0|[1-9][0-9]*', text[a:b]), 'PM2_GENERATED_INTEGER_TOKEN')
+            replacements.append((a, b))
+    for a, b in sorted(replacements, reverse=True):
+        text = text[:a] + '0' + text[b:]
+    return text.encode('utf8')
+
+def pm2_raw_binding(raw, model):
+    """Source-defined narrow proof; unresolved monitor/fork bytes yield not-ready.
+    No new/deleted top field, application escape or opaque byte gets an exception.
+    """
+    outer = raw_values(raw)
+    need(b'pm2_env' in outer, 'PM2_SERIALIZED_CONTAINER_REQUIRED')
+    data = outer[b'pm2_env']; value, _, _ = pm2_top_tokens(data)
+    e = model['pm2_env']
+    need(isinstance(e, dict) and isinstance(e.get('env'), dict)
+         and isinstance(value.get('env'), dict), 'PM2_ENV_OBJECT_REQUIRED')
+    bindings = {'name': model['name'], 'pm_id': model['pm_id'],
+                'pm_exec_path': e['pm_exec_path'], 'pm_cwd': e['pm_cwd'],
+                'exec_mode': 'cluster_mode', '_pm2_version': '7.0.3'}
+    need(integer(model['pm_id']) and model['pm_id'] >= 0
+         and all(isinstance(bindings[k], str) and bindings[k] for k in
+                 ('name', 'pm_exec_path', 'pm_cwd'))
+         and all(k in value and encode(value[k]) == encode(v) for k, v in bindings.items())
+         and integer(e.get('pm_id')) and e['pm_id'] == model['pm_id']
+         and e.get('name') == model['name']
+         and e.get('exec_mode') == 'cluster_mode', 'PM2_RAW_IDENTITY_BINDING')
+    generated = set(PM2_RAW_GENERATED) | {'status', 'axm_actions', 'axm_monitor', 'axm_options', 'axm_dynamic'}
+    need(not (set(e['env']) & (set(bindings) | generated |
+              {'autostart', 'wait_ready', 'pm2_env', '__proto__'})),
+         'PM2_ENV_OVERRIDE_AMBIGUITY')
+    need(encode(value['env']) == encode(e['env']), 'PM2_RAW_MODEL_ENV_BINDING')
+    need(e.get('autostart') is True and ('wait_ready' not in e or e['wait_ready'] is False)
+         and value.get('autostart') is True
+         and ('wait_ready' not in value or value['wait_ready'] is False)
+         and value.get('status') == 'launching' and e.get('status') == 'online'
+         and value.get('axm_actions') == []
+         and all(value.get(k) == {} for k in ('axm_monitor', 'axm_options', 'axm_dynamic')),
+         'PM2_GENERATION_SOURCE_SHAPE')
+    need(all(k in value for k in ('pm_uptime', 'restart_time', 'created_at')),
+         'PM2_REQUIRED_GENERATED_FIELDS')
+    projected = pm2_project(data)
+    metadata = {k: value.get(k) for k in PM2_RAW_GENERATED}
+    need(all(k not in value or (k in e and encode(value[k]) == encode(e[k]))
+             for k in PM2_RAW_GENERATED), 'PM2_RAW_MODEL_GENERATED_BINDING')
+    need(metadata['pm_uptime'] > 0 and metadata['created_at'] > 0,
+         'PM2_GENERATED_TIME_POSITIVE')
+    # Conservative forecast of Reload -> resetState -> executeApp -> cluster.fork.
+    # Python serialization is used ONLY as a byte-equality gate, never to replace
+    # retained application bytes. A JS/Python escape/order difference blocks.
+    forecast = copy.deepcopy(e)
+    for k, v in e['env'].items():
+        need(not isinstance(v, (dict, list)), 'PM2_ENV_MERGE_COERCION_AMBIGUITY')
+        if v != '[object Object]':
+            forecast[k] = v
+    forecast.update(status='launching', pm_uptime=0, restart_time=0,
+                    created_at=0, unstable_restarts=0, prev_restart_delay=0,
+                    axm_actions=[], axm_monitor={}, axm_options={}, axm_dynamic={})
+    forecast['vizion_running'] = forecast.get('vizion_running', False)
+    forecast['_pm2_version'] = '7.0.3'
+    predicted = json.dumps(forecast, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf8')
+    ready = pm2_project(predicted) == projected
+    return raw_semantics(raw, True, projected), metadata, ready
+
+def pm2_meta_transition(before, after, earliest, latest):
+    exact(before, ' '.join(PM2_RAW_GENERATED), 'PM2_BEFORE_META_SCHEMA')
+    exact(after, ' '.join(PM2_RAW_GENERATED), 'PM2_AFTER_META_SCHEMA')
+    need(all(integer(v) and 0 <= v < 2**53 for v in before.values())
+         and all(integer(v) and 0 <= v < 2**53 for v in after.values()), 'PM2_TRANSITION_META_INTEGER')
+    need(after['restart_time'] == before['restart_time'] + 1
+         and earliest <= after['created_at'] <= after['pm_uptime'] <= latest
+         and after['pm_uptime'] > before['pm_uptime']
+         and after['created_at'] > before['created_at']
+         and after['unstable_restarts'] == after['prev_restart_delay'] == 0,
+         'PM2_SOURCE_DEFINED_EXACT_TRANSITION')
+
 
 def permissions(cfg, pid):
     fields = {}
@@ -418,6 +553,38 @@ try{verify();const axon=require(a.base+'/modules/pm2-axon'),rpc=require(a.base+'
 c.call('getMonitorData',{},(err,rows)=>{try{if(err)throw Error('monitor');verify();if(!a.reload){done=true;process.stdout.write(JSON.stringify(rows),()=>{req.close();process.exit(0)});return}target(rows);c.call('reloadProcessId',{id:a.id,env:{}},(err)=>{try{if(err)throw Error('reload');verify();done=true;process.stdout.write('{}',()=>{req.close();process.exit(0)})}catch(_){fail()}})}catch(_){fail()}})}catch(_){fail()}
 '''
 
+def adapter_files(cfg, entries):
+    """Pure fixed vendor closure snapshot, not guessed npm package metadata.
+    Only the two measured absolute index.js resolutions are accepted. Every
+    file and directory (including lib and empty dirs) is full-META bound;
+    symlinks, hardlinked files, special entries and enumeration drift refuse.
+    Actual transitive dependencies remain protected by full pm2_base inventory.
+    """
+    roots = [cfg.pm2_base / 'modules' / n for n in ('pm2-axon', 'pm2-axon-rpc')]
+    need(isinstance(entries, list) and entries == [str(p / 'index.js') for p in roots],
+         'EXACT_VENDORED_ADAPTER_ENTRIES')
+    out = {}
+    def visit(p, root):
+        p = no_link(p)
+        need(p == root or root in p.parents, 'ADAPTER_TREE_ESCAPE')
+        record = describe(p)
+        need(record['kind'] in ('file', 'directory'), 'ADAPTER_FILE_OR_DIRECTORY_ONLY')
+        if record['kind'] == 'file':
+            need(record['nlink'] == 1, 'ADAPTER_SINGLE_REGULAR_REQUIRED')
+        out[str(p)] = record
+        if record['kind'] == 'directory':
+            children = sorted(p.iterdir())
+            for child in children:
+                visit(child, root)
+            need(sorted(p.iterdir()) == children and describe(p) == record,
+                 'ADAPTER_ENUMERATION_META_DRIFT')
+    for root in roots:
+        root = no_link(root)
+        need(describe(root)['kind'] == 'directory', 'ADAPTER_DIRECTORY_REQUIRED')
+        visit(root, root)
+        need(out.get(str(root / 'index.js'), {}).get('kind') == 'file', 'ADAPTER_INDEX_FILE_REQUIRED')
+    return dict(sorted(out.items()))
+
 def transport(cfg):
     sock = cfg.pm2_home / 'rpc.sock'
     r = describe(sock)
@@ -426,27 +593,32 @@ def transport(cfg):
     need(re.fullmatch(rb'[1-9][0-9]*', pid), 'DAEMON_PID_REQUIRED')
     os.kill(int(pid), 0)
     need((cfg.proc / str(int(pid))).is_dir(), 'DAEMON_PROC_REQUIRED')
-    sources = [cfg.node, cfg.pm2_base / 'lib/God/Reload.js', cfg.pm2_base / 'lib/Daemon.js',
-               cfg.pm2_base / 'modules/pm2-axon/package.json',
-               cfg.pm2_base / 'modules/pm2-axon-rpc/package.json']
+    sources = [cfg.node, cfg.pm2_base / 'lib/Daemon.js',
+               *(cfg.pm2_base / n for n in PM2_GENERATION_PINS)]
+    need(all(os.environ.get(k) in (None, '') for k in ('NODE_OPTIONS', 'NODE_PATH')),
+         'ROOT_NODE_LOADER_ENV_NOT_EMPTY_NO_NODE_EXECUTION')
     resolved = subprocess.run([str(cfg.node), '-e',
         "const b=process.argv[1];process.stdout.write(JSON.stringify(['pm2-axon','pm2-axon-rpc'].map(n=>require.resolve(b+'/modules/'+n))))",
         str(cfg.pm2_base)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
     need(resolved.returncode == 0, 'FRESH_ADAPTER_RESOLVE_REQUIRED')
     entries = decode(resolved.stdout)
     need(isinstance(entries, list) and len(entries) == 2, 'EXACT_ADAPTER_ENTRIES')
-    for entry in entries:
-        p = no_link(Path(entry))
-        need(cfg.pm2_base in p.parents, 'ADAPTER_ENTRY_ESCAPE')
-        sources.append(p)
+    adapters = adapter_files(cfg, entries)
+    sources.extend(Path(p) for p, record in adapters.items() if record['kind'] == 'file')
     pins = {str(p): H(regular(p)) for p in sources}
+    need(all(pins[str(cfg.pm2_base/n)] == h for n, h in PM2_GENERATION_PINS.items()),
+         'PM2_GENERATION_SOURCE_PIN_DRIFT')
+    need(all(pins[p] == record['sha256'] for p, record in adapters.items()
+             if record['kind'] == 'file'), 'ADAPTER_SOURCE_SNAPSHOT_DRIFT')
     # Node cluster primary implementation binds the specifically allowed NODE_UNIQUE_ID exception.
     result = subprocess.run([str(cfg.node), '-e',
         "process.stdout.write(process.binding('natives')['internal/cluster/primary'])"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
     need(result.returncode == 0 and b'NODE_UNIQUE_ID' in result.stdout, 'NODE_CLUSTER_SOURCE_REQUIRED')
+    need(adapter_files(cfg, entries) == adapters, 'ADAPTER_FULL_META_SET_DRIFT')
     return dict(socket=r, daemonPid=int(pid), pidfile=describe(cfg.pm2_home / 'pm2.pid'),
-                sources=pins, nodeClusterPrimarySha256=H(result.stdout), rpcSourceSha256=H(RPC.encode()))
+                sources=pins, fullAdapterMeta=adapters,
+                nodeClusterPrimarySha256=H(result.stdout), rpcSourceSha256=H(RPC.encode()))
 
 def rpc(cfg, tr, reload_row=None):
     need(transport(cfg) == tr, 'SOCKET_ADAPTER_SOURCE_DRIFT')
@@ -483,11 +655,12 @@ def snapshot_rows(cfg, tr):
             need(str(port).isdigit() and 1 <= int(port) <= 65535 and not e.get('wait_ready')
                  and ('PORT' not in child or str(child['PORT']) == str(port)), 'CAPTURE_LISTENER_PORT_REQUIRED')
         raw = (cfg.proc / str(pid) / 'environ').read_bytes()
+        semantic, metadata, ready = pm2_raw_binding(raw, r) if own else (raw_semantics(raw), None, None)
         out.append(dict(id=r['pm_id'], name=r['name'], pid=pid, status=e['status'],
             script=e['pm_exec_path'], cwd=e['pm_cwd'], execMode=e['exec_mode'],
             restarts=e.get('restart_time'), listenerPort=int(port) if own else None,
             topConfigSha256=H(encode(top)), childConfigSha256=H(encode(child)),
-            rawSha256=H(raw), semanticSha256=raw_semantics(raw, own),
+            rawSha256=H(raw), semanticSha256=semantic, pm2RawMeta=metadata, pm2ReloadReady=ready,
             nodeUniqueId=int(next(v.split(b'=',1)[1] for v in raw[:-1].split(b'\0')
                                  if v.startswith(b'NODE_UNIQUE_ID='))) if own else None,
             permissionsSha256=permissions(cfg, pid)))
@@ -498,7 +671,7 @@ def identity(cfg, rows):
          and len({r['pid'] for r in rows}) == 12, 'TWELVE_UNIQUE_SLOTS')
     for r in rows:
         exact(r, 'id name pid status script cwd execMode restarts listenerPort topConfigSha256 '
-              'childConfigSha256 rawSha256 semanticSha256 nodeUniqueId permissionsSha256', 'PROCESS_SCHEMA')
+              'childConfigSha256 rawSha256 semanticSha256 nodeUniqueId permissionsSha256 pm2RawMeta pm2ReloadReady', 'PROCESS_SCHEMA')
         need(integer(r['id']) and integer(r['pid']) and r['pid'] > 0 and r['status'] == 'online'
              and integer(r['restarts']) and r['restarts'] >= 0, 'PROCESS_ONLINE_IDENTITY')
         for k in ('topConfigSha256', 'childConfigSha256', 'rawSha256', 'semanticSha256', 'permissionsSha256'):
@@ -508,10 +681,19 @@ def identity(cfg, rows):
         group = [r for r in rows if r['name'] == name]
         need(len(group) == count and all(r['script'] == str(path) and r['execMode'] == 'cluster_mode'
              and integer(r['listenerPort']) and 1 <= r['listenerPort'] <= 65535
-             and integer(r['nodeUniqueId']) and r['nodeUniqueId'] >= 0 for r in group),
+             and integer(r['nodeUniqueId']) and r['nodeUniqueId'] >= 0
+             and type(r['pm2ReloadReady']) is bool and isinstance(r['pm2RawMeta'], dict)
+             and set(r['pm2RawMeta']) == set(PM2_RAW_GENERATED)
+             and r['pm2RawMeta']['restart_time'] == r['restarts']
+             and all(v is None or (integer(v) and 0 <= v < 2**53)
+                     for v in r['pm2RawMeta'].values()) for r in group),
              'FRESH_UNIQUE_FIXED_EXEC_PATH_SCOPE')
         need(len({r['listenerPort'] for r in group}) == 1, 'SINGLE_LISTENER_PORT_PER_API')
         ids.extend(r['id'] for r in group)
+    need(all(r['pm2RawMeta'] is None and r['pm2ReloadReady'] is None
+             for r in rows if r['id'] not in ids), 'UNOWNED_RAW_NO_EXCEPTION')
+    need(len({r['nodeUniqueId'] for r in rows if r['id'] in ids}) == 6,
+         'OWN_NODE_UNIQUE_ID_COLLISION')
     need(len(set(ids)) == 6, 'EXACT_SIX_OWN_SLOTS')
     return ids
 
@@ -1151,21 +1333,48 @@ class Controller:
                      and stat.S_IMODE(current['statmode']) == 0o644 and current['uid'] == hm['uid']
                      and current['gid'] == hm['gid'] and current['nlink'] == 1, 'STATE_IMMUTABLE_ASSET_BYTES_OWNER')
         original = {x['id']:x for x in self.b['c']['processes']}
-        expected = {i:dict(pid=x['pid'],restarts=x['restarts'],rawSha256=x['rawSha256'],nodeUniqueId=x['nodeUniqueId'])
+        expected = {i:dict(pid=x['pid'],restarts=x['restarts'],rawSha256=x['rawSha256'],nodeUniqueId=x['nodeUniqueId'],
+                          pm2RawMeta=x['pm2RawMeta'])
                     for i,x in original.items()}
         loaded = set()
-        for e in st['events']:
+        for event_index, e in enumerate(st['events']):
             exact(e, 'id rollback beforePid afterPid beforeRestart afterRestart observedPidChange transportPassed '
-                  'apiSha256 beforeRawSha256 afterRawSha256 semanticSha256 beforeUniqueId afterUniqueId', 'EVENT_EXACT_SCHEMA')
+                  'apiSha256 beforeRawSha256 afterRawSha256 semanticSha256 beforeUniqueId afterUniqueId '
+                  'beforePm2RawMeta afterPm2RawMeta attemptSha256 intentStateSha256 intentSequence observedAtUtc',
+                  'EVENT_EXACT_SCHEMA')
             i = e['id']
+            need(i in expected and e['beforePm2RawMeta'] == expected[i]['pm2RawMeta'],
+                 'STATE_PM2_META_CHAIN')
+            need(integer(e['intentSequence']) and e['intentSequence'] > 0
+                 and e['attemptSha256'] == self.attempt_hash, 'STATE_DURABLE_INTENT_ATTEMPT')
+            intent_raw = regular(self.cfg.receipt/('state-%06d.json' % e['intentSequence']))
+            intent = decode(intent_raw)
+            need(H(intent_raw) == pin(e['intentStateSha256'])
+                 and intent.get('attemptSha256') == self.attempt_hash
+                 and intent.get('sequence') == e['intentSequence']
+                 and all(intent.get(k) == v for k,v in self.common().items())
+                 and intent.get('operation') == (('rollback-reload-intent-' if e['rollback'] else 'reload-intent-') + str(i))
+                 and intent['state']['events'] == st['events'][:event_index]
+                 and intent['state']['transport'] == self.b['c']['transport']
+                 and intent['state']['processes'] == [dict(original[j], **expected[j]) for j in sorted(original)]
+                 and set(intent['state']['loadedSlots']) == loaded
+                 and len(intent['state']['loadedSlots']) == len(loaded)
+                 and (event_index == 0 or e['intentSequence'] > st['events'][event_index-1]['intentSequence']),
+                 'STATE_DURABLE_SINGLE_SLOT_INTENT')
             need(i in self.b['ids'] and type(e['rollback']) is bool and type(e['transportPassed']) is bool
                  and type(e['observedPidChange']) is bool and e['beforePid'] == expected[i]['pid']
                  and e['beforeRestart'] == expected[i]['restarts'] and e['beforeRawSha256'] == expected[i]['rawSha256']
                  and e['semanticSha256'] == original[i]['semanticSha256'], 'STATE_EVENT_TRANSITION_BINDING')
             kind = 'front' if original[i]['script'] == str(self.cfg.front_api) else 'admin'
             content = self.b['payload'][('before-' if e['rollback'] else 'after-')+kind+'-api.js']
-            need(e['apiSha256'] == H(content), 'STATE_EVENT_ONLY_OWN_API_PAYLOAD')
+            need(e['apiSha256'] == H(content)
+                 and intent['state']['targets'][kind] == ('before' if e['rollback'] else 'candidate')
+                 and intent['state']['protectedFiles'][original[i]['script']]['sha256'] == e['apiSha256'],
+                 'STATE_EVENT_ONLY_OWN_API_PAYLOAD')
             if e['observedPidChange']:
+                pm2_meta_transition(e['beforePm2RawMeta'], e['afterPm2RawMeta'],
+                    int(dt.datetime.fromisoformat(intent['recordedAtUtc']).timestamp()*1000),
+                    int(dt.datetime.fromisoformat(e['observedAtUtc']).timestamp()*1000))
                 need(e['afterPid'] != e['beforePid'] and e['afterRestart'] == e['beforeRestart']+1
                      and e['beforeUniqueId'] == expected[i]['nodeUniqueId']
                      and integer(e['afterUniqueId']) and e['afterUniqueId'] > e['beforeUniqueId']
@@ -1175,10 +1384,12 @@ class Controller:
             else:
                 need(e['afterPid'] == e['beforePid'] and e['afterRestart'] == e['beforeRestart']
                      and e['afterRawSha256'] == e['beforeRawSha256']
-                     and e['beforeUniqueId'] == e['afterUniqueId'] == expected[i]['nodeUniqueId'], 'STATE_NONTRANSITION_EXACT')
-            expected[i] = dict(pid=e['afterPid'],restarts=e['afterRestart'],rawSha256=e['afterRawSha256'],nodeUniqueId=e['afterUniqueId'])
+                     and e['beforeUniqueId'] == e['afterUniqueId'] == expected[i]['nodeUniqueId']
+                     and e['beforePm2RawMeta'] == e['afterPm2RawMeta'], 'STATE_NONTRANSITION_EXACT')
+            expected[i] = dict(pid=e['afterPid'],restarts=e['afterRestart'],rawSha256=e['afterRawSha256'],
+                               nodeUniqueId=e['afterUniqueId'],pm2RawMeta=e['afterPm2RawMeta'])
         need(set(st['loadedSlots']) == loaded and len(st['loadedSlots']) == len(loaded), 'STATE_LOADED_EVENT_PROOF')
-        ignore = {'pid','restarts','rawSha256','nodeUniqueId'}
+        ignore = {'pid','restarts','rawSha256','nodeUniqueId','pm2RawMeta'}
         need(set(original) == {x['id'] for x in st['processes']}, 'STATE_PROCESS_ID_SET')
         for row in st['processes']:
             old = original[row['id']]
@@ -1391,10 +1602,12 @@ class Controller:
         kind = 'front' if before['script'] == str(self.cfg.front_api) else 'admin'
         need(before['script'] == str(self.cfg.apis[kind]) and self.st['targets'][kind] ==
              ('before' if rollback else 'candidate'), 'RELOAD_ONLY_OWN_API_VERSION')
+        need(before['pm2ReloadReady'] is True, 'PM2_MODEL_FORK_RETAINED_BYTES_UNPROVEN_NO_RELOAD')
         # Bind exact target API and all adapter source bytes inside the actual Node RPC.
         tr = copy.deepcopy(self.st['transport'])
         # API bytes are already full-CAS guarded. Adapter RPC validates this pin as well.
-        self.checkpoint('rollback-reload-intent-%d' % slot if rollback else 'reload-intent-%d' % slot)
+        intent = self.checkpoint('rollback-reload-intent-%d' % slot if rollback else 'reload-intent-%d' % slot)
+        intent_sha, intent_sequence = self.state_hash, self.sequence
         error = None
         try:
             if self.cfg.mock:
@@ -1407,8 +1620,12 @@ class Controller:
         identity(self.cfg, observed)
         row = next(r for r in observed if r['id'] == slot)
         changed = row['pid'] != before['pid']
-        ignore = {'pid','restarts','rawSha256','nodeUniqueId'}
+        observed_at = now()
+        ignore = {'pid','restarts','rawSha256','nodeUniqueId','pm2RawMeta'}
         if changed:
+            pm2_meta_transition(before['pm2RawMeta'], row['pm2RawMeta'],
+                int(dt.datetime.fromisoformat(intent['recordedAtUtc']).timestamp()*1000),
+                int(dt.datetime.fromisoformat(observed_at).timestamp()*1000))
             need(row['restarts'] == before['restarts'] + 1
                  and row['nodeUniqueId'] > before['nodeUniqueId']
                  and {k:v for k,v in row.items() if k not in ignore} ==
@@ -1417,12 +1634,19 @@ class Controller:
             need(row == before, 'NONTRANSITION_RAW_PROCESS_DRIFT')
         need([r for r in observed if r['id'] != slot] ==
              [r for r in self.st['processes'] if r['id'] != slot], 'OTHER_ELEVEN_SLOT_DRIFT')
+        # Prove source, all twelve rows, permissions and full META BEFORE observation
+        # becomes a journal fact. Failed validation leaves only the durable intent.
+        snap = self.current_snapshot()
+        need(snap == dict(processes=observed, protectedFiles=self.st['protectedFiles'], transport=tr),
+             'OBSERVED_SOURCE_FULLMETA_SET_DRIFT')
         event = dict(id=slot, rollback=rollback, beforePid=before['pid'], afterPid=row['pid'],
             beforeRestart=before['restarts'], afterRestart=row['restarts'], observedPidChange=changed,
             transportPassed=error is None, apiSha256=self.st['protectedFiles'][before['script']]['sha256'],
             beforeRawSha256=before['rawSha256'], afterRawSha256=row['rawSha256'],
             beforeUniqueId=before['nodeUniqueId'],afterUniqueId=row['nodeUniqueId'],
-            semanticSha256=row['semanticSha256'])
+            semanticSha256=row['semanticSha256'], beforePm2RawMeta=before['pm2RawMeta'],
+            afterPm2RawMeta=row['pm2RawMeta'], attemptSha256=self.attempt_hash,
+            intentStateSha256=intent_sha, intentSequence=intent_sequence, observedAtUtc=observed_at)
         self.st['events'].append(event)
         self.st['processes'] = observed
         if changed:
