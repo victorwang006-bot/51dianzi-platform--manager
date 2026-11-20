@@ -1,0 +1,39 @@
+test_absolute_deleted_io_uring_lookalike_not_supported (test_release.R6KernelMappingTests.test_absolute_deleted_io_uring_lookalike_not_supported) ... ok
+test_absolute_io_uring_lookalike_remains_filebacked_not_kernel (test_release.R6KernelMappingTests.test_absolute_io_uring_lookalike_remains_filebacked_not_kernel) ... ok
+test_all_gods_unowned_six_and_parent_exact_kernel_records (test_release.R6KernelMappingTests.test_all_gods_unowned_six_and_parent_exact_kernel_records) ... ok
+test_deleted_kernel_name_failclosed (test_release.R6KernelMappingTests.test_deleted_kernel_name_failclosed) ... ok
+test_empty_or_reversed_ring_range_rejected (test_release.R6KernelMappingTests.test_empty_or_reversed_ring_range_rejected) ... ok
+test_exact_io_uring_pure_record_without_filesystem_read (test_release.R6KernelMappingTests.test_exact_io_uring_pure_record_without_filesystem_read) ... ok
+test_executable_ring_failclosed (test_release.R6KernelMappingTests.test_executable_ring_failclosed) ... ok
+test_final_proc_record_rechecks_kernel_after_source_phase (test_release.R6KernelMappingTests.test_final_proc_record_rechecks_kernel_after_source_phase) ... ok
+test_foreign_ring_birth_guard_reject (test_release.R6KernelMappingTests.test_foreign_ring_birth_guard_reject) ... ok
+test_foreign_ring_device_guard_reject (test_release.R6KernelMappingTests.test_foreign_ring_device_guard_reject) ... ok
+test_foreign_ring_drop_guard_reject (test_release.R6KernelMappingTests.test_foreign_ring_drop_guard_reject) ... ok
+test_foreign_ring_inode_guard_reject (test_release.R6KernelMappingTests.test_foreign_ring_inode_guard_reject) ... ok
+test_foreign_ring_length_guard_reject (test_release.R6KernelMappingTests.test_foreign_ring_length_guard_reject) ... ok
+test_foreign_ring_multiplicity_guard_reject (test_release.R6KernelMappingTests.test_foreign_ring_multiplicity_guard_reject) ... ok
+test_foreign_ring_offset_guard_reject (test_release.R6KernelMappingTests.test_foreign_ring_offset_guard_reject) ... ok
+test_foreign_ring_permissions_guard_reject (test_release.R6KernelMappingTests.test_foreign_ring_permissions_guard_reject) ... ok
+test_fresh_unknown_dynamic_set_not_fixed_count_or_semantic_approval (test_release.R6KernelMappingTests.test_fresh_unknown_dynamic_set_not_fixed_count_or_semantic_approval) ... ok
+test_kernel_mapping_order_not_identity_but_duplicates_retained (test_release.R6KernelMappingTests.test_kernel_mapping_order_not_identity_but_duplicates_retained) ... ok
+test_kernel_perline_format_is_validated_before_classification (test_release.R6KernelMappingTests.test_kernel_perline_format_is_validated_before_classification) ... ok
+test_kernel_records_do_not_masquerade_as_filesystem_sources (test_release.R6KernelMappingTests.test_kernel_records_do_not_masquerade_as_filesystem_sources) ... ok
+test_known_nonexec_shared_permissions_only (test_release.R6KernelMappingTests.test_known_nonexec_shared_permissions_only) ... ok
+test_nonshared_ring_failclosed (test_release.R6KernelMappingTests.test_nonshared_ring_failclosed) ... ok
+test_owned_between_samples_roll_new_ring_still_own_proof_bound (test_release.R6KernelMappingTests.test_owned_between_samples_roll_new_ring_still_own_proof_bound) ... ok
+test_owned_executable_ring_cannot_hide_in_stable_slots (test_release.R6KernelMappingTests.test_owned_executable_ring_cannot_hide_in_stable_slots) ... ok
+test_owned_kernel_type_does_not_weaken_owned_source_mapping_guard (test_release.R6KernelMappingTests.test_owned_kernel_type_does_not_weaken_owned_source_mapping_guard) ... ok
+test_owned_normal_roll_new_kernel_inodes_keeps_stable_transport (test_release.R6KernelMappingTests.test_owned_normal_roll_new_kernel_inodes_keeps_stable_transport) ... ok
+test_same_length_aslr_move_noninterfering (test_release.R6KernelMappingTests.test_same_length_aslr_move_noninterfering) ... ok
+test_second_maps_read_rechecks_same_kernel_record (test_release.R6KernelMappingTests.test_second_maps_read_rechecks_same_kernel_record) ... ok
+test_unknown_and_lookalike_kernel_names_failclosed (test_release.R6KernelMappingTests.test_unknown_and_lookalike_kernel_names_failclosed) ... ok
+test_unknown_node_birth_with_legal_ring_still_guard_reject (test_release.R6KernelMappingTests.test_unknown_node_birth_with_legal_ring_still_guard_reject) ... ok
+test_zero_ring_inode_failclosed (test_release.R6KernelMappingTests.test_zero_ring_inode_failclosed) ... ok
+test_foreign_kernel_drift_rejected_by_whole_transport (test_release.R6KernelTransportTests.test_foreign_kernel_drift_rejected_by_whole_transport) ... ok
+test_gods_unowned_six_kernel_record_kept_in_full_transport (test_release.R6KernelTransportTests.test_gods_unowned_six_kernel_record_kept_in_full_transport) ... ok
+test_owned_roll_with_new_kernel_inode_preserves_whole_transport (test_release.R6KernelTransportTests.test_owned_roll_with_new_kernel_inode_preserves_whole_transport) ... ok
+
+----------------------------------------------------------------------
+Ran 34 tests in 3.818s
+
+OK

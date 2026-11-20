@@ -1,0 +1,89 @@
+--- fbb530/release.py
++++ r7/release.py
+@@ -26,7 +26,7 @@
+ from dataclasses import dataclass
+ 
+ OWNER = '6Lfttf6oVWJ8YS69o5FkXQ'
+-SCOPE = 'customer-batch-actions-20261120-6Lfttf6o-R6'
++SCOPE = 'customer-batch-actions-20261120-6Lfttf6o-R7'
+ API_BASE = '/opt/releases/20261110-customer-workbench-b7f3a2a7e317'
+ FRONT_API = API_BASE + '/front/dist/index.js'
+ ADMIN_API = API_BASE + '/admin/dist/index.js'
+@@ -770,6 +770,30 @@
+ DYNAMIC_SECONDS = 120
+ OWN_DYNAMIC_IDS = (190, 191, 192, 193, 194, 200)
+ 
++# Exact readonly pnpm native sources, never CAS targets or a generic hardlink rule.
++# Package JSON provenance is documented separately; it is not an exempt source.
++DYNAMIC_FIXED_NATIVE_SOURCE_PINS = {
++    '/opt/releases/20261030-migration-v14/front/node_modules/.pnpm/@img+sharp-libvips-linux-x64@1.3.3/node_modules/@img/sharp-libvips-linux-x64/lib/libvips-cpp.so.8.18.6': dict(
++        dev=66309, ino=698711, statmode=33188, uid=0, gid=0, nlink=86, size=18621496,
++        sha256='536cee19ab906cb5185ad519bf87647693f5d7b55e608c92eb28607f89ca5125'),
++    '/opt/releases/20261030-migration-v14/front/node_modules/.pnpm/@img+sharp-linux-x64@0.35.4/node_modules/@img/sharp-linux-x64/lib/sharp-linux-x64-0.35.4.node': dict(
++        dev=66309, ino=697010, statmode=33188, uid=0, gid=0, nlink=86, size=415112,
++        sha256='649fd3c3f98401061963aa496976c21b120a67c382657d9a26a60df251a317e2'),
++}
++
++
++def dynamic_native_stat_meta(s):
++    return dict(dev=s.st_dev, ino=s.st_ino, statmode=s.st_mode, uid=s.st_uid,
++                gid=s.st_gid, nlink=s.st_nlink, size=s.st_size,
++                mtimeNs=s.st_mtime_ns, ctimeNs=s.st_ctime_ns)
++
++
++def dynamic_native_source_meta(path, record):
++    fixed = DYNAMIC_FIXED_NATIVE_SOURCE_PINS[str(path)]
++    need(stat.S_ISREG(record['statmode']) and all(record[k] == fixed[k]
++         for k in ('dev', 'ino', 'statmode', 'uid', 'gid', 'nlink', 'size')),
++         'DYNAMIC_FIXED_NATIVE_SOURCE_META')
++
+ 
+ def dynamic_budget():
+     return dict(start=time.monotonic(), bytes=0)
+@@ -788,9 +812,16 @@
+     try:
+         before = os.fstat(fd)
+         need(stat.S_ISREG(before.st_mode), 'DYNAMIC_REGULAR_READ_REQUIRED')
++        fixed = DYNAMIC_FIXED_NATIVE_SOURCE_PINS.get(str(p)) if source else None
+         if source:
+-            need(before.st_nlink == 1 and before.st_size <= limit,
+-                 'DYNAMIC_SOURCE_SINGLE_FILE_BYTE_CAP')
++            if fixed is not None:
++                source_meta = dynamic_native_stat_meta(before)
++                dynamic_native_source_meta(p, source_meta)
++                need(meta(p) == source_meta, 'DYNAMIC_FIXED_NATIVE_SOURCE_META_READ_RACE')
++                need(before.st_size <= limit, 'DYNAMIC_SOURCE_SINGLE_FILE_BYTE_CAP')
++            else:
++                need(before.st_nlink == 1 and before.st_size <= limit,
++                     'DYNAMIC_SOURCE_SINGLE_FILE_BYTE_CAP')
+         chunks, count = [], 0
+         while True:
+             dynamic_check(budget)
+@@ -810,15 +841,24 @@
+               after.st_ctime_ns), 'DYNAMIC_FILE_READ_RACE')
+         need(p.lstat().st_ino == after.st_ino and p.lstat().st_dev == after.st_dev,
+              'DYNAMIC_FILE_RENAME_RACE')
+-        return b''.join(chunks)
++        data = b''.join(chunks)
++        if fixed is not None:
++            need(meta(p) == source_meta, 'DYNAMIC_FIXED_NATIVE_SOURCE_META_READ_RACE')
++            need(len(data) == fixed['size'] and H(data) == fixed['sha256'],
++                 'DYNAMIC_FIXED_NATIVE_SOURCE_FULL_PIN')
++            need(data[:4] == b'\x7fELF', 'DYNAMIC_FIXED_NATIVE_SOURCE_ELF_HEADER')
++        return data
+     finally:
+         os.close(fd)
+ 
+ 
+ def dynamic_source(path, budget):
+     p = no_link(path); before = meta(p)
+-    need(stat.S_ISREG(before['statmode']) and before['nlink'] == 1,
+-         'DYNAMIC_SINGLE_REGULAR_SOURCE')
++    if str(p) in DYNAMIC_FIXED_NATIVE_SOURCE_PINS:
++        dynamic_native_source_meta(p, before)
++    else:
++        need(stat.S_ISREG(before['statmode']) and before['nlink'] == 1,
++             'DYNAMIC_SINGLE_REGULAR_SOURCE')
+     data = dynamic_read(p, DYNAMIC_SOURCE_BYTES, budget, True)
+     need(meta(p) == before, 'DYNAMIC_SOURCE_META_READ_RACE')
+     return dict(before, kind='file', sha256=H(data))

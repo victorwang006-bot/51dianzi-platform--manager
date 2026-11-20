@@ -1,0 +1,41 @@
+{
+  "status": "SOURCE_TYPE_FIX_NOT_APPROVED",
+  "observationSource": "/home/ubuntu/work/customer-batch/native-hardlink-source-pins-once.json",
+  "observationSha256": "b8dcc9b80cb2b0e9f873a632f0f48428dbd7121ea69b08cc11d2d319c2a8a9bf",
+  "files": [
+    {
+      "path": "/opt/releases/20261030-migration-v14/front/node_modules/.pnpm/@img+sharp-libvips-linux-x64@1.3.3/node_modules/@img/sharp-libvips-linux-x64/lib/libvips-cpp.so.8.18.6",
+      "sha256": "536cee19ab906cb5185ad519bf87647693f5d7b55e608c92eb28607f89ca5125",
+      "bytes": 18621496,
+      "elfMagic": "7f454c46",
+      "nlink": 86,
+      "dev": 66309,
+      "ino": 698711,
+      "mode": 33188,
+      "uid": 0,
+      "gid": 0,
+      "packagePath": "/opt/releases/20261030-migration-v14/front/node_modules/.pnpm/@img+sharp-libvips-linux-x64@1.3.3/node_modules/@img/sharp-libvips-linux-x64/package.json",
+      "packageSha256": "446bda1246555d4a128d57414c7d55019573462b13b7f379da1053db001445da",
+      "packageName": "@img/sharp-libvips-linux-x64",
+      "packageVersion": "1.3.3"
+    },
+    {
+      "path": "/opt/releases/20261030-migration-v14/front/node_modules/.pnpm/@img+sharp-linux-x64@0.35.4/node_modules/@img/sharp-linux-x64/lib/sharp-linux-x64-0.35.4.node",
+      "sha256": "649fd3c3f98401061963aa496976c21b120a67c382657d9a26a60df251a317e2",
+      "bytes": 415112,
+      "elfMagic": "7f454c46",
+      "nlink": 86,
+      "dev": 66309,
+      "ino": 697010,
+      "mode": 33188,
+      "uid": 0,
+      "gid": 0,
+      "packagePath": "/opt/releases/20261030-migration-v14/front/node_modules/.pnpm/@img+sharp-linux-x64@0.35.4/node_modules/@img/sharp-linux-x64/package.json",
+      "packageSha256": "51589a852ae6b43d9a8ad66aeca140b29b09edf262ba4d798ca976e35b07be2a",
+      "packageName": "@img/sharp-linux-x64",
+      "packageVersion": "0.35.4"
+    }
+  ],
+  "nativeBytesCopied": false,
+  "packageMetadataIsSourceExemption": false
+}

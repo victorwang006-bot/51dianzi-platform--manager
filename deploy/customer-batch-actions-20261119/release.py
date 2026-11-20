@@ -26,7 +26,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 
 OWNER = '6Lfttf6oVWJ8YS69o5FkXQ'
-SCOPE = 'customer-batch-actions-20261120-6Lfttf6o-R5'
+SCOPE = 'customer-batch-actions-20261120-6Lfttf6o-R7'
 API_BASE = '/opt/releases/20261110-customer-workbench-b7f3a2a7e317'
 FRONT_API = API_BASE + '/front/dist/index.js'
 ADMIN_API = API_BASE + '/admin/dist/index.js'
@@ -770,6 +770,30 @@ DYNAMIC_TOTAL_BYTES = 2 * 1024 * 1024 * 1024
 DYNAMIC_SECONDS = 120
 OWN_DYNAMIC_IDS = (190, 191, 192, 193, 194, 200)
 
+# Exact readonly pnpm native sources, never CAS targets or a generic hardlink rule.
+# Package JSON provenance is documented separately; it is not an exempt source.
+DYNAMIC_FIXED_NATIVE_SOURCE_PINS = {
+    '/opt/releases/20261030-migration-v14/front/node_modules/.pnpm/@img+sharp-libvips-linux-x64@1.3.3/node_modules/@img/sharp-libvips-linux-x64/lib/libvips-cpp.so.8.18.6': dict(
+        dev=66309, ino=698711, statmode=33188, uid=0, gid=0, nlink=86, size=18621496,
+        sha256='536cee19ab906cb5185ad519bf87647693f5d7b55e608c92eb28607f89ca5125'),
+    '/opt/releases/20261030-migration-v14/front/node_modules/.pnpm/@img+sharp-linux-x64@0.35.4/node_modules/@img/sharp-linux-x64/lib/sharp-linux-x64-0.35.4.node': dict(
+        dev=66309, ino=697010, statmode=33188, uid=0, gid=0, nlink=86, size=415112,
+        sha256='649fd3c3f98401061963aa496976c21b120a67c382657d9a26a60df251a317e2'),
+}
+
+
+def dynamic_native_stat_meta(s):
+    return dict(dev=s.st_dev, ino=s.st_ino, statmode=s.st_mode, uid=s.st_uid,
+                gid=s.st_gid, nlink=s.st_nlink, size=s.st_size,
+                mtimeNs=s.st_mtime_ns, ctimeNs=s.st_ctime_ns)
+
+
+def dynamic_native_source_meta(path, record):
+    fixed = DYNAMIC_FIXED_NATIVE_SOURCE_PINS[str(path)]
+    need(stat.S_ISREG(record['statmode']) and all(record[k] == fixed[k]
+         for k in ('dev', 'ino', 'statmode', 'uid', 'gid', 'nlink', 'size')),
+         'DYNAMIC_FIXED_NATIVE_SOURCE_META')
+
 
 def dynamic_budget():
     return dict(start=time.monotonic(), bytes=0)
@@ -788,9 +812,16 @@ def dynamic_read(path, limit, budget, source=False):
     try:
         before = os.fstat(fd)
         need(stat.S_ISREG(before.st_mode), 'DYNAMIC_REGULAR_READ_REQUIRED')
+        fixed = DYNAMIC_FIXED_NATIVE_SOURCE_PINS.get(str(p)) if source else None
         if source:
-            need(before.st_nlink == 1 and before.st_size <= limit,
-                 'DYNAMIC_SOURCE_SINGLE_FILE_BYTE_CAP')
+            if fixed is not None:
+                source_meta = dynamic_native_stat_meta(before)
+                dynamic_native_source_meta(p, source_meta)
+                need(meta(p) == source_meta, 'DYNAMIC_FIXED_NATIVE_SOURCE_META_READ_RACE')
+                need(before.st_size <= limit, 'DYNAMIC_SOURCE_SINGLE_FILE_BYTE_CAP')
+            else:
+                need(before.st_nlink == 1 and before.st_size <= limit,
+                     'DYNAMIC_SOURCE_SINGLE_FILE_BYTE_CAP')
         chunks, count = [], 0
         while True:
             dynamic_check(budget)
@@ -810,15 +841,24 @@ def dynamic_read(path, limit, budget, source=False):
               after.st_ctime_ns), 'DYNAMIC_FILE_READ_RACE')
         need(p.lstat().st_ino == after.st_ino and p.lstat().st_dev == after.st_dev,
              'DYNAMIC_FILE_RENAME_RACE')
-        return b''.join(chunks)
+        data = b''.join(chunks)
+        if fixed is not None:
+            need(meta(p) == source_meta, 'DYNAMIC_FIXED_NATIVE_SOURCE_META_READ_RACE')
+            need(len(data) == fixed['size'] and H(data) == fixed['sha256'],
+                 'DYNAMIC_FIXED_NATIVE_SOURCE_FULL_PIN')
+            need(data[:4] == b'\x7fELF', 'DYNAMIC_FIXED_NATIVE_SOURCE_ELF_HEADER')
+        return data
     finally:
         os.close(fd)
 
 
 def dynamic_source(path, budget):
     p = no_link(path); before = meta(p)
-    need(stat.S_ISREG(before['statmode']) and before['nlink'] == 1,
-         'DYNAMIC_SINGLE_REGULAR_SOURCE')
+    if str(p) in DYNAMIC_FIXED_NATIVE_SOURCE_PINS:
+        dynamic_native_source_meta(p, before)
+    else:
+        need(stat.S_ISREG(before['statmode']) and before['nlink'] == 1,
+             'DYNAMIC_SINGLE_REGULAR_SOURCE')
     data = dynamic_read(p, DYNAMIC_SOURCE_BYTES, budget, True)
     need(meta(p) == before, 'DYNAMIC_SOURCE_META_READ_RACE')
     return dict(before, kind='file', sha256=H(data))
@@ -877,15 +917,39 @@ def dynamic_permissions(status):
     return H(b''.join(opaque))
 
 
+def dynamic_map_fields(line):
+    parts = line.split(None, 5)  # final field is the WHOLE path incl spaces
+    need(len(parts) >= 5 and re.fullmatch(rb'[0-9a-f]+-[0-9a-f]+', parts[0])
+         and re.fullmatch(rb'[r-][w-][x-][ps]', parts[1])
+         and re.fullmatch(rb'[0-9a-f]+', parts[2])
+         and re.fullmatch(rb'[0-9a-f]+:[0-9a-f]+', parts[3])
+         and re.fullmatch(rb'[0-9]+', parts[4]), 'DYNAMIC_MAPS_FORMAT')
+    return parts
+
+
+def dynamic_kernel_mappings(maps):
+    # Linux io_uring_get_file names this anonymous shared SQ/CQ data FD;
+    # it is not an ELF/filesystem source. No FD or ring contents are read.
+    records = []
+    for line in maps.splitlines():
+        parts = dynamic_map_fields(line)
+        if len(parts) != 6:
+            continue
+        path = parts[5]
+        if path == b'anon_inode:[io_uring]':
+            start, end = (int(v, 16) for v in parts[0].split(b'-'))
+            need(parts[1][2:] == b'-s' and int(parts[4]) > 0 and end > start,
+                 'DYNAMIC_KERNEL_MAPPING_TYPE')
+            records.append([path.decode('ascii'), *(v.decode('ascii') for v in parts[1:5]), end - start])
+        elif not path.startswith(b'/'):
+            need(path.startswith(b'[') and path.endswith(b']'), 'DYNAMIC_UNSUPPORTED_MAPPING')
+    return sorted(records)  # retain multiplicity and size, not absolute ASLR positions
+
+
 def dynamic_maps(maps):
     mapped = {}
     for line in maps.splitlines():
-        parts = line.split(None, 5)  # final field is the WHOLE path incl spaces
-        need(len(parts) >= 5 and re.fullmatch(rb'[0-9a-f]+-[0-9a-f]+', parts[0])
-             and re.fullmatch(rb'[r-][w-][x-][ps]', parts[1])
-             and re.fullmatch(rb'[0-9a-f]+', parts[2])
-             and re.fullmatch(rb'[0-9a-f]+:[0-9a-f]+', parts[3])
-             and re.fullmatch(rb'[0-9]+', parts[4]), 'DYNAMIC_MAPS_FORMAT')
+        parts = dynamic_map_fields(line)
         if len(parts) == 6:
             path = os.fsdecode(parts[5])
             if path.startswith('/'):
@@ -898,7 +962,10 @@ def dynamic_maps(maps):
                 mapped.setdefault(path, [])
                 mapped[path].append(segment)  # retain real mapping multiplicity
             else:
-                need(path.startswith('[') and path.endswith(']'), 'DYNAMIC_UNSUPPORTED_MAPPING')
+                if parts[5] == b'anon_inode:[io_uring]':
+                    dynamic_kernel_mappings(line)  # typed validation, never a source path
+                else:
+                    need(path.startswith('[') and path.endswith(']'), 'DYNAMIC_UNSUPPORTED_MAPPING')
     return {p: sorted(mapped[p]) for p in sorted(mapped)}
 
 
@@ -923,9 +990,11 @@ def dynamic_proc(cfg, pid, budget):
             need(str(p) == path and '..' not in p.parts, 'DYNAMIC_SCRIPT_CANONICAL')
             scripts.add(path)
     mapped = dynamic_maps(maps)
+    kernel = dynamic_kernel_mappings(maps)
     record = dict(identity, exe=str(exe), cwd=str(cwd), procMeta=proc_meta,
                   kernelLinkMeta=links, cwdMeta=cwd_meta, rawSha256=H(raw),
                   cmdlineSha256=H(cmd), permissionsSha256=permission_hash,
+                  kernelAnonymousMappings=kernel,
                   mappedSourceIdentity=mapped, scriptPaths=sorted(scripts), mappedSourcePaths=sorted(mapped))
     need(dynamic_identity(cfg, pid, budget) == identity and meta(proc) == proc_meta
          and external_proc_link(cfg, pid, 'exe') == exe
@@ -935,7 +1004,8 @@ def dynamic_proc(cfg, pid, budget):
          and dynamic_read(proc / 'cmdline', DYNAMIC_PROC_BYTES, budget) == cmd
          and dynamic_read(proc / 'environ', DYNAMIC_PROC_BYTES, budget) == raw
          and dynamic_permissions(dynamic_read(proc / 'status', DYNAMIC_PROC_BYTES, budget)) == permission_hash
-         and dynamic_maps(dynamic_read(proc / 'maps', DYNAMIC_PROC_BYTES, budget)) == mapped,
+         and dynamic_maps(second_maps := dynamic_read(proc / 'maps', DYNAMIC_PROC_BYTES, budget)) == mapped
+         and dynamic_kernel_mappings(second_maps) == kernel,
          'DYNAMIC_FULL_PROC_READ_RACE')
     return record, raw, cmd
 

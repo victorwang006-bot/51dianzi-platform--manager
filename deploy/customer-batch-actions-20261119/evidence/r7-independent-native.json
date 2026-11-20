@@ -1,0 +1,1328 @@
+{
+  "actualProcFDEnvRead": false,
+  "addedTopLevel": [
+    "Name(id='DYNAMIC_FIXED_NATIVE_SOURCE_PINS', ctx=Store())",
+    "dynamic_native_source_meta",
+    "dynamic_native_stat_meta"
+  ],
+  "allAliasNamespaceScanned": false,
+  "allApproveFalse": true,
+  "allOtherTopLevelASTAndBytesPreserved": true,
+  "atomicKernelCASClaim": false,
+  "auditScriptExecuted": false,
+  "authorizationContext": "User states 10:31 deploy authorization and 11:50 frontend nowindow formal release; not independently re-observed by this offline reviewer.",
+  "baselineSha256": "fbb5302cf59974433d9775de3e0ee5e788eb58ec13916fa5101655d2badb7348",
+  "bytePreserved": {
+    "Config": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 2255,
+      "sha256": "9589510779695123e187a273e1a03db650968ea9708b18e34dda5da062b95f96"
+    },
+    "Controller": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 48074,
+      "sha256": "64592b06f7ff5f41c42e9e80ecc20ab166e6d023e3231ff8f4078b0783d75b64"
+    },
+    "Expr(value=Constant(value='Customer batch scope: capture/candidate/preflight/apply/verify/rollback.\\nStdlib only. No SSH, PM2 CLI, daemon start, env write, DDL or whole-dist copy.\\nProduction execution is exclusively an operator action, never an import side effect.\\nSee README.md for the sealing and independent-review protocol. Offline preparation only.\\n'))": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 333,
+      "sha256": "03d1326828a3da42b7043ff6996f105bdaf9e4adc1fb438795a078d7493b715a"
+    },
+    "H": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 57,
+      "sha256": "a64e4bc4ec4ad512ace1259d30772257e1e0af8e6088c0774fd2619de21049b9"
+    },
+    "If(test=Compare(left=Name(id='__name__', ctx=Load()), ops=[Eq()], comparators=[Constant(value='__main__')]), body=[Try(body=[Expr(value=Call(func=Name(id='main', ctx=Load()), args=[], keywords=[]))], handlers=[ExceptHandler(type=Tuple(elts=[Name(id='Exception', ctx=Load()), Name(id='KeyboardInterrupt', ctx=Load())], ctx=Load()), name='exc', body=[Expr(value=Call(func=Name(id='print', ctx=Load()), args=[BinOp(left=Constant(value='RELEASE_ABORT: '), op=Add(), right=IfExp(test=Call(func=Name(id='isinstance', ctx=Load()), args=[Name(id='exc', ctx=Load()), Name(id='ReleaseError', ctx=Load())], keywords=[]), body=Call(func=Name(id='str', ctx=Load()), args=[Name(id='exc', ctx=Load())], keywords=[]), orelse=Attribute(value=Call(func=Name(id='type', ctx=Load()), args=[Name(id='exc', ctx=Load())], keywords=[]), attr='__name__', ctx=Load())))], keywords=[keyword(arg='file', value=Attribute(value=Name(id='sys', ctx=Load()), attr='stderr', ctx=Load()))])), Expr(value=Call(func=Attribute(value=Name(id='sys', ctx=Load()), attr='exit', ctx=Load()), args=[Constant(value=1)], keywords=[]))])], orelse=[], finalbody=[])], orelse=[])": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 241,
+      "sha256": "82f96b91e214a42d60a042eb7109a9365bea626263ebf625de5f2008d1883698"
+    },
+    "Import(names=[alias(name='argparse')])": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 16,
+      "sha256": "b53e5a5286172fb0a4772843ba3ed62331687bcb9939ec9c49e9066d4ee4272d"
+    },
+    "Import(names=[alias(name='base64')])": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 14,
+      "sha256": "0bd0be6193903c571f3df2f9b88bc11e59075ab18a246347a35c85c7d25aa5fd"
+    },
+    "Import(names=[alias(name='copy')])": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 12,
+      "sha256": "01185d20d26568a358ea5c862ad992fbed2b4c0a68684d42477f0920b7be3e7f"
+    },
+    "Import(names=[alias(name='datetime', asname='dt')])": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 22,
+      "sha256": "598ee9f6e020b77e941072ad80a4f8d4ee5974ee3792eaf5546f1decfbfe21d2"
+    },
+    "Import(names=[alias(name='fcntl')])": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 13,
+      "sha256": "a6376be6019df1a360639f7128c0c495434a974383c73550009806b9a6622779"
+    },
+    "Import(names=[alias(name='hashlib')])": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 15,
+      "sha256": "3b3ea3cdc7068a9e97cfcddbcd9d8e0c54fe4d068347b80b158fdd8b14676e3b"
+    },
+    "Import(names=[alias(name='http.client')])": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 19,
+      "sha256": "37674a8689828de5054669d2d644dd23c74db30c5b92d3fb94ba450315d866ac"
+    },
+    "Import(names=[alias(name='json')])": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 12,
+      "sha256": "261a9112a2918e2aba03e19a2f221a027ab4b6f9e946a6c39814f54e18e07dfc"
+    },
+    "Import(names=[alias(name='math')])": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 12,
+      "sha256": "085ea91d7cfeb4f5695793f882c7463cbfdf7be9f98e6c5133847a245bbea366"
+    },
+    "Import(names=[alias(name='os')])": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 10,
+      "sha256": "3727adff524e0616022eadd8f4af21a0778b29fc4c77bdfefd1afce2cbf5e4b7"
+    },
+    "Import(names=[alias(name='re')])": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 10,
+      "sha256": "a830333312c4c9c2233bb02762bd498203b1c3bf0527614735693b4b79f6d167"
+    },
+    "Import(names=[alias(name='socket')])": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 14,
+      "sha256": "463c91f978872b1fca29c26ced25889f263486b9186c4654129dd2f9ddb8c6b3"
+    },
+    "Import(names=[alias(name='stat')])": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 12,
+      "sha256": "1fd20c880d3cde1a258aa761090aabc445918b6cf2b91712928debfc04392cff"
+    },
+    "Import(names=[alias(name='subprocess')])": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 18,
+      "sha256": "17ea74bb79ba96edc39a8382a97f22993b80cc4088b3e2717a98917c60c1dd5a"
+    },
+    "Import(names=[alias(name='sys')])": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 11,
+      "sha256": "c517577851c489e45abae2591256c40404a05c6d19cd4d5ae7fd22b0084cec6c"
+    },
+    "Import(names=[alias(name='time')])": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 12,
+      "sha256": "7b2ddb8a2e64c6166feedaf30ee50ac62165fe149fdd8b0d7b777ebee21ca34d"
+    },
+    "Import(names=[alias(name='uuid')])": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 12,
+      "sha256": "ab270e34de38d99f0364043ca1808983f498a9e3943133071931657340b5bc95"
+    },
+    "ImportFrom(module='contextlib', names=[alias(name='contextmanager')], level=0)": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 38,
+      "sha256": "6059afacb69bc73adea9bd2a8cd99b6bc4e746f6c9cadecae1eda078ed22c4a3"
+    },
+    "ImportFrom(module='dataclasses', names=[alias(name='dataclass')], level=0)": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 34,
+      "sha256": "07ac27eea41ef7e0d14eeb4cc65ebf0beaa2041ad913826ebdf97d56d6febd5f"
+    },
+    "ImportFrom(module='pathlib', names=[alias(name='Path')], level=0)": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 25,
+      "sha256": "3cb9ffccba5146b2dd177a30c3057a4395ebd5c745d0789d2ed95d0cf4afe271"
+    },
+    "Name(id='ACTIVE_LOCKS', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 18,
+      "sha256": "c6aacaf81c1e0ac3b16b68ccf7a8bd9eacb275ff76c5eeaa4c9b796879406234"
+    },
+    "Name(id='ADMIN_API', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 46,
+      "sha256": "96eeb14a7ec7994cce30816fdb2314ca1e615b6fb5ba129411598cbf5dd15a47"
+    },
+    "Name(id='API_BASE', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 68,
+      "sha256": "9a8987aa99c9a2fc60f326a54a87bb9889ea6e6900741b1e4e464a006627182f"
+    },
+    "Name(id='API_PATCH_NAMES', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 1182,
+      "sha256": "c75b3be6482d3e6292edc08ade36a15331bab099b6bf7ac6ba0b42e9ba7b3a38"
+    },
+    "Name(id='BINDING_SCHEMAS', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 509,
+      "sha256": "954f5904552f4a7d28fa2814c3d191d36f8775b02f1a6f7b19b63925847e8e94"
+    },
+    "Name(id='DYNAMIC_MAX_DEPTH', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 23,
+      "sha256": "c43a7e66092a80be477d9ead50701e767b8a41f9336e776722484ffb59a9f7b6"
+    },
+    "Name(id='DYNAMIC_MAX_GRAPH', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 24,
+      "sha256": "97ee47c6f42bf1345d274b2ed3d87bab1f6bb2fd0243a776429eb3e9029fd642"
+    },
+    "Name(id='DYNAMIC_MAX_NODES', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 24,
+      "sha256": "3ac0f1599733dae000e07882e0594fa6459c6ee1324585d051d7643a50480b87"
+    },
+    "Name(id='DYNAMIC_MAX_PROC', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 24,
+      "sha256": "a9129e1f44036308b877b8c85164299e44a935b9d13d2b9a649a205b36fc85a5"
+    },
+    "Name(id='DYNAMIC_MAX_SOURCES', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 26,
+      "sha256": "8ed3fd367e17ed6c6c54f7cce41dca03755f901906ca32e83dc41a8301a77943"
+    },
+    "Name(id='DYNAMIC_PROC_BYTES', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 33,
+      "sha256": "30a031f69920fa8be1f3948ad6ee2efeda75f52a2195d8ddabd144e70cd08e83"
+    },
+    "Name(id='DYNAMIC_SECONDS', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 22,
+      "sha256": "f5368e6d7614cdea80463543a72cb14b84ae5e89ffd3810fd89f7aad5b4a6ff2"
+    },
+    "Name(id='DYNAMIC_SOURCE_BYTES', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 41,
+      "sha256": "cecb589e1178363a6f9128c7d574ef446533a36900f245f25be3fdbadb1c2837"
+    },
+    "Name(id='DYNAMIC_TOTAL_BYTES', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 45,
+      "sha256": "c7d08b8145e9dd58cbd425ee1252d3d2d8cba8b9d93a7e8db7059d052bf3a2ce"
+    },
+    "Name(id='EXTERNAL_CHILD_PID', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 29,
+      "sha256": "8f06b87c3e9b31cb6db04b37c4e950574b3a8c9f62bdbd197051676257f3eb1e"
+    },
+    "Name(id='EXTERNAL_CWD', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 89,
+      "sha256": "5ee7040a0d4143f1cdfc0af5760beccead9e8b6a3434cd3f8664b7334e17d78e"
+    },
+    "Name(id='EXTERNAL_OPS', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 56,
+      "sha256": "cd6dfa4d0c47dfc5941e750b5a13dc355960fc0a62f51cb8df44a092f4e3e2af"
+    },
+    "Name(id='EXTERNAL_PARENT_PID', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 30,
+      "sha256": "14c183e63fec9858eb59204cdfd0c6bb4b85b586f8760ec9c976c22043a1d9df"
+    },
+    "Name(id='EXTERNAL_SCRIPT', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 115,
+      "sha256": "511ab9ef3519d93d49621d3624bba15caf36d1562e810412e40853f4e6565553"
+    },
+    "Name(id='FACADE_SCHEMAS', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 402,
+      "sha256": "709a2108895e60c9cdd647bbb7a2f46b648f80e7e8ea68388dda844eb1831225"
+    },
+    "Name(id='FRONT_API', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 46,
+      "sha256": "c75ca34252bb0bf4dc213bb1f585f035902cbed97ba2c4f44e5024293a8322a3"
+    },
+    "Name(id='HEX', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 34,
+      "sha256": "af1a0704c0cabceb4af2c0ea11d8dc16c40d0b85d29f3da8f59e4111817a7738"
+    },
+    "Name(id='LEAVES', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 232,
+      "sha256": "3a9d1ada46b1a7924930ae83fb456d80cfcc60a439545ba4b0906a717eae618e"
+    },
+    "Name(id='LIFECYCLE', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 229,
+      "sha256": "c7f677edcd82a169ebbb3b07df817b97d25320259f74719e073489ac6804ae99"
+    },
+    "Name(id='OWNER', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 33,
+      "sha256": "2070d804d5d91761dfbc7de31f23c339b923c41954a709202f7aaedecb02cfd9"
+    },
+    "Name(id='OWN_DYNAMIC_IDS', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 49,
+      "sha256": "67818e6684cd6d2a8a8e52b828654813fa8eb456fed5cb6efef879db4318a450"
+    },
+    "Name(id='PM2_GENERATION_PINS', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 855,
+      "sha256": "8c19ca502275246545b17fb98b0c96212849157574c2f5b0b2e4858f7cff244b"
+    },
+    "Name(id='PM2_RAW_GENERATED', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 128,
+      "sha256": "5e042880469566e79f51e18bcac6ae9bde98c5ee73f56b8a4f4c60c196904f95"
+    },
+    "Name(id='PUBLIC', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 74,
+      "sha256": "3ed4abb795537058e99836fcbe484454f58101b52dd86e0e35c7e334f28086d3"
+    },
+    "Name(id='RPC', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 1850,
+      "sha256": "6c8b4b65f99f60f66fe3acc40df1ef1e560615e5d837af594c7d9c940b463ee3"
+    },
+    "Name(id='TTL', ctx=Store())": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 10,
+      "sha256": "4554b94b6cca4bdb85057b37a9461b42ceb0e1933569d14600d312a67b309418"
+    },
+    "ReleaseError": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 43,
+      "sha256": "e7898158d75a789bac93dddfd3b749d504a4dddec8cf6b1bded664ee2a347232"
+    },
+    "adapter_files": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 1605,
+      "sha256": "2a721d606d059ddb83095481bf271322b3e857a48d115cc685b6ec72bb978d0b"
+    },
+    "cas": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 1152,
+      "sha256": "53a8c41db1aa70cfc7ecff0f108987bf2bf3c02b1a046d7321f7cf20ab858260"
+    },
+    "check_locks": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 150,
+      "sha256": "74960f94364f70b95b4ca2f1530b94e05fd57669f033242cb92407b31c5b3660"
+    },
+    "config_binding": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 481,
+      "sha256": "6930f294a9c040a58290d0eb163f676e1973bc2d6679afe51d1b11b761bb096c"
+    },
+    "coord_closed": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 741,
+      "sha256": "767e0805bc6ddeb8dd18efa8129765f74504cdc02d2443bb4de7083bf60a9d4e"
+    },
+    "decode": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 632,
+      "sha256": "a3d950f81a706b128b4cf182e0723fd59cbd627bb932eb6f3be1f5a016dc094e"
+    },
+    "describe": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 532,
+      "sha256": "b3062110bd9743b6dbdffef95dd59f3c91e09caabda5b1cd0744d4c51adf0cfc"
+    },
+    "dynamic_budget": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 71,
+      "sha256": "5a3ed8050f10d9902f6fd5cfe78cfdd13984c5c7357b007ba3f4f6fc64c5b57b"
+    },
+    "dynamic_check": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 195,
+      "sha256": "a21d8436a74099eed6066576550090252196042c6dd9cea86bdad51ceb8bfac0"
+    },
+    "dynamic_identity": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 614,
+      "sha256": "89c7f65c0b409128586b6b742217323fdc4e7d9bc40b7f0045faef3fbf1e70b7"
+    },
+    "dynamic_kernel_mappings": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 917,
+      "sha256": "ce499efd638d80db92abb50454c909837f35c96da53a839853cee6ec0ca45a8a"
+    },
+    "dynamic_map_fields": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 443,
+      "sha256": "54eba9a016bed5373ce29a91d9340477c003fdcab5edd162e367e6f2ed54613b"
+    },
+    "dynamic_maps": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 1102,
+      "sha256": "6466ed3f0f2f058dac37d83edd637692ce4efeab3a1f8b1b27d8aaea4632082e"
+    },
+    "dynamic_owned": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 1914,
+      "sha256": "a3551896b9f2625c6cd4e15a9d0760ca9c8736b8c887dd45592255e0c75ab9d5"
+    },
+    "dynamic_permissions": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 489,
+      "sha256": "bfd71f35abc8139b9f1ca5591ef7949bbb76f69099ef1ab8a658eaa52822b89c"
+    },
+    "dynamic_proc": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 2415,
+      "sha256": "47c8eb6bdce7c9a5ccd00bf047db6790a32514079c89a4cabb27384e853bc2a9"
+    },
+    "dynamic_protection": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 849,
+      "sha256": "58f3554d350d75388815f987cfdd4f772e1fa6d11b74838ff4fbd84dd82cc859"
+    },
+    "dynamic_protection_sample": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 6077,
+      "sha256": "e8062f8698149c47d3f188e78f56f2523a7f1503f606f18638fbd0596d8df9a6"
+    },
+    "dynamic_scan": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 1352,
+      "sha256": "ff0fbabdb770f9d5141661739d9c846e11d9869972627b244161009c7877a71d"
+    },
+    "encode": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 171,
+      "sha256": "d37ae94f3274d03eeb8e38f765bec408ef6c57c148f0ec44ecf3379a737887c2"
+    },
+    "exact": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 112,
+      "sha256": "4c912d898ed67c63390b7b2bab724e94846234ed4dce9649ad69c35733f602b2"
+    },
+    "exclusive": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 445,
+      "sha256": "0558702dd647df033a4fc1d8af4867bfe7fd25f6c5e0157e32cd42fbdd9df7c6"
+    },
+    "external_proc_identity": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 736,
+      "sha256": "9cae7a73e966a59e0475cc593f63db5e3832fd192a65a91629a9b28201b90463"
+    },
+    "external_proc_link": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 372,
+      "sha256": "3c10a7cc153bceeb356db9789c9e654ecc0562ff7e141015983e7b05c212f54d"
+    },
+    "external_proc_sample": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 2192,
+      "sha256": "d8392c23574f95139d4750be31e4a9b26d6f5e014ad7ca7c42fa70098ec59408"
+    },
+    "external_protection": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 1071,
+      "sha256": "914a52a32382ef7248358adbaaa5e4d50b35884876d339e2f3d5baba53d10f68"
+    },
+    "external_protection_sample": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 1716,
+      "sha256": "513b8e518948f5b7c3da56139439495dcba779007507c377131b5e9508a57587"
+    },
+    "external_source": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 254,
+      "sha256": "cfed0513bd481c3b60ad36b4dcb2157c53abd06422193af23949916306784297"
+    },
+    "file_pin": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 91,
+      "sha256": "6f744375f419ff58e1fede47cbbbb0e5b30bb11a00eef6b320195c628b56cacc"
+    },
+    "fresh": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 408,
+      "sha256": "5d3999f3032399929f85f8f5e1ed6e7f69fe322c92ffcef51248429808082168"
+    },
+    "fsync_dir": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 163,
+      "sha256": "07157008f866df5f675c40a107eb74824ecd79b3e27bc6ee4b9c93fbdd28b71b"
+    },
+    "get_http": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 605,
+      "sha256": "c885d6f970eb2880129e17cea12509fec2af4781e09f31a21f07afa8894928ea"
+    },
+    "identity": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 2054,
+      "sha256": "bb42b3fd63787bc7c2dbe0859937ddc4573fcca8d6072156aea6ac7f9b5f7f72"
+    },
+    "integer": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 42,
+      "sha256": "663749b45f874bed847c76d76063a01a4ce9e7c149a3bf70ba41c19dbf236c69"
+    },
+    "inventory": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 1764,
+      "sha256": "42b616372a6e8917596df343f41f7ac36cee4ca064b55447d26f75cdbaf9e924"
+    },
+    "inverse_patches": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 2582,
+      "sha256": "18e51834f31c5cefbdacde38b9d677fbb5fdc3eff93f5859fa897dfef43f2a86"
+    },
+    "listener": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 506,
+      "sha256": "352e0ca261ab8387c6210cfcb56ed8b0ea95e81432495bca3f26ef66cb0e7040"
+    },
+    "locked": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 1025,
+      "sha256": "f8513a6088049ff28b51ada71f08857a6468c23fa649553138fee87527329cc1"
+    },
+    "main": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 2470,
+      "sha256": "e3e5fd22009d75f6f8f219239c26678c240f760c6fe80547eb7cc2f330597994"
+    },
+    "manifest_bindings": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 102,
+      "sha256": "94c55e4a3708a1483a07146884171788d5363388deb24badc3612e34652c5117"
+    },
+    "meta": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 247,
+      "sha256": "4159550537474685c68ccf097c0141e574ac7aa7bda40dade607eb2a8d30d23a"
+    },
+    "native_api": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 2193,
+      "sha256": "b94f4af469d7dbdf5213752f8abbc7bd9f0076691ba4ce6e8c731a271ebda2f7"
+    },
+    "need": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 74,
+      "sha256": "b5c51a5454354ec1022a3ba8ad60fd7efc75cf0d2ad2fcc007a18fbd627c1c81"
+    },
+    "no_link": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 195,
+      "sha256": "3f6822c3afaad194409218b0b1258fe3c3d3cc8e4f17cdfc84705f2758bcb1fd"
+    },
+    "now": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 67,
+      "sha256": "bc3d8c35e4817461025279aa997673a085da5f1800da10b2e2cd38454cfc84e8"
+    },
+    "permissions": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 452,
+      "sha256": "d228ef89d11bc1db5ccf6470649bd1d032020df1ce4c48086579985e019a4740"
+    },
+    "pin": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 115,
+      "sha256": "2401667ab2c9420d0ea3c384fa9c20fba98273122bc5875fa53b5569dc3ce32d"
+    },
+    "pm2_json_domain": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 1299,
+      "sha256": "ed1027ec4d6e0c5e17b01d73ff8ac4014b1edaca5fb5a6db2812ccc7e62828d3"
+    },
+    "pm2_meta_transition": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 748,
+      "sha256": "d45618d6be171b7e5a1730cde18b3f0b19bd88b498d3540ee741dee9dd702e0f"
+    },
+    "pm2_project": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 502,
+      "sha256": "70dfc77feb70eb554d6020cdef52f2642ce5cd806ead0fc3d9f8ca39a70f63c3"
+    },
+    "pm2_publish_ready": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 399,
+      "sha256": "7a24619844caaf593064e20ca123f548337f309edc671806dadb6d521a1fd4c1"
+    },
+    "pm2_raw_binding": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 3575,
+      "sha256": "281967c143f6b1e41a88e8884bb56fad703cbd353a151d3d85a5653ea9f80e86"
+    },
+    "pm2_top_tokens": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 1226,
+      "sha256": "0841fcd0767f8056dbf2be21dc1f5b2bd243f46695f2b1c07c4da83397742617"
+    },
+    "private": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 209,
+      "sha256": "84021590b7c1e1ea1322e075ca9c61420c56d2b916f460eb70ce332ba9a2ec6d"
+    },
+    "production_reload": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 1236,
+      "sha256": "cd9f42acd1e1c1057327d7b8a1d736e33fdcb398cd8f8ea2897b5305ca177651"
+    },
+    "raw_semantics": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 673,
+      "sha256": "3804cbda8ad73191c883cbb73749b7c3ea96b8925ccbef971c844b98eb12ffc6"
+    },
+    "raw_values": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 318,
+      "sha256": "6a501e64c4b324ec385ac17b6bd99b667b4fa9b8a612de0158f45f6339961c39"
+    },
+    "regular": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 664,
+      "sha256": "ebb4fab5ed6246915f4e49a32796166c2a389661a4648e022262517756fd364d"
+    },
+    "rel": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 205,
+      "sha256": "9f68b3afbf2f08a78891a879eb48a02347f2087017ef029e3c8834b850d64b5f"
+    },
+    "rpc": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 1098,
+      "sha256": "976e1423d3fe4eada436a554d70412ff85909056fd7c6f71166b4158fec0a469"
+    },
+    "seal_candidate": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 3929,
+      "sha256": "e275e0c4aaef62dedf2ced75750ce9c45e527462e7f0c95024ca6f6259d37bd6"
+    },
+    "shallow_pm2": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 207,
+      "sha256": "5ea1b56c0f92c16cf446307ecaece0fba6cdffa552351f2e909fbd9833fce46c"
+    },
+    "snapshot_rows": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 1654,
+      "sha256": "c8944c7a4f453dbef9a4352edd858f7d292f9ebbaff9c9924183b5006c3180a6"
+    },
+    "transport": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 2609,
+      "sha256": "6afa6e06f830ce4f47908d149cd95ff0ada382053389daf15499be5776d8df9d"
+    },
+    "tree_files": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 427,
+      "sha256": "84684c74c56d4ecf78750730b3a7082707b61b4310dfe28ce0c35796437d59e3"
+    },
+    "ui_inverse": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 2114,
+      "sha256": "b987054eec14a529209256128e3620cda5ad9359321f76ac7250be23a7fb1051"
+    },
+    "unb64": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 232,
+      "sha256": "7341243c660a378d042e8ca6254f69745815ede13bd6e100d16a75ef57ac56dc"
+    },
+    "union": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 2117,
+      "sha256": "8745569f288041fa7dde63a096d49316cb777228945c1b86ac5b09c02169be24"
+    },
+    "utf16_offset": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 87,
+      "sha256": "7c84c98d0f0494a05ae2a45764af141f13efd867c32809144e569f7200fe44c7"
+    },
+    "validate_api_source": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 3056,
+      "sha256": "c2d1d87d6887459100829314c1eee8764aa2a4ec24edfe23940f869552ee23b4"
+    },
+    "validate_payload": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 9299,
+      "sha256": "b8e7ab6ed2200f802892170efe0328732633e13466ca4a9aa4819c6f5dec24e3"
+    },
+    "validate_review": {
+      "astIdentical": true,
+      "byteIdentical": true,
+      "bytes": 909,
+      "sha256": "d8e1cb518122b6999ab627eb2aba4c8c995757cdedd025fd9279ae9ce768b347"
+    }
+  },
+  "casSingleLinkRequirementUnchanged": true,
+  "changedTopLevel": [
+    "Name(id='SCOPE', ctx=Store())",
+    "dynamic_read",
+    "dynamic_source"
+  ],
+  "configRootRPCDomainReadyUnionCASMapsKernelTransportProtectionUnchanged": true,
+  "continuousFreezeClaim": false,
+  "controllerApproved": false,
+  "controllerImported": false,
+  "controllerMethods": 30,
+  "defects": [],
+  "deletedTopLevel": [],
+  "evidenceManifestEntriesVerified": 19,
+  "exactMetadataKeys": [
+    "dev",
+    "ino",
+    "statmode",
+    "uid",
+    "gid",
+    "nlink",
+    "size"
+  ],
+  "exactReadRaceKeys": [
+    "dev",
+    "ino",
+    "statmode",
+    "uid",
+    "gid",
+    "nlink",
+    "size",
+    "mtimeNs",
+    "ctimeNs"
+  ],
+  "existingLogsVerified": {
+    "r7-finite-tests.txt": {
+      "perTestOK": 6,
+      "rerun": false,
+      "sha256": "ab36567b74ef88771992c87875e0f9d1f2ce5eaca7f04d0ed132a3f8b2de6f2b",
+      "terminalOK": true,
+      "tests": 6
+    },
+    "r7-native-tests.txt": {
+      "perTestOK": 30,
+      "rerun": false,
+      "sha256": "ff10c5b6b252a35fea70b5a342fedafad3a888ca159f365d79c73c449fed61c8",
+      "terminalOK": true,
+      "tests": 30
+    },
+    "r7-prepare-tests.txt": {
+      "perTestOK": 42,
+      "rerun": false,
+      "sha256": "6cbd7259b9523aa1f2ce24392356914152c398822643d7de5652eab24e7aa36f",
+      "terminalOK": true,
+      "tests": 42
+    },
+    "r7-r6-kernel-tests.txt": {
+      "perTestOK": 34,
+      "rerun": false,
+      "sha256": "ce40b4a44fb5bf016bce29989ac92c95d6e9abf84000494f97d3ac951f7cab14",
+      "terminalOK": true,
+      "tests": 34
+    },
+    "r7-release-tests.txt": {
+      "perTestOK": 276,
+      "rerun": false,
+      "sha256": "b4338c9c1a7054bcd7ef9b841781e575e31b953083f6b320a40b27dc43ed4dd5",
+      "terminalOK": true,
+      "tests": 276
+    }
+  },
+  "finalDeployApproval": false,
+  "finalSourceRereadFullRecordUnchanged": true,
+  "fixedNativePins": {
+    "/opt/releases/20261030-migration-v14/front/node_modules/.pnpm/@img+sharp-libvips-linux-x64@1.3.3/node_modules/@img/sharp-libvips-linux-x64/lib/libvips-cpp.so.8.18.6": {
+      "dev": 66309,
+      "gid": 0,
+      "ino": 698711,
+      "nlink": 86,
+      "sha256": "536cee19ab906cb5185ad519bf87647693f5d7b55e608c92eb28607f89ca5125",
+      "size": 18621496,
+      "statmode": 33188,
+      "uid": 0
+    },
+    "/opt/releases/20261030-migration-v14/front/node_modules/.pnpm/@img+sharp-linux-x64@0.35.4/node_modules/@img/sharp-linux-x64/lib/sharp-linux-x64-0.35.4.node": {
+      "dev": 66309,
+      "gid": 0,
+      "ino": 697010,
+      "nlink": 86,
+      "sha256": "649fd3c3f98401061963aa496976c21b120a67c382657d9a26a60df251a317e2",
+      "size": 415112,
+      "statmode": 33188,
+      "uid": 0
+    }
+  },
+  "frontendStaticReceiptWaitRequired": false,
+  "fullSuitesRerun": false,
+  "generationPins": 9,
+  "helperExcerptDefinitions": [
+    "H",
+    "ReleaseError",
+    "dynamic_budget",
+    "dynamic_check",
+    "dynamic_native_source_meta",
+    "dynamic_native_stat_meta",
+    "dynamic_read",
+    "dynamic_source",
+    "meta",
+    "need",
+    "no_link"
+  ],
+  "independentReview": true,
+  "knownCountOneNoFallback": true,
+  "localSyntheticProbeEventCount": 56,
+  "localSyntheticProbeEvents": [
+    {
+      "case": "twoExactSyntheticNativePins",
+      "path": "lib-fixture.so",
+      "result": "ACCEPTED_EXACT_BYTES_AND_NINE_META"
+    },
+    {
+      "case": "twoExactSyntheticNativePins",
+      "path": "addon-fixture.node",
+      "result": "ACCEPTED_EXACT_BYTES_AND_NINE_META"
+    },
+    {
+      "case": "ordinarySingleUnchanged",
+      "result": "ACCEPTED_SINGLE_FILE"
+    },
+    {
+      "case": "unknownMultiLinkJS",
+      "error": "DYNAMIC_SINGLE_REGULAR_SOURCE",
+      "result": "EXPECTED_REJECTION",
+      "route": "dynamic_source"
+    },
+    {
+      "case": "unknownMultiLinkJS",
+      "error": "DYNAMIC_SOURCE_SINGLE_FILE_BYTE_CAP",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "knownInodeUnknownAliasPath",
+      "error": "DYNAMIC_SINGLE_REGULAR_SOURCE",
+      "result": "EXPECTED_REJECTION",
+      "route": "dynamic_source"
+    },
+    {
+      "case": "knownInodeUnknownAliasPath",
+      "error": "DYNAMIC_SOURCE_SINGLE_FILE_BYTE_CAP",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "fixedFieldMismatch:dev",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "dynamic_source"
+    },
+    {
+      "case": "fixedFieldMismatch:dev",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "fixedFieldMismatch:ino",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "dynamic_source"
+    },
+    {
+      "case": "fixedFieldMismatch:ino",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "fixedFieldMismatch:statmode",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "dynamic_source"
+    },
+    {
+      "case": "fixedFieldMismatch:statmode",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "fixedFieldMismatch:uid",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "dynamic_source"
+    },
+    {
+      "case": "fixedFieldMismatch:uid",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "fixedFieldMismatch:gid",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "dynamic_source"
+    },
+    {
+      "case": "fixedFieldMismatch:gid",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "fixedFieldMismatch:nlink",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "dynamic_source"
+    },
+    {
+      "case": "fixedFieldMismatch:nlink",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "fixedFieldMismatch:size",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "dynamic_source"
+    },
+    {
+      "case": "fixedFieldMismatch:size",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "aliasSameSizeByteWrite",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_FULL_PIN",
+      "result": "EXPECTED_REJECTION",
+      "route": "dynamic_source"
+    },
+    {
+      "case": "aliasSameSizeByteWrite",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_FULL_PIN",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "aliasModeChange",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "dynamic_source"
+    },
+    {
+      "case": "aliasModeChange",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "aliasSizeChange",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "dynamic_source"
+    },
+    {
+      "case": "aliasSizeChange",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "linkAdd",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "dynamic_source"
+    },
+    {
+      "case": "linkAdd",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "knownCountOneNoFallback",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "dynamic_source"
+    },
+    {
+      "case": "knownCountOneNoFallback",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "knownSingleCloneNoFallback",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "dynamic_source"
+    },
+    {
+      "case": "knownSingleCloneNoFallback",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_META",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "wrongFullHash",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_FULL_PIN",
+      "result": "EXPECTED_REJECTION",
+      "route": "dynamic_source"
+    },
+    {
+      "case": "wrongFullHash",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_FULL_PIN",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "nonELFWithMatchingHash",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_ELF_HEADER",
+      "result": "EXPECTED_REJECTION",
+      "route": "dynamic_source"
+    },
+    {
+      "case": "nonELFWithMatchingHash",
+      "error": "DYNAMIC_FIXED_NATIVE_SOURCE_ELF_HEADER",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "knownSymlink",
+      "error": "SYMLINK_ESCAPE: /tmp/review-r7-native-offline-u4rkf432/lib-fixture.so",
+      "result": "EXPECTED_REJECTION",
+      "route": "dynamic_source"
+    },
+    {
+      "case": "knownSymlink",
+      "error": "SYMLINK_ESCAPE: /tmp/review-r7-native-offline-u4rkf432/lib-fixture.so",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "realAliasMutationDuringRead:bytes",
+      "error": "DYNAMIC_FILE_READ_RACE",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "realAliasMutationDuringRead:mode",
+      "error": "DYNAMIC_FILE_READ_RACE",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "realAliasMutationDuringRead:linkAdd",
+      "error": "DYNAMIC_FILE_READ_RACE",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "realAliasMutationDuringRead:unlink",
+      "error": "DYNAMIC_FILE_READ_RACE",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "realAliasMutationDuringRead:linkAddRemove",
+      "error": "DYNAMIC_FILE_READ_RACE",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "realAliasMutationDuringRead:rename",
+      "error": "DYNAMIC_FILE_READ_RACE",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "realAliasMutationDuringRead:timestamp",
+      "error": "DYNAMIC_FILE_READ_RACE",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "syntheticFstatAfterDrift:st_dev",
+      "error": "DYNAMIC_FILE_READ_RACE",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "syntheticFstatAfterDrift:st_ino",
+      "error": "DYNAMIC_FILE_READ_RACE",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "syntheticFstatAfterDrift:st_mode",
+      "error": "DYNAMIC_FILE_READ_RACE",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "syntheticFstatAfterDrift:st_uid",
+      "error": "DYNAMIC_FILE_READ_RACE",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "syntheticFstatAfterDrift:st_gid",
+      "error": "DYNAMIC_FILE_READ_RACE",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "syntheticFstatAfterDrift:st_nlink",
+      "error": "DYNAMIC_FILE_READ_RACE",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "syntheticFstatAfterDrift:st_size",
+      "error": "DYNAMIC_FILE_READ_RACE",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "syntheticFstatAfterDrift:st_mtime_ns",
+      "error": "DYNAMIC_FILE_READ_RACE",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "syntheticFstatAfterDrift:st_ctime_ns",
+      "error": "DYNAMIC_FILE_READ_RACE",
+      "result": "EXPECTED_REJECTION",
+      "route": "sourceTrueLowLevel"
+    },
+    {
+      "case": "restoredLinkCountBetweenRecords",
+      "fieldsChanged": [
+        "ctimeNs"
+      ],
+      "result": "EXACT_RECORD_DIFF_DETECTED"
+    }
+  ],
+  "mappedDevInoAndMultiplicityUnchanged": true,
+  "nativeFullBytesReadByThisReviewer": false,
+  "nativeLibrariesEdited": false,
+  "networkSSHGitMCPUsed": false,
+  "nodeExecuted": false,
+  "observationSha256": "b8dcc9b80cb2b0e9f873a632f0f48428dbd7121ea69b08cc11d2d319c2a8a9bf",
+  "oldTestChanges": [
+    "test_release.py:SafetyTests.test_new_identity_and_fixed_boundary",
+    "test_release.py:R4ProtectedGraphTests.test_default_exact_roots_no_parentcwd_or_root_recursion",
+    "test_prepare_local.py:LocalTests.test_r3_current_controller_sha_and_scope_fixed"
+  ],
+  "ordinarySingleGatesASTIdentical": true,
+  "owner": "6Lfttf6oVWJ8YS69o5FkXQ",
+  "packageMetadataIsSourceExemption": false,
+  "pendingParent": [
+    "actual JS/source graph",
+    "typed/retained witnesses",
+    "fullMETA",
+    "fresh sixReady",
+    "new two API/HTML/package review",
+    "parent readonly R7 private capture and currentfresh coordination"
+  ],
+  "pinManifestSha256": "a7e0a408b5f512424b199d1012303b0c64748d3a6ff2654cd62f21e2f50e2ad2",
+  "preparerChangedTopLevel": [
+    "Name(id='CONTROLLER_SHA', ctx=Store())"
+  ],
+  "preservedTopLevelCount": 129,
+  "productionCaptureExecuted": false,
+  "pubExecuted": false,
+  "releaseApproved": false,
+  "releaseSha256": "a555022329eed9c2b72efa2aa0668b9a84d33148da4bee5cc9ba5bd579866e5b",
+  "reloadApproved": false,
+  "reloadExecuted": false,
+  "scope": "customer-batch-actions-20261120-6Lfttf6o-R7",
+  "sourceFixRequired": false,
+  "sourceTrueLowLevelEnforcesFullPin": true,
+  "status": "PASS_NATIVE_SOURCE_TYPE_INCREMENT_ONLY",
+  "testInventory": {
+    "test_prepare_local.py": {
+      "added": [
+        "LocalTests.test_r7_old_exact_fbb_source_and_capture_pin_rejected_without_import",
+        "LocalTests.test_r7_old_r6_scope_capture_not_reusable"
+      ],
+      "current": 42,
+      "deleted": [],
+      "original": 40
+    },
+    "test_release.py": {
+      "added": [
+        "R7NativeSourceTests.test_actual_alias_size_drift_rejected",
+        "R7NativeSourceTests.test_alias_bytes_mode_links_between_samples_all_rejected",
+        "R7NativeSourceTests.test_alias_metadata_during_lowest_read_rejected",
+        "R7NativeSourceTests.test_alias_mode_drift_rejects_both_source_routes",
+        "R7NativeSourceTests.test_alias_same_size_bytes_write_rejected_by_full_hash",
+        "R7NativeSourceTests.test_alias_timestamp_during_final_proc_rejected_by_final_source_meta",
+        "R7NativeSourceTests.test_alias_timestamp_only_between_samples_rejects_whole_inode_record",
+        "R7NativeSourceTests.test_alias_unlink_rejects_known_nlink_one_without_default_fallback",
+        "R7NativeSourceTests.test_alias_write_during_lowest_read_rejected_by_full_fstat",
+        "R7NativeSourceTests.test_all_nine_fstat_identity_fields_rechecked",
+        "R7NativeSourceTests.test_all_six_own_rolls_and_local_api_cas_preserve_pinned_transport",
+        "R7NativeSourceTests.test_fixed_mode_size_and_dev_ino_mismatch_rejected",
+        "R7NativeSourceTests.test_fixed_owner_uid_gid_mismatch_rejected",
+        "R7NativeSourceTests.test_fixed_source_size_and_total_budgets_unchanged",
+        "R7NativeSourceTests.test_full_hash_pin_mismatch_rejected_at_lowest_read",
+        "R7NativeSourceTests.test_full_path_meta_rechecked_before_lowest_read_return",
+        "R7NativeSourceTests.test_known_exact_two_link_whole_file_and_full_meta_source_json",
+        "R7NativeSourceTests.test_known_same_bytes_single_clone_at_known_path_rejected",
+        "R7NativeSourceTests.test_known_symlink_and_parent_symlink_still_rejected",
+        "R7NativeSourceTests.test_link_add_and_unlink_during_lowest_read_rejected",
+        "R7NativeSourceTests.test_link_add_rejects_exact_expected_count",
+        "R7NativeSourceTests.test_link_add_remove_restores_count_but_ctime_still_rejected",
+        "R7NativeSourceTests.test_mapped_dev_inode_mismatch_still_rejects_pinned_native",
+        "R7NativeSourceTests.test_non_elf_with_matching_synthetic_full_hash_still_rejected",
+        "R7NativeSourceTests.test_pinned_source_mapping_multiplicity_still_rejected",
+        "R7NativeSourceTests.test_same_bytes_rename_during_lowest_read_rejected",
+        "R7NativeSourceTests.test_unknown_two_link_source_and_direct_read_still_reject",
+        "R7NativeTransportTests.test_alias_bytes_write_during_mock_rpc_rejects_fixed_source",
+        "R7NativeTransportTests.test_owned_roll_with_pinned_native_preserves_whole_transport",
+        "R7NativeTransportTests.test_same_inode_old_pointer_timestamp_drift_rejects_whole_transport"
+      ],
+      "current": 276,
+      "deleted": [],
+      "original": 246
+    }
+  },
+  "unknownMultiLinkRejected": true,
+  "wholePackageApproval": false,
+  "wholeTransportExecuted": false
+}

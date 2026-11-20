@@ -1,0 +1,26 @@
+{
+  "release.py": {
+    "sha256": "fbb5302cf59974433d9775de3e0ee5e788eb58ec13916fa5101655d2badb7348",
+    "bytes": 142853
+  },
+  "test_release.py": {
+    "sha256": "6352a3643eb7e37637b8f491a3c4d6d8890b0bfec028a1cfe001a0b1c8d6fc7d",
+    "bytes": 166481
+  },
+  "prepare-local.py": {
+    "sha256": "9b98ff0b48e619f344c197d9090c1c86431fe1219326ccec59680060edb7e4bd",
+    "bytes": 22260
+  },
+  "test_prepare_local.py": {
+    "sha256": "41d648a9db04d943236dd782c1934fb06259a8ade9075eeddd304a28b07886b5",
+    "bytes": 30862
+  },
+  "README.md": {
+    "sha256": "bdbf2923587abc11c6c0d8d24783fb44f3a6840f8ef6f01ca41ae9ed4e0b95f5",
+    "bytes": 37057
+  },
+  "prepare-local.README.md": {
+    "sha256": "f97e09ad3b9181d470b19da79aca00c0a41cb320077da89a62470b74c815aed6",
+    "bytes": 17868
+  }
+}

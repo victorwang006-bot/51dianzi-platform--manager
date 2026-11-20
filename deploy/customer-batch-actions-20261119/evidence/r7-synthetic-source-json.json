@@ -1,0 +1,39 @@
+{
+  "fixtureOnly": true,
+  "fullSourceMeta": {
+    "/tmp/r5-pure-dynamic-nad3o85_/library with spaces.so": {
+      "ctimeNs": 1795148541377441209,
+      "dev": 65024,
+      "gid": 1000,
+      "ino": 5406766,
+      "kind": "file",
+      "mtimeNs": 1795148541377315007,
+      "nlink": 2,
+      "sha256": "682c5a7a35577fbf3b19ab98e95143c41912394212d0d1f17c44689b5d9cfc1d",
+      "size": 188,
+      "statmode": 33188,
+      "uid": 1000
+    },
+    "/tmp/r5-pure-dynamic-nad3o85_/sharp-fixture.node": {
+      "ctimeNs": 1795148541377441209,
+      "dev": 65024,
+      "gid": 1000,
+      "ino": 5406774,
+      "kind": "file",
+      "mtimeNs": 1795148541377441209,
+      "nlink": 2,
+      "sha256": "d34094f456474437a5a091b75948115aafefeca3bc303a337364ec8d8c07c058",
+      "size": 172,
+      "statmode": 33188,
+      "uid": 1000
+    }
+  },
+  "nativeBytesCopied": false,
+  "semanticsClosed": false,
+  "sourceGraphReviewRequired": true,
+  "sources": {
+    "/tmp/r5-pure-dynamic-nad3o85_/library with spaces.so": "682c5a7a35577fbf3b19ab98e95143c41912394212d0d1f17c44689b5d9cfc1d",
+    "/tmp/r5-pure-dynamic-nad3o85_/sharp-fixture.node": "d34094f456474437a5a091b75948115aafefeca3bc303a337364ec8d8c07c058"
+  },
+  "status": "TEMP_ONLY_SYNTHETIC_SOURCE_RECORDS_NOT_CAPTURE"
+}

@@ -1,0 +1,139 @@
+{
+  "actualAttemptWritten": false,
+  "actualCaptureExecuted": false,
+  "actualProcRead": false,
+  "actualReloadExecuted": false,
+  "allAliasNamespaceScanned": false,
+  "atomicKernelCASClaim": false,
+  "configClassBytesUnchanged": true,
+  "continuousFreezeClaim": false,
+  "controllerApproved": false,
+  "controllerClassBytesUnchanged": true,
+  "controllerMethodsUnchanged": 30,
+  "controllerSha256": "a555022329eed9c2b72efa2aa0668b9a84d33148da4bee5cc9ba5bd579866e5b",
+  "databaseAccess": false,
+  "directSourceReadFullHashAndELFBeforeReturn": true,
+  "files": {
+    "README.md": {
+      "baselineBytes": 37057,
+      "baselineSha256": "bdbf2923587abc11c6c0d8d24783fb44f3a6840f8ef6f01ca41ae9ed4e0b95f5",
+      "currentBytes": 39707,
+      "currentSha256": "0e52179cd2bfb1413481ad6bb8729ed989c4ce9423cc98d28b04f53450885ba9"
+    },
+    "prepare-local.README.md": {
+      "baselineBytes": 17868,
+      "baselineSha256": "f97e09ad3b9181d470b19da79aca00c0a41cb320077da89a62470b74c815aed6",
+      "currentBytes": 19371,
+      "currentSha256": "4331efb0ddb849b3a1a6aa2e919fc83f31a0955da9031535146e7c734443788f"
+    },
+    "prepare-local.py": {
+      "baselineBytes": 22260,
+      "baselineSha256": "9b98ff0b48e619f344c197d9090c1c86431fe1219326ccec59680060edb7e4bd",
+      "currentBytes": 22260,
+      "currentSha256": "36e8864ab357a3a5721ede54bcd02104ac30d357bf6350dd4e4fb354530847f9"
+    },
+    "release.py": {
+      "baselineBytes": 142853,
+      "baselineSha256": "fbb5302cf59974433d9775de3e0ee5e788eb58ec13916fa5101655d2badb7348",
+      "currentBytes": 145187,
+      "currentSha256": "a555022329eed9c2b72efa2aa0668b9a84d33148da4bee5cc9ba5bd579866e5b"
+    },
+    "test_prepare_local.py": {
+      "baselineBytes": 30862,
+      "baselineSha256": "41d648a9db04d943236dd782c1934fb06259a8ade9075eeddd304a28b07886b5",
+      "currentBytes": 32039,
+      "currentSha256": "389f9ad45dcca82df47ea72bf6f408de0990be9d3e8e7c3a92e20c414c815457"
+    },
+    "test_release.py": {
+      "baselineBytes": 166481,
+      "baselineSha256": "6352a3643eb7e37637b8f491a3c4d6d8890b0bfec028a1cfe001a0b1c8d6fc7d",
+      "currentBytes": 182584,
+      "currentSha256": "c012e795727d065f8cfb9f19a22e2bc4c35f0e15e59bfb07b179c632a043379e"
+    }
+  },
+  "finalDeployApproval": false,
+  "fixedNativeMetaKeys": [
+    "dev",
+    "ino",
+    "statmode",
+    "uid",
+    "gid",
+    "nlink",
+    "size"
+  ],
+  "fixedNativePaths": [
+    "/opt/releases/20261030-migration-v14/front/node_modules/.pnpm/@img+sharp-libvips-linux-x64@1.3.3/node_modules/@img/sharp-libvips-linux-x64/lib/libvips-cpp.so.8.18.6",
+    "/opt/releases/20261030-migration-v14/front/node_modules/.pnpm/@img+sharp-linux-x64@0.35.4/node_modules/@img/sharp-linux-x64/lib/sharp-linux-x64-0.35.4.node"
+  ],
+  "fullPathMetaBeforeAndAfter": true,
+  "kernelMappingPolicyUnchanged": true,
+  "knownSingleCloneReject": true,
+  "logs": {
+    "r7-finite-tests.txt": {
+      "passed": true,
+      "seconds": 0.001,
+      "sha256": "ab36567b74ef88771992c87875e0f9d1f2ce5eaca7f04d0ed132a3f8b2de6f2b",
+      "tests": 6
+    },
+    "r7-native-tests.txt": {
+      "passed": true,
+      "seconds": 2.805,
+      "sha256": "ff10c5b6b252a35fea70b5a342fedafad3a888ca159f365d79c73c449fed61c8",
+      "tests": 30
+    },
+    "r7-prepare-tests.txt": {
+      "passed": true,
+      "seconds": 1.311,
+      "sha256": "6cbd7259b9523aa1f2ce24392356914152c398822643d7de5652eab24e7aa36f",
+      "tests": 42
+    },
+    "r7-r6-kernel-tests.txt": {
+      "passed": true,
+      "seconds": 3.867,
+      "sha256": "ce40b4a44fb5bf016bce29989ac92c95d6e9abf84000494f97d3ac951f7cab14",
+      "tests": 34
+    },
+    "r7-release-tests.txt": {
+      "passed": true,
+      "seconds": 27.23,
+      "sha256": "b4338c9c1a7054bcd7ef9b841781e575e31b953083f6b320a40b27dc43ed4dd5",
+      "tests": 276
+    }
+  },
+  "nativeLibraryLoaded": false,
+  "networkAccess": false,
+  "noGenericHardlinkExemption": true,
+  "nodeExecuted": false,
+  "oldControllerSha256": "fbb5302cf59974433d9775de3e0ee5e788eb58ec13916fa5101655d2badb7348",
+  "oldR6StageTouched": false,
+  "owner": "6Lfttf6oVWJ8YS69o5FkXQ",
+  "packageMetadataIsSourceExemption": false,
+  "pending": [
+    "actual R7 fresh capture/fullMETA",
+    "unknown JS/source graph review",
+    "Typed/retained witness and sixReady",
+    "new full package and independent approval"
+  ],
+  "pm2GenerationPinsUnchanged": 9,
+  "productionReads": 0,
+  "productionWrites": 0,
+  "pubExecuted": false,
+  "readRaceComparedFields": [
+    "dev",
+    "ino",
+    "statmode",
+    "uid",
+    "gid",
+    "nlink",
+    "size",
+    "mtimeNs",
+    "ctimeNs"
+  ],
+  "releaseApproved": false,
+  "reloadApproved": false,
+  "scope": "customer-batch-actions-20261120-6Lfttf6o-R7",
+  "sourcePinConstantExactMachineObservation": true,
+  "status": "SOURCE_TYPE_FIX_NOT_APPROVED",
+  "timersOrBudgetsOrCLIOptionsAdded": false,
+  "unknownHardlinkDefaultReject": true
+}

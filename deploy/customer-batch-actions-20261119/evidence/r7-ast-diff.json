@@ -1,0 +1,182 @@
+{
+  "addedTopLevel": [
+    "Name(id='DYNAMIC_FIXED_NATIVE_SOURCE_PINS', ctx=Store())",
+    "dynamic_native_stat_meta",
+    "dynamic_native_source_meta"
+  ],
+  "bytePreserved": {
+    "Config": {
+      "byteIdentical": true,
+      "bytes": 2255,
+      "sha256": "9589510779695123e187a273e1a03db650968ea9708b18e34dda5da062b95f96"
+    },
+    "Controller": {
+      "byteIdentical": true,
+      "bytes": 48074,
+      "sha256": "64592b06f7ff5f41c42e9e80ecc20ab166e6d023e3231ff8f4078b0783d75b64"
+    },
+    "PM2_GENERATION_PINS": {
+      "byteIdentical": true,
+      "bytes": 855,
+      "sha256": "8c19ca502275246545b17fb98b0c96212849157574c2f5b0b2e4858f7cff244b"
+    },
+    "RPC": {
+      "byteIdentical": true,
+      "bytes": 1850,
+      "sha256": "6c8b4b65f99f60f66fe3acc40df1ef1e560615e5d837af594c7d9c940b463ee3"
+    },
+    "cas": {
+      "byteIdentical": true,
+      "bytes": 1152,
+      "sha256": "53a8c41db1aa70cfc7ecff0f108987bf2bf3c02b1a046d7321f7cf20ab858260"
+    },
+    "dynamic_kernel_mappings": {
+      "byteIdentical": true,
+      "bytes": 917,
+      "sha256": "ce499efd638d80db92abb50454c909837f35c96da53a839853cee6ec0ca45a8a"
+    },
+    "dynamic_maps": {
+      "byteIdentical": true,
+      "bytes": 1102,
+      "sha256": "6466ed3f0f2f058dac37d83edd637692ce4efeab3a1f8b1b27d8aaea4632082e"
+    },
+    "dynamic_owned": {
+      "byteIdentical": true,
+      "bytes": 1914,
+      "sha256": "a3551896b9f2625c6cd4e15a9d0760ca9c8736b8c887dd45592255e0c75ab9d5"
+    },
+    "dynamic_protection": {
+      "byteIdentical": true,
+      "bytes": 849,
+      "sha256": "58f3554d350d75388815f987cfdd4f772e1fa6d11b74838ff4fbd84dd82cc859"
+    },
+    "dynamic_protection_sample": {
+      "byteIdentical": true,
+      "bytes": 6077,
+      "sha256": "e8062f8698149c47d3f188e78f56f2523a7f1503f606f18638fbd0596d8df9a6"
+    },
+    "inventory": {
+      "byteIdentical": true,
+      "bytes": 1764,
+      "sha256": "42b616372a6e8917596df343f41f7ac36cee4ca064b55447d26f75cdbaf9e924"
+    },
+    "pm2_publish_ready": {
+      "byteIdentical": true,
+      "bytes": 399,
+      "sha256": "7a24619844caaf593064e20ca123f548337f309edc671806dadb6d521a1fd4c1"
+    },
+    "transport": {
+      "byteIdentical": true,
+      "bytes": 2609,
+      "sha256": "6afa6e06f830ce4f47908d149cd95ff0ada382053389daf15499be5776d8df9d"
+    },
+    "union": {
+      "byteIdentical": true,
+      "bytes": 2117,
+      "sha256": "8745569f288041fa7dde63a096d49316cb777228945c1b86ac5b09c02169be24"
+    }
+  },
+  "changedTopLevel": [
+    "Name(id='SCOPE', ctx=Store())",
+    "dynamic_read",
+    "dynamic_source"
+  ],
+  "controllerMethods": [
+    "__init__",
+    "no_replay",
+    "snapshot",
+    "health",
+    "capture",
+    "bundle",
+    "baseline_guard",
+    "preflight",
+    "sealed_guard",
+    "state_invariants",
+    "current_snapshot",
+    "guard",
+    "common",
+    "checkpoint",
+    "set_parent",
+    "change_file",
+    "change_coord",
+    "owned_window",
+    "close",
+    "receipt_proof",
+    "durable_success",
+    "retain_owned_hold",
+    "add_asset",
+    "reload_one",
+    "fail",
+    "apply",
+    "restore_journal",
+    "verify",
+    "_verify",
+    "rollback"
+  ],
+  "deletedTopLevel": [],
+  "oldTestsChangedOnlyThreeScopeAssertionMethods": [
+    "test_release.py:SafetyTests.test_new_identity_and_fixed_boundary",
+    "test_release.py:R4ProtectedGraphTests.test_default_exact_roots_no_parentcwd_or_root_recursion",
+    "test_prepare_local.py:LocalTests.test_r3_current_controller_sha_and_scope_fixed"
+  ],
+  "ordinarySingleSourceReadGateASTIdentical": true,
+  "ordinarySingleSourceTypeBranchASTIdentical": true,
+  "preparerChangedTopLevel": [
+    "Name(id='CONTROLLER_SHA', ctx=Store())"
+  ],
+  "testInventory": {
+    "test_prepare_local.py": {
+      "addedMethods": [
+        "LocalTests.test_r7_old_exact_fbb_source_and_capture_pin_rejected_without_import",
+        "LocalTests.test_r7_old_r6_scope_capture_not_reusable"
+      ],
+      "currentMethods": 42,
+      "deletedMethods": [],
+      "oldMethodsByteIdenticalExceptScopeLiteral": [
+        "LocalTests.test_r3_current_controller_sha_and_scope_fixed"
+      ],
+      "originalMethods": 40
+    },
+    "test_release.py": {
+      "addedMethods": [
+        "R7NativeSourceTests.test_actual_alias_size_drift_rejected",
+        "R7NativeSourceTests.test_alias_bytes_mode_links_between_samples_all_rejected",
+        "R7NativeSourceTests.test_alias_metadata_during_lowest_read_rejected",
+        "R7NativeSourceTests.test_alias_mode_drift_rejects_both_source_routes",
+        "R7NativeSourceTests.test_alias_same_size_bytes_write_rejected_by_full_hash",
+        "R7NativeSourceTests.test_alias_timestamp_during_final_proc_rejected_by_final_source_meta",
+        "R7NativeSourceTests.test_alias_timestamp_only_between_samples_rejects_whole_inode_record",
+        "R7NativeSourceTests.test_alias_unlink_rejects_known_nlink_one_without_default_fallback",
+        "R7NativeSourceTests.test_alias_write_during_lowest_read_rejected_by_full_fstat",
+        "R7NativeSourceTests.test_all_nine_fstat_identity_fields_rechecked",
+        "R7NativeSourceTests.test_all_six_own_rolls_and_local_api_cas_preserve_pinned_transport",
+        "R7NativeSourceTests.test_fixed_mode_size_and_dev_ino_mismatch_rejected",
+        "R7NativeSourceTests.test_fixed_owner_uid_gid_mismatch_rejected",
+        "R7NativeSourceTests.test_fixed_source_size_and_total_budgets_unchanged",
+        "R7NativeSourceTests.test_full_hash_pin_mismatch_rejected_at_lowest_read",
+        "R7NativeSourceTests.test_full_path_meta_rechecked_before_lowest_read_return",
+        "R7NativeSourceTests.test_known_exact_two_link_whole_file_and_full_meta_source_json",
+        "R7NativeSourceTests.test_known_same_bytes_single_clone_at_known_path_rejected",
+        "R7NativeSourceTests.test_known_symlink_and_parent_symlink_still_rejected",
+        "R7NativeSourceTests.test_link_add_and_unlink_during_lowest_read_rejected",
+        "R7NativeSourceTests.test_link_add_rejects_exact_expected_count",
+        "R7NativeSourceTests.test_link_add_remove_restores_count_but_ctime_still_rejected",
+        "R7NativeSourceTests.test_mapped_dev_inode_mismatch_still_rejects_pinned_native",
+        "R7NativeSourceTests.test_non_elf_with_matching_synthetic_full_hash_still_rejected",
+        "R7NativeSourceTests.test_pinned_source_mapping_multiplicity_still_rejected",
+        "R7NativeSourceTests.test_same_bytes_rename_during_lowest_read_rejected",
+        "R7NativeSourceTests.test_unknown_two_link_source_and_direct_read_still_reject",
+        "R7NativeTransportTests.test_alias_bytes_write_during_mock_rpc_rejects_fixed_source",
+        "R7NativeTransportTests.test_owned_roll_with_pinned_native_preserves_whole_transport",
+        "R7NativeTransportTests.test_same_inode_old_pointer_timestamp_drift_rejects_whole_transport"
+      ],
+      "currentMethods": 276,
+      "deletedMethods": [],
+      "oldMethodsByteIdenticalExceptScopeLiteral": [
+        "SafetyTests.test_new_identity_and_fixed_boundary",
+        "R4ProtectedGraphTests.test_default_exact_roots_no_parentcwd_or_root_recursion"
+      ],
+      "originalMethods": 246
+    }
+  }
+}

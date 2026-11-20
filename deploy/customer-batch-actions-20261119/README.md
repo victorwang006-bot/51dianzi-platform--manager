@@ -1,3 +1,31 @@
+# 客户批次 R6：精确 io_uring kernel anonymous mapping（NOT_APPROVED）
+
+当前全新 SCOPE 为 **`customer-batch-actions-20261120-6Lfttf6o-R6`**，OWNER 仍为 `6Lfttf6oVWJ8YS69o5FkXQ`。当前 release SHA256 为 **`fbb5302cf59974433d9775de3e0ee5e788eb58ec13916fa5101655d2badb7348`**，preparer 固 pin 同步；派生 stage 为 `/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R6`，本离线任务未创建或访问真实 stage，不覆盖旧 R5 stage/source。
+
+修改前准确保存 stable `36706f932e6284a1192ef213d85836d25b4c9a7a7023309c11454c4d2dfdfe14` 六文件到 `evidence/r6-baseline-36706f/`，逐字节/哈希核对，原 **212/38/6** 全通过。当前 **246/40/6** 全通过，新增 **34 controller＋2 preparer** 方法独立通过，原 212/38 方法定义全部保留，仅 current scope/stage 断言同步。完整本轮事实见 **[R6 报告](evidence/r6-report.md)**；静态 AST/字节/9pins/Controller30 核验见 `evidence/r6-ast-diff.json`；current source/log SHA 见 `evidence/r6-source-and-safety.json`；六文件差异见 `evidence/r6-six-files.patch`。
+
+## R6 必要最小类型支持
+
+`dynamic_maps` 的原 absolute file-backed fullpath/H/fullMETA/multiplicity/perms/offset/dev/inode 分支完全保持。原 perline format AST 原样提取为 pure `dynamic_map_fields`。relative branch 仅精确 `b'anon_inode:[io_uring]'` 经非执行共享权限、合法 device 字段、positive inode、正映射长度验证后作为 kernel anonymous SQ/CQ 数据映射；不泛化其它 anon_inode、unknown/lookalike/deleted/exec/private/inode0。绝对 io_uring-looking 路径仍走原 file source 保护而非匿名豁免；原 heap/stack/vdso/named bracket 政策不重写。
+
+pure `dynamic_kernel_mappings(rawmaps)` 记录 `[exactName, permissions, offset, device, inode, mappedLength]`，完整排序列表保留 multiplicity、不 dedup；`mappedLength = end-start`，绝对 ASLR 位置不入指纹。kernel anon 不是 ELF/FS source，不 require_read_regular、不加 kernel source H，也不读 FD/log/queue 内容。`dynamic_proc.kernelAnonymousMappings` 在第二 maps 读取精确比较并进入所有 foreign 全 transport equality；new/drop/multiplicity/permissions/offset/dev/inode/length 漂移仍 guard reject，包括 main/extra God、unowned 六槽和 parent graph。
+
+six-owned stableSlots **ONLY execution-source graph** 保持原 AST/字节，不纳入运行期新 ring inode/meta；合法 roll 新 inode 不干扰 transport，每次样本仍先严格 typed validation、原 own proof 和完整进程复核。所有 **9pins、Controller30、Config extraProtect/fullTree、transport/RPC/domain、6 own raw、Root/meta/CAS/budget** 未改。mutable API 仍由原 inventory/CAS 保护，不能借匿名类型逃逸。unknown Node 始终 fresh 动态枚举、birth/death/reuse guard，不固定实际 count；捕获不代表 unknown-codegraph semantic approval。
+
+Linux 类型依据由父任务已 search/fetch：[`io_uring_get_file`](https://raw.githubusercontent.com/torvalds/linux/master/io_uring/io_uring.c) 用 `anon_inode_create_getfile("[io_uring]", &io_uring_fops, ..., O_RDWR|O_CLOEXEC)`，kernel 注释为用户 mmap SQ/CQ details；[io_uring(7)](https://man7.org/linux/man-pages/man7/io_uring.7.html) 描述 `PROT_READ|PROT_WRITE`、`MAP_SHARED` ring data；[proc_pid_maps(5)](https://man7.org/linux/man-pages/man5/proc_pid_maps.5.html) 定义各 fields。本任务不再联网，不新增系统源码运行时依赖。
+
+## 实际状态来源与未审批边界
+
+父任务传达：R5 11:55 首次 privatecontroller 上传后的 READONLY capture 因 `DYNAMIC_UNSUPPORTED_MAPPING` 拒绝，未生成 capture/attempt/window/activewrite/reload；11:56 单有界纯只读 diagnostic 已完成，当前 20 Node+parent，17 Node PID 的 110 个 unsupported path 全精确 io_uring、rw-s、00:0f、positive inodes。`/home/ubuntu/work/customer-batch/r5-mapping-diagnostic-once.json` **不是源码文件**，本轮未读取、更未按 source 路径读入 H/META。新增 unknown Node 2064149/2064150 必须由父任务后续 fresh 集合与 unknown-codegraph 审覆盖，不能用 diagnostic 静态 count 代替。
+
+**R6 仍 NOT_APPROVED。** 本轮纯离线，没有 Git/MCP/SSH/prodCLI/Node/实际proc/server/DB/reload/capture，没有真实 capture/fullMETA/完整 sourcegraph/新包审批或 publication。父任务传达 actual six Readiness 已 once 6 literal True，但不是 typed semantics/fullMETA/整个包审批。父任务负责协调 fresh 窗口和原全套 H/META、6 own raw/readiness、unknown graph、byteWitness/CAS/budget、准确 R6 source/scope/pin 与完整新包独立审；旧 stage/source/capture/review 不复用。
+
+## 以下 R5 及更早内容为历史，不是当前 pin、capture 状态或部署许可
+
+旧段落中“最新/当前”只指当时 R5/R4 快照；R6 一律以上方与 `evidence/r6-report.md` 为准。历史“未上传/无capture”记录不能覆盖上方父任务传达的 11:55 R5 真实拒绝事实。历史源码/测试证据保留，未改旧 evidence。
+
+---
+
 # 客户批次 R5：动态 foreignproc 最小保护（NOT_APPROVED）
 
 当前 OWNER `6Lfttf6oVWJ8YS69o5FkXQ` 不变；全新 SCOPE **`customer-batch-actions-20261120-6Lfttf6o-R5`**。release SHA **`f544c1663d84350df0ff036b7e1b330a8cfcb016e64d705027ff86411a26ed5d`**，preparer 固 pin 同步。先准确保存 4fe 原六文件到 `evidence/r5-baseline-4fe/`，基线 **142/36/6** 全通过；最终 **204/38/6** 全通过，包括新增 **62** 动态/transport mock 方法和 **2** preparer 旧 R4 scope/4fe pin 拒绝方法。完整当前源码/测试日志 SHA 与 AST/字节核对在 `evidence/r5-source-and-safety.json`、`evidence/r5-ast-diff.json`；实质实现与剩余阻碍详见 **`evidence/r5-report.md`**。
@@ -179,3 +207,16 @@ PYTHONDONTWRITEBYTECODE=1 python3 -B test_prepare_local.py -v
 ## 最新R5 F1/F2当前pin（11:42，未上线）
 
 当前controller为 **36706f932e6284a1192ef213d85836d25b4c9a7a7023309c11454c4d2dfdfe14**，preparer固定pin同步；上方f544为R5初版历史，不可作当前审批。完整R5动态foreign图与knownabsence规则保持，新增两个既有形状拒绝和maps重复数保留；Controller30methods/9pins/所有应用环境、零写sixreadygate、scope/owner及收据协议不变。212controller/38preparer/6JSON和单独8新方法实际纯mock通过。见evidence/r5-f1f2-report.md与精确AST/source/log证据。仍NOT_APPROVED，无R5远程stage/capture/attempt/pub窗口/写/reload，待前台newactualclosed后fresh全部实际图/sixReady/byteWitness/META/新完整包独立审。
+
+
+## 最新 R7：精确双 native hardlink 只读源类型适配（未批准）
+
+当前 `SCOPE=customer-batch-actions-20261120-6Lfttf6o-R7`，owner 不变；controller SHA **a555022329eed9c2b72efa2aa0668b9a84d33148da4bee5cc9ba5bd579866e5b**，preparer pin 同步。`evidence/r7-baseline/` 原样保存 fbb530 R6 六文件及 SHA；已有 R6 stage、源码和历史 evidence 不改动。
+
+`DYNAMIC_FIXED_NATIVE_SOURCE_PINS` 仅含两个完整 literal 路径：libvips-cpp.so.8.18.6 与 sharp-linux-x64-0.35.4.node。各自固定完整 SHA256、size、nlink=86、dev/ino、mode、uid/gid 来自父任务已经完成的机器观测 JSON，详见 `evidence/r7-native-source-pin-manifest.json`。这是 pnpm 共享 native ELF 的**只读源**适配，不是通用 hardlink 白名单，不是可 CAS 写入目标。两个 package.json 的名称/版本/hash 仅为已读来源标注，绝不加入执行源豁免。
+
+`dynamic_source` 和直接 `dynamic_read(..., source=True)` 均验证固定源 exact 元数据；最底层读返回前必须验证整文件完整 SHA、完整 size 及 `7f454c46` ELF header。读前/后 fstat 的 dev/ino/mode/uid/gid/nlink/size/mtimeNs/ctimeNs 全部一致，已知源路径完整 META 与 fstat 一致，原 rename dev/ino 检查与上层 full META 重读保留。已知路径改成 nlink=1 clone 也拒绝；未知 hardlink、未知多链接 JS、symlink/父 symlink、任何 pin/header/owner/mode/size/链接数漂移均不 fallback。普通 single-source 原分支与原预算/映射 identity/multiplicity/Root/IO/Controller/RPC/9pins/config/env/fullTree/CAS/reload gate 均不改。
+
+临时目录真 `os.link`、合成 ELF bytes 的新增测试覆盖别名写入、metadata/linkadd/unlink、同字节 clone、九字段读竞态、mapped dev/ino、full source JSON、两个完整采样和最终源重读；六 own roll 与本地 file/API CAS 的非干涉保持。完整日志与精确 AST/source 差量见 `evidence/r7-*`。
+
+不扫描全文件系统的 86 个 alias 名称，也不承诺其 namespace 已全文审查；同 inode 的 bytes/meta/nlink/ctime 变化通过固定 pin 和采样记录检测。此证据只描述有限当前观测，依赖原 cooperative shared locks/full-CAS 发布协议，不是内核原子 CAS 或持续冻结。**SOURCE_TYPE_FIX_NOT_APPROVED；controllerApproved=false；releaseApproved=false；finalDeployApproval=false；reloadApproved=false。** 实际 R7 fresh capture/fullMETA、未知 JS/source graph、Typed/retained witness、sixReady、真实新完整包和独立批准全部待父任务。本轮无生产采集、模块执行、库加载、DB、发布写、reload 或网络。

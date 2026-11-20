@@ -1,0 +1,1 @@
+{"changedOldTestMethods": 3, "controllerMethods": 30, "controllerSha256": "a555022329eed9c2b72efa2aa0668b9a84d33148da4bee5cc9ba5bd579866e5b", "generationPins": 9, "oldTestsRetained": true, "r6KernelTests": 34, "r7NativeTests": 30, "status": "SOURCE_TYPE_FIX_NOT_APPROVED", "testCounts": [276, 42, 6]}

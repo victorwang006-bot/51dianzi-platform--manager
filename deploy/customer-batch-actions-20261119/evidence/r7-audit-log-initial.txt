@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/51-manager/deploy/customer-batch-actions-20261119/evidence/r7-audit.py", line 71, in <module>
+    assert dump(a['dynamic_source'].body[1]) == dump(b['dynamic_source'].body[1].orelse[0])
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'Assign' object has no attribute 'orelse'

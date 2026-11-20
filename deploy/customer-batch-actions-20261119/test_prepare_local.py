@@ -435,8 +435,8 @@ class LocalTests(unittest.TestCase):
 
     def test_r3_current_controller_sha_and_scope_fixed(self):
         self.assertEqual(P.CONTROLLER_SHA, P.sha((HERE/'release.py').read_bytes()))
-        self.assertEqual(R.SCOPE, 'customer-batch-actions-20261120-6Lfttf6o-R5')
-        self.assertEqual(str(R.Config().stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R5')
+        self.assertEqual(R.SCOPE, 'customer-batch-actions-20261120-6Lfttf6o-R7')
+        self.assertEqual(str(R.Config().stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R7')
         self.assertEqual(R.OWNER, '6Lfttf6oVWJ8YS69o5FkXQ')
 
     def test_old_failed_stage_scope_capture_is_not_reusable(self):
@@ -514,6 +514,46 @@ class LocalTests(unittest.TestCase):
 
     def test_r5_old_exact_4fe_controller_capture_not_reusable(self):
         self.cap['controllerSha256'] = '4fe2ad8a49982a2395a38254da473ebc958cd1ce9bc45310dba1481621fdc121'
+        self.save_capture()
+        with self.assertRaisesRegex(P.PrepareError, 'fixed production capture binding'):
+            P.inputs(self.args, R)
+        self.assertEqual(self.calls, []); self.assertFalse(self.out.exists())
+
+
+
+    def test_r6_old_r5_scope_capture_not_reusable(self):
+        self.cap['scope'] = 'customer-batch-actions-20261120-6Lfttf6o-R5'
+        self.save_capture()
+        with self.assertRaisesRegex(P.PrepareError, 'fixed production capture binding'):
+            P.inputs(self.args, R)
+        self.assertEqual(self.calls, []); self.assertFalse(self.out.exists())
+
+    def test_r6_old_exact_36706f_source_and_capture_pin_rejected_without_import(self):
+        old = (HERE/'evidence/r6-baseline-36706f/release.py').read_bytes()
+        self.assertEqual(P.sha(old), '36706f932e6284a1192ef213d85836d25b4c9a7a7023309c11454c4d2dfdfe14')
+        with patch.object(P, 'read', return_value=old), patch.object(P.importlib.util, 'spec_from_file_location', side_effect=AssertionError('OLD_SOURCE_NOT_IMPORTED')):
+            with self.assertRaisesRegex(P.PrepareError, 'controller drift'):
+                REAL_LOADER()
+        self.cap['controllerSha256'] = P.sha(old)
+        self.save_capture()
+        with self.assertRaisesRegex(P.PrepareError, 'fixed production capture binding'):
+            P.inputs(self.args, R)
+        self.assertEqual(self.calls, []); self.assertFalse(self.out.exists())
+
+    def test_r7_old_r6_scope_capture_not_reusable(self):
+        self.cap['scope'] = 'customer-batch-actions-20261120-6Lfttf6o-R6'
+        self.save_capture()
+        with self.assertRaisesRegex(P.PrepareError, 'fixed production capture binding'):
+            P.inputs(self.args, R)
+        self.assertEqual(self.calls, []); self.assertFalse(self.out.exists())
+
+    def test_r7_old_exact_fbb_source_and_capture_pin_rejected_without_import(self):
+        old = (HERE/'evidence/r7-baseline/release.py').read_bytes()
+        self.assertEqual(P.sha(old), 'fbb5302cf59974433d9775de3e0ee5e788eb58ec13916fa5101655d2badb7348')
+        with patch.object(P, 'read', return_value=old), patch.object(P.importlib.util, 'spec_from_file_location', side_effect=AssertionError('OLD_SOURCE_NOT_IMPORTED')):
+            with self.assertRaisesRegex(P.PrepareError, 'controller drift'):
+                REAL_LOADER()
+        self.cap['controllerSha256'] = P.sha(old)
         self.save_capture()
         with self.assertRaisesRegex(P.PrepareError, 'fixed production capture binding'):
             P.inputs(self.args, R)

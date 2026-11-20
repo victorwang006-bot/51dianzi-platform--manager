@@ -1,3 +1,19 @@
+# 客户批次 R6：仅本地准备器（NOT_APPROVED）
+
+当前 **CONTROLLER_SHA = `fbb5302cf59974433d9775de3e0ee5e788eb58ec13916fa5101655d2badb7348`**，全新 SCOPE **`customer-batch-actions-20261120-6Lfttf6o-R6`** 直接取 `release.SCOPE`；OWNER `6Lfttf6oVWJ8YS69o5FkXQ` 不变。本轮 preparer 所有函数 AST/字节完全不变，仅固定 controller pin 更新。不得复用旧 R5 stage/source、capture/seed/review 或准确 36706f 历史 source pin。
+
+准确 stable36706f 六文件先保存在 `evidence/r6-baseline-36706f/`，原 **212/38/6** 全通过；当前 **246/40/6** 全通过。新增 **2** preparer TempDir mock 方法独立通过：旧 R5 scope 拒绝，旧准确 36706f source bytes 在 pin 检查处拒绝且不 import，同时旧 capture controllerSha 拒绝；原 **38** 方法定义全部保留，仅当前 scope/stage 断言同步。新增 controller **34** typed mapping/foreign transport/owned roll/unknown guard 方法也独立通过。
+
+R6 只为精确 Linux `anon_inode:[io_uring]` 的非执行共享、positive inode、合法 device、正长度映射加类型支持；不是 FS/ELF source，不读 FD/log/queue，不将匿名条目伪装 sourcePaths。foreign record 完整进入 transport equality；six own execution-source stableSlots 不含运行期 ring inode，原 own proof/snapshot、所有 9pins/Controller30/Config extraProtect/fullTree/RPC/domain/Root/META/CAS/budget 不变。完整依据、字段及拒绝策略见 **[R6 报告](evidence/r6-report.md)** 和 `README.md`，精确差异/静态审计/source与日志SHA见 `evidence/r6-six-files.patch`、`evidence/r6-ast-diff.json`、`evidence/r6-source-and-safety.json`。
+
+**仍 NOT_APPROVED。** 本任务只离线 Python mock 与文本/AST/哈希工程，无真实 capture/fullMETA/sourcegraph/包审批，无 Git/MCP/SSH/prodCLI/Node/实际 proc/server/DB/reload。父任务传达 R5 11:55 READONLY capture 因 mapping 拒绝且未产出 capture/attempt/window/activewrite/reload，11:56 diagnostic 仅为类型诊断并非 source/capture approval；本轮没有读取 diagnostic 文件。actual six Readiness once6True 不是 fullMETA/typed semantics/unknown sourcegraph 或全新包审批。后续必须由父任务 fresh 完整动态集合（包括新 unknown）及所有原门槛，绑定准确新 R6 pin/scope，不复用旧 R5 输入。
+
+## 以下 R5 及更早内容仅为历史，非 R6 当前 pin/scope/approval
+
+历史“当前/最新/未上传”按当时快照理解；本轮以以上 R6 段落、`README.md` 和 `evidence/r6-report.md` 为准。旧证据不覆盖上方真实 R5 capture 拒绝事实，不挪用历史 source/witness/review。
+
+---
+
 # 客户批次：R5 仅本地准备器（NOT_APPROVED）
 
 当前 `CONTROLLER_SHA`：
@@ -138,3 +154,12 @@ PYTHONDONTWRITEBYTECODE=1 python3 -B test_prepare_local.py -v
 ## 最新R5 F1/F2当前pin
 
 当前CONTROLLER_SHA：36706f932e6284a1192ef213d85836d25b4c9a7a7023309c11454c4d2dfdfe14。上方f544为R5初版历史，不再当前；所有准备器函数/格式只原固定pin更新。212/38/6mock回归通过，仍NOT_APPROVED；必须使用此准确新source与前台actualclosed后新freshcapture，不复用旧seed/capture/review或将现网私有数据入Git。
+
+
+## 最新 R7：只读源类型修复，仍未批准
+
+当前固定 `CONTROLLER_SHA=a555022329eed9c2b72efa2aa0668b9a84d33148da4bee5cc9ba5bd579866e5b`，`SCOPE=customer-batch-actions-20261120-6Lfttf6o-R7`，owner 不变。fbb530 R6 六文件原样备份于 `evidence/r7-baseline/`，旧 R6 source 在 import 前按 pin 拒绝，旧 R6 capture scope/controller pin 在输入绑定阶段拒绝，不生成输出或调用 builder。准备器除同步固定 pin 外，所有函数/CLI/权限/业务行为逐字节保持。
+
+双路径 pnpm native ELF 只读源适配在 release 动态 source 读取最低层校验整文件 SHA/ELF 与 exact dev/ino/size/mode/owner/nlink=86，并保留全 metadata/映射 identity 和完整重采样。package.json 仅作已读 provenance，不增加 JSON/JS hardlink 豁免；CAS 目标仍要求 single regular file。机器 pins 与来源 hash 见 `evidence/r7-native-source-pin-manifest.json`，不复制或上传 native bytes。
+
+原有 246 controller / 40 preparer / 6 finite JSON 方法保留并重跑；新增测试仅合成 TemporaryDirectory/真实 os.link/标准 Python mock，不执行真实 prepare/build/candidate CLI。最终日志、精确 AST、source-safety 与报告在 `evidence/r7-*`。**SOURCE_TYPE_FIX_NOT_APPROVED；全部批准标志 false**。实际 R7 fresh/fullMETA、unknown JS graph、Typed/retained/sixReady、new fullpackage 与真实独立审批仍待父任务；没有 production capture/attempt/pub/write/reload，未触碰已有 R6 stage。

@@ -64,3 +64,13 @@ auxfix独立增量复核已静态PASS，原105top/Controller30/九pins/domain/pr
 R5 F1/F2独立窄审PASS_NARROW_FIX_ONLY，无新实质bug；AST/bytes仅两helper，原204测试方法不变，8/212/38/6保存日志核对一致，合法own滚动和mutableAPI本地替换非干涉实证成立。报告evidence/r5-independent-f1f2.md/.json；当前controller36706f...、R5scope和完整OWNER不变，所有总approveFalse，不授整体包批准。
 
 源码已成功保存manager8baff，前台已自然保留，sourceinputs/sealedcandidate不变。前台当下仍0newpubstage/fullcapture/window/HTML资产write/reload，独立语义仅PASS_CONDITIONAL；51directdep GET200/fullH已收，但更深transitive闭包/fullNativeBrowser/runtime实际准入未完，故尚无newactualclosed可交接。双方明确不能完成准入时如实未上线，不强行开窗或自动放行后台。后台不重复ECS读取或probe，用户恢复上线授权有效；离线准备完成不等于当前actualsixReady/retainedTypedWitness/sourcegraph/META/新fullpkg审批完成，待新的实际闭窗交接后续核验和窄scope发布。
+
+## 12:33真实接续结果：仍未上线，已停止捕获重试
+
+前台11:50明确本轮未开窗/未改生产、已结束占用，后台已接手；不再等待不存在的newstaticreceipt，用户扩容后上线授权有效。当前已自然ffmanager79c0ef4保留前台sourcefix与本地candidate，但不部署其未审批资产。
+
+11:52六own实际只读JSON字节见证全部Ready literalTrue，绑定/保留值/字段顺序一致（不是fullMETA或原daemon全typed证明）。R6/io_uring窄支持和R7两exact已loaded pnpm native86hardlink H/fullmeta限定已完成、分别独立段PASS，当前R7controller a555022329eed9c2b72efa2aa0668b9a84d33148da4bee5cc9ba5bd579866e5b；276controller/42preparer/6JSON纯本地回归通过，所有原Controller30/RPC/9pins/环境/CAS/Ready/收据保护不改。
+
+真实R7完整捕获多次观测动态Node集合变化而拒绝；一次remoteexit0收件尾截断不当有效capture，client已只修EOF接收，最后一次仍DYNAMIC_NODE_SET_FINAL_DRIFT，已停止capture重试。30秒297身份样本未捕到额外Node，不反推此前漂移不存在，不猜触发者或退休。没有有效新fullMETA/完整包/全批批准，最后上线项保持未勾选；0attempt/window/activeAPIHTMLwrite/assetinstall/reload/DDL/物料写测/env改写，未暂停或kill其他服务。私有R5/R6/R7controller目录取证保留不覆写。
+
+后续须定向确认短生命周期Node来源/受控稳定窗口，fresh自身完整graph/META/六槽完整typed/retained证据，再现役APIHTML新包独立全审和窄发布，不移除集合守卫或用部分稳定样本代替成功capture。当前本轮只读全部结束，不在无稳定基线时强行开窗。详见deploy/customer-batch-actions-20261119/evidence/current-deployment-blocked-20261120.md。

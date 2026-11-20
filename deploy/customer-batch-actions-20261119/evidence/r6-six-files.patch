@@ -1,0 +1,502 @@
+--- r6-baseline-36706f/release.py
++++ r6-current/release.py
+@@ -26,7 +26,7 @@
+ from dataclasses import dataclass
+ 
+ OWNER = '6Lfttf6oVWJ8YS69o5FkXQ'
+-SCOPE = 'customer-batch-actions-20261120-6Lfttf6o-R5'
++SCOPE = 'customer-batch-actions-20261120-6Lfttf6o-R6'
+ API_BASE = '/opt/releases/20261110-customer-workbench-b7f3a2a7e317'
+ FRONT_API = API_BASE + '/front/dist/index.js'
+ ADMIN_API = API_BASE + '/admin/dist/index.js'
+@@ -877,15 +877,39 @@
+     return H(b''.join(opaque))
+ 
+ 
++def dynamic_map_fields(line):
++    parts = line.split(None, 5)  # final field is the WHOLE path incl spaces
++    need(len(parts) >= 5 and re.fullmatch(rb'[0-9a-f]+-[0-9a-f]+', parts[0])
++         and re.fullmatch(rb'[r-][w-][x-][ps]', parts[1])
++         and re.fullmatch(rb'[0-9a-f]+', parts[2])
++         and re.fullmatch(rb'[0-9a-f]+:[0-9a-f]+', parts[3])
++         and re.fullmatch(rb'[0-9]+', parts[4]), 'DYNAMIC_MAPS_FORMAT')
++    return parts
++
++
++def dynamic_kernel_mappings(maps):
++    # Linux io_uring_get_file names this anonymous shared SQ/CQ data FD;
++    # it is not an ELF/filesystem source. No FD or ring contents are read.
++    records = []
++    for line in maps.splitlines():
++        parts = dynamic_map_fields(line)
++        if len(parts) != 6:
++            continue
++        path = parts[5]
++        if path == b'anon_inode:[io_uring]':
++            start, end = (int(v, 16) for v in parts[0].split(b'-'))
++            need(parts[1][2:] == b'-s' and int(parts[4]) > 0 and end > start,
++                 'DYNAMIC_KERNEL_MAPPING_TYPE')
++            records.append([path.decode('ascii'), *(v.decode('ascii') for v in parts[1:5]), end - start])
++        elif not path.startswith(b'/'):
++            need(path.startswith(b'[') and path.endswith(b']'), 'DYNAMIC_UNSUPPORTED_MAPPING')
++    return sorted(records)  # retain multiplicity and size, not absolute ASLR positions
++
++
+ def dynamic_maps(maps):
+     mapped = {}
+     for line in maps.splitlines():
+-        parts = line.split(None, 5)  # final field is the WHOLE path incl spaces
+-        need(len(parts) >= 5 and re.fullmatch(rb'[0-9a-f]+-[0-9a-f]+', parts[0])
+-             and re.fullmatch(rb'[r-][w-][x-][ps]', parts[1])
+-             and re.fullmatch(rb'[0-9a-f]+', parts[2])
+-             and re.fullmatch(rb'[0-9a-f]+:[0-9a-f]+', parts[3])
+-             and re.fullmatch(rb'[0-9]+', parts[4]), 'DYNAMIC_MAPS_FORMAT')
++        parts = dynamic_map_fields(line)
+         if len(parts) == 6:
+             path = os.fsdecode(parts[5])
+             if path.startswith('/'):
+@@ -898,7 +922,10 @@
+                 mapped.setdefault(path, [])
+                 mapped[path].append(segment)  # retain real mapping multiplicity
+             else:
+-                need(path.startswith('[') and path.endswith(']'), 'DYNAMIC_UNSUPPORTED_MAPPING')
++                if parts[5] == b'anon_inode:[io_uring]':
++                    dynamic_kernel_mappings(line)  # typed validation, never a source path
++                else:
++                    need(path.startswith('[') and path.endswith(']'), 'DYNAMIC_UNSUPPORTED_MAPPING')
+     return {p: sorted(mapped[p]) for p in sorted(mapped)}
+ 
+ 
+@@ -923,9 +950,11 @@
+             need(str(p) == path and '..' not in p.parts, 'DYNAMIC_SCRIPT_CANONICAL')
+             scripts.add(path)
+     mapped = dynamic_maps(maps)
++    kernel = dynamic_kernel_mappings(maps)
+     record = dict(identity, exe=str(exe), cwd=str(cwd), procMeta=proc_meta,
+                   kernelLinkMeta=links, cwdMeta=cwd_meta, rawSha256=H(raw),
+                   cmdlineSha256=H(cmd), permissionsSha256=permission_hash,
++                  kernelAnonymousMappings=kernel,
+                   mappedSourceIdentity=mapped, scriptPaths=sorted(scripts), mappedSourcePaths=sorted(mapped))
+     need(dynamic_identity(cfg, pid, budget) == identity and meta(proc) == proc_meta
+          and external_proc_link(cfg, pid, 'exe') == exe
+@@ -935,7 +964,8 @@
+          and dynamic_read(proc / 'cmdline', DYNAMIC_PROC_BYTES, budget) == cmd
+          and dynamic_read(proc / 'environ', DYNAMIC_PROC_BYTES, budget) == raw
+          and dynamic_permissions(dynamic_read(proc / 'status', DYNAMIC_PROC_BYTES, budget)) == permission_hash
+-         and dynamic_maps(dynamic_read(proc / 'maps', DYNAMIC_PROC_BYTES, budget)) == mapped,
++         and dynamic_maps(second_maps := dynamic_read(proc / 'maps', DYNAMIC_PROC_BYTES, budget)) == mapped
++         and dynamic_kernel_mappings(second_maps) == kernel,
+          'DYNAMIC_FULL_PROC_READ_RACE')
+     return record, raw, cmd
+ 
+--- r6-baseline-36706f/test_release.py
++++ r6-current/test_release.py
+@@ -295,7 +295,7 @@
+     def test_new_identity_and_fixed_boundary(self):
+         cfg = r.Config()
+         self.assertEqual(r.OWNER, '6Lfttf6oVWJ8YS69o5FkXQ')
+-        self.assertEqual(str(cfg.stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R5')
++        self.assertEqual(str(cfg.stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R6')
+         self.assertEqual(len(cfg.aliases), 7)
+         self.assertEqual(r.identity(self.cfg,self.cap['processes']), list(range(6)))
+         with self.assertRaisesRegex(r.ReleaseError,'PRODUCTION_ADAPTER_INJECTION_REFUSED'):
+@@ -1804,7 +1804,7 @@
+         cfg=r.Config(); self.assertEqual(cfg.extra_protected[-2:],(r.EXTERNAL_OPS,r.EXTERNAL_CWD))
+         self.assertNotIn(Path('/root'),cfg.extra_protected); self.assertNotIn(Path('/'),cfg.extra_protected)
+         self.assertEqual(r.EXTERNAL_SCRIPT,r.EXTERNAL_OPS/'releases/20261112-forum12-1255b7b84aa3adac09cb8c05/worker-runtime-bootstrap.mjs')
+-        self.assertEqual(r.SCOPE,'customer-batch-actions-20261120-6Lfttf6o-R5')
++        self.assertEqual(r.SCOPE,'customer-batch-actions-20261120-6Lfttf6o-R6')
+ 
+ 
+ class R4DomainTests(unittest.TestCase):
+@@ -2454,5 +2454,283 @@
+         path = self.cfg.proc/str(self.owned[190])/'maps'
+         self.second(lambda: path.write_bytes(path.read_bytes()+r5_map(self.lib, '9000-a000')))
+ 
++
++
++def r6_ring(address='4000-5000', permissions='rw-s', offset='00000000', device='00:0f', inode='123', name='anon_inode:[io_uring]'):
++    # Typed maps data ONLY: device/inode do not represent any fixture FS source.
++    return f'{address} {permissions} {offset} {device} {inode} {name}\n'.encode()
++
++
++class R6KernelMappingTests(unittest.TestCase):
++    """Exact source-defined anonymous ring type; synthetic TempDir proc only."""
++    setUp = R5DynamicTests.setUp
++    proc = R5DynamicTests.proc
++    ownproc = R5DynamicTests.ownproc
++    collect = R5DynamicTests.collect
++    second = R5DynamicTests.second
++    remove = R5DynamicTests.remove
++
++    def rings(self, pid, *records):
++        path = self.cfg.proc/str(pid)/'maps'
++        lines = path.read_bytes().splitlines(keepends=True)
++        path.write_bytes(b''.join(line for line in lines if b'anon_inode:' not in line) + b''.join(records))
++
++    def drift(self, **change):
++        self.rings(11000, r6_ring())
++        self.second(lambda: self.rings(11000, r6_ring(**change)))
++
++    def test_exact_io_uring_pure_record_without_filesystem_read(self):
++        with patch.object(r, 'no_link', side_effect=AssertionError('PURE_NO_FS')):
++            self.assertEqual(r.dynamic_kernel_mappings(r6_ring()),
++                             [['anon_inode:[io_uring]', 'rw-s', '00000000', '00:0f', '123', 4096]])
++            self.assertEqual(r.dynamic_maps(r6_ring()), {})
++
++    def test_known_nonexec_shared_permissions_only(self):
++        for perms in ('rw-s', 'r--s', '-w-s', '---s'):
++            with self.subTest(perms=perms):
++                self.assertEqual(r.dynamic_kernel_mappings(r6_ring(permissions=perms))[0][1], perms)
++
++    def test_unknown_and_lookalike_kernel_names_failclosed(self):
++        for name in ('anon_inode:[eventpoll]', 'anon_inode:[io_uring2]', 'anon_inode:io_uring',
++                     'anon_inode:[io_uring]extra', 'anon_inode:[IO_URING]', 'relative/io_uring'):
++            for helper in (r.dynamic_maps, r.dynamic_kernel_mappings):
++                with self.subTest(name=name, helper=helper.__name__), self.assertRaisesRegex(r.ReleaseError, 'UNSUPPORTED_MAPPING'):
++                    helper(r6_ring(name=name))
++
++    def test_deleted_kernel_name_failclosed(self):
++        for helper in (r.dynamic_maps, r.dynamic_kernel_mappings):
++            with self.assertRaisesRegex(r.ReleaseError, 'UNSUPPORTED_MAPPING'):
++                helper(r6_ring(name='anon_inode:[io_uring] (deleted)'))
++
++    def test_executable_ring_failclosed(self):
++        for perms in ('rwx s', 'rwxs', 'r-xs', '--xs'):
++            for helper in (r.dynamic_maps, r.dynamic_kernel_mappings):
++                with self.subTest(perms=perms, helper=helper.__name__), self.assertRaises(r.ReleaseError):
++                    helper(r6_ring(permissions=perms))
++
++    def test_nonshared_ring_failclosed(self):
++        for helper in (r.dynamic_maps, r.dynamic_kernel_mappings):
++            with self.assertRaisesRegex(r.ReleaseError, 'KERNEL_MAPPING_TYPE'):
++                helper(r6_ring(permissions='rw-p'))
++
++    def test_zero_ring_inode_failclosed(self):
++        for helper in (r.dynamic_maps, r.dynamic_kernel_mappings):
++            with self.assertRaisesRegex(r.ReleaseError, 'KERNEL_MAPPING_TYPE'):
++                helper(r6_ring(inode='0'))
++
++    def test_kernel_perline_format_is_validated_before_classification(self):
++        variants = [r6_ring(address='bad'), r6_ring(permissions='rrrr'), r6_ring(offset='-1'),
++                    r6_ring(device='00:zz'), r6_ring(device='00'), r6_ring(inode='-1'), r6_ring(inode='1.0')]
++        for raw in variants:
++            for helper in (r.dynamic_maps, r.dynamic_kernel_mappings):
++                with self.subTest(digest=r.H(raw), helper=helper.__name__), self.assertRaisesRegex(r.ReleaseError, 'MAPS_FORMAT'):
++                    helper(raw)
++
++    def test_empty_or_reversed_ring_range_rejected(self):
++        for address in ('4000-4000', '5000-4000'):
++            for helper in (r.dynamic_maps, r.dynamic_kernel_mappings):
++                with self.subTest(address=address), self.assertRaisesRegex(r.ReleaseError, 'KERNEL_MAPPING_TYPE'):
++                    helper(r6_ring(address=address))
++
++    def test_absolute_io_uring_lookalike_remains_filebacked_not_kernel(self):
++        source = self.root/'anon_inode:[io_uring]'
++        source.write_bytes(b'synthetic absolute file must remain source-protected')
++        self.rings(11000, r5_map(source, '5000-6000'))
++        result = self.collect()
++        row = next(x for x in result['processes'] if x['pid'] == 11000)
++        self.assertEqual(row['kernelAnonymousMappings'], [])
++        self.assertIn(str(source), row['mappedSourcePaths'])
++        self.assertEqual(result['fullSourceMeta'][str(source)], r.describe(source))
++        self.second(lambda: source.chmod(0o600))
++
++    def test_absolute_deleted_io_uring_lookalike_not_supported(self):
++        source = self.root/'anon_inode:[io_uring]'
++        source.write_bytes(b'synthetic source')
++        with self.assertRaisesRegex(r.ReleaseError, 'DELETED_OR_ESCAPED_MAPPING'):
++            r.dynamic_maps(r5_map(source).rstrip(b'\n')+b' (deleted)\n')
++
++    def test_kernel_records_do_not_masquerade_as_filesystem_sources(self):
++        self.rings(11000, r6_ring(), r6_ring(address='6000-8000', inode='456'))
++        real = r.dynamic_source
++        def source(path, budget):
++            self.assertTrue(str(path).startswith('/'))
++            self.assertNotIn('anon_inode:', str(path))
++            return real(path, budget)
++        with patch.object(r, 'dynamic_source', side_effect=source):
++            result = self.collect()
++        self.assertTrue(all('anon_inode:' not in path for path in result['sources']))
++        self.assertTrue(all('anon_inode:' not in path for path in result['fullSourceMeta']))
++        self.assertIn(str(self.lib), result['fullSourceMeta'])
++        self.assertNotIn(b'PRIVATE_SENTINEL', r.encode(result))
++        self.assertNotIn(b'synthetic-secret', r.encode(result))
++
++    def test_all_gods_unowned_six_and_parent_exact_kernel_records(self):
++        pids = (1, 1279, 491174, 493698, *self.unowned)
++        for pid in pids:
++            self.rings(pid, r6_ring(inode=str(pid+100)))
++        result = self.collect()
++        for row in result['processes']:
++            self.assertEqual(row['kernelAnonymousMappings'],
++                             r.dynamic_kernel_mappings(r6_ring(inode=str(row['pid']+100))))
++        self.second(lambda: self.rings(493698, r6_ring(inode='999999')))
++
++    def test_foreign_ring_birth_guard_reject(self):
++        self.second(lambda: self.rings(11000, r6_ring()))
++
++    def test_foreign_ring_drop_guard_reject(self):
++        self.rings(11000, r6_ring())
++        self.second(lambda: self.rings(11000))
++
++    def test_foreign_ring_multiplicity_guard_reject(self):
++        self.rings(11000, r6_ring())
++        self.second(lambda: self.rings(11000, r6_ring(), r6_ring(address='9000-a000')))
++
++    def test_foreign_ring_length_guard_reject(self):
++        self.drift(address='4000-6000')
++
++    def test_foreign_ring_offset_guard_reject(self):
++        self.drift(offset='00001000')
++
++    def test_foreign_ring_device_guard_reject(self):
++        self.drift(device='00:10')
++
++    def test_foreign_ring_inode_guard_reject(self):
++        self.drift(inode='124')
++
++    def test_foreign_ring_permissions_guard_reject(self):
++        self.drift(permissions='r--s')
++
++    def test_same_length_aslr_move_noninterfering(self):
++        self.rings(11000, r6_ring())
++        before = self.collect()
++        self.rings(11000, r6_ring(address='9000-a000'))
++        self.assertEqual(self.collect(), before)
++
++    def test_kernel_mapping_order_not_identity_but_duplicates_retained(self):
++        a, b = r6_ring(), r6_ring(inode='456')
++        self.assertEqual(r.dynamic_kernel_mappings(a+b), r.dynamic_kernel_mappings(b+a))
++        self.assertEqual(len(r.dynamic_kernel_mappings(a+a+b)), 3)
++        self.assertNotEqual(r.dynamic_kernel_mappings(a+b), r.dynamic_kernel_mappings(a+a+b))
++
++    def test_second_maps_read_rechecks_same_kernel_record(self):
++        self.rings(11000, r6_ring())
++        real = r.dynamic_read
++        calls = []
++        def read(path, *args, **kwargs):
++            value = real(path, *args, **kwargs)
++            if Path(path) == self.cfg.proc/'11000/maps':
++                calls.append(1)
++                if len(calls) == 2:
++                    return value.replace(b' 123 anon_inode:', b' 124 anon_inode:')
++            return value
++        with patch.object(r, 'dynamic_read', side_effect=read), self.assertRaisesRegex(r.ReleaseError, 'FULL_PROC_READ_RACE'):
++            self.collect()
++
++    def test_final_proc_record_rechecks_kernel_after_source_phase(self):
++        self.rings(11000, r6_ring())
++        real = r.dynamic_source
++        changed = []
++        def source(path, budget):
++            value = real(path, budget)
++            if Path(path) == self.script and not changed:
++                changed.append(1)
++                self.rings(11000, r6_ring(inode='124'))
++            return value
++        with patch.object(r, 'dynamic_source', side_effect=source), self.assertRaisesRegex(r.ReleaseError, 'FINAL_FULL_PROC_DRIFT'):
++            self.collect()
++
++    def test_owned_normal_roll_new_kernel_inodes_keeps_stable_transport(self):
++        for slot, pid in self.owned.items():
++            self.rings(pid, r6_ring(inode=str(slot)))
++        before = self.collect()
++        old = self.owned[190]
++        self.remove(old)
++        self.ownproc(190, 29900, 9500)
++        self.rings(29900, r6_ring(inode='999999'), r6_ring(address='6000-8000', inode='999998'))
++        self.assertEqual(self.collect(), before)
++        for slot in before['ownedSlotsStable']['slots']:
++            self.assertNotIn('kernelAnonymousMappings', slot)
++            self.assertTrue(all('anon_inode:' not in p for p in slot['executionSourcePaths']))
++            self.assertIn(str(self.lib), slot['executionSourcePaths'])
++
++    def test_owned_between_samples_roll_new_ring_still_own_proof_bound(self):
++        self.rings(self.owned[190], r6_ring())
++        real = r.dynamic_protection_sample
++        calls = []
++        def sample(*args):
++            calls.append(1)
++            if len(calls) == 2:
++                self.remove(self.owned[190])
++                self.ownproc(190, 29900, 9500)
++                self.rings(29900, r6_ring(inode='987654'))
++            return real(*args)
++        with patch.object(r, 'dynamic_protection_sample', side_effect=sample):
++            self.collect()
++        self.assertEqual(len(calls), 2)
++
++    def test_owned_executable_ring_cannot_hide_in_stable_slots(self):
++        self.rings(self.owned[190], r6_ring(permissions='rwxs'))
++        with self.assertRaisesRegex(r.ReleaseError, 'KERNEL_MAPPING_TYPE'):
++            self.collect()
++
++    def test_owned_kernel_type_does_not_weaken_owned_source_mapping_guard(self):
++        self.rings(self.owned[190], r6_ring())
++        path = self.cfg.proc/str(self.owned[190])/'maps'
++        self.second(lambda: path.write_bytes(path.read_bytes()+r5_map(self.init, '9000-a000')))
++
++    def test_unknown_node_birth_with_legal_ring_still_guard_reject(self):
++        def birth():
++            self.proc(27000, 1, 8200, self.node, self.root, b'node\0-e\0opaque\0', b'UNKNOWN=opaque\0')
++            self.rings(27000, r6_ring(inode='5678'))
++        self.second(birth)
++
++    def test_fresh_unknown_dynamic_set_not_fixed_count_or_semantic_approval(self):
++        for pid in (27000, 28000):
++            self.proc(pid, 1, 8200, self.node, self.root, b'node\0-e\0opaque\0', b'UNKNOWN=opaque\0')
++            self.rings(pid, r6_ring(inode=str(pid)))
++        result = self.collect()
++        self.assertTrue({27000, 28000} <= set(result['activeForeignNodePids']))
++        self.assertTrue(result['sourceGraphReviewRequired'])
++        self.assertFalse(result['semanticsClosed'])
++
++
++class R6KernelTransportTests(unittest.TestCase):
++    setUp = R5TransportTests.setUp
++    fake_run = R5TransportTests.fake_run
++    attach = R5TransportTests.attach
++
++    def test_foreign_kernel_drift_rejected_by_whole_transport(self):
++        case = self.attach()
++        path = case.cfg.proc/'491174/maps'
++        path.write_bytes(path.read_bytes()+r6_ring())
++        self.native_hook = lambda: path.write_bytes(path.read_bytes().replace(b' 123 anon_inode:', b' 124 anon_inode:'))
++        with self.assertRaisesRegex(r.ReleaseError, 'EXTERNAL_TRANSPORT_DRIFT'):
++            r.transport(self.cfg)
++
++    def test_owned_roll_with_new_kernel_inode_preserves_whole_transport(self):
++        case = self.attach()
++        path = case.cfg.proc/str(case.owned[190])/'maps'
++        path.write_bytes(path.read_bytes()+r6_ring())
++        before = r.transport(self.cfg)
++        def roll():
++            case.remove(case.owned[190])
++            case.ownproc(190, 29000, 8400)
++            new = case.cfg.proc/'29000/maps'
++            new.write_bytes(new.read_bytes()+r6_ring(inode='98765'))
++        self.native_hook = roll
++        self.assertEqual(r.transport(self.cfg), before)
++
++    def test_gods_unowned_six_kernel_record_kept_in_full_transport(self):
++        case = self.attach()
++        pids = (1279, 491174, 493698, *case.unowned)
++        for pid in pids:
++            path = case.cfg.proc/str(pid)/'maps'
++            path.write_bytes(path.read_bytes()+r6_ring(inode=str(pid)))
++        result = r.transport(self.cfg)
++        for row in result['externalProtection']['processes']:
++            if row['pid'] in pids:
++                self.assertEqual(row['kernelAnonymousMappings'], r.dynamic_kernel_mappings(r6_ring(inode=str(row['pid']))))
++        self.assertEqual(result['externalProtection'], case.collect())
++
+ if __name__ == '__main__':
+     unittest.main()
+--- r6-baseline-36706f/prepare-local.py
++++ r6-current/prepare-local.py
+@@ -15,7 +15,7 @@
+ HERE = Path(__file__).absolute().parent
+ REPO = HERE.parent.parent
+ WORK = Path('/home/ubuntu/work/customer-batch')
+-CONTROLLER_SHA = '36706f932e6284a1192ef213d85836d25b4c9a7a7023309c11454c4d2dfdfe14'
++CONTROLLER_SHA = 'fbb5302cf59974433d9775de3e0ee5e788eb58ec13916fa5101655d2badb7348'
+ NODE = '/usr/bin/node'
+ # Exactly backend-builder.compile's transform options, but read original files twice.
+ BACKEND_HASH_CHECK = """
+--- r6-baseline-36706f/test_prepare_local.py
++++ r6-current/test_prepare_local.py
+@@ -435,8 +435,8 @@
+ 
+     def test_r3_current_controller_sha_and_scope_fixed(self):
+         self.assertEqual(P.CONTROLLER_SHA, P.sha((HERE/'release.py').read_bytes()))
+-        self.assertEqual(R.SCOPE, 'customer-batch-actions-20261120-6Lfttf6o-R5')
+-        self.assertEqual(str(R.Config().stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R5')
++        self.assertEqual(R.SCOPE, 'customer-batch-actions-20261120-6Lfttf6o-R6')
++        self.assertEqual(str(R.Config().stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R6')
+         self.assertEqual(R.OWNER, '6Lfttf6oVWJ8YS69o5FkXQ')
+ 
+     def test_old_failed_stage_scope_capture_is_not_reusable(self):
+@@ -519,5 +519,26 @@
+             P.inputs(self.args, R)
+         self.assertEqual(self.calls, []); self.assertFalse(self.out.exists())
+ 
++
++
++    def test_r6_old_r5_scope_capture_not_reusable(self):
++        self.cap['scope'] = 'customer-batch-actions-20261120-6Lfttf6o-R5'
++        self.save_capture()
++        with self.assertRaisesRegex(P.PrepareError, 'fixed production capture binding'):
++            P.inputs(self.args, R)
++        self.assertEqual(self.calls, []); self.assertFalse(self.out.exists())
++
++    def test_r6_old_exact_36706f_source_and_capture_pin_rejected_without_import(self):
++        old = (HERE/'evidence/r6-baseline-36706f/release.py').read_bytes()
++        self.assertEqual(P.sha(old), '36706f932e6284a1192ef213d85836d25b4c9a7a7023309c11454c4d2dfdfe14')
++        with patch.object(P, 'read', return_value=old), patch.object(P.importlib.util, 'spec_from_file_location', side_effect=AssertionError('OLD_SOURCE_NOT_IMPORTED')):
++            with self.assertRaisesRegex(P.PrepareError, 'controller drift'):
++                REAL_LOADER()
++        self.cap['controllerSha256'] = P.sha(old)
++        self.save_capture()
++        with self.assertRaisesRegex(P.PrepareError, 'fixed production capture binding'):
++            P.inputs(self.args, R)
++        self.assertEqual(self.calls, []); self.assertFalse(self.out.exists())
++
+ if __name__ == '__main__':
+     unittest.main()
+--- r6-baseline-36706f/README.md
++++ r6-current/README.md
+@@ -1,3 +1,31 @@
++# 客户批次 R6：精确 io_uring kernel anonymous mapping（NOT_APPROVED）
++
++当前全新 SCOPE 为 **`customer-batch-actions-20261120-6Lfttf6o-R6`**，OWNER 仍为 `6Lfttf6oVWJ8YS69o5FkXQ`。当前 release SHA256 为 **`fbb5302cf59974433d9775de3e0ee5e788eb58ec13916fa5101655d2badb7348`**，preparer 固 pin 同步；派生 stage 为 `/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R6`，本离线任务未创建或访问真实 stage，不覆盖旧 R5 stage/source。
++
++修改前准确保存 stable `36706f932e6284a1192ef213d85836d25b4c9a7a7023309c11454c4d2dfdfe14` 六文件到 `evidence/r6-baseline-36706f/`，逐字节/哈希核对，原 **212/38/6** 全通过。当前 **246/40/6** 全通过，新增 **34 controller＋2 preparer** 方法独立通过，原 212/38 方法定义全部保留，仅 current scope/stage 断言同步。完整本轮事实见 **[R6 报告](evidence/r6-report.md)**；静态 AST/字节/9pins/Controller30 核验见 `evidence/r6-ast-diff.json`；current source/log SHA 见 `evidence/r6-source-and-safety.json`；六文件差异见 `evidence/r6-six-files.patch`。
++
++## R6 必要最小类型支持
++
++`dynamic_maps` 的原 absolute file-backed fullpath/H/fullMETA/multiplicity/perms/offset/dev/inode 分支完全保持。原 perline format AST 原样提取为 pure `dynamic_map_fields`。relative branch 仅精确 `b'anon_inode:[io_uring]'` 经非执行共享权限、合法 device 字段、positive inode、正映射长度验证后作为 kernel anonymous SQ/CQ 数据映射；不泛化其它 anon_inode、unknown/lookalike/deleted/exec/private/inode0。绝对 io_uring-looking 路径仍走原 file source 保护而非匿名豁免；原 heap/stack/vdso/named bracket 政策不重写。
++
++pure `dynamic_kernel_mappings(rawmaps)` 记录 `[exactName, permissions, offset, device, inode, mappedLength]`，完整排序列表保留 multiplicity、不 dedup；`mappedLength = end-start`，绝对 ASLR 位置不入指纹。kernel anon 不是 ELF/FS source，不 require_read_regular、不加 kernel source H，也不读 FD/log/queue 内容。`dynamic_proc.kernelAnonymousMappings` 在第二 maps 读取精确比较并进入所有 foreign 全 transport equality；new/drop/multiplicity/permissions/offset/dev/inode/length 漂移仍 guard reject，包括 main/extra God、unowned 六槽和 parent graph。
++
++six-owned stableSlots **ONLY execution-source graph** 保持原 AST/字节，不纳入运行期新 ring inode/meta；合法 roll 新 inode 不干扰 transport，每次样本仍先严格 typed validation、原 own proof 和完整进程复核。所有 **9pins、Controller30、Config extraProtect/fullTree、transport/RPC/domain、6 own raw、Root/meta/CAS/budget** 未改。mutable API 仍由原 inventory/CAS 保护，不能借匿名类型逃逸。unknown Node 始终 fresh 动态枚举、birth/death/reuse guard，不固定实际 count；捕获不代表 unknown-codegraph semantic approval。
++
++Linux 类型依据由父任务已 search/fetch：[`io_uring_get_file`](https://raw.githubusercontent.com/torvalds/linux/master/io_uring/io_uring.c) 用 `anon_inode_create_getfile("[io_uring]", &io_uring_fops, ..., O_RDWR|O_CLOEXEC)`，kernel 注释为用户 mmap SQ/CQ details；[io_uring(7)](https://man7.org/linux/man-pages/man7/io_uring.7.html) 描述 `PROT_READ|PROT_WRITE`、`MAP_SHARED` ring data；[proc_pid_maps(5)](https://man7.org/linux/man-pages/man5/proc_pid_maps.5.html) 定义各 fields。本任务不再联网，不新增系统源码运行时依赖。
++
++## 实际状态来源与未审批边界
++
++父任务传达：R5 11:55 首次 privatecontroller 上传后的 READONLY capture 因 `DYNAMIC_UNSUPPORTED_MAPPING` 拒绝，未生成 capture/attempt/window/activewrite/reload；11:56 单有界纯只读 diagnostic 已完成，当前 20 Node+parent，17 Node PID 的 110 个 unsupported path 全精确 io_uring、rw-s、00:0f、positive inodes。`/home/ubuntu/work/customer-batch/r5-mapping-diagnostic-once.json` **不是源码文件**，本轮未读取、更未按 source 路径读入 H/META。新增 unknown Node 2064149/2064150 必须由父任务后续 fresh 集合与 unknown-codegraph 审覆盖，不能用 diagnostic 静态 count 代替。
++
++**R6 仍 NOT_APPROVED。** 本轮纯离线，没有 Git/MCP/SSH/prodCLI/Node/实际proc/server/DB/reload/capture，没有真实 capture/fullMETA/完整 sourcegraph/新包审批或 publication。父任务传达 actual six Readiness 已 once 6 literal True，但不是 typed semantics/fullMETA/整个包审批。父任务负责协调 fresh 窗口和原全套 H/META、6 own raw/readiness、unknown graph、byteWitness/CAS/budget、准确 R6 source/scope/pin 与完整新包独立审；旧 stage/source/capture/review 不复用。
++
++## 以下 R5 及更早内容为历史，不是当前 pin、capture 状态或部署许可
++
++旧段落中“最新/当前”只指当时 R5/R4 快照；R6 一律以上方与 `evidence/r6-report.md` 为准。历史“未上传/无capture”记录不能覆盖上方父任务传达的 11:55 R5 真实拒绝事实。历史源码/测试证据保留，未改旧 evidence。
++
++---
++
+ # 客户批次 R5：动态 foreignproc 最小保护（NOT_APPROVED）
+ 
+ 当前 OWNER `6Lfttf6oVWJ8YS69o5FkXQ` 不变；全新 SCOPE **`customer-batch-actions-20261120-6Lfttf6o-R5`**。release SHA **`f544c1663d84350df0ff036b7e1b330a8cfcb016e64d705027ff86411a26ed5d`**，preparer 固 pin 同步。先准确保存 4fe 原六文件到 `evidence/r5-baseline-4fe/`，基线 **142/36/6** 全通过；最终 **204/38/6** 全通过，包括新增 **62** 动态/transport mock 方法和 **2** preparer 旧 R4 scope/4fe pin 拒绝方法。完整当前源码/测试日志 SHA 与 AST/字节核对在 `evidence/r5-source-and-safety.json`、`evidence/r5-ast-diff.json`；实质实现与剩余阻碍详见 **`evidence/r5-report.md`**。
+--- r6-baseline-36706f/prepare-local.README.md
++++ r6-current/prepare-local.README.md
+@@ -1,3 +1,19 @@
++# 客户批次 R6：仅本地准备器（NOT_APPROVED）
++
++当前 **CONTROLLER_SHA = `fbb5302cf59974433d9775de3e0ee5e788eb58ec13916fa5101655d2badb7348`**，全新 SCOPE **`customer-batch-actions-20261120-6Lfttf6o-R6`** 直接取 `release.SCOPE`；OWNER `6Lfttf6oVWJ8YS69o5FkXQ` 不变。本轮 preparer 所有函数 AST/字节完全不变，仅固定 controller pin 更新。不得复用旧 R5 stage/source、capture/seed/review 或准确 36706f 历史 source pin。
++
++准确 stable36706f 六文件先保存在 `evidence/r6-baseline-36706f/`，原 **212/38/6** 全通过；当前 **246/40/6** 全通过。新增 **2** preparer TempDir mock 方法独立通过：旧 R5 scope 拒绝，旧准确 36706f source bytes 在 pin 检查处拒绝且不 import，同时旧 capture controllerSha 拒绝；原 **38** 方法定义全部保留，仅当前 scope/stage 断言同步。新增 controller **34** typed mapping/foreign transport/owned roll/unknown guard 方法也独立通过。
++
++R6 只为精确 Linux `anon_inode:[io_uring]` 的非执行共享、positive inode、合法 device、正长度映射加类型支持；不是 FS/ELF source，不读 FD/log/queue，不将匿名条目伪装 sourcePaths。foreign record 完整进入 transport equality；six own execution-source stableSlots 不含运行期 ring inode，原 own proof/snapshot、所有 9pins/Controller30/Config extraProtect/fullTree/RPC/domain/Root/META/CAS/budget 不变。完整依据、字段及拒绝策略见 **[R6 报告](evidence/r6-report.md)** 和 `README.md`，精确差异/静态审计/source与日志SHA见 `evidence/r6-six-files.patch`、`evidence/r6-ast-diff.json`、`evidence/r6-source-and-safety.json`。
++
++**仍 NOT_APPROVED。** 本任务只离线 Python mock 与文本/AST/哈希工程，无真实 capture/fullMETA/sourcegraph/包审批，无 Git/MCP/SSH/prodCLI/Node/实际 proc/server/DB/reload。父任务传达 R5 11:55 READONLY capture 因 mapping 拒绝且未产出 capture/attempt/window/activewrite/reload，11:56 diagnostic 仅为类型诊断并非 source/capture approval；本轮没有读取 diagnostic 文件。actual six Readiness once6True 不是 fullMETA/typed semantics/unknown sourcegraph 或全新包审批。后续必须由父任务 fresh 完整动态集合（包括新 unknown）及所有原门槛，绑定准确新 R6 pin/scope，不复用旧 R5 输入。
++
++## 以下 R5 及更早内容仅为历史，非 R6 当前 pin/scope/approval
++
++历史“当前/最新/未上传”按当时快照理解；本轮以以上 R6 段落、`README.md` 和 `evidence/r6-report.md` 为准。旧证据不覆盖上方真实 R5 capture 拒绝事实，不挪用历史 source/witness/review。
++
++---
++
+ # 客户批次：R5 仅本地准备器（NOT_APPROVED）
+ 
+ 当前 `CONTROLLER_SHA`：

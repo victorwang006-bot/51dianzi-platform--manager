@@ -1,0 +1,78 @@
+{
+  "r7-ast-diff.json": {
+    "bytes": 7092,
+    "sha256": "a8bb513de47aa523f52d41eca4d3f972dcfe62120b3da91499774926dcc26417"
+  },
+  "r7-audit-log-initial.txt": {
+    "bytes": 388,
+    "sha256": "3384247b3872f92601b95fa63ebcf9ac69c6b87b95c971296e14eae349df980e"
+  },
+  "r7-audit-log.txt": {
+    "bytes": 301,
+    "sha256": "6e8483a6fd398df60d74d9c2a50dfc9ad1ba3c5422653be8995a610c8dde44c7"
+  },
+  "r7-audit.py": {
+    "bytes": 10035,
+    "sha256": "3320a3c63865f79f25406b72ed7c2fddc100d0a9073081b1095843754c489419"
+  },
+  "r7-diff.patch": {
+    "bytes": 30222,
+    "sha256": "1b7ffe73ebfa34f4219f65b93c4fdf36bc8ad0a3f4ceb37761700c5873d0fb59"
+  },
+  "r7-finite-tests.txt": {
+    "bytes": 906,
+    "sha256": "ab36567b74ef88771992c87875e0f9d1f2ce5eaca7f04d0ed132a3f8b2de6f2b"
+  },
+  "r7-native-shared-source.md": {
+    "bytes": 2153,
+    "sha256": "299eaa45fc6ef86cf9c178e4df5397b01ca091352eb8cc2994f3ac38a0ded134"
+  },
+  "r7-native-source-pin-manifest.json": {
+    "bytes": 1892,
+    "sha256": "a7e0a408b5f512424b199d1012303b0c64748d3a6ff2654cd62f21e2f50e2ad2"
+  },
+  "r7-native-tests-initial.txt": {
+    "bytes": 3905,
+    "sha256": "69a367b68b0ffc7c2c13e4575613f4f53e472aa63398f8762d8aedc18e96555c"
+  },
+  "r7-native-tests.txt": {
+    "bytes": 4732,
+    "sha256": "ff10c5b6b252a35fea70b5a342fedafad3a888ca159f365d79c73c449fed61c8"
+  },
+  "r7-prepare-tests-initial.txt": {
+    "bytes": 4845,
+    "sha256": "b1945737f0f35dafd97c30739bde36ccf7d22b992e923db6de29722ae26f8b2c"
+  },
+  "r7-prepare-tests.txt": {
+    "bytes": 5125,
+    "sha256": "6cbd7259b9523aa1f2ce24392356914152c398822643d7de5652eab24e7aa36f"
+  },
+  "r7-r6-kernel-tests.txt": {
+    "bytes": 4963,
+    "sha256": "ce40b4a44fb5bf016bce29989ac92c95d6e9abf84000494f97d3ac951f7cab14"
+  },
+  "r7-release-tests-initial.txt": {
+    "bytes": 35285,
+    "sha256": "3ea19fb4bbacfa4d4f7c9f29e8ca60744c6f7e19561832a8822eb6b4a3b0e59d"
+  },
+  "r7-release-tests.txt": {
+    "bytes": 39798,
+    "sha256": "b4338c9c1a7054bcd7ef9b841781e575e31b953083f6b320a40b27dc43ed4dd5"
+  },
+  "r7-release.diff": {
+    "bytes": 4239,
+    "sha256": "13370b9114951ad066c96ea4d6a14d341419d520f29478dd0764eb23bf342278"
+  },
+  "r7-report.md": {
+    "bytes": 6015,
+    "sha256": "516a60c6f0b277f6bf0db1a17b76a30552cd63c444446873c51d1311b29066c7"
+  },
+  "r7-source-safety.json": {
+    "bytes": 4843,
+    "sha256": "4669f3b85c3af4bf7a60813366aede041c8d105e8be22154684a06ca9edf2e7a"
+  },
+  "r7-synthetic-source-json.json": {
+    "bytes": 1260,
+    "sha256": "d57bdd98ba429b1c02e788b42026a4543cfafc13f73a269e30e3d097b3d6361f"
+  }
+}

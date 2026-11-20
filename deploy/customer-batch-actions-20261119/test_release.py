@@ -295,7 +295,7 @@ class SafetyTests(unittest.TestCase):
     def test_new_identity_and_fixed_boundary(self):
         cfg = r.Config()
         self.assertEqual(r.OWNER, '6Lfttf6oVWJ8YS69o5FkXQ')
-        self.assertEqual(str(cfg.stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R5')
+        self.assertEqual(str(cfg.stage), '/opt/ops/customer-batch-actions-20261120-6Lfttf6o-R7')
         self.assertEqual(len(cfg.aliases), 7)
         self.assertEqual(r.identity(self.cfg,self.cap['processes']), list(range(6)))
         with self.assertRaisesRegex(r.ReleaseError,'PRODUCTION_ADAPTER_INJECTION_REFUSED'):
@@ -1804,7 +1804,7 @@ class R4ProtectedGraphTests(unittest.TestCase):
         cfg=r.Config(); self.assertEqual(cfg.extra_protected[-2:],(r.EXTERNAL_OPS,r.EXTERNAL_CWD))
         self.assertNotIn(Path('/root'),cfg.extra_protected); self.assertNotIn(Path('/'),cfg.extra_protected)
         self.assertEqual(r.EXTERNAL_SCRIPT,r.EXTERNAL_OPS/'releases/20261112-forum12-1255b7b84aa3adac09cb8c05/worker-runtime-bootstrap.mjs')
-        self.assertEqual(r.SCOPE,'customer-batch-actions-20261120-6Lfttf6o-R5')
+        self.assertEqual(r.SCOPE,'customer-batch-actions-20261120-6Lfttf6o-R7')
 
 
 class R4DomainTests(unittest.TestCase):
@@ -2453,6 +2453,590 @@ class R5F1F2Tests(unittest.TestCase):
     def test_owned_duplicate_mapping_between_samples_rejected(self):
         path = self.cfg.proc/str(self.owned[190])/'maps'
         self.second(lambda: path.write_bytes(path.read_bytes()+r5_map(self.lib, '9000-a000')))
+
+
+
+def r6_ring(address='4000-5000', permissions='rw-s', offset='00000000', device='00:0f', inode='123', name='anon_inode:[io_uring]'):
+    # Typed maps data ONLY: device/inode do not represent any fixture FS source.
+    return f'{address} {permissions} {offset} {device} {inode} {name}\n'.encode()
+
+
+class R6KernelMappingTests(unittest.TestCase):
+    """Exact source-defined anonymous ring type; synthetic TempDir proc only."""
+    setUp = R5DynamicTests.setUp
+    proc = R5DynamicTests.proc
+    ownproc = R5DynamicTests.ownproc
+    collect = R5DynamicTests.collect
+    second = R5DynamicTests.second
+    remove = R5DynamicTests.remove
+
+    def rings(self, pid, *records):
+        path = self.cfg.proc/str(pid)/'maps'
+        lines = path.read_bytes().splitlines(keepends=True)
+        path.write_bytes(b''.join(line for line in lines if b'anon_inode:' not in line) + b''.join(records))
+
+    def drift(self, **change):
+        self.rings(11000, r6_ring())
+        self.second(lambda: self.rings(11000, r6_ring(**change)))
+
+    def test_exact_io_uring_pure_record_without_filesystem_read(self):
+        with patch.object(r, 'no_link', side_effect=AssertionError('PURE_NO_FS')):
+            self.assertEqual(r.dynamic_kernel_mappings(r6_ring()),
+                             [['anon_inode:[io_uring]', 'rw-s', '00000000', '00:0f', '123', 4096]])
+            self.assertEqual(r.dynamic_maps(r6_ring()), {})
+
+    def test_known_nonexec_shared_permissions_only(self):
+        for perms in ('rw-s', 'r--s', '-w-s', '---s'):
+            with self.subTest(perms=perms):
+                self.assertEqual(r.dynamic_kernel_mappings(r6_ring(permissions=perms))[0][1], perms)
+
+    def test_unknown_and_lookalike_kernel_names_failclosed(self):
+        for name in ('anon_inode:[eventpoll]', 'anon_inode:[io_uring2]', 'anon_inode:io_uring',
+                     'anon_inode:[io_uring]extra', 'anon_inode:[IO_URING]', 'relative/io_uring'):
+            for helper in (r.dynamic_maps, r.dynamic_kernel_mappings):
+                with self.subTest(name=name, helper=helper.__name__), self.assertRaisesRegex(r.ReleaseError, 'UNSUPPORTED_MAPPING'):
+                    helper(r6_ring(name=name))
+
+    def test_deleted_kernel_name_failclosed(self):
+        for helper in (r.dynamic_maps, r.dynamic_kernel_mappings):
+            with self.assertRaisesRegex(r.ReleaseError, 'UNSUPPORTED_MAPPING'):
+                helper(r6_ring(name='anon_inode:[io_uring] (deleted)'))
+
+    def test_executable_ring_failclosed(self):
+        for perms in ('rwx s', 'rwxs', 'r-xs', '--xs'):
+            for helper in (r.dynamic_maps, r.dynamic_kernel_mappings):
+                with self.subTest(perms=perms, helper=helper.__name__), self.assertRaises(r.ReleaseError):
+                    helper(r6_ring(permissions=perms))
+
+    def test_nonshared_ring_failclosed(self):
+        for helper in (r.dynamic_maps, r.dynamic_kernel_mappings):
+            with self.assertRaisesRegex(r.ReleaseError, 'KERNEL_MAPPING_TYPE'):
+                helper(r6_ring(permissions='rw-p'))
+
+    def test_zero_ring_inode_failclosed(self):
+        for helper in (r.dynamic_maps, r.dynamic_kernel_mappings):
+            with self.assertRaisesRegex(r.ReleaseError, 'KERNEL_MAPPING_TYPE'):
+                helper(r6_ring(inode='0'))
+
+    def test_kernel_perline_format_is_validated_before_classification(self):
+        variants = [r6_ring(address='bad'), r6_ring(permissions='rrrr'), r6_ring(offset='-1'),
+                    r6_ring(device='00:zz'), r6_ring(device='00'), r6_ring(inode='-1'), r6_ring(inode='1.0')]
+        for raw in variants:
+            for helper in (r.dynamic_maps, r.dynamic_kernel_mappings):
+                with self.subTest(digest=r.H(raw), helper=helper.__name__), self.assertRaisesRegex(r.ReleaseError, 'MAPS_FORMAT'):
+                    helper(raw)
+
+    def test_empty_or_reversed_ring_range_rejected(self):
+        for address in ('4000-4000', '5000-4000'):
+            for helper in (r.dynamic_maps, r.dynamic_kernel_mappings):
+                with self.subTest(address=address), self.assertRaisesRegex(r.ReleaseError, 'KERNEL_MAPPING_TYPE'):
+                    helper(r6_ring(address=address))
+
+    def test_absolute_io_uring_lookalike_remains_filebacked_not_kernel(self):
+        source = self.root/'anon_inode:[io_uring]'
+        source.write_bytes(b'synthetic absolute file must remain source-protected')
+        self.rings(11000, r5_map(source, '5000-6000'))
+        result = self.collect()
+        row = next(x for x in result['processes'] if x['pid'] == 11000)
+        self.assertEqual(row['kernelAnonymousMappings'], [])
+        self.assertIn(str(source), row['mappedSourcePaths'])
+        self.assertEqual(result['fullSourceMeta'][str(source)], r.describe(source))
+        self.second(lambda: source.chmod(0o600))
+
+    def test_absolute_deleted_io_uring_lookalike_not_supported(self):
+        source = self.root/'anon_inode:[io_uring]'
+        source.write_bytes(b'synthetic source')
+        with self.assertRaisesRegex(r.ReleaseError, 'DELETED_OR_ESCAPED_MAPPING'):
+            r.dynamic_maps(r5_map(source).rstrip(b'\n')+b' (deleted)\n')
+
+    def test_kernel_records_do_not_masquerade_as_filesystem_sources(self):
+        self.rings(11000, r6_ring(), r6_ring(address='6000-8000', inode='456'))
+        real = r.dynamic_source
+        def source(path, budget):
+            self.assertTrue(str(path).startswith('/'))
+            self.assertNotIn('anon_inode:', str(path))
+            return real(path, budget)
+        with patch.object(r, 'dynamic_source', side_effect=source):
+            result = self.collect()
+        self.assertTrue(all('anon_inode:' not in path for path in result['sources']))
+        self.assertTrue(all('anon_inode:' not in path for path in result['fullSourceMeta']))
+        self.assertIn(str(self.lib), result['fullSourceMeta'])
+        self.assertNotIn(b'PRIVATE_SENTINEL', r.encode(result))
+        self.assertNotIn(b'synthetic-secret', r.encode(result))
+
+    def test_all_gods_unowned_six_and_parent_exact_kernel_records(self):
+        pids = (1, 1279, 491174, 493698, *self.unowned)
+        for pid in pids:
+            self.rings(pid, r6_ring(inode=str(pid+100)))
+        result = self.collect()
+        for row in result['processes']:
+            self.assertEqual(row['kernelAnonymousMappings'],
+                             r.dynamic_kernel_mappings(r6_ring(inode=str(row['pid']+100))))
+        self.second(lambda: self.rings(493698, r6_ring(inode='999999')))
+
+    def test_foreign_ring_birth_guard_reject(self):
+        self.second(lambda: self.rings(11000, r6_ring()))
+
+    def test_foreign_ring_drop_guard_reject(self):
+        self.rings(11000, r6_ring())
+        self.second(lambda: self.rings(11000))
+
+    def test_foreign_ring_multiplicity_guard_reject(self):
+        self.rings(11000, r6_ring())
+        self.second(lambda: self.rings(11000, r6_ring(), r6_ring(address='9000-a000')))
+
+    def test_foreign_ring_length_guard_reject(self):
+        self.drift(address='4000-6000')
+
+    def test_foreign_ring_offset_guard_reject(self):
+        self.drift(offset='00001000')
+
+    def test_foreign_ring_device_guard_reject(self):
+        self.drift(device='00:10')
+
+    def test_foreign_ring_inode_guard_reject(self):
+        self.drift(inode='124')
+
+    def test_foreign_ring_permissions_guard_reject(self):
+        self.drift(permissions='r--s')
+
+    def test_same_length_aslr_move_noninterfering(self):
+        self.rings(11000, r6_ring())
+        before = self.collect()
+        self.rings(11000, r6_ring(address='9000-a000'))
+        self.assertEqual(self.collect(), before)
+
+    def test_kernel_mapping_order_not_identity_but_duplicates_retained(self):
+        a, b = r6_ring(), r6_ring(inode='456')
+        self.assertEqual(r.dynamic_kernel_mappings(a+b), r.dynamic_kernel_mappings(b+a))
+        self.assertEqual(len(r.dynamic_kernel_mappings(a+a+b)), 3)
+        self.assertNotEqual(r.dynamic_kernel_mappings(a+b), r.dynamic_kernel_mappings(a+a+b))
+
+    def test_second_maps_read_rechecks_same_kernel_record(self):
+        self.rings(11000, r6_ring())
+        real = r.dynamic_read
+        calls = []
+        def read(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if Path(path) == self.cfg.proc/'11000/maps':
+                calls.append(1)
+                if len(calls) == 2:
+                    return value.replace(b' 123 anon_inode:', b' 124 anon_inode:')
+            return value
+        with patch.object(r, 'dynamic_read', side_effect=read), self.assertRaisesRegex(r.ReleaseError, 'FULL_PROC_READ_RACE'):
+            self.collect()
+
+    def test_final_proc_record_rechecks_kernel_after_source_phase(self):
+        self.rings(11000, r6_ring())
+        real = r.dynamic_source
+        changed = []
+        def source(path, budget):
+            value = real(path, budget)
+            if Path(path) == self.script and not changed:
+                changed.append(1)
+                self.rings(11000, r6_ring(inode='124'))
+            return value
+        with patch.object(r, 'dynamic_source', side_effect=source), self.assertRaisesRegex(r.ReleaseError, 'FINAL_FULL_PROC_DRIFT'):
+            self.collect()
+
+    def test_owned_normal_roll_new_kernel_inodes_keeps_stable_transport(self):
+        for slot, pid in self.owned.items():
+            self.rings(pid, r6_ring(inode=str(slot)))
+        before = self.collect()
+        old = self.owned[190]
+        self.remove(old)
+        self.ownproc(190, 29900, 9500)
+        self.rings(29900, r6_ring(inode='999999'), r6_ring(address='6000-8000', inode='999998'))
+        self.assertEqual(self.collect(), before)
+        for slot in before['ownedSlotsStable']['slots']:
+            self.assertNotIn('kernelAnonymousMappings', slot)
+            self.assertTrue(all('anon_inode:' not in p for p in slot['executionSourcePaths']))
+            self.assertIn(str(self.lib), slot['executionSourcePaths'])
+
+    def test_owned_between_samples_roll_new_ring_still_own_proof_bound(self):
+        self.rings(self.owned[190], r6_ring())
+        real = r.dynamic_protection_sample
+        calls = []
+        def sample(*args):
+            calls.append(1)
+            if len(calls) == 2:
+                self.remove(self.owned[190])
+                self.ownproc(190, 29900, 9500)
+                self.rings(29900, r6_ring(inode='987654'))
+            return real(*args)
+        with patch.object(r, 'dynamic_protection_sample', side_effect=sample):
+            self.collect()
+        self.assertEqual(len(calls), 2)
+
+    def test_owned_executable_ring_cannot_hide_in_stable_slots(self):
+        self.rings(self.owned[190], r6_ring(permissions='rwxs'))
+        with self.assertRaisesRegex(r.ReleaseError, 'KERNEL_MAPPING_TYPE'):
+            self.collect()
+
+    def test_owned_kernel_type_does_not_weaken_owned_source_mapping_guard(self):
+        self.rings(self.owned[190], r6_ring())
+        path = self.cfg.proc/str(self.owned[190])/'maps'
+        self.second(lambda: path.write_bytes(path.read_bytes()+r5_map(self.init, '9000-a000')))
+
+    def test_unknown_node_birth_with_legal_ring_still_guard_reject(self):
+        def birth():
+            self.proc(27000, 1, 8200, self.node, self.root, b'node\0-e\0opaque\0', b'UNKNOWN=opaque\0')
+            self.rings(27000, r6_ring(inode='5678'))
+        self.second(birth)
+
+    def test_fresh_unknown_dynamic_set_not_fixed_count_or_semantic_approval(self):
+        for pid in (27000, 28000):
+            self.proc(pid, 1, 8200, self.node, self.root, b'node\0-e\0opaque\0', b'UNKNOWN=opaque\0')
+            self.rings(pid, r6_ring(inode=str(pid)))
+        result = self.collect()
+        self.assertTrue({27000, 28000} <= set(result['activeForeignNodePids']))
+        self.assertTrue(result['sourceGraphReviewRequired'])
+        self.assertFalse(result['semanticsClosed'])
+
+
+class R6KernelTransportTests(unittest.TestCase):
+    setUp = R5TransportTests.setUp
+    fake_run = R5TransportTests.fake_run
+    attach = R5TransportTests.attach
+
+    def test_foreign_kernel_drift_rejected_by_whole_transport(self):
+        case = self.attach()
+        path = case.cfg.proc/'491174/maps'
+        path.write_bytes(path.read_bytes()+r6_ring())
+        self.native_hook = lambda: path.write_bytes(path.read_bytes().replace(b' 123 anon_inode:', b' 124 anon_inode:'))
+        with self.assertRaisesRegex(r.ReleaseError, 'EXTERNAL_TRANSPORT_DRIFT'):
+            r.transport(self.cfg)
+
+    def test_owned_roll_with_new_kernel_inode_preserves_whole_transport(self):
+        case = self.attach()
+        path = case.cfg.proc/str(case.owned[190])/'maps'
+        path.write_bytes(path.read_bytes()+r6_ring())
+        before = r.transport(self.cfg)
+        def roll():
+            case.remove(case.owned[190])
+            case.ownproc(190, 29000, 8400)
+            new = case.cfg.proc/'29000/maps'
+            new.write_bytes(new.read_bytes()+r6_ring(inode='98765'))
+        self.native_hook = roll
+        self.assertEqual(r.transport(self.cfg), before)
+
+    def test_gods_unowned_six_kernel_record_kept_in_full_transport(self):
+        case = self.attach()
+        pids = (1279, 491174, 493698, *case.unowned)
+        for pid in pids:
+            path = case.cfg.proc/str(pid)/'maps'
+            path.write_bytes(path.read_bytes()+r6_ring(inode=str(pid)))
+        result = r.transport(self.cfg)
+        for row in result['externalProtection']['processes']:
+            if row['pid'] in pids:
+                self.assertEqual(row['kernelAnonymousMappings'], r.dynamic_kernel_mappings(r6_ring(inode=str(row['pid']))))
+        self.assertEqual(result['externalProtection'], case.collect())
+
+
+class R7NativeSourceTests(unittest.TestCase):
+    """Two synthetic ELF inodes with true TempDir hardlinks; no native loading."""
+    proc = R5DynamicTests.proc
+    ownproc = R5DynamicTests.ownproc
+    collect = R5DynamicTests.collect
+    second = R5DynamicTests.second
+    remove = R5DynamicTests.remove
+
+    def setUp(self):
+        R5DynamicTests.setUp(self)
+        self.lib.write_bytes(b'\x7fELF' + b'fixture shared library\0' * 8)
+        self.native = self.root/'sharp-fixture.node'
+        self.native.write_bytes(b'\x7fELF' + b'fixture native addon\0' * 8)
+        self.native_paths = (self.lib, self.native)
+        self.aliases = {}
+        self.fixed = {}
+        for path in self.native_paths:
+            alias = self.root/(path.name + '.sibling-alias')
+            os.link(path, alias)
+            self.aliases[path] = alias
+            record = r.meta(path)
+            self.assertEqual(record['nlink'], 2)
+            self.fixed[str(path)] = {k: record[k] for k in ('dev', 'ino', 'statmode', 'uid', 'gid', 'nlink', 'size')}
+            self.fixed[str(path)]['sha256'] = r.H(path.read_bytes())
+        for proc in self.cfg.proc.iterdir():
+            maps = proc/'maps'
+            maps.write_bytes(maps.read_bytes()+r5_map(self.native, '5000-6000'))
+        guard = patch.object(r, 'DYNAMIC_FIXED_NATIVE_SOURCE_PINS', self.fixed)
+        guard.start(); self.addCleanup(guard.stop)
+
+    def reject_reads(self, path=None, message='DYNAMIC_FIXED_NATIVE_SOURCE'):
+        path = path or self.lib
+        for direct in (False, True):
+            with self.subTest(direct=direct), self.assertRaisesRegex(r.ReleaseError, message):
+                if direct:
+                    r.dynamic_read(path, r.DYNAMIC_SOURCE_BYTES, r.dynamic_budget(), source=True)
+                else:
+                    r.dynamic_source(path, r.dynamic_budget())
+
+    def test_known_exact_two_link_whole_file_and_full_meta_source_json(self):
+        result = self.collect()
+        for path in self.native_paths:
+            data = r.dynamic_read(path, r.DYNAMIC_SOURCE_BYTES, r.dynamic_budget(), source=True)
+            self.assertEqual(data, path.read_bytes())
+            expected = dict(r.meta(path), kind='file', sha256=r.H(data))
+            self.assertEqual(r.dynamic_source(path, r.dynamic_budget()), expected)
+            self.assertEqual(result['fullSourceMeta'][str(path)], expected)
+            self.assertEqual(result['sources'][str(path)], r.H(data))
+            self.assertEqual(expected['nlink'], 2)
+            self.assertNotIn(str(self.aliases[path]), result['sources'])
+        self.assertFalse(result['semanticsClosed'])
+        self.assertTrue(result['sourceGraphReviewRequired'])
+        self.assertNotIn(b'synthetic-secret', r.encode(result))
+
+    def test_alias_same_size_bytes_write_rejected_by_full_hash(self):
+        alias = self.aliases[self.lib]; old = alias.read_bytes()
+        alias.write_bytes(old[:-1]+b'X')
+        self.reject_reads(message='FULL_PIN')
+
+    def test_alias_mode_drift_rejects_both_source_routes(self):
+        self.aliases[self.lib].chmod(0o600)
+        self.reject_reads(message='SOURCE_META')
+
+    def test_link_add_rejects_exact_expected_count(self):
+        os.link(self.lib, self.root/'third-alias')
+        self.reject_reads(message='SOURCE_META')
+
+    def test_alias_unlink_rejects_known_nlink_one_without_default_fallback(self):
+        self.aliases[self.lib].unlink()
+        self.assertEqual(self.lib.stat().st_nlink, 1)
+        self.reject_reads(message='SOURCE_META')
+
+    def test_known_same_bytes_single_clone_at_known_path_rejected(self):
+        clone = self.root/'same-bytes-clone'
+        clone.write_bytes(self.lib.read_bytes()); clone.chmod(self.lib.stat().st_mode & 0o777)
+        os.replace(clone, self.lib)
+        self.assertEqual(self.lib.stat().st_nlink, 1)
+        self.reject_reads(message='SOURCE_META')
+
+    def test_unknown_two_link_source_and_direct_read_still_reject(self):
+        unknown = self.root/'unknown.js'; unknown.write_bytes(b'// unknown shared JS')
+        os.link(unknown, self.root/'unknown-alias.js')
+        with self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_SINGLE_REGULAR_SOURCE'):
+            r.dynamic_source(unknown, r.dynamic_budget())
+        with self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_SOURCE_SINGLE_FILE_BYTE_CAP'):
+            r.dynamic_read(unknown, r.DYNAMIC_SOURCE_BYTES, r.dynamic_budget(), source=True)
+        self.reject_reads(self.aliases[self.lib], 'DYNAMIC_.*SINGLE')
+
+    def test_full_hash_pin_mismatch_rejected_at_lowest_read(self):
+        self.fixed[str(self.lib)]['sha256'] = '0'*64
+        self.reject_reads(message='FULL_PIN')
+
+    def test_non_elf_with_matching_synthetic_full_hash_still_rejected(self):
+        old = self.lib.read_bytes(); self.aliases[self.lib].write_bytes(b'NOPE'+old[4:])
+        self.fixed[str(self.lib)]['sha256'] = r.H(self.lib.read_bytes())
+        self.reject_reads(message='ELF_HEADER')
+
+    def test_fixed_owner_uid_gid_mismatch_rejected(self):
+        for key in ('uid', 'gid'):
+            old = self.fixed[str(self.lib)][key]
+            self.fixed[str(self.lib)][key] = old+1
+            self.reject_reads(message='SOURCE_META')
+            self.fixed[str(self.lib)][key] = old
+
+    def test_fixed_mode_size_and_dev_ino_mismatch_rejected(self):
+        for key in ('statmode', 'size', 'dev', 'ino'):
+            old = self.fixed[str(self.lib)][key]
+            self.fixed[str(self.lib)][key] = old+1
+            self.reject_reads(message='SOURCE_META')
+            self.fixed[str(self.lib)][key] = old
+
+    def test_actual_alias_size_drift_rejected(self):
+        self.aliases[self.lib].write_bytes(self.lib.read_bytes()+b'X')
+        self.reject_reads(message='SOURCE_META')
+
+    def test_known_symlink_and_parent_symlink_still_rejected(self):
+        old = self.lib.read_bytes(); self.lib.unlink(); self.lib.symlink_to(self.native)
+        self.reject_reads(message='SYMLINK_ESCAPE')
+        parent = self.root/'linked-parent'; parent.symlink_to(self.root, target_is_directory=True)
+        self.reject_reads(parent/self.native.name, 'SYMLINK_ESCAPE')
+        self.assertTrue(old.startswith(b'\x7fELF'))
+
+    def test_fixed_source_size_and_total_budgets_unchanged(self):
+        with self.assertRaisesRegex(r.ReleaseError, 'SOURCE_SINGLE_FILE_BYTE_CAP'):
+            r.dynamic_read(self.lib, 4, r.dynamic_budget(), source=True)
+        with patch.object(r, 'DYNAMIC_TOTAL_BYTES', 4), self.assertRaisesRegex(r.ReleaseError, 'TOTAL_BYTE_CAP'):
+            r.dynamic_read(self.lib, r.DYNAMIC_SOURCE_BYTES, r.dynamic_budget(), source=True)
+
+    def test_alias_write_during_lowest_read_rejected_by_full_fstat(self):
+        real = r.os.read; changed = []
+        def read(fd, count):
+            data = real(fd, count)
+            if data and not changed:
+                changed.append(1); alias = self.aliases[self.lib]
+                alias.write_bytes(alias.read_bytes()[:-1]+b'X')
+            return data
+        with patch.object(r.os, 'read', side_effect=read), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_FILE_READ_RACE'):
+            r.dynamic_read(self.lib, r.DYNAMIC_SOURCE_BYTES, r.dynamic_budget(), source=True)
+
+    def test_alias_metadata_during_lowest_read_rejected(self):
+        real = r.os.read; changed = []
+        def read(fd, count):
+            data = real(fd, count)
+            if data and not changed:
+                changed.append(1); self.aliases[self.lib].chmod(0o600)
+            return data
+        with patch.object(r.os, 'read', side_effect=read), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_FILE_READ_RACE'):
+            r.dynamic_read(self.lib, r.DYNAMIC_SOURCE_BYTES, r.dynamic_budget(), source=True)
+
+    def test_link_add_and_unlink_during_lowest_read_rejected(self):
+        for add in (True, False):
+            real = r.os.read; changed = []; extra = self.root/'read-race-link'
+            def read(fd, count):
+                data = real(fd, count)
+                if data and not changed:
+                    changed.append(1)
+                    if add: os.link(self.lib, extra)
+                    else: self.aliases[self.lib].unlink()
+                return data
+            with patch.object(r.os, 'read', side_effect=read), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_FILE_READ_RACE'):
+                r.dynamic_read(self.lib, r.DYNAMIC_SOURCE_BYTES, r.dynamic_budget(), source=True)
+            if add: extra.unlink()
+            else: os.link(self.lib, self.aliases[self.lib])
+
+    def test_same_bytes_rename_during_lowest_read_rejected(self):
+        real = r.os.read; changed = []
+        def read(fd, count):
+            data = real(fd, count)
+            if data and not changed:
+                changed.append(1); clone = self.root/'rename-clone'
+                clone.write_bytes(self.lib.read_bytes()); os.replace(clone, self.lib)
+            return data
+        with patch.object(r.os, 'read', side_effect=read), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_FILE_(READ|RENAME)_RACE'):
+            r.dynamic_read(self.lib, r.DYNAMIC_SOURCE_BYTES, r.dynamic_budget(), source=True)
+
+    def test_full_path_meta_rechecked_before_lowest_read_return(self):
+        real = r.meta; calls = []
+        def meta(path):
+            value = real(path)
+            if Path(path) == self.lib:
+                calls.append(1)
+                if len(calls) == 2: value = dict(value, mtimeNs=value['mtimeNs']+1)
+            return value
+        with patch.object(r, 'meta', side_effect=meta), self.assertRaisesRegex(r.ReleaseError, 'FIXED_NATIVE_SOURCE_META_READ_RACE'):
+            r.dynamic_read(self.lib, r.DYNAMIC_SOURCE_BYTES, r.dynamic_budget(), source=True)
+
+    def test_alias_timestamp_only_between_samples_rejects_whole_inode_record(self):
+        before = self.collect(); old = r.meta(self.lib)
+        self.second(lambda: os.utime(self.aliases[self.lib], ns=(self.lib.stat().st_atime_ns, old['mtimeNs']+1000000)))
+        self.assertEqual(before['fullSourceMeta'][str(self.lib)]['mtimeNs'], old['mtimeNs'])
+
+    def test_alias_bytes_mode_links_between_samples_all_rejected(self):
+        for index in range(4):
+            case = R7NativeSourceTests('test_known_exact_two_link_whole_file_and_full_meta_source_json')
+            case.setUp()
+            try:
+                # Use each case's own alias/inode; do not patch production paths.
+                actions = (
+                    lambda: case.aliases[case.native].write_bytes(case.native.read_bytes()[:-1]+b'X'),
+                    lambda: case.aliases[case.native].chmod(0o600),
+                    lambda: os.link(case.native, case.root/'sample-new-alias'),
+                    lambda: case.aliases[case.native].unlink(),
+                )
+                case.second(actions[index], error='DYNAMIC_FIXED_NATIVE_SOURCE')
+            finally:
+                case.doCleanups()
+
+    def test_link_add_remove_restores_count_but_ctime_still_rejected(self):
+        def change():
+            extra = self.root/'transient-alias'; os.link(self.lib, extra); extra.unlink()
+        self.second(change)
+        self.assertEqual(self.lib.stat().st_nlink, 2)
+
+    def test_mapped_dev_inode_mismatch_still_rejects_pinned_native(self):
+        path = self.cfg.proc/'11000/maps'; old = path.read_bytes()
+        correct = r5_map(self.lib)
+        for key in ('ino', 'dev'):
+            record = r.meta(self.lib)
+            wrong = correct.replace(str(record['ino']).encode()+b' ', str(record['ino']+1).encode()+b' ') if key == 'ino' else correct.replace(
+                f'{os.major(record["dev"]):x}:{os.minor(record["dev"]):x}'.encode(), b'ff:ff')
+            path.write_bytes(old+wrong)
+            with self.subTest(key=key), self.assertRaisesRegex(r.ReleaseError, 'MAPPING_FILE_IDENTITY'):
+                self.collect()
+            path.write_bytes(old)
+
+    def test_pinned_source_mapping_multiplicity_still_rejected(self):
+        path = self.cfg.proc/str(self.owned[190])/'maps'
+        self.second(lambda: path.write_bytes(path.read_bytes()+r5_map(self.lib, '9000-a000')))
+
+    def test_all_six_own_rolls_and_local_api_cas_preserve_pinned_transport(self):
+        before = self.collect()
+        for i, slot in enumerate(r.OWN_DYNAMIC_IDS):
+            self.remove(self.owned[slot]); pid = 29000+i; self.ownproc(slot, pid, 10000+i)
+            maps = self.cfg.proc/str(pid)/'maps'; maps.write_bytes(maps.read_bytes()+r5_map(self.native, '5000-6000'))
+        clone = self.front.parent/'local-api-cas'; clone.write_bytes(b'// synthetic owned API candidate')
+        os.replace(clone, self.front)
+        self.assertEqual(self.collect(), before)
+        self.assertNotIn(str(self.front), before['sources'])
+
+    def test_all_nine_fstat_identity_fields_rechecked(self):
+        fields = ('st_dev', 'st_ino', 'st_mode', 'st_uid', 'st_gid', 'st_nlink',
+                  'st_size', 'st_mtime_ns', 'st_ctime_ns')
+        real = r.os.fstat
+        for field in fields:
+            calls = []
+            def fstat(fd):
+                observed = real(fd); calls.append(1)
+                if len(calls) == 2:
+                    values = {k: getattr(observed, k) for k in fields}
+                    values[field] += 1
+                    return type('SyntheticStatDrift', (), values)()
+                return observed
+            with self.subTest(field=field), patch.object(r.os, 'fstat', side_effect=fstat), self.assertRaisesRegex(r.ReleaseError, 'DYNAMIC_FILE_READ_RACE'):
+                r.dynamic_read(self.lib, r.DYNAMIC_SOURCE_BYTES, r.dynamic_budget(), source=True)
+
+    def test_alias_timestamp_during_final_proc_rejected_by_final_source_meta(self):
+        real = r.dynamic_proc; calls = []; old = r.meta(self.lib)
+        def proc(*args):
+            result = real(*args)
+            if args[1] == 1:
+                calls.append(1)
+                if len(calls) == 2:
+                    os.utime(self.aliases[self.lib], ns=(self.lib.stat().st_atime_ns, old['mtimeNs']+1000000))
+            return result
+        with patch.object(r, 'dynamic_proc', side_effect=proc), self.assertRaisesRegex(r.ReleaseError, 'FINAL_SOURCE_META_DRIFT'):
+            self.collect()
+
+
+class R7NativeTransportTests(unittest.TestCase):
+    setUp = R5TransportTests.setUp
+    fake_run = R5TransportTests.fake_run
+
+    def attach(self):
+        case = R5TransportTests.attach(self)
+        case.lib.write_bytes(b'\x7fELF' + b'whole-transport fixture\0' * 8)
+        alias = case.root/'transport-sibling-alias'; os.link(case.lib, alias)
+        record = r.meta(case.lib)
+        fixed = {str(case.lib): dict(record, sha256=r.H(case.lib.read_bytes()))}
+        guard = patch.object(r, 'DYNAMIC_FIXED_NATIVE_SOURCE_PINS', fixed)
+        guard.start(); self.addCleanup(guard.stop)
+        return case, alias
+
+    def test_same_inode_old_pointer_timestamp_drift_rejects_whole_transport(self):
+        case, alias = self.attach(); before = r.transport(self.cfg); old = r.meta(case.lib)
+        self.native_hook = lambda: os.utime(alias, ns=(case.lib.stat().st_atime_ns, old['mtimeNs']+1000000))
+        with self.assertRaisesRegex(r.ReleaseError, 'EXTERNAL_TRANSPORT_DRIFT'):
+            r.transport(self.cfg)
+        self.assertEqual(before['externalProtection']['fullSourceMeta'][str(case.lib)]['ino'], alias.stat().st_ino)
+        self.assertEqual(before['externalProtection']['fullSourceMeta'][str(case.lib)]['sha256'], r.H(alias.read_bytes()))
+
+    def test_alias_bytes_write_during_mock_rpc_rejects_fixed_source(self):
+        case, alias = self.attach()
+        self.native_hook = lambda: alias.write_bytes(alias.read_bytes()[:-1]+b'X')
+        with self.assertRaisesRegex(r.ReleaseError, 'FIXED_NATIVE_SOURCE_FULL_PIN'):
+            r.transport(self.cfg)
+
+    def test_owned_roll_with_pinned_native_preserves_whole_transport(self):
+        case, alias = self.attach(); before = r.transport(self.cfg)
+        def roll():
+            case.remove(case.owned[190]); case.ownproc(190, 29000, 8400)
+        self.native_hook = roll
+        self.assertEqual(r.transport(self.cfg), before)
+        self.assertEqual(alias.stat().st_nlink, 2)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -15,7 +15,7 @@ import sys
 HERE = Path(__file__).absolute().parent
 REPO = HERE.parent.parent
 WORK = Path('/home/ubuntu/work/customer-batch')
-CONTROLLER_SHA = '36706f932e6284a1192ef213d85836d25b4c9a7a7023309c11454c4d2dfdfe14'
+CONTROLLER_SHA = 'a555022329eed9c2b72efa2aa0668b9a84d33148da4bee5cc9ba5bd579866e5b'
 NODE = '/usr/bin/node'
 # Exactly backend-builder.compile's transform options, but read original files twice.
 BACKEND_HASH_CHECK = """

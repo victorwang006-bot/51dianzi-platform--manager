@@ -4,3 +4,5 @@ evidence/*.diff -whitespace
 # Preserve logged bytes; actual Python/TypeScript source whitespace remains checked.
 evidence/*-tests*.txt -whitespace
 evidence/r5-*-prefix.md -whitespace
+evidence/*.patch -whitespace
+evidence/r6-*.log -whitespace
