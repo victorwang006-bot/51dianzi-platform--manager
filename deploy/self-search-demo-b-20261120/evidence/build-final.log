@@ -1,0 +1,26 @@
+{
+  "status": "BUILT_NOT_DEPLOYED",
+  "approval": "NOT_APPROVED",
+  "manifest": "/home/ubuntu/work/self-row-redesign/native-builder/candidate-final-b/manifest.json",
+  "assets": [
+    {
+      "url": "/assets/official-material-ui-demo-b-02df7e3a1cbabae09aa3a50aacae15d47014ed7a4ed1fe2149cc01301b1fb269.js",
+      "sha256": "02df7e3a1cbabae09aa3a50aacae15d47014ed7a4ed1fe2149cc01301b1fb269",
+      "size": 578740,
+      "local": "/home/ubuntu/work/self-row-redesign/native-builder/candidate-final-b/assets/official-material-ui-demo-b-02df7e3a1cbabae09aa3a50aacae15d47014ed7a4ed1fe2149cc01301b1fb269.js"
+    },
+    {
+      "url": "/assets/official-cart-material-demo-b-82fae9ed9dfca9c56030226616a98ec4ea1b7da4cc09f29975294dbef9e7be0c.js",
+      "sha256": "82fae9ed9dfca9c56030226616a98ec4ea1b7da4cc09f29975294dbef9e7be0c",
+      "size": 127811,
+      "local": "/home/ubuntu/work/self-row-redesign/native-builder/candidate-final-b/assets/official-cart-material-demo-b-82fae9ed9dfca9c56030226616a98ec4ea1b7da4cc09f29975294dbef9e7be0c.js"
+    },
+    {
+      "url": "/assets/search-official-material-demo-b-67172692878ecc1bf99ebbb84bb19685f771fbfd8b3def81c7cb8615362cc9d3.js",
+      "sha256": "67172692878ecc1bf99ebbb84bb19685f771fbfd8b3def81c7cb8615362cc9d3",
+      "size": 252425,
+      "local": "/home/ubuntu/work/self-row-redesign/native-builder/candidate-final-b/assets/search-official-material-demo-b-67172692878ecc1bf99ebbb84bb19685f771fbfd8b3def81c7cb8615362cc9d3.js"
+    }
+  ],
+  "productionWrites": 0
+}
