@@ -1,0 +1,1 @@
+{"allQuantityFieldsPositive":true,"cartMutationsPerformed":0,"checkoutButtons":2,"checkoutSubmissionsPerformed":0,"currencyAmountsVisible":true,"loading":false,"logoutButtonPresent":true,"merchantSection":true,"noInvalidAmounts":true,"officialSection":true,"page":"/cart","paymentsPerformed":0,"quantityFieldCount":2}

@@ -1,0 +1,9 @@
+{
+  "downloadByActualLoggedInLink": true,
+  "sourceUrl": "https://www.st.com/resource/en/datasheet/stm8s003f3.pdf",
+  "pdfSha256": "1a0775fefcda1553ffea5216b60acdb9566e487f60aad8afa5c859a32acaa8f2",
+  "bytes": 1542433,
+  "docDS7147Rev10": true,
+  "literalFullPartNumberMentioned": false,
+  "orderCodeInterpretation": "The datasheet identifies the family and uses an ordering-code legend, not a literal full tape-reel part string; page98 legend was separately verified."
+}
