@@ -267,6 +267,7 @@ import {
   saveSalesOrderDraft,
 } from "../lib/salesOrderDraftStore";
 import type { SalesOrderDraftPayload } from "../../../shared/crmSalesOrderDrafts";
+import { listPreservedSalesOrderDrafts } from "../lib/salesOrderDraftArchive";
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 let root: Root;
@@ -1012,7 +1013,10 @@ describe("customer-embedded sales orders (real component, mocked transport only)
     expect(toast.error).not.toHaveBeenCalled();
     expect(runtime.invalidate).not.toHaveBeenCalled();
     await click(button("录入销售订单"));
-    await click(button("选择"));
+    // The old account/company frozen draft must not become a selectable form for customer 2.
+    expect(document.querySelector('[aria-label="订单草稿处理"]')).not.toBeNull();
+    expect(document.querySelector('[placeholder="搜索需求号、项目或型号"]')).toBeNull();
+    expect(button("收起").matches(":disabled")).toBe(false);
     await render({ contextIdentityKey: "enterprise:2:actor:9" });
     expect(document.querySelector('[aria-label="LM358 含税单价"]')).toBeNull();
   });
@@ -1669,5 +1673,165 @@ describe("customer response boundary", () => {
     expect(customerMatches({}, 1)).toBe(false);
     expect(customerPageMatches({ items: [order(1), order(2)] }, 1)).toBe(false);
     expect(customerPageMatches({ items: [order(1)] }, 1)).toBe(true);
+  });
+});
+
+
+describe("客户订单草稿误拦截最小修复（真实页面/hook，离线接口）", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+  const savedDraft = (customer: { id: number; name: string } | null): SalesOrderDraftPayload => ({
+    customer, source: "demand", demandId: null,
+    form: { version: 1, selectedDemand: null, lines: [], dueDate: "", confirmationNote: "", customerConfirmed: false, pendingRequest: null },
+    company: { lines: [], uncertain: null },
+  });
+  const seed = (payload: SalesOrderDraftPayload, revision = 3) => {
+    runtime.draftServer = { draftId: 1, revision, updatedAt: "now", payload };
+  };
+  it("业务订单只打开再关闭不留下空白草稿，之后可在客户页面录入", async () => {
+    await renderStandalone(); await click(button("新建业务订单"));
+    expect(loadSalesOrderDraft(draftIdentity())).toBeNull();
+    await click(button("关闭对话框")); await render(); await click(button("录入销售订单"));
+    expect(document.querySelector('[aria-label="订单草稿处理"]')).toBeNull();
+    expect(button("公司库存").matches(":disabled")).toBe(false);
+    expect(loadSalesOrderDraft(draftIdentity())).toBeNull();
+    expect(runtime.draftSave).not.toHaveBeenCalled(); expect(runtime.draftDelete).not.toHaveBeenCalled();
+  });
+  it("已有完全空白草稿不误报其他客户，真实下一次保存沿用原版本7", async () => {
+    seed(savedDraft(null), 7); await render(); await fillOrder();
+    expect(document.querySelector('[aria-label="订单草稿处理"]')).toBeNull();
+    await click(button("保存订单"));
+    expect(runtime.draftSave.mock.calls[0][0].expectedRevision).toBe(7);
+    expect(runtime.mutations.create.mutate).toHaveBeenCalledTimes(1);
+    expect(runtime.draftDelete).not.toHaveBeenCalled();
+  });
+  it("同客户普通草稿仍正常恢复", async () => {
+    seed(savedDraft({ id: 1, name: "客户甲" })); await render();
+    expect(document.querySelector('[aria-label="订单草稿处理"]')).toBeNull();
+    expect(button("公司库存").matches(":disabled")).toBe(false);
+  });
+  it("未关联客户但有搜索词准确提示，业务表单和假空列表不展示，收起可用", async () => {
+    const original = savedDraft(null); original.form!.customerSearch = "半个客户名"; seed(original);
+    await render();
+    expect(document.body.textContent).toContain("有未关联客户的未完成草稿");
+    expect(document.body.textContent).not.toContain("有其他客户的未完成草稿");
+    expect(document.querySelector('[placeholder="搜索需求号、项目或型号"]')).toBeNull();
+    expect(document.body.textContent).not.toContain("暂无已采用报价且可录入的需求");
+    expect(runtime.inputs.filter(row => row.name === "candidates").at(-1)?.enabled).toBe(false);
+    expect(button("收起").matches(":disabled")).toBe(false);
+    await click(button("去业务订单继续草稿"));
+    expect(runtime.navigate).toHaveBeenCalledWith("/orders?orderSource=business");
+    expect(runtime.draftServer.payload).toEqual(original);
+    expect(runtime.draftSave).not.toHaveBeenCalled(); expect(runtime.draftDelete).not.toHaveBeenCalled();
+  });
+  it("真正其他客户草稿仍不串客户，刷新不会覆盖，关闭/收起可用", async () => {
+    const original = savedDraft({ id: 2, name: "客户乙" }); seed(original); await render();
+    expect(document.body.textContent).toContain("有其他客户的未完成草稿");
+    expect(button("收起").matches(":disabled")).toBe(false);
+    await click(button("重新读取草稿"));
+    expect(document.body.textContent).toContain("有其他客户的未完成草稿");
+    expect(runtime.draftServer.payload).toEqual(original);
+    expect(runtime.draftSave).not.toHaveBeenCalled(); expect(runtime.draftDelete).not.toHaveBeenCalled();
+    await click(button("收起")); expect(document.querySelector("[data-dialog]")).toBeNull();
+  });
+  it("显式确认后完整无覆盖保留普通草稿并新建，业务订单可恢复原内容", async () => {
+    const original = savedDraft({ id: 2, name: "客户乙" }); original.form!.confirmationNote = "未完成的客户确认内容";
+    seed(original); await render();
+    vi.mocked(window.confirm).mockReturnValue(true);
+    await click(button("保留原草稿后新建"));
+    expect(listPreservedSalesOrderDrafts(draftIdentity())[0].payload).toEqual(original);
+    expect(runtime.draftSave.mock.calls[0][0].expectedRevision).toBe(3);
+    expect(runtime.draftDelete).not.toHaveBeenCalled();
+    expect(document.querySelector('[aria-label="订单草稿处理"]')).toBeNull();
+    expect(button("公司库存").matches(":disabled")).toBe(false);
+    expect(runtime.mutations.create.mutate).not.toHaveBeenCalled();
+    await renderStandalone(true); await click(button("新建业务订单"));
+    expect(document.body.textContent).toContain("已保留草稿（仅本浏览器）");
+    await click(button("恢复此草稿"));
+    expect(runtime.draftServer.payload).toEqual(original);
+    expect(document.querySelector('[aria-label="订单客户"]')?.textContent).toContain("客户乙");
+    expect(listPreservedSalesOrderDrafts(draftIdentity())[0].payload).toEqual(original);
+    expect(runtime.mutations.create.mutate).not.toHaveBeenCalled();
+  });
+  it("同一事件双击仅处理一次，原请求期间关闭/跳转不能打断或触发第二次确认", async () => {
+    const original = savedDraft({ id: 2, name: "客户乙" });
+    seed(original);
+    await render();
+    vi.mocked(window.confirm).mockReturnValue(true);
+    const gate = deferred();
+    const save = runtime.draftSave.getMockImplementation()!;
+    runtime.draftSave.mockImplementationOnce(async args => {
+      await gate.promise;
+      return save(args);
+    });
+    const preserveButton = button("保留原草稿后新建");
+    const continueButton = button("去业务订单继续草稿");
+    const closeButton = button("收起");
+    await act(async () => {
+      preserveButton.click();
+      preserveButton.click();
+      continueButton.click();
+      closeButton.click();
+      await Promise.resolve();
+    });
+    expect(window.confirm).toHaveBeenCalledTimes(1);
+    expect(runtime.draftSave).toHaveBeenCalledTimes(1);
+    expect(listPreservedSalesOrderDrafts(draftIdentity())).toHaveLength(1);
+    expect(runtime.navigate).not.toHaveBeenCalled();
+    expect(document.querySelector("[data-dialog]")).not.toBeNull();
+    expect(runtime.draftServer.payload).toEqual(original);
+    await act(async () => { gate.resolve(undefined); });
+    expect(document.querySelector('[aria-label="订单草稿处理"]')).toBeNull();
+    expect(runtime.draftSave).toHaveBeenCalledTimes(1);
+    expect(runtime.draftDelete).not.toHaveBeenCalled();
+  });
+  it("拒绝确认不会备份、替换或删除原草稿", async () => {
+    const original = savedDraft({ id: 2, name: "客户乙" }); seed(original); await render();
+    await click(button("保留原草稿后新建"));
+    expect(listPreservedSalesOrderDrafts(draftIdentity())).toHaveLength(0);
+    expect(runtime.draftServer.payload).toEqual(original); expect(runtime.draftSave).not.toHaveBeenCalled();
+  });
+  it("备份存储失败不开始新单，也不让旧数据消失", async () => {
+    const original = savedDraft({ id: 2, name: "客户乙" }); seed(original); await render();
+    vi.mocked(window.confirm).mockReturnValue(true);
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("quota"); });
+    await click(button("保留原草稿后新建"));
+    expect(document.body.textContent).toContain("无法完整保留原草稿");
+    expect(document.body.textContent).toContain("有其他客户的未完成草稿");
+    expect(runtime.draftServer.payload).toEqual(original); expect(runtime.draftSave).not.toHaveBeenCalled();
+    expect(runtime.draftDelete).not.toHaveBeenCalled();
+  });
+  it.each(["demand", "company_stock"])("%s原保存结果不明时切客户保留原冻结请求，禁止保留后新建", async source => {
+    if (source === "demand") { await render(); await fillOrder(); }
+    else await fillCompanyOrder();
+    await click(button("保存订单"));
+    const mutation = source === "demand" ? runtime.mutations.create : runtime.mutations.companyCreate;
+    const request = mutation.mutate.mock.calls[0][0];
+    await act(async () => mutation.options.onError(new Error("结果待确认")));
+    const frozen = loadSalesOrderDraft(draftIdentity())!.payload;
+    const remote = JSON.parse(JSON.stringify(runtime.draftServer));
+    const saveCount = runtime.draftSave.mock.calls.length;
+    await render({ customer: { id: 2, name: "客户乙" } });
+    expect(document.body.textContent).toContain("原订单保存结果需要核验");
+    expect([...document.querySelectorAll("button")].some(b => b.textContent === "保留原草稿后新建")).toBe(false);
+    expect(button("去业务订单核验原请求").matches(":disabled")).toBe(false);
+    await click(button("重新读取草稿"));
+    expect(loadSalesOrderDraft(draftIdentity())?.payload).toEqual(frozen);
+    expect(source === "demand" ? frozen.form!.pendingRequest : frozen.company!.uncertain).toEqual(request);
+    expect(runtime.draftServer).toEqual(remote); expect(runtime.draftSave).toHaveBeenCalledTimes(saveCount);
+    expect(runtime.draftDelete).not.toHaveBeenCalled(); expect(mutation.mutate).toHaveBeenCalledTimes(1);
+  });
+  it("未知字段或仅税模式输入不能当空白丢弃，保留时保存完整原JSON", async () => {
+    const original = savedDraft(null); original.form!.futureField = { note: "keep" }; original.company!.salesTaxMode = "tax_excluded";
+    seed(original); await render();
+    expect(document.body.textContent).toContain("有未关联客户的未完成草稿");
+    vi.mocked(window.confirm).mockReturnValue(true); await click(button("保留原草稿后新建"));
+    expect(listPreservedSalesOrderDrafts(draftIdentity())[0].payload).toEqual(original);
+  });
+  it("只读/权限丢失时保留后新建按钮不可用，原草稿不改", async () => {
+    const original = savedDraft({ id: 2, name: "客户乙" }); seed(original);
+    await render({ readOnly: true });
+    expect(button("保留原草稿后新建").disabled).toBe(true);
+    expect(runtime.draftSave).not.toHaveBeenCalled(); expect(runtime.draftServer.payload).toEqual(original);
   });
 });

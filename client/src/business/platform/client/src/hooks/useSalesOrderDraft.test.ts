@@ -894,3 +894,82 @@ describe("draft parser safety and selection", () => {
     expect(emptyCompanyStockDraft().pendingRequest).toBeNull();
   });
 });
+
+
+describe("explicit preserve-and-replace uses original identity and exact CAS", () => {
+  const nextBlank = (): SalesOrderDraftPayload => ({ source: "demand", customer: null, form: { version: 1, selectedDemand: null, lines: [], dueDate: "", confirmationNote: "", customerConfirmed: false, pendingRequest: null }, company: { lines: [], uncertain: null } });
+  it("preserves a full ordinary draft without overwriting old backups and creates at its actual revision", async () => {
+    const original = payload("原确认说明");
+    runtime.server = { draftId: 1, revision: 9, updatedAt: "now", payload: original };
+    await render();
+    const legacy = salesOrderDraftKey(draft.identity) + ":conflict-backup";
+    localStorage.setItem(legacy, "keep-old-backup");
+    await act(async () => { await draft.replaceOrdinary(original, nextBlank()); });
+    expect(runtime.save).toHaveBeenCalledWith({ expectedRevision: 9, payload: nextBlank() });
+    expect(runtime.remove).not.toHaveBeenCalled();
+    expect(draft.preservedDrafts).toHaveLength(1);
+    expect(draft.preservedDrafts[0].payload).toEqual(original);
+    expect(draft.preservedDrafts[0].revision).toBe(9);
+    expect(localStorage.getItem(legacy)).toBe("keep-old-backup");
+    const archive = draft.preservedDrafts[0].archiveId;
+    await act(async () => { await draft.restorePreserved(archive); });
+    expect(runtime.save.mock.calls.at(-1)?.[0]).toEqual({ expectedRevision: 10, payload: original });
+    expect(draft.initialPayload).toEqual(original);
+    expect(draft.preservedDrafts[0].payload).toEqual(original);
+  });
+  it("does not save or delete when complete archival readback is unavailable", async () => {
+    const original = payload(); runtime.server = { revision: 3, payload: original };
+    await render();
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("quota"); });
+    await act(async () => { await expect(draft.replaceOrdinary(original, nextBlank())).rejects.toThrow("无法完整保留"); });
+    expect(runtime.save).not.toHaveBeenCalled(); expect(runtime.remove).not.toHaveBeenCalled();
+    expect(runtime.server.payload).toEqual(original);
+    vi.restoreAllMocks();
+  });
+  it.each(["active", "inactive", "completed"])("cannot archive/replace %s frozen or cleanup state", async kind => {
+    const original = payload("original", kind === "active");
+    if (kind === "inactive") original.form = { version: 1, pendingRequest: {} };
+    if (kind === "completed") original.form = { version: 1, completed: true };
+    runtime.server = { revision: 3, payload: original }; await render();
+    await act(async () => { await expect(draft.replaceOrdinary(original, nextBlank())).rejects.toThrow(); });
+    expect(runtime.save).not.toHaveBeenCalled(); expect(runtime.remove).not.toHaveBeenCalled();
+    expect(draft.preservedDrafts).toHaveLength(0);
+  });
+  it("rejects another tab's local ordinary edit before preservation or any CAS", async () => {
+    const original = payload("old"); runtime.server = { revision: 3, payload: original }; await render();
+    const newer = payload("another-tab"); saveSalesOrderDraft(draft.identity, record(newer, 3, true));
+    await act(async () => { await expect(draft.replaceOrdinary(original, nextBlank())).rejects.toThrow("已变化"); });
+    expect(loadSalesOrderDraft(draft.identity)?.payload).toEqual(newer);
+    expect(runtime.save).not.toHaveBeenCalled(); expect(draft.preservedDrafts).toHaveLength(0);
+  });
+  it("leaves another tab's newer remote payload untouched on CAS rejection and retains original backup", async () => {
+    const original = payload("old"); runtime.server = { revision: 3, payload: original }; await render();
+    const newer = payload("newer-remote"); runtime.server = { revision: 4, payload: newer };
+    await act(async () => { await expect(draft.replaceOrdinary(original, nextBlank())).rejects.toThrow(); });
+    expect(runtime.save.mock.calls[0][0].expectedRevision).toBe(3);
+    expect(runtime.server.payload).toEqual(newer); expect(runtime.remove).not.toHaveBeenCalled();
+    expect(draft.preservedDrafts[0].payload).toEqual(original); expect(draft.writable).toBe(false);
+  });
+  it("rejects local work changed during successful remote save without overwriting that work", async () => {
+    const original = payload("old"); runtime.server = { revision: 3, payload: original }; await render();
+    const newer = payload("new-local");
+    runtime.save.mockImplementationOnce(async () => {
+      saveSalesOrderDraft(draft.identity, record(newer, 4, true));
+      runtime.server = { revision: 4, payload: nextBlank() };
+      return { revision: 4, updatedAt: "now" };
+    });
+    await act(async () => { await expect(draft.replaceOrdinary(original, nextBlank())).rejects.toThrow("另一页面"); });
+    expect(loadSalesOrderDraft(draft.identity)?.payload).toEqual(newer); expect(draft.writable).toBe(false);
+    expect(draft.preservedDrafts[0].payload).toEqual(original);
+  });
+  it("never accepts a late replacement completion into a changed company", async () => {
+    const original = payload("old"); runtime.server = { revision: 3, payload: original }; await render();
+    const gate = deferred(); runtime.save.mockReturnValueOnce(gate.promise);
+    let work!: Promise<void>;
+    await act(async () => { work = draft.replaceOrdinary(original, nextBlank()); work.catch(() => undefined); });
+    runtime.company = 4; runtime.server = null; await render();
+    await act(async () => { gate.resolve({ revision: 4, updatedAt: "now" }); await expect(work).rejects.toThrow("身份"); });
+    expect(draft.initialPayload).toBeNull(); expect(draft.preservedDrafts).toEqual([]);
+    expect(loadSalesOrderDraft(draft.identity)).toBeNull();
+  });
+});

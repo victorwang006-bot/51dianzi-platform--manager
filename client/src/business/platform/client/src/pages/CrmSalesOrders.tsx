@@ -68,6 +68,7 @@ import {
   serializeSalesOrderEntryDraft,
 } from "../lib/salesOrderEntryDraft";
 import type { SalesOrderDraftPayload } from "../../../shared/crmSalesOrderDrafts";
+import { hasLockedSalesOrderDraft, isUnstartedSalesOrderDraft } from "../lib/salesOrderDraftRecovery";
 import {
   SalesCustomerPicker,
   type SalesCustomer,
@@ -252,6 +253,15 @@ function SalesOrdersContent({
   const suppressDraftWrite = useRef(false);
   const [draftApplied, setDraftApplied] = useState(false);
   const [draftRestoreError, setDraftRestoreError] = useState("");
+  const [draftConflict, setDraftConflict] = useState<{
+    payload: SalesOrderDraftPayload;
+    title: string;
+    message: string;
+    canStartNew: boolean;
+  } | null>(null);
+  const [draftResolutionBusy, setDraftResolutionBusy] = useState(false);
+  const [draftResolutionError, setDraftResolutionError] = useState("");
+  const draftResolutionRef = useRef(false);
   const draftPayloadRef = useRef<SalesOrderDraftPayload | null>(null);
   const deepLinkedDemandNoRef = useRef("");
   const deepLinkedDemandIdRef = useRef<number | undefined>(undefined);
@@ -358,7 +368,7 @@ function SalesOrdersContent({
     return { ...payload, form: { ...payload.form, customerSearch } };
   };
   useEffect(() => {
-    if (!orderDraft.restored || draftHydrated.current) return;
+    if (!orderDraft.restored || draftHydrated.current || draftResolutionBusy) return;
     draftHydrated.current = true;
     const saved = orderDraft.initialPayload;
     if (!saved) {
@@ -367,10 +377,29 @@ function SalesOrdersContent({
     }
     try {
       const restored = parseSalesOrderEntryDraft(saved);
-      if (embedded && restored.customer?.id !== embedded.customer.id)
-        throw new Error(
-          "当前账号已有其他客户的订单草稿，请先在业务订单中处理。"
-        );
+      if (isUnstartedSalesOrderDraft(saved)) {
+        // Keep the hook's proved CAS revision and original payload; no delete/reset-to-zero.
+        // Only real later input may replace this unstarted form through normal persistence.
+        draftPayloadRef.current = null;
+        setDraftApplied(true);
+        return;
+      }
+      if (embedded && restored.customer?.id !== embedded.customer.id) {
+        const locked = hasLockedSalesOrderDraft(saved);
+        const unassociated = !restored.customer;
+        const title = locked
+          ? "原订单保存结果需要核验"
+          : unassociated ? "有未关联客户的未完成草稿" : "有其他客户的未完成草稿";
+        const message = locked
+          ? "原请求或清理状态仍需核验，已保留原内容和防重复标识。请前往业务订单处理，不能清除后重新下单。"
+          : unassociated
+            ? "草稿中已有输入，但尚未选择客户。可继续原草稿，或先完整保留再录入当前客户订单。"
+            : "为避免订单串客户，未将原草稿载入当前客户。可继续原草稿，或先完整保留再录入当前客户订单。";
+        setDraftConflict({ payload: saved, title, message, canStartNew: !locked });
+        setDraftRestoreError(title);
+        setEntryOpen(true);
+        return;
+      }
       setEntryCustomer(restored.customer);
       setCustomerSearch(
         typeof saved.form?.customerSearch === "string"
@@ -398,7 +427,7 @@ function SalesOrdersContent({
       );
       setEntryOpen(true);
     }
-  }, [orderDraft.restored, orderDraft.initialPayload, embedded]);
+  }, [orderDraft.restored, orderDraft.initialPayload, embedded, draftResolutionBusy]);
   useEffect(() => {
     if (
       !draftHydrated.current ||
@@ -409,6 +438,7 @@ function SalesOrdersContent({
     )
       return;
     const payload = buildEntryPayload();
+    if (isUnstartedSalesOrderDraft(payload, embedded?.customer.id)) return;
     draftPayloadRef.current = payload;
     void orderDraft.persist(payload).catch(() => undefined);
   }, [
@@ -459,7 +489,7 @@ function SalesOrdersContent({
       pageSize: 10,
     },
     {
-      enabled: entryOpen && canWrite && sourceType === "demand",
+      enabled: entryOpen && canWrite && sourceType === "demand" && !draftRestoreError,
       staleTime: 0,
       refetchOnMount: "always",
     }
@@ -601,10 +631,60 @@ function SalesOrdersContent({
     void orderDraft.clear(saved ?? undefined);
   };
   const requestCloseEntry = () => {
-    if (savingRef.current || stockBusy) return;
+    if (savingRef.current || stockBusy || draftResolutionRef.current) return;
     if (draftPayloadRef.current && !draftRestoreError)
       void orderDraft.persist(draftPayloadRef.current).catch(() => undefined);
     closeEntry();
+  };
+  const rereadDraft = () => {
+    if (draftResolutionRef.current) return;
+    draftHydrated.current = false;
+    setDraftApplied(false);
+    setDraftConflict(null);
+    setDraftRestoreError("");
+    setDraftResolutionError("");
+    orderDraft.retryRestore();
+  };
+  const resolveDraft = async (archiveId?: string) => {
+    if (!session.isWritable() || draftResolutionRef.current || savingRef.current || stockBusy)
+      return;
+    if (!archiveId && (!draftConflict?.canStartNew || !orderDraft.writable)) return;
+    const original = draftConflict?.payload;
+    if (!archiveId && !original) return;
+    const confirmed = window.confirm(archiveId
+      ? "恢复此保留草稿？当前有内容的普通草稿会先另行保留，不会覆盖已有备份。"
+      : "原草稿将完整保留在本浏览器，可在业务订单恢复；仅本账号本公司可见，不是跨设备多草稿。确认保留后新建？");
+    if (!confirmed) return;
+    draftResolutionRef.current = true;
+    setDraftResolutionBusy(true);
+    setDraftResolutionError("");
+    suppressDraftWrite.current = true;
+    try {
+      if (archiveId) await orderDraft.restorePreserved(archiveId);
+      else {
+        const next = serializeSalesOrderEntryDraft({
+          customer: null,
+          source: embedded ? "demand" : "company_stock",
+          selectedDemand: null, lines: [], dueDate: "", confirmationNote: "",
+          customerConfirmed: false, pendingRequest: null, company: emptyCompanyStockDraft(),
+        });
+        await orderDraft.replaceOrdinary(original!, next);
+      }
+      if (!session.isWritable()) return;
+      resetEntry();
+      draftPayloadRef.current = null;
+      draftHydrated.current = false;
+      setDraftApplied(false);
+      setDraftConflict(null);
+      setDraftRestoreError("");
+      setEntryOpen(true);
+    } catch (failure) {
+      setDraftResolutionError(failure instanceof Error ? failure.message : "草稿处理未完成，原内容已保留。");
+    } finally {
+      suppressDraftWrite.current = false;
+      draftResolutionRef.current = false;
+      setDraftResolutionBusy(false);
+    }
   };
   useEffect(() => {
     if (listQuery.data && page > totalPages) setPage(totalPages);
@@ -831,6 +911,7 @@ function SalesOrdersContent({
     if (
       !session.isWritable() ||
       savingRef.current ||
+      draftResolutionRef.current ||
       draftRestoreError ||
       (!orderDraft.writable && !orderDraft.canVerifyPending)
     )
@@ -1531,7 +1612,7 @@ function SalesOrdersContent({
       >
         <DialogContent
           className="crm-sales-orders-dialog crm-sales-orders-entry-dialog grid-cols-[minmax(0,1fr)] w-[calc(100vw-32px)] max-h-[92vh] max-w-[1100px] overflow-x-hidden overflow-y-auto p-4 sm:max-w-[1100px]"
-          showCloseButton={!createMutation.isPending && !stockBusy}
+          showCloseButton={!createMutation.isPending && !stockBusy && !draftResolutionBusy}
         >
           <DialogHeader>
             <DialogTitle className="text-base text-slate-800">
@@ -1549,30 +1630,60 @@ function SalesOrdersContent({
             </p>
           )}
           {!orderDraft.restored || draftRestoreError || !orderDraft.writable ? (
-            <div role="alert" className="text-xs text-red-600">
-              {draftRestoreError || orderDraft.notice || "正在读取订单草稿…"}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  draftHydrated.current = false;
-                  setDraftRestoreError("");
-                  orderDraft.retryRestore();
-                }}
-              >
-                重新读取草稿
-              </Button>
-            </div>
+            <section role="alert" aria-label="订单草稿处理" className="min-w-0 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-slate-700">
+              <h3 className="font-semibold text-slate-900">
+                {draftConflict?.title || (draftRestoreError ? "订单草稿暂不能恢复" : !orderDraft.restored ? "正在读取订单草稿" : "订单草稿需要处理")}
+              </h3>
+              <p className="mt-2 leading-6">
+                {draftConflict?.message || draftRestoreError || orderDraft.notice || "请稍候，读取完成后再录入。"}
+              </p>
+              {draftConflict && orderDraft.notice ? <p className="mt-2 text-xs">{orderDraft.notice}</p> : null}
+              <div className="mt-3 flex flex-wrap gap-2">
+                {embedded && draftRestoreError ? (
+                  <Button type="button" className={buttonClass} disabled={draftResolutionBusy}
+                    onClick={() => { if (draftResolutionRef.current) return; requestCloseEntry(); navigate("/orders?orderSource=business"); }}>
+                    {draftConflict && hasLockedSalesOrderDraft(draftConflict.payload) ? "去业务订单核验原请求" : "去业务订单继续草稿"}
+                  </Button>
+                ) : null}
+                {draftConflict?.canStartNew ? (
+                  <Button type="button" variant="outline" className={secondaryButtonClass}
+                    disabled={!canWrite || !orderDraft.writable || draftResolutionBusy}
+                    onClick={() => void resolveDraft()}>
+                    {draftResolutionBusy ? "正在保留草稿…" : "保留原草稿后新建"}
+                  </Button>
+                ) : null}
+                <Button type="button" variant="outline" className={secondaryButtonClass}
+                  disabled={!orderDraft.restored || draftResolutionBusy} onClick={rereadDraft}>
+                  重新读取草稿
+                </Button>
+              </div>
+            </section>
           ) : null}
+          {draftResolutionError ? <p role="alert" className="text-sm text-red-600">{draftResolutionError}</p> : null}
           {orderDraft.notice && orderDraft.writable ? (
             <p role="status" className="text-xs text-slate-500">
               {orderDraft.notice}
             </p>
           ) : null}
+          {!embedded && orderDraft.preservedDrafts.length > 0 ? (
+            <details className="rounded border border-slate-200 p-3 text-xs">
+              <summary className="cursor-pointer font-medium text-slate-700">已保留草稿（仅本浏览器）</summary>
+              <p className="my-2 text-slate-500">恢复前会保留当前普通草稿；不会覆盖原备份，也不会自动提交订单。</p>
+              {orderDraft.preservedDrafts.map(saved => (
+                <div key={saved.archiveId} className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 py-2">
+                  <span>{typeof saved.payload.customer?.name === "string" ? saved.payload.customer.name : "未关联客户"} · {saved.payload.source === "demand" ? "需求采购" : "公司库存"} · {new Date(saved.savedAt).toLocaleString("zh-CN")}</span>
+                  <Button type="button" variant="outline" className={secondaryButtonClass}
+                    disabled={!canWrite || !orderDraft.writable || Boolean(draftRestoreError) || uncertainSave || stockLocked || stockBusy || createMutation.isPending || draftResolutionBusy}
+                    onClick={() => void resolveDraft(saved.archiveId)}>恢复此草稿</Button>
+                </div>
+              ))}
+            </details>
+          ) : null}
+          {!draftRestoreError ? (
           <fieldset
             disabled={
               (!orderDraft.writable && !orderDraft.canVerifyPending) ||
-              Boolean(draftRestoreError)
+              Boolean(draftRestoreError) || draftResolutionBusy
             }
             className="min-w-0 space-y-3"
           >
@@ -1675,7 +1786,7 @@ function SalesOrdersContent({
                     session.isWritable() &&
                     ready &&
                     (orderDraft.writable || orderDraft.canVerifyPending) &&
-                    !draftRestoreError
+                    !draftRestoreError && !draftResolutionBusy
                   }
                   draft={stockDraft}
                   onDraftChange={setStockDraft}
@@ -2055,15 +2166,6 @@ function SalesOrdersContent({
             ) : null}
             {sourceType === "demand" ? (
               <DialogFooter className="crm-order-actions">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className={secondaryButtonClass}
-                  disabled={createMutation.isPending || stockBusy}
-                  onClick={requestCloseEntry}
-                >
-                  收起
-                </Button>
                 {sourceType === "demand" && selectedDemand ? (
                   <Button
                     type="button"
@@ -2095,6 +2197,15 @@ function SalesOrdersContent({
               </DialogFooter>
             ) : null}
           </fieldset>
+          ) : null}
+          {sourceType === "demand" || draftRestoreError ? (
+            <div className="flex justify-end">
+              <Button type="button" variant="outline" className={secondaryButtonClass}
+                disabled={createMutation.isPending || stockBusy || draftResolutionBusy} onClick={requestCloseEntry}>
+                收起
+              </Button>
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
 

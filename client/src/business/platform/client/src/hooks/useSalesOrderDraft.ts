@@ -17,6 +17,13 @@ import {
   validatePendingSalesOrderRequest,
   type StoredSalesOrderDraft,
 } from "../lib/salesOrderDraftStore";
+import {
+  listPreservedSalesOrderDrafts,
+  loadPreservedSalesOrderDraft,
+  preserveSalesOrderDraft,
+  type PreservedSalesOrderDraft,
+} from "../lib/salesOrderDraftArchive";
+import { hasLockedSalesOrderDraft, isUnstartedSalesOrderDraft } from "../lib/salesOrderDraftRecovery";
 
 export function useSalesOrderDraft() {
   const business = useBusinessScope();
@@ -50,6 +57,8 @@ export function useSalesOrderDraft() {
   const [restoreAttempt, setRestoreAttempt] = useState(0);
   const [conflict, setConflict] = useState(false);
   const [canVerifyPending, setCanVerifyPending] = useState(false);
+  const [preservedDrafts, setPreservedDrafts] = useState<PreservedSalesOrderDraft[]>([]);
+  const replacementBusy = useRef(false);
   const setBlocked = useCallback((value: boolean) => {
     blocked.current = value;
     setConflict(value);
@@ -96,11 +105,13 @@ export function useSalesOrderDraft() {
     setInitialPayload(null);
     setRestored(false);
     setNotice("");
+    setPreservedDrafts([]);
   }, [identity, setBlocked]);
   useEffect(() => {
     if (!scope.ready || initialized.current) return;
     const token = ++generation.current;
     const account = identity;
+    setPreservedDrafts(listPreservedSalesOrderDrafts(account));
     void readServer()
       .then(server => {
         if (!isCurrent(account, token)) return;
@@ -378,6 +389,63 @@ export function useSalesOrderDraft() {
     [sync, setBlocked]
   );
 
+  // This is an explicit user operation, not automatic conflict reconciliation.
+  // Keep the full old editable payload first; original sync still owns the exact CAS token.
+  const replaceOrdinary = useCallback(
+    async (expected: SalesOrderDraftPayload | null, next: SalesOrderDraftPayload) => {
+      if (replacementBusy.current) throw new Error("草稿正在处理，请稍候。");
+      const account = live.current.identity;
+      const token = generation.current;
+      const parsed = salesOrderDraftPayloadSchema.parse(next);
+      if (hasLockedSalesOrderDraft(parsed)) throw new Error("不能用备份替换待确认请求。");
+      replacementBusy.current = true;
+      try {
+        if (timer.current) clearTimeout(timer.current);
+        timer.current = undefined;
+        await serial.current.catch(() => undefined);
+        if (!isCurrent(account, token) || !initialized.current) throw identityError();
+        if (blocked.current) throw new Error("草稿版本冲突，请先重新读取，不能开始新单。");
+        const same = (value: SalesOrderDraftPayload | null) =>
+          expected === null ? value === null : value !== null && draftPayloadEqual(value, expected);
+        const local = loadSalesOrderDraft(account);
+        if (!same(latest.current) || (local && !same(local.payload)) ||
+            (expected && hasLockedSalesOrderDraft(expected)) ||
+            (local && hasLockedSalesOrderDraft(local.payload)))
+          throw new Error("草稿或原请求已变化，原内容已保留，请重新读取后处理。");
+        if (expected && !isUnstartedSalesOrderDraft(expected)) {
+          const original = stored.current;
+          if (!original || !draftPayloadEqual(original.payload, expected))
+            throw new Error("无法核验原草稿，请重新读取。");
+          const preserved = preserveSalesOrderDraft(account, original);
+          if (!preserved) throw new Error("无法完整保留原草稿，未开始新单。请启用本地存储或继续原草稿。");
+          setPreservedDrafts(listPreservedSalesOrderDrafts(account));
+        }
+        // No await between the local identity/content check and persist's local write.
+        await persist(parsed, true);
+        if (!isCurrent(account, token)) throw identityError();
+        const after = loadSalesOrderDraft(account);
+        if (!after || !draftPayloadEqual(after.payload, parsed)) {
+          setBlocked(true);
+          setNotice("另一页面草稿已变化，已停止恢复或新建；原草稿备份仍保留。");
+          throw new Error("另一页面草稿已变化，请重新读取后处理。");
+        }
+        setInitialPayload(parsed);
+        setNotice("原草稿已保留在本浏览器，可在业务订单的“已保留草稿”中恢复。");
+      } finally {
+        replacementBusy.current = false;
+      }
+    },
+    [isCurrent, persist, setBlocked]
+  );
+  const restorePreserved = useCallback(
+    async (archiveId: string) => {
+      const saved = loadPreservedSalesOrderDraft(live.current.identity, archiveId);
+      if (!saved) throw new Error("保留草稿无法完整读取，未替换当前草稿。");
+      await replaceOrdinary(latest.current, saved.payload);
+    },
+    [replaceOrdinary]
+  );
+
   const clear = useCallback(
     async (completedPayload?: SalesOrderDraftPayload) => {
       const account = live.current.identity;
@@ -476,5 +544,8 @@ export function useSalesOrderDraft() {
     persist,
     clear,
     retryRestore,
+    replaceOrdinary,
+    restorePreserved,
+    preservedDrafts: stateIdentity === identity ? preservedDrafts : [],
   };
 }
