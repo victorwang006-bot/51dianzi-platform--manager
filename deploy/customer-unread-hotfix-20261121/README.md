@@ -8,4 +8,4 @@
 
 静态发布器保双锁、完整CAS、私有fsync原bytes备份、原子替换、失败精确回退、持久closed回执。前台HTML和两个API为强制no-op，runtime不改、PM2不reload、不执行真实清未读/客户/询价/订单业务测试。源码与native离线fixture使用只读mock和opaque外部组件，未冒称真实登录/像素布局全测。
 
-此提交为已冻结待发布版本；正式结果以随后receipt.json为准。载荷及SSH认证配置只留私有任务工作区，不入Git。
+已于北京时间2026-11-22 00:10:23正式发布VERIFIED；正式结果见receipt.json，发布窗口closed，双锁释放。载荷及SSH认证配置只留私有任务工作区，不入Git。

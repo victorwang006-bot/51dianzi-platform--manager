@@ -1,0 +1,306 @@
+{
+  "scope": "customer-unread-hotfix-20261121-2353",
+  "ownerTask": "ebvPYDkJVIW0yJK27DsOEU",
+  "result": "VERIFIED",
+  "error": null,
+  "targets": [
+    {
+      "path": "/opt/releases/20261031-homepage-banner-v39/front/dist/public/index.html",
+      "side": "front",
+      "kind": "html",
+      "beforeSHA": "c2313f91eeb4a8d696d3cab4f0884cb4028553be9aed12fd725294bbef90028e",
+      "afterSHA": "c2313f91eeb4a8d696d3cab4f0884cb4028553be9aed12fd725294bbef90028e",
+      "size": 705585,
+      "beforeStat": {
+        "st_dev": 66309,
+        "st_ino": 3284095,
+        "st_mode": 33188,
+        "st_uid": 0,
+        "st_gid": 0,
+        "st_nlink": 1,
+        "st_size": 705585,
+        "st_atime_ns": 1795267421384066384,
+        "st_mtime_ns": 1795255611471584514,
+        "st_ctime_ns": 1795267421372066331
+      }
+    },
+    {
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/index.html",
+      "side": "admin",
+      "kind": "html",
+      "beforeSHA": "937b3d0fdc5e220b094617704b14668ed84fc70e71b0ed456c36f679b1ab8dfa",
+      "afterSHA": "2bfcfc535f43f01a11c9d7e666904fe4fa4e8cfea4a19e9f6c4885f4ba3859ce",
+      "size": 868779,
+      "beforeStat": {
+        "st_dev": 66309,
+        "st_ino": 3284127,
+        "st_mode": 33188,
+        "st_uid": 0,
+        "st_gid": 0,
+        "st_nlink": 1,
+        "st_size": 857197,
+        "st_atime_ns": 1795275266453831477,
+        "st_mtime_ns": 1795229478651589523,
+        "st_ctime_ns": 1795275263457818276
+      }
+    },
+    {
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+      "side": "front",
+      "kind": "api",
+      "beforeSHA": "65850e0660fcee0db86f2b8bf959f30b5450576f971599347c0cf69ef617776d",
+      "afterSHA": "65850e0660fcee0db86f2b8bf959f30b5450576f971599347c0cf69ef617776d",
+      "size": 5997347,
+      "beforeStat": {
+        "st_dev": 66309,
+        "st_ino": 3284125,
+        "st_mode": 33188,
+        "st_uid": 0,
+        "st_gid": 0,
+        "st_nlink": 1,
+        "st_size": 5997347,
+        "st_atime_ns": 1795275251049763604,
+        "st_mtime_ns": 1795229365477081787,
+        "st_ctime_ns": 1795275250539761357
+      }
+    },
+    {
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+      "side": "admin",
+      "kind": "api",
+      "beforeSHA": "84bb6eed50d466e54209311d5ec0d70a1cf734b650a00b8d6f658287a5cfa1b9",
+      "afterSHA": "84bb6eed50d466e54209311d5ec0d70a1cf734b650a00b8d6f658287a5cfa1b9",
+      "size": 1634297,
+      "beforeStat": {
+        "st_dev": 66309,
+        "st_ino": 3284126,
+        "st_mode": 33188,
+        "st_uid": 0,
+        "st_gid": 0,
+        "st_nlink": 1,
+        "st_size": 1634297,
+        "st_atime_ns": 1795275260243804115,
+        "st_mtime_ns": 1795172283970699538,
+        "st_ctime_ns": 1795275250547761392
+      }
+    }
+  ],
+  "assets": [
+    {
+      "side": "admin",
+      "url": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "sha256": "792e2858756474bb402383109593bbc591386761656a1fb5ccf6c63d12a96c32",
+      "size": 5546232
+    },
+    {
+      "side": "admin",
+      "url": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "sha256": "6ffe72a5d81423eabfc6040604662ffc92788fa2ec83de4ad2f4f065e5c4278e",
+      "size": 6443859
+    },
+    {
+      "side": "admin",
+      "url": "/assets/customer-unread-hotfix-0cd15c6df7928beb.css",
+      "sha256": "0cd15c6df7928bebd39997c7b2ab33d8acb964926a3197340099ae87101eb11b",
+      "size": 13416
+    }
+  ],
+  "runtimes": [],
+  "input": {
+    "path": "/opt/ops/.customer-unread-hotfix-input-d23a94dc34fbad34a67fba8eeb8c54df.json",
+    "sha256": "2843e142d4a0554f601c0cb3919700196667518c07ba2d3a9a3f39981b1db15f",
+    "size": 17168045,
+    "stat": {
+      "st_dev": 66309,
+      "st_ino": 2812211,
+      "st_mode": 33152,
+      "st_uid": 0,
+      "st_gid": 0,
+      "st_nlink": 1,
+      "st_size": 17168045,
+      "st_atime_ns": 1795277384058128422,
+      "st_mtime_ns": 1795277384058128422,
+      "st_ctime_ns": 1795277384058128422
+    },
+    "source": "pre-staged SFTP file; not stdin"
+  },
+  "publicGETLedger": [
+    {
+      "url": "https://51dianzi.com/api/trpc/factoryChannel.list?input=%7B%22json%22%3A%7B%22query%22%3A%22STM32%22%2C%22pricedOnly%22%3Afalse%2C%22sort%22%3A%22recent%22%2C%22limit%22%3A1%2C%22offset%22%3A0%7D%7D",
+      "method": "GET",
+      "status": 200,
+      "sha256": "5ca2877ec6b369c33a7d90c1704b40a76b897f066396fce116d7ad780612faf2",
+      "size": 77,
+      "authenticated": false,
+      "check": "factoryChannel.list read-only"
+    },
+    {
+      "url": "https://51dianzi.com/api/trpc/factoryChannel.list?input=%7B%22json%22%3A%7B%22query%22%3A%22STM32%22%2C%22pricedOnly%22%3Afalse%2C%22sort%22%3A%22recent%22%2C%22limit%22%3A1%2C%22offset%22%3A0%7D%7D",
+      "method": "GET",
+      "status": 200,
+      "sha256": "5ca2877ec6b369c33a7d90c1704b40a76b897f066396fce116d7ad780612faf2",
+      "size": 77,
+      "authenticated": false,
+      "check": "factoryChannel.list read-only"
+    },
+    {
+      "url": "https://51dianzi.com/api/trpc/factoryChannel.list?input=%7B%22json%22%3A%7B%22query%22%3A%22STM32%22%2C%22pricedOnly%22%3Afalse%2C%22sort%22%3A%22recent%22%2C%22limit%22%3A1%2C%22offset%22%3A0%7D%7D",
+      "method": "GET",
+      "status": 200,
+      "sha256": "5ca2877ec6b369c33a7d90c1704b40a76b897f066396fce116d7ad780612faf2",
+      "size": 77,
+      "authenticated": false,
+      "check": "factoryChannel.list read-only"
+    },
+    {
+      "url": "https://51dianzi.com/",
+      "method": "GET",
+      "status": 200,
+      "sha256": "c2313f91eeb4a8d696d3cab4f0884cb4028553be9aed12fd725294bbef90028e",
+      "size": 705585,
+      "authenticated": false
+    },
+    {
+      "url": "https://51dianzi.com/search",
+      "method": "GET",
+      "status": 200,
+      "sha256": "c2313f91eeb4a8d696d3cab4f0884cb4028553be9aed12fd725294bbef90028e",
+      "size": 705585,
+      "authenticated": false
+    },
+    {
+      "url": "https://admin.51dianzi.com/",
+      "method": "GET",
+      "status": 200,
+      "sha256": "2bfcfc535f43f01a11c9d7e666904fe4fa4e8cfea4a19e9f6c4885f4ba3859ce",
+      "size": 868779,
+      "authenticated": false
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "method": "GET",
+      "status": 200,
+      "sha256": "792e2858756474bb402383109593bbc591386761656a1fb5ccf6c63d12a96c32",
+      "size": 5546232,
+      "authenticated": false
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "method": "GET",
+      "status": 200,
+      "sha256": "6ffe72a5d81423eabfc6040604662ffc92788fa2ec83de4ad2f4f065e5c4278e",
+      "size": 6443859,
+      "authenticated": false
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/customer-unread-hotfix-0cd15c6df7928beb.css",
+      "method": "GET",
+      "status": 200,
+      "sha256": "0cd15c6df7928bebd39997c7b2ab33d8acb964926a3197340099ae87101eb11b",
+      "size": 13416,
+      "authenticated": false
+    },
+    {
+      "url": "https://admin.51dianzi.com/api/trpc/newInformation.unreadRefs?input=%7B%22json%22%3A%7B%22module%22%3A%22customers%22%7D%7D",
+      "method": "GET",
+      "status": 403,
+      "sha256": "c2ab95388e0cd0b3bdfc5fef91a7e3b84c92bb274cc12d45470708f595926409",
+      "size": 218,
+      "authenticated": false,
+      "check": "newInformation.unreadRefs unauthenticated read-only auth gate only",
+      "notFunctionalUnreadValidation": true
+    }
+  ],
+  "immutableLedger": [
+    {
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "kind": "asset",
+      "sha256": "792e2858756474bb402383109593bbc591386761656a1fb5ccf6c63d12a96c32",
+      "created": true
+    },
+    {
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "kind": "asset",
+      "sha256": "6ffe72a5d81423eabfc6040604662ffc92788fa2ec83de4ad2f4f065e5c4278e",
+      "created": true
+    },
+    {
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-unread-hotfix-0cd15c6df7928beb.css",
+      "kind": "asset",
+      "sha256": "0cd15c6df7928bebd39997c7b2ab33d8acb964926a3197340099ae87101eb11b",
+      "created": true
+    }
+  ],
+  "processLedger": [
+    {
+      "phase": "apply",
+      "processes": [
+        {
+          "name": "dianzi51",
+          "pid": 2146861,
+          "id": 190,
+          "status": "online",
+          "entry": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js"
+        },
+        {
+          "name": "dianzi51-admin",
+          "pid": 2146928,
+          "id": 191,
+          "status": "online",
+          "entry": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js"
+        },
+        {
+          "name": "dianzi51-admin",
+          "pid": 2146942,
+          "id": 192,
+          "status": "online",
+          "entry": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js"
+        },
+        {
+          "name": "dianzi51",
+          "pid": 2146862,
+          "id": 193,
+          "status": "online",
+          "entry": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js"
+        },
+        {
+          "name": "dianzi51",
+          "pid": 2146892,
+          "id": 194,
+          "status": "online",
+          "entry": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js"
+        },
+        {
+          "name": "dianzi51",
+          "pid": 2146893,
+          "id": 200,
+          "status": "online",
+          "entry": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js"
+        }
+      ]
+    }
+  ],
+  "businessTestWrites": 0,
+  "zeroBusinessTestWrites": true,
+  "databaseWriteGuarantee": "NOT_ASSERTED: application startup/reload may perform database writes",
+  "verificationLimitations": "unreadRefs is unauthenticated auth-gate GET only; no authenticated unread/markDisplayed tests",
+  "changedTargets": [
+    "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/index.html"
+  ],
+  "attemptedTargets": [
+    "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/index.html"
+  ],
+  "unchangedTargets": [
+    "/opt/releases/20261031-homepage-banner-v39/front/dist/public/index.html",
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js"
+  ],
+  "apiReloadGroups": [],
+  "apiReloadLedger": [],
+  "rollbackVerified": false,
+  "backupDirectory": "/opt/ops/customer-unread-hotfix-20261121-2353",
+  "windowOpened": true,
+  "closed": true,
+  "coordFinalSHA": "e282053fb202ce50c9491e3f12ac0a70878d5e17b405db4c2239a9ae3f508c37",
+  "finishedAtUtc": "2026-11-21T16:10:23.865287+00:00"
+}
