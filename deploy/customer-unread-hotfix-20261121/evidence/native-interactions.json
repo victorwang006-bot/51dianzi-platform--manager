@@ -1,0 +1,1652 @@
+{
+  "status": "PASS_FULL_NATIVE_FUNCTION",
+  "limits": [
+    "Only parent native list functions execute; imported components are opaque JSX objects.",
+    "TRPC and unread hooks are readonly mock responses, not actual backend authorization tests.",
+    "Full native useEffect callbacks execute; actual DOM/React renderer does not."
+  ],
+  "workbenches": [
+    {
+      "wb": 0,
+      "source": {
+        "file": "/home/ubuntu/work/customer-unread-hotfix-20261121-2353/candidate/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+        "functionName": "Jw",
+        "byteOffset": 2287476,
+        "charOffset": 2246703,
+        "line": 315,
+        "functionBytes": 34800,
+        "bundleSHA256": "792e2858756474bb402383109593bbc591386761656a1fb5ccf6c63d12a96c32",
+        "functionSHA256": "9d35bbabcea0041bdc7e22abe7bc5fcb1a0ddebae1cc611189f723628545ade3",
+        "module": "production top-level Jw",
+        "unmodifiedFunction": true
+      },
+      "status": "PASS_FULL_NATIVE_FUNCTION",
+      "states": [
+        {
+          "step": "unchecked",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": false,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 3,
+            "pageSize": 20
+          },
+          "rowIds": [
+            11,
+            12
+          ],
+          "nativeObservedRows": [
+            11,
+            12
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:11",
+              "customer:12"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": false,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 83,
+          "renderCount": 2,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "checked-pending-stale-cache",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": false,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": []
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 0,
+          "renderCount": 4,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "ids-ready-list-pending",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 0,
+          "renderCount": 6,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "success",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [
+            22,
+            24
+          ],
+          "nativeObservedRows": [
+            22,
+            24
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:22",
+              "customer:24"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 5,
+          "renderCount": 8,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "server-narrowing-violation",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "renderCount": 10,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "narrowing-retry-pending",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": false,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": []
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 0,
+          "renderCount": 12,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "true-empty-stale-cache",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": false,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": []
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 0,
+          "renderCount": 13,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "unread-failed-stale-cache",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": false,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": []
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "renderCount": 14,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "unread-retry-pending",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": false,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": []
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 0,
+          "renderCount": 15,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "retry-success",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [
+            22,
+            24
+          ],
+          "nativeObservedRows": [
+            22,
+            24
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:22",
+              "customer:24"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 5,
+          "renderCount": 17,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "unread-row-verification-failure",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [
+            22,
+            24
+          ],
+          "nativeObservedRows": [
+            22,
+            24
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:22",
+              "customer:24"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 5,
+          "renderCount": 18,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "unread-row-retry-success",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [
+            22,
+            24
+          ],
+          "nativeObservedRows": [
+            22,
+            24
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:22",
+              "customer:24"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 5,
+          "renderCount": 19,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "foreign-enterprise-result",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 0,
+          "renderCount": 21,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "foreign-recovery",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [
+            22,
+            24
+          ],
+          "nativeObservedRows": [
+            22,
+            24
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:22",
+              "customer:24"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 5,
+          "renderCount": 23,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "list-failure-stale-data",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "renderCount": 25,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "cancel",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": false,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20
+          },
+          "rowIds": [
+            11,
+            12
+          ],
+          "nativeObservedRows": [
+            11,
+            12
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:11",
+              "customer:12"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": false,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 83,
+          "renderCount": 29,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        }
+      ]
+    },
+    {
+      "wb": 1,
+      "source": {
+        "file": "/home/ubuntu/work/customer-unread-hotfix-20261121-2353/candidate/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+        "functionName": "vt",
+        "byteOffset": 3976472,
+        "charOffset": 3898970,
+        "line": 799,
+        "functionBytes": 31532,
+        "bundleSHA256": "6ffe72a5d81423eabfc6040604662ffc92788fa2ec83de4ad2f4f065e5c4278e",
+        "functionSHA256": "96691714a5f310c6bbbe53a51b91293efccb33b29cbcc32f6d50cbd09f59d709",
+        "module": "__CW_CUSTOMER_LIST_UPDATED_20261116_GET",
+        "unmodifiedFunction": true
+      },
+      "status": "PASS_FULL_NATIVE_FUNCTION",
+      "states": [
+        {
+          "step": "unchecked",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": false,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 3,
+            "pageSize": 20
+          },
+          "rowIds": [
+            11,
+            12
+          ],
+          "nativeObservedRows": [
+            11,
+            12
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:11",
+              "customer:12"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": false,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 83,
+          "renderCount": 3,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "checked-pending-stale-cache",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": false,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": []
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "renderCount": 5,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "ids-ready-list-pending",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "renderCount": 7,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "success",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [
+            22,
+            24
+          ],
+          "nativeObservedRows": [
+            22,
+            24
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:22",
+              "customer:24"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 5,
+          "renderCount": 9,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "server-narrowing-violation",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "renderCount": 11,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "narrowing-retry-pending",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": false,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": []
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "renderCount": 13,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "true-empty-stale-cache",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": false,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": []
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "renderCount": 14,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "unread-failed-stale-cache",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": false,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": []
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "renderCount": 15,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "unread-retry-pending",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": false,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": []
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "renderCount": 16,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "retry-success",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [
+            22,
+            24
+          ],
+          "nativeObservedRows": [
+            22,
+            24
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:22",
+              "customer:24"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 5,
+          "renderCount": 18,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "unread-row-verification-failure",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [
+            22,
+            24
+          ],
+          "nativeObservedRows": [
+            22,
+            24
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:22",
+              "customer:24"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 5,
+          "renderCount": 19,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "unread-row-retry-success",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [
+            22,
+            24
+          ],
+          "nativeObservedRows": [
+            22,
+            24
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:22",
+              "customer:24"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 5,
+          "renderCount": 20,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "foreign-enterprise-result",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "renderCount": 22,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "foreign-recovery",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [
+            22,
+            24
+          ],
+          "nativeObservedRows": [
+            22,
+            24
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:22",
+              "customer:24"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 5,
+          "renderCount": 24,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "list-failure-stale-data",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "renderCount": 26,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "cancel",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": false,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20
+          },
+          "rowIds": [
+            11,
+            12
+          ],
+          "nativeObservedRows": [
+            11,
+            12
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:11",
+              "customer:12"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": false,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 83,
+          "renderCount": 30,
+          "mutations": 0,
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        }
+      ]
+    }
+  ]
+}

@@ -772,6 +772,11 @@ export default function CustomerList() {
             </SelectContent>
           </Select>
           <div className="customer-list-filter-actions">
+            <label className="customer-list-unread-filter" title="打开客户详情后确认已读，列表浏览不会清除">
+              <input type="checkbox" aria-label="只看未读" aria-description="打开客户详情后确认已读，列表浏览不会清除"
+                checked={unreadOnly} onChange={event => { setUnreadOnly(event.target.checked); setPage(1); }} />
+              <span>只看未读</span>
+            </label>
             <Button
               type="button"
               variant="outline"
@@ -805,14 +810,6 @@ export default function CustomerList() {
             </Button>
           </div>
       </CompactListToolbar>
-
-      <div className="customer-list-unread-controls">
-        <label className="customer-list-unread-filter">
-          <input type="checkbox" checked={unreadOnly} onChange={event => { setUnreadOnly(event.target.checked); setPage(1); }} />
-          <span>只看未读</span>
-        </label>
-        <span className="customer-list-caption">打开客户详情后确认已读，列表浏览不会清除</span>
-      </div>
 
       {newInformationRows.query.isError && newInformationListReady ? <div role="alert" className="customer-list-error mb-2">
         未读标识核验失败，未读提醒不会被清除。
@@ -908,7 +905,8 @@ export default function CustomerList() {
             </div>
           ) : (
             <div ref={tableRegionRef} className="customer-list-table-scroll" data-page-memory-scroll="customer-list-table" role="region" tabIndex={0} aria-label="客户列表，可横向滚动查看全部列">
-            <Table className="admin-table-readable customer-list-table" containerClassName="customer-list-table-inner" aria-label="客户列表">
+            <Table className="admin-table-readable customer-list-table" containerClassName="customer-list-table-inner" aria-label="客户列表"
+              style={{ minWidth: `calc(${Math.max(30, ...displayedCustomerRows.map(customer => (customer.name?.trim() || "未命名客户").length + 4))}em + 1108px)` }}>
               <colgroup>
                 <col className="customer-list-col-name" />
                 <col className="customer-list-col-industry" />

@@ -1,0 +1,756 @@
+{
+  "scope": "customer-unread-hotfix-20261121-2353",
+  "sourcePins": {
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/CustomerList.tsx": "4f60934fbd9c1d39d2dca6ee150109fa4f273fb9565619bb7902781a3b7d3038",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/CustomerList.css": "a1390983c87be6bd8452bdde075fedd5ec774c2c1f3a0a1dc8307a19c0025852"
+  },
+  "html": {
+    "local": "/home/ubuntu/work/customer-unread-hotfix-20261121-2353/candidate/index.html",
+    "beforeSHA": "937b3d0fdc5e220b094617704b14668ed84fc70e71b0ed456c36f679b1ab8dfa",
+    "afterSHA": "2bfcfc535f43f01a11c9d7e666904fe4fa4e8cfea4a19e9f6c4885f4ba3859ce",
+    "size": 868779
+  },
+  "assets": [
+    {
+      "side": "admin",
+      "url": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "local": "/home/ubuntu/work/customer-unread-hotfix-20261121-2353/candidate/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "sha256": "792e2858756474bb402383109593bbc591386761656a1fb5ccf6c63d12a96c32",
+      "size": 5546232
+    },
+    {
+      "side": "admin",
+      "url": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "local": "/home/ubuntu/work/customer-unread-hotfix-20261121-2353/candidate/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "sha256": "6ffe72a5d81423eabfc6040604662ffc92788fa2ec83de4ad2f4f065e5c4278e",
+      "size": 6443859
+    },
+    {
+      "side": "admin",
+      "url": "/assets/customer-unread-hotfix-0cd15c6df7928beb.css",
+      "local": "/home/ubuntu/work/customer-unread-hotfix-20261121-2353/candidate/assets/customer-unread-hotfix-0cd15c6df7928beb.css",
+      "sha256": "0cd15c6df7928bebd39997c7b2ab33d8acb964926a3197340099ae87101eb11b",
+      "size": 13416
+    }
+  ],
+  "modules": [
+    {
+      "index": 0,
+      "url": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "afterURL": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "beforeSHA": "30effd9ea32def6273e25ec4e557527a0d1932fb1d1e09303739f75768d918dc",
+      "afterSHA": "792e2858756474bb402383109593bbc591386761656a1fb5ccf6c63d12a96c32",
+      "local": "/home/ubuntu/work/customer-unread-hotfix-20261121-2353/candidate/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "patchCount": 4
+    },
+    {
+      "index": 1,
+      "url": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "afterURL": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "beforeSHA": "53fe6b444a4b67757285e705468dd452439a5394784a80b53454da4189e6d0ce",
+      "afterSHA": "6ffe72a5d81423eabfc6040604662ffc92788fa2ec83de4ad2f4f065e5c4278e",
+      "local": "/home/ubuntu/work/customer-unread-hotfix-20261121-2353/candidate/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "patchCount": 4
+    }
+  ],
+  "cssURL": "/assets/customer-unread-hotfix-0cd15c6df7928beb.css",
+  "replacements": {
+    "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+    "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js"
+  },
+  "resolutions": [
+    {
+      "from": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "to": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "spec": "/assets/AdminNewInformation-admin-polish-runtime-67feeba8e334ea18.js",
+      "before": "/assets/AdminNewInformation-admin-polish-runtime-67feeba8e334ea18.js",
+      "after": "/assets/AdminNewInformation-admin-polish-runtime-67feeba8e334ea18.js"
+    },
+    {
+      "from": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "to": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "spec": "./index-8jluR_FO.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-new-information-fa1a2d10a628ef49.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-new-information-fa1a2d10a628ef49.js"
+    },
+    {
+      "from": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "to": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "spec": "/assets/BusinessWorkbenchPage-inquiry-reception-1-1db2f6d03b11ad8d376113ca82af755197612b2da4f5bcf36f2b4edfd311ebe8.js",
+      "before": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "after": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js"
+    },
+    {
+      "from": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "to": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "spec": "/assets/admin-list-location-db1bfac861e62ccff0feefed4e69f00deeb4ac329b22c41164e38f24f589a0f9.js",
+      "before": "/assets/admin-list-location-reception-experience-a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c.js",
+      "after": "/assets/admin-list-location-reception-experience-a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c.js"
+    },
+    {
+      "from": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "to": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "spec": "./index-CKHSh4Pc.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./schemas-CWwXnU9Q.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/schemas-CWwXnU9Q.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/schemas-CWwXnU9Q.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "/assets/DashboardLayout-new-information-614fc7a8233f9caa.js",
+      "before": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "after": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-navigation-bb20946d992bbfe5.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-new-information-fa1a2d10a628ef49.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-new-information-fa1a2d10a628ef49.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+      "before": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+      "after": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./index-8jluR_FO.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-new-information-fa1a2d10a628ef49.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-new-information-fa1a2d10a628ef49.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./DashboardLayout-DfHnpqnr.js",
+      "before": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "after": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./index-h_rcmx-z.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-h_rcmx-z.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-h_rcmx-z.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./index-Dp3hShr1.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-Dp3hShr1.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-Dp3hShr1.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./index-CisAFFfx.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CisAFFfx.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CisAFFfx.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./message-square-text-GdNyWu3Q.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/message-square-text-GdNyWu3Q.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/message-square-text-GdNyWu3Q.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./search-ONoaRAKt.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/search-ONoaRAKt.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/search-ONoaRAKt.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./circle-check-CAy1Bkqq.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-check-CAy1Bkqq.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-check-CAy1Bkqq.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./arrow-left-DuEH-89r.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/arrow-left-DuEH-89r.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/arrow-left-DuEH-89r.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./index-DqlifW_A.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DqlifW_A.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DqlifW_A.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./shield-check-B59sBzA-.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/shield-check-B59sBzA-.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/shield-check-B59sBzA-.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./loader-circle-DDYTq62H.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/loader-circle-DDYTq62H.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/loader-circle-DDYTq62H.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./erpPermissions-Bcn5P1RI.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/erpPermissions-Bcn5P1RI.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/erpPermissions-Bcn5P1RI.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./plus-C6siVq_e.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/plus-C6siVq_e.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/plus-C6siVq_e.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./index-gJJ31_w6.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-gJJ31_w6.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-gJJ31_w6.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./eye-off-CBKi_Y5_.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-off-CBKi_Y5_.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-off-CBKi_Y5_.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./eye-CS62Zv12.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-CS62Zv12.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-CS62Zv12.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./index-mySplTih.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-mySplTih.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-mySplTih.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./smartphone-BabCZhFc.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/smartphone-BabCZhFc.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/smartphone-BabCZhFc.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./mail-rvpPVrVf.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/mail-rvpPVrVf.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/mail-rvpPVrVf.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./chevron-right-56l-KeF7.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/chevron-right-56l-KeF7.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/chevron-right-56l-KeF7.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./package-search-ke879jHo.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/package-search-ke879jHo.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/package-search-ke879jHo.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./external-link-D3MS9--y.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/external-link-D3MS9--y.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/external-link-D3MS9--y.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./history-BAScZM1B.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/history-BAScZM1B.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/history-BAScZM1B.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./image-DNUpEWRy.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-DNUpEWRy.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-DNUpEWRy.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./trash-2-DVhh5q4W.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/trash-2-DVhh5q4W.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/trash-2-DVhh5q4W.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./image-plus-CuQLYUMM.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-plus-CuQLYUMM.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-plus-CuQLYUMM.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./index-BRp97hgM.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BRp97hgM.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BRp97hgM.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./circle-alert-C1oJk8wR.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-alert-C1oJk8wR.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-alert-C1oJk8wR.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./upload-BaIvfghc.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/upload-BaIvfghc.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/upload-BaIvfghc.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./pencil-CsXmiusw.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/pencil-CsXmiusw.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/pencil-CsXmiusw.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./UnifiedAdminPage-DIGRdaLW.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/UnifiedAdminPage-DIGRdaLW-composition-abc8f7f14e045c782d481b058b0f15693c62b0011a09cac9893a71ab97fd8fab.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/UnifiedAdminPage-DIGRdaLW-composition-abc8f7f14e045c782d481b058b0f15693c62b0011a09cac9893a71ab97fd8fab.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./index-xO4YaSX1.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-xO4YaSX1.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-xO4YaSX1.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./calendar-days-Cyfs5g15.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/calendar-days-Cyfs5g15.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/calendar-days-Cyfs5g15.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./file-spreadsheet-DJvw3VPN.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/file-spreadsheet-DJvw3VPN.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/file-spreadsheet-DJvw3VPN.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./refresh-cw-BXprVxBP.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/refresh-cw-BXprVxBP.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/refresh-cw-BXprVxBP.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./download-DjbzCqGn.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/download-DjbzCqGn.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/download-DjbzCqGn.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./index-CKHSh4Pc.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./index-DgUTVUJa.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DgUTVUJa.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DgUTVUJa.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "./xlsx-DGuHH-KN.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+      "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./schemas-CWwXnU9Q.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/schemas-CWwXnU9Q.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/schemas-CWwXnU9Q.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "/assets/DashboardLayout-new-information-614fc7a8233f9caa.js",
+      "before": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "after": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "/assets/MallMaterials-self-operated-v7-1f0ce7708e04e2c6.js",
+      "before": "/assets/MallMaterials-conflict-v9-6a31c8196c46c05f.js",
+      "after": "/assets/MallMaterials-conflict-v9-6a31c8196c46c05f.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-navigation-bb20946d992bbfe5.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-new-information-fa1a2d10a628ef49.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-new-information-fa1a2d10a628ef49.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+      "before": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+      "after": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./index-8jluR_FO.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-new-information-fa1a2d10a628ef49.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-new-information-fa1a2d10a628ef49.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./DashboardLayout-DfHnpqnr.js",
+      "before": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "after": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./index-h_rcmx-z.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-h_rcmx-z.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-h_rcmx-z.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./index-Dp3hShr1.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-Dp3hShr1.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-Dp3hShr1.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./index-CisAFFfx.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CisAFFfx.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CisAFFfx.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./message-square-text-GdNyWu3Q.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/message-square-text-GdNyWu3Q.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/message-square-text-GdNyWu3Q.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./search-ONoaRAKt.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/search-ONoaRAKt.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/search-ONoaRAKt.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./circle-check-CAy1Bkqq.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-check-CAy1Bkqq.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-check-CAy1Bkqq.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./arrow-left-DuEH-89r.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/arrow-left-DuEH-89r.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/arrow-left-DuEH-89r.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./index-DqlifW_A.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DqlifW_A.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DqlifW_A.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./shield-check-B59sBzA-.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/shield-check-B59sBzA-.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/shield-check-B59sBzA-.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./loader-circle-DDYTq62H.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/loader-circle-DDYTq62H.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/loader-circle-DDYTq62H.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./erpPermissions-Bcn5P1RI.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/erpPermissions-Bcn5P1RI.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/erpPermissions-Bcn5P1RI.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./plus-C6siVq_e.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/plus-C6siVq_e.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/plus-C6siVq_e.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./index-gJJ31_w6.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-gJJ31_w6.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-gJJ31_w6.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./eye-off-CBKi_Y5_.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-off-CBKi_Y5_.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-off-CBKi_Y5_.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./eye-CS62Zv12.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-CS62Zv12.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-CS62Zv12.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./index-mySplTih.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-mySplTih.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-mySplTih.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./smartphone-BabCZhFc.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/smartphone-BabCZhFc.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/smartphone-BabCZhFc.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./mail-rvpPVrVf.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/mail-rvpPVrVf.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/mail-rvpPVrVf.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./chevron-right-56l-KeF7.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/chevron-right-56l-KeF7.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/chevron-right-56l-KeF7.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./package-search-ke879jHo.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/package-search-ke879jHo.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/package-search-ke879jHo.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./external-link-D3MS9--y.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/external-link-D3MS9--y.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/external-link-D3MS9--y.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./history-BAScZM1B.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/history-BAScZM1B.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/history-BAScZM1B.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./image-DNUpEWRy.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-DNUpEWRy.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-DNUpEWRy.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./trash-2-DVhh5q4W.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/trash-2-DVhh5q4W.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/trash-2-DVhh5q4W.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./image-plus-CuQLYUMM.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-plus-CuQLYUMM.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-plus-CuQLYUMM.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./index-BRp97hgM.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BRp97hgM.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BRp97hgM.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./circle-alert-C1oJk8wR.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-alert-C1oJk8wR.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-alert-C1oJk8wR.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./upload-BaIvfghc.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/upload-BaIvfghc.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/upload-BaIvfghc.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./pencil-CsXmiusw.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/pencil-CsXmiusw.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/pencil-CsXmiusw.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./UnifiedAdminPage-DIGRdaLW.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/UnifiedAdminPage-DIGRdaLW-composition-abc8f7f14e045c782d481b058b0f15693c62b0011a09cac9893a71ab97fd8fab.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/UnifiedAdminPage-DIGRdaLW-composition-abc8f7f14e045c782d481b058b0f15693c62b0011a09cac9893a71ab97fd8fab.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./index-xO4YaSX1.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-xO4YaSX1.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-xO4YaSX1.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./calendar-days-Cyfs5g15.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/calendar-days-Cyfs5g15.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/calendar-days-Cyfs5g15.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./file-spreadsheet-DJvw3VPN.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/file-spreadsheet-DJvw3VPN.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/file-spreadsheet-DJvw3VPN.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./refresh-cw-BXprVxBP.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/refresh-cw-BXprVxBP.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/refresh-cw-BXprVxBP.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./download-DjbzCqGn.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/download-DjbzCqGn.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/download-DjbzCqGn.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./index-CKHSh4Pc.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./index-DgUTVUJa.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DgUTVUJa.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DgUTVUJa.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "./xlsx-DGuHH-KN.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js"
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "to": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+      "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js"
+    }
+  ],
+  "checks": {
+    "fullHTMLInverse": true,
+    "allNonTargetAliasesPreserved": true,
+    "sameReactQueryTRPCBusinessScope": true,
+    "frontHTMLAPIsRuntimeNoChanges": true,
+    "noPM2ReloadRequired": true,
+    "onlyActualCustomerListSlots": true,
+    "companySingleLineAndActionsComplete": true
+  },
+  "tests": {
+    "status": "PASS",
+    "sourceTests": 18,
+    "nativeStates": 32,
+    "nativeReport": "/home/ubuntu/work/customer-unread-hotfix-20261121-2353/tests/native-candidate-report.json",
+    "nativeLimits": [
+      "Only parent native list functions execute; imported components are opaque JSX objects.",
+      "TRPC and unread hooks are readonly mock responses, not actual backend authorization tests.",
+      "Full native useEffect callbacks execute; actual DOM/React renderer does not."
+    ],
+    "sourceLog": "/home/ubuntu/work/customer-unread-hotfix-20261121-2353/test-source-final.log"
+  }
+}

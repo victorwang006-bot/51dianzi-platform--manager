@@ -1,0 +1,33 @@
+{
+  "freeze": {
+    "CustomerList.tsx": {
+      "path": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/CustomerList.tsx",
+      "sha256": "4f60934fbd9c1d39d2dca6ee150109fa4f273fb9565619bb7902781a3b7d3038"
+    },
+    "CustomerList.css": {
+      "path": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/CustomerList.css",
+      "sha256": "a1390983c87be6bd8452bdde075fedd5ec774c2c1f3a0a1dc8307a19c0025852"
+    }
+  },
+  "unread": {
+    "parentSelector": ".customer-list-page .d51-compact-list-toolbar__filters .customer-list-filter-actions",
+    "checkboxSelector": ".customer-list-page .customer-list-filter-actions .customer-list-unread-filter input[type=\"checkbox\"][aria-label=\"只看未读\"]",
+    "position": "搜索按钮前，同原搜索/重置/更多筛选功能栏",
+    "removeOldWrapper": ".customer-list-unread-controls",
+    "jsx": "            <label className=\"customer-list-unread-filter\" title=\"打开客户详情后确认已读，列表浏览不会清除\">\n              <input type=\"checkbox\" aria-label=\"只看未读\" aria-description=\"打开客户详情后确认已读，列表浏览不会清除\"\n                checked={unreadOnly} onChange={event => { setUnreadOnly(event.target.checked); setPage(1); }} />\n              <span>只看未读</span>\n            </label>"
+  },
+  "table": {
+    "selector": ".customer-list-page .customer-list-table",
+    "minWidthJsx": "style={{ minWidth: `calc(${Math.max(30, ...displayedCustomerRows.map(customer => (customer.name?.trim() || \"未命名客户\").length + 4))}em + 1108px)` }}>",
+    "minWidthExplanation": "30em保底（字体12px时360px）或本页最长公司名UTF16长度+4em留出星标/间隙/单元格padding，另1108px为其余固定七列总宽。固定布局唯一姓名col width:auto承接增长，供需/跟进宽不扩张。",
+    "companyTitleChanged": false,
+    "sourceActionsLabels": [
+      "上传物料表",
+      "查看库存（数量）",
+      "需求录入",
+      "跟进"
+    ],
+    "nativeLabelNote": "源并无上传/查看商机文案，请保留真实native文案与事件，只同步局部布局。"
+  },
+  "cssAppend": "/home/ubuntu/work/customer-unread-hotfix-20261121-2353/customer-unread-and-table.append.css"
+}

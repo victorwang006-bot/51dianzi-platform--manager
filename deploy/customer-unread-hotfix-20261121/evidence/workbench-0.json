@@ -1,0 +1,53 @@
+{
+  "index": 0,
+  "beforeURL": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+  "beforeSHA": "30effd9ea32def6273e25ec4e557527a0d1932fb1d1e09303739f75768d918dc",
+  "afterURL": "/assets/BusinessWorkbenchPage-unread-hotfix-792e2858756474bb.js",
+  "afterSHA": "792e2858756474bb402383109593bbc591386761656a1fb5ccf6c63d12a96c32",
+  "patches": [
+    {
+      "start": 2250116,
+      "end": 2250402,
+      "reason": "unavailable result is undefined, never false; retain original native authorization/cache conditional",
+      "afterStart": 2250116,
+      "afterEnd": 2250410,
+      "beforeBase64": "X19hcFVucmVhZENhblF1ZXJ5JiYhX19hcFVucmVhZE5hcnJvd2luZ0ZhaWxlZCYmKHMmJmwucmVhZHkmJiFyLmlzUGVuZGluZyYmIXIuaXNFcnJvciYmIUYuaXNFcnJvciYmKFUuc3RhcnJlZE9ubHkhPT0hMHx8Ry5yZWFkeSkmJkYuZGF0YT8uaXRlbXMuZXZlcnkoRD0+RC5lbnRlcnByaXNlSWQ9PT1sLnNjb3BlPy5lbnRlcnByaXNlSWQmJihELnN0YXJVc2VySWQ9PT12b2lkIDB8fEQuc3RhclVzZXJJZD09PW51bGx8fEQuc3RhclVzZXJJZD09PUQuYXNzaWduZWRVc2VySWQpKT9GLmRhdGE6dm9pZCAwKQ==",
+      "afterBase64": "KF9fYXBVbnJlYWRDYW5RdWVyeSYmIV9fYXBVbnJlYWROYXJyb3dpbmdGYWlsZWQpPyhzJiZsLnJlYWR5JiYhci5pc1BlbmRpbmcmJiFyLmlzRXJyb3ImJiFGLmlzRXJyb3ImJihVLnN0YXJyZWRPbmx5IT09ITB8fEcucmVhZHkpJiZGLmRhdGE/Lml0ZW1zLmV2ZXJ5KEQ9PkQuZW50ZXJwcmlzZUlkPT09bC5zY29wZT8uZW50ZXJwcmlzZUlkJiYoRC5zdGFyVXNlcklkPT09dm9pZCAwfHxELnN0YXJVc2VySWQ9PT1udWxsfHxELnN0YXJVc2VySWQ9PT1ELmFzc2lnbmVkVXNlcklkKSk/Ri5kYXRhOnZvaWQgMCk6dm9pZCAw"
+    },
+    {
+      "start": 2256122,
+      "end": 2256789,
+      "reason": "remove separate unread row only, preserve inspection retry",
+      "afterStart": 2256130,
+      "afterEnd": 2256130,
+      "beforeBase64": "ZS5qc3hzKCJkaXYiLCB7IGNsYXNzTmFtZTogImN1c3RvbWVyLWxpc3QtdW5yZWFkLWNvbnRyb2xzIiwgY2hpbGRyZW46IFsKICAgICAgICBlLmpzeHMoImxhYmVsIiwgeyBjbGFzc05hbWU6ICJjdXN0b21lci1saXN0LXVucmVhZC1maWx0ZXIiLCBjaGlsZHJlbjogWwogICAgICAgICAgICAgICAgZS5qc3goImlucHV0IiwgeyB0eXBlOiAiY2hlY2tib3giLCBjaGVja2VkOiBfX2FwVW5yZWFkT25seSwgb25DaGFuZ2U6IChldmVudCkgPT4gewogICAgICAgICAgICAgICAgICAgICAgICBfX2FwU2V0VW5yZWFkT25seShldmVudC50YXJnZXQuY2hlY2tlZCk7CiAgICAgICAgICAgICAgICAgICAgICAgIF8oMSk7CiAgICAgICAgICAgICAgICAgICAgfSB9KSwKICAgICAgICAgICAgICAgIGUuanN4KCJzcGFuIiwgeyBjaGlsZHJlbjogIlx1NTNFQVx1NzcwQlx1NjcyQVx1OEJGQiIgfSkKICAgICAgICAgICAgXSB9KSwKICAgICAgICBlLmpzeCgic3BhbiIsIHsgY2xhc3NOYW1lOiAiY3VzdG9tZXItbGlzdC1jYXB0aW9uIiwgY2hpbGRyZW46ICJcdTYyNTNcdTVGMDBcdTVCQTJcdTYyMzdcdThCRTZcdTYwQzVcdTU0MEVcdTc4NkVcdThCQTRcdTVERjJcdThCRkJcdUZGMENcdTUyMTdcdTg4NjhcdTZENEZcdTg5QzhcdTRFMERcdTRGMUFcdTZFMDVcdTk2NjQiIH0pCiAgICBdIH0pLA==",
+      "afterBase64": ""
+    },
+    {
+      "start": 2261694,
+      "end": 2261694,
+      "reason": "source accessible unread checkbox in existing search/reset/more actions",
+      "afterStart": 2261035,
+      "afterEnd": 2261753,
+      "beforeBase64": "",
+      "afterBase64": "ZS5qc3hzKCJsYWJlbCIsIHsgY2xhc3NOYW1lOiAiY3VzdG9tZXItbGlzdC11bnJlYWQtZmlsdGVyIiwgdGl0bGU6ICJcdTYyNTNcdTVGMDBcdTVCQTJcdTYyMzdcdThCRTZcdTYwQzVcdTU0MEVcdTc4NkVcdThCQTRcdTVERjJcdThCRkJcdUZGMENcdTUyMTdcdTg4NjhcdTZENEZcdTg5QzhcdTRFMERcdTRGMUFcdTZFMDVcdTk2NjQiLCBjaGlsZHJlbjogWwogICAgICAgIGUuanN4KCJpbnB1dCIsIHsKICAgICAgICAgICAgdHlwZTogImNoZWNrYm94IiwKICAgICAgICAgICAgImFyaWEtbGFiZWwiOiAiXHU1M0VBXHU3NzBCXHU2NzJBXHU4QkZCIiwKICAgICAgICAgICAgImFyaWEtZGVzY3JpcHRpb24iOiAiXHU2MjUzXHU1RjAwXHU1QkEyXHU2MjM3XHU4QkU2XHU2MEM1XHU1NDBFXHU3ODZFXHU4QkE0XHU1REYyXHU4QkZCXHVGRjBDXHU1MjE3XHU4ODY4XHU2RDRGXHU4OUM4XHU0RTBEXHU0RjFBXHU2RTA1XHU5NjY0IiwKICAgICAgICAgICAgY2hlY2tlZDogX19hcFVucmVhZE9ubHksCiAgICAgICAgICAgIG9uQ2hhbmdlOiAoZXZlbnQpID0+IHsKICAgICAgICAgICAgICAgIF9fYXBTZXRVbnJlYWRPbmx5KGV2ZW50LnRhcmdldC5jaGVja2VkKTsKICAgICAgICAgICAgICAgIF8oMSk7CiAgICAgICAgICAgIH0KICAgICAgICB9KSwKICAgICAgICBlLmpzeCgic3BhbiIsIHsgY2hpbGRyZW46ICJcdTUzRUFcdTc3MEJcdTY3MkFcdThCRkIiIH0pCiAgICBdIH0pLA=="
+    },
+    {
+      "start": 2269632,
+      "end": 2269632,
+      "reason": "source long-name table width; fixed sticky action widths retained",
+      "afterStart": 2269691,
+      "afterEnd": 2269855,
+      "beforeBase64": "",
+      "afterBase64": "c3R5bGU6IHsgbWluV2lkdGg6IGBjYWxjKCR7TWF0aC5tYXgoMzAsIC4uLl9fbmlEaXNwbGF5ZWQubWFwKChjdXN0b21lcikgPT4gKGN1c3RvbWVyLm5hbWU/LnRyaW0oKSB8fCAiXHU2NzJBXHU1NDdEXHU1NDBEXHU1QkEyXHU2MjM3IikubGVuZ3RoICsgNCkpfWVtICsgMTEwOHB4KWAgfSw="
+    }
+  ],
+  "checks": {
+    "inverseExact": true,
+    "onlyActualList": true,
+    "detailInventoryOtherFunctionBytesPreserved": true,
+    "unreadResultUndefinedNotBoolean": true,
+    "inlineControl": true,
+    "noProviderOrQueryReplacement": true
+  }
+}

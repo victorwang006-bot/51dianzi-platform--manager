@@ -1,0 +1,53 @@
+{
+  "index": 1,
+  "beforeURL": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+  "beforeSHA": "53fe6b444a4b67757285e705468dd452439a5394784a80b53454da4189e6d0ce",
+  "afterURL": "/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+  "afterSHA": "6ffe72a5d81423eabfc6040604662ffc92788fa2ec83de4ad2f4f065e5c4278e",
+  "patches": [
+    {
+      "start": 3905146,
+      "end": 3905499,
+      "reason": "unavailable result is undefined, never false; retain original native authorization/cache conditional",
+      "afterStart": 3905146,
+      "afterEnd": 3905507,
+      "beforeBase64": "X19hcFVucmVhZENhblF1ZXJ5JiYhX19hcFVucmVhZE5hcnJvd2luZ0ZhaWxlZCYmKCFlZSYmUCYmIW9lJiYhJCYmbCYmaS5yZWFkeSYmIXMuaXNQZW5kaW5nJiYhcy5pc0Vycm9yJiYhdS5pc0Vycm9yJiZ1LmlzRmV0Y2hlZEFmdGVyTW91bnQhPT0hMSYmIXUuaXNQbGFjZWhvbGRlckRhdGEmJihyLnN0YXJyZWRPbmx5IT09ITB8fGEucmVhZHkpJiZ1LmRhdGE/Lml0ZW1zLmV2ZXJ5KGU9PmUuZW50ZXJwcmlzZUlkPT09aS5zY29wZT8uZW50ZXJwcmlzZUlkJiYoZS5zdGFyVXNlcklkPT09dm9pZCAwfHxlLnN0YXJVc2VySWQ9PT1udWxsfHxlLnN0YXJVc2VySWQ9PT1lLmFzc2lnbmVkVXNlcklkKSk/dS5kYXRhOnZvaWQgMCk=",
+      "afterBase64": "KF9fYXBVbnJlYWRDYW5RdWVyeSYmIV9fYXBVbnJlYWROYXJyb3dpbmdGYWlsZWQpPyghZWUmJlAmJiFvZSYmISQmJmwmJmkucmVhZHkmJiFzLmlzUGVuZGluZyYmIXMuaXNFcnJvciYmIXUuaXNFcnJvciYmdS5pc0ZldGNoZWRBZnRlck1vdW50IT09ITEmJiF1LmlzUGxhY2Vob2xkZXJEYXRhJiYoci5zdGFycmVkT25seSE9PSEwfHxhLnJlYWR5KSYmdS5kYXRhPy5pdGVtcy5ldmVyeShlPT5lLmVudGVycHJpc2VJZD09PWkuc2NvcGU/LmVudGVycHJpc2VJZCYmKGUuc3RhclVzZXJJZD09PXZvaWQgMHx8ZS5zdGFyVXNlcklkPT09bnVsbHx8ZS5zdGFyVXNlcklkPT09ZS5hc3NpZ25lZFVzZXJJZCkpP3UuZGF0YTp2b2lkIDApOnZvaWQgMA=="
+    },
+    {
+      "start": 3911499,
+      "end": 3912144,
+      "reason": "remove separate unread row only, preserve inspection retry",
+      "afterStart": 3911507,
+      "afterEnd": 3911507,
+      "beforeBase64": "bigiZGl2IiwgeyBjbGFzc05hbWU6ICJjdXN0b21lci1saXN0LXVucmVhZC1jb250cm9scyIsIGNoaWxkcmVuOiBbCiAgICAgICAgbigibGFiZWwiLCB7IGNsYXNzTmFtZTogImN1c3RvbWVyLWxpc3QtdW5yZWFkLWZpbHRlciIsIGNoaWxkcmVuOiBbCiAgICAgICAgICAgICAgICB0KCJpbnB1dCIsIHsgdHlwZTogImNoZWNrYm94IiwgY2hlY2tlZDogX19hcFVucmVhZE9ubHksIG9uQ2hhbmdlOiAoZXZlbnQpID0+IHsKICAgICAgICAgICAgICAgICAgICAgICAgX19hcFNldFVucmVhZE9ubHkoZXZlbnQudGFyZ2V0LmNoZWNrZWQpOwogICAgICAgICAgICAgICAgICAgICAgICBVKDEpOwogICAgICAgICAgICAgICAgICAgIH0gfSksCiAgICAgICAgICAgICAgICB0KCJzcGFuIiwgeyBjaGlsZHJlbjogIlx1NTNFQVx1NzcwQlx1NjcyQVx1OEJGQiIgfSkKICAgICAgICAgICAgXSB9KSwKICAgICAgICB0KCJzcGFuIiwgeyBjbGFzc05hbWU6ICJjdXN0b21lci1saXN0LWNhcHRpb24iLCBjaGlsZHJlbjogIlx1NjI1M1x1NUYwMFx1NUJBMlx1NjIzN1x1OEJFNlx1NjBDNVx1NTQwRVx1Nzg2RVx1OEJBNFx1NURGMlx1OEJGQlx1RkYwQ1x1NTIxN1x1ODg2OFx1NkQ0Rlx1ODlDOFx1NEUwRFx1NEYxQVx1NkUwNVx1OTY2NCIgfSkKICAgIF0gfSks",
+      "afterBase64": ""
+    },
+    {
+      "start": 3918767,
+      "end": 3918767,
+      "reason": "source accessible unread checkbox in existing search/reset/more actions",
+      "afterStart": 3918130,
+      "afterEnd": 3918835,
+      "beforeBase64": "",
+      "afterBase64": "bigibGFiZWwiLCB7IGNsYXNzTmFtZTogImN1c3RvbWVyLWxpc3QtdW5yZWFkLWZpbHRlciIsIHRpdGxlOiAiXHU2MjUzXHU1RjAwXHU1QkEyXHU2MjM3XHU4QkU2XHU2MEM1XHU1NDBFXHU3ODZFXHU4QkE0XHU1REYyXHU4QkZCXHVGRjBDXHU1MjE3XHU4ODY4XHU2RDRGXHU4OUM4XHU0RTBEXHU0RjFBXHU2RTA1XHU5NjY0IiwgY2hpbGRyZW46IFsKICAgICAgICB0KCJpbnB1dCIsIHsKICAgICAgICAgICAgdHlwZTogImNoZWNrYm94IiwKICAgICAgICAgICAgImFyaWEtbGFiZWwiOiAiXHU1M0VBXHU3NzBCXHU2NzJBXHU4QkZCIiwKICAgICAgICAgICAgImFyaWEtZGVzY3JpcHRpb24iOiAiXHU2MjUzXHU1RjAwXHU1QkEyXHU2MjM3XHU4QkU2XHU2MEM1XHU1NDBFXHU3ODZFXHU4QkE0XHU1REYyXHU4QkZCXHVGRjBDXHU1MjE3XHU4ODY4XHU2RDRGXHU4OUM4XHU0RTBEXHU0RjFBXHU2RTA1XHU5NjY0IiwKICAgICAgICAgICAgY2hlY2tlZDogX19hcFVucmVhZE9ubHksCiAgICAgICAgICAgIG9uQ2hhbmdlOiAoZXZlbnQpID0+IHsKICAgICAgICAgICAgICAgIF9fYXBTZXRVbnJlYWRPbmx5KGV2ZW50LnRhcmdldC5jaGVja2VkKTsKICAgICAgICAgICAgICAgIFUoMSk7CiAgICAgICAgICAgIH0KICAgICAgICB9KSwKICAgICAgICB0KCJzcGFuIiwgeyBjaGlsZHJlbjogIlx1NTNFQVx1NzcwQlx1NjcyQVx1OEJGQiIgfSkKICAgIF0gfSks"
+    },
+    {
+      "start": 3923147,
+      "end": 3923147,
+      "reason": "source long-name table width; fixed sticky action widths retained",
+      "afterStart": 3923215,
+      "afterEnd": 3923379,
+      "beforeBase64": "",
+      "afterBase64": "c3R5bGU6IHsgbWluV2lkdGg6IGBjYWxjKCR7TWF0aC5tYXgoMzAsIC4uLl9fbmlEaXNwbGF5ZWQubWFwKChjdXN0b21lcikgPT4gKGN1c3RvbWVyLm5hbWU/LnRyaW0oKSB8fCAiXHU2NzJBXHU1NDdEXHU1NDBEXHU1QkEyXHU2MjM3IikubGVuZ3RoICsgNCkpfWVtICsgMTEwOHB4KWAgfSw="
+    }
+  ],
+  "checks": {
+    "inverseExact": true,
+    "onlyActualList": true,
+    "detailInventoryOtherFunctionBytesPreserved": true,
+    "unreadResultUndefinedNotBoolean": true,
+    "inlineControl": true,
+    "noProviderOrQueryReplacement": true
+  }
+}
