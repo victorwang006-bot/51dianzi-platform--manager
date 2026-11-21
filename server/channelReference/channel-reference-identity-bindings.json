@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "snapshotSha256": "bab621d9ab3178da1ec9f77b38cf588711bfd8401d21bbee363fd151e2147a0c",
+  "snapshotSha256": "f407aa5f5b6c345f2e11cafe13dc181adf98ee6329075344915587ee24b2790a",
   "bindings": [
     {
       "raw": {
@@ -192,7 +192,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -212,7 +213,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -232,7 +234,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -272,7 +275,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -292,7 +296,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -312,7 +317,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -332,7 +338,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -352,7 +359,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -392,7 +400,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -412,7 +421,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -432,7 +442,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -452,7 +463,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -512,7 +524,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -532,7 +545,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -572,7 +586,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "ickey"
+        "ickey",
+        "lcsc"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -612,7 +627,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -652,7 +668,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -692,7 +709,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -712,7 +730,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "ickey"
+        "ickey",
+        "lcsc"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -732,7 +751,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -752,7 +772,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -772,7 +793,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -812,7 +834,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -852,7 +875,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -872,7 +896,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -912,7 +937,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -952,7 +978,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -992,7 +1019,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -1032,7 +1060,8 @@
         "brand": "FH(风华)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -1072,7 +1101,8 @@
         "brand": "FH(风华)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -1092,7 +1122,8 @@
         "brand": "FH(风华)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -1133,7 +1164,8 @@
         "brand": "FH(风华)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -1153,7 +1185,8 @@
         "brand": "FH(风华)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -1213,7 +1246,8 @@
         "brand": "FH(风华)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -1293,7 +1327,8 @@
         "brand": "FH(风华)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -1333,7 +1368,8 @@
         "brand": "FH(风华)"
       },
       "sources": [
-        "ickey"
+        "ickey",
+        "lcsc"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -1433,7 +1469,8 @@
         "brand": "Sunlord(顺络)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -1453,7 +1490,8 @@
         "brand": "FH(风华)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -1824,6 +1862,3876 @@
         "uniqueManufacturer": true,
         "additionalSpecificationsMatch": true,
         "basis": "专属研究 N147：verified_normalization。实际读取Texas Instruments官方完整订货号页面；SN65HVD33DR对应SN65HVD33全双工RS-422/RS-485收发器，3.3V供电，SOIC(D)14引脚，温度范围-40至85°C，2500颗LARGE T&R。原输入型号未作删改；输入品牌‘芯片’是品类。 来源 https://www.ti.com/product/SN65HVD33/part-details/SN65HVD33DR 实际读取并解码TI官方PDF，订货表明确列出：SN65HVD33DR Active Production SOIC(D)|14 2500|LARGE T&R Yes NIPDAU Level-1-260C-UNLIM -40 to 85 65HVD33。完整DR订货代码与14引脚卷带封装获得原厂资料确认，未将SN65HVD33D、SN65HVD33DRG4或其他后缀合并。 来源 https://www.ti.com/lit/ds/symlink/sn65hvd30.pdf 实际读取准确详情主商品：SN65HVD33DR，品牌名称TI(德州仪器)，商品编号C114985，SOIC-14，编带；与TI官方完整订货号及封装一致。规范品牌采用该页TI(德州仪器)字面，对应制造商Texas Instruments。 来源 https://item.szlcsc.com/116229.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "MSC017SMA120J",
+        "brand": "MCHP"
+      },
+      "canonical": {
+        "partNumber": "MSC017SMA120J",
+        "brand": "MICROCHIP(美国微芯)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号MSC017SMA120J、库存品牌/品类MCHP，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号MSC017SMA120J，品牌MICROCHIP(美国微芯)，取最大数量梯度100+价格257.4元，页面https://item.szlcsc.com/3845275.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "APT2X101DQ120J",
+        "brand": "MCHP"
+      },
+      "canonical": {
+        "partNumber": "APT2X101DQ120J",
+        "brand": "MICROCHIP(美国微芯)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号APT2X101DQ120J、库存品牌/品类MCHP，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号APT2X101DQ120J，品牌MICROCHIP(美国微芯)，取最大数量梯度1+价格261.45元，页面https://item.szlcsc.com/23247867.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "OB2225MCPA",
+        "brand": "昂宝"
+      },
+      "canonical": {
+        "partNumber": "OB2225MCPA",
+        "brand": "On-Bright/上海昂宝电子"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号OB2225MCPA、库存品牌/品类昂宝，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号OB2225MCPA，品牌On-Bright/上海昂宝电子，取最大数量梯度8000+价格0.9017元，页面https://www.ickey.cn/detail/1003001432975011/OB2225MCPA.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "74LVC08XS14G/TR",
+        "brand": "圣邦微"
+      },
+      "canonical": {
+        "partNumber": "74LVC08XS14G/TR",
+        "brand": "SGMICRO/北京圣邦微电子"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号74LVC08XS14G/TR、库存品牌/品类圣邦微，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号74LVC08XS14G/TR，品牌SGMICRO/北京圣邦微电子，取最大数量梯度100+价格3.1284元，页面https://www.ickey.cn/detail/1003001044469816/74LVC08XS14G__point__TR.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "DSEI2X101-12A",
+        "brand": "DACO"
+      },
+      "canonical": {
+        "partNumber": "DSEI2X101-12A",
+        "brand": "Littelfuse/IXYS"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号DSEI2X101-12A、库存品牌/品类DACO，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号DSEI2X101-12A，品牌Littelfuse/IXYS，取最大数量梯度10+价格397.59元，页面https://item.szlcsc.com/419294.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "1SMA5936B",
+        "brand": "长电"
+      },
+      "canonical": {
+        "partNumber": "1SMA5936B",
+        "brand": "Zhengxin(正芯)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号1SMA5936B、库存品牌/品类长电，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号1SMA5936B，品牌Zhengxin(正芯)，取最大数量梯度2000+价格0.081003元，页面https://item.szlcsc.com/58418247.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "WRB2405S-3WR2",
+        "brand": "金升阳"
+      },
+      "canonical": {
+        "partNumber": "WRB2405S-3WR2",
+        "brand": "DEXU/广州德旭"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号WRB2405S-3WR2、库存品牌/品类金升阳，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号WRB2405S-3WR2，品牌DEXU/广州德旭，取最大数量梯度500+价格10.98元，页面https://www.ickey.cn/detail/1003001045609828/WRB2405S-3WR2.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RF7921TR7",
+        "brand": "LTE Band 11/21 Linear PA Module;10 PIN;2*2.5*0.9mm"
+      },
+      "canonical": {
+        "partNumber": "RF7921TR7",
+        "brand": "Qorvo"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RF7921TR7、库存品牌/品类LTE Band 11/21 Linear PA Module;10 PIN;2*2.5*0.9mm，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RF7921TR7，品牌Qorvo，取最大数量梯度10000+价格19.6626元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "AW5007ASTR",
+        "brand": "FM LNA;SOT363-6L;2.2*2.2*1.0mm"
+      },
+      "canonical": {
+        "partNumber": "AW5007ASTR",
+        "brand": "AWINIC(艾为)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号AW5007ASTR、库存品牌/品类FM LNA;SOT363-6L;2.2*2.2*1.0mm，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号AW5007ASTR，品牌AWINIC(艾为)，取最大数量梯度21000+价格0.105844元，页面https://item.szlcsc.com/175469.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RFBLN0605040YM9T16",
+        "brand": "729-821MHz Balun Filter;0.55dB;0.65*0.5*0.50mm"
+      },
+      "canonical": {
+        "partNumber": "RFBLN0605040YM9T16",
+        "brand": "Walsin(华新科)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RFBLN0605040YM9T16、库存品牌/品类729-821MHz Balun Filter;0.55dB;0.65*0.5*0.50mm，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RFBLN0605040YM9T16，品牌Walsin(华新科)，取最大数量梯度20000+价格0.0823元，页面https://item.szlcsc.com/138910.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RFBLN06050G9D0T",
+        "brand": "729-960MHz Balun Filter;0.70dB;0.65*0.5*0.50mm"
+      },
+      "canonical": {
+        "partNumber": "RFBLN06050G9D0T",
+        "brand": "Walsin(华新科)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RFBLN06050G9D0T、库存品牌/品类729-960MHz Balun Filter;0.70dB;0.65*0.5*0.50mm，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RFBLN06050G9D0T，品牌Walsin(华新科)，取最大数量梯度4000+价格0.2557元，页面https://item.szlcsc.com/203053.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RFBLN06051G8DM1T69",
+        "brand": "1.805-1.990GHz Balun Filter;0.6*0.5*0.5mm"
+      },
+      "canonical": {
+        "partNumber": "RFBLN06051G8DM1T69",
+        "brand": "Walsin(华新科)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RFBLN06051G8DM1T69、库存品牌/品类1.805-1.990GHz Balun Filter;0.6*0.5*0.5mm，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RFBLN06051G8DM1T69，品牌Walsin(华新科)，取最大数量梯度8000+价格0.1617元，页面https://item.szlcsc.com/138902.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RFLPF1005040YM1T76",
+        "brand": "Multilayer Chip Low-Pass Filters;746~787MHz;1.0*0.5*0.4mm"
+      },
+      "canonical": {
+        "partNumber": "RFLPF1005040YM1T76",
+        "brand": "Walsin(华新科)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RFLPF1005040YM1T76、库存品牌/品类Multilayer Chip Low-Pass Filters;746~787MHz;1.0*0.5*0.4mm，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RFLPF1005040YM1T76，品牌Walsin(华新科)，取最大数量梯度500+价格0.2906元，页面https://item.szlcsc.com/22017195.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SFHG60CA002",
+        "brand": "RX SAW Filter;Unbalanced;B2;1.15*0.95*0.5mm"
+      },
+      "canonical": {
+        "partNumber": "SFHG60CA002",
+        "brand": "Wisol(威盛)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SFHG60CA002、库存品牌/品类RX SAW Filter;Unbalanced;B2;1.15*0.95*0.5mm，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号SFHG60CA002，品牌Wisol(威盛)，取最大数量梯度5000+价格0.1743元，页面https://item.szlcsc.com/295103.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SFH881AA002",
+        "brand": "RX SAW Filter;Unbalanced;B5;1.15*0.95*0.5mm"
+      },
+      "canonical": {
+        "partNumber": "SFH881AA002",
+        "brand": "Wisol(威盛)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SFH881AA002、库存品牌/品类RX SAW Filter;Unbalanced;B5;1.15*0.95*0.5mm，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号SFH881AA002，品牌Wisol(威盛)，取最大数量梯度500+价格0.4238元，页面https://item.szlcsc.com/295105.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SFHG00AA002",
+        "brand": "RX SAW Filter;Unbalanced;B39;1.15*0.95*0.5mm"
+      },
+      "canonical": {
+        "partNumber": "SFHG00AA002",
+        "brand": "Wisol(威盛)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SFHG00AA002、库存品牌/品类RX SAW Filter;Unbalanced;B39;1.15*0.95*0.5mm，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号SFHG00AA002，品牌Wisol(威盛)，取最大数量梯度100+价格0.6418元，页面https://item.szlcsc.com/295120.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SFHG55DA402",
+        "brand": "RX SAW Filter;Unbalanced;B66;1.15*0.95*0.5mm"
+      },
+      "canonical": {
+        "partNumber": "SFHG55DA402",
+        "brand": "Wisol(威盛)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SFHG55DA402、库存品牌/品类RX SAW Filter;Unbalanced;B66;1.15*0.95*0.5mm，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号SFHG55DA402，品牌Wisol(威盛)，取最大数量梯度500+价格0.4912元，页面https://item.szlcsc.com/5798230.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RFBPF1411060A1T",
+        "brand": "WIFI SAW Filter;Unbalanced;2.45GHz;1.4*1.1*0.6mm"
+      },
+      "canonical": {
+        "partNumber": "RFBPF1411060A1T",
+        "brand": "Walsin(华新科)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RFBPF1411060A1T、库存品牌/品类WIFI SAW Filter;Unbalanced;2.45GHz;1.4*1.1*0.6mm，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RFBPF1411060A1T，品牌Walsin(华新科)，取最大数量梯度500+价格0.4313元，页面https://item.szlcsc.com/203076.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SAFFB722MAA0F0AR1X",
+        "brand": "RX SAW Filter;Unbalanced;B29(FLO);1.15*0.95*0.5mm"
+      },
+      "canonical": {
+        "partNumber": "SAFFB722MAA0F0AR1X",
+        "brand": "muRata(村田)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SAFFB722MAA0F0AR1X、库存品牌/品类RX SAW Filter;Unbalanced;B29(FLO);1.15*0.95*0.5mm，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号SAFFB722MAA0F0AR1X，品牌muRata(村田)，取最大数量梯度5000+价格0.4556元，页面https://item.szlcsc.com/502586.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SAYEY751MBA0F0AR00",
+        "brand": "SAW DPX FOR B13;Unbalanced;1.8*1.4*0.60mm"
+      },
+      "canonical": {
+        "partNumber": "SAYEY751MBA0F0AR00",
+        "brand": "muRata(村田)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SAYEY751MBA0F0AR00、库存品牌/品类SAW DPX FOR B13;Unbalanced;1.8*1.4*0.60mm，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号SAYEY751MBA0F0AR00，品牌muRata(村田)，取最大数量梯度1000+价格2.04元，页面https://item.szlcsc.com/979085.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SAYPE1G88BA1G0AR05",
+        "brand": "SAW DPX FOR B25;Unbalanced;1.8*1.4*0.60mm"
+      },
+      "canonical": {
+        "partNumber": "SAYPE1G88BA1G0AR05",
+        "brand": "muRata(村田)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SAYPE1G88BA1G0AR05、库存品牌/品类SAW DPX FOR B25;Unbalanced;1.8*1.4*0.60mm，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号SAYPE1G88BA1G0AR05，品牌muRata(村田)，取最大数量梯度1000+价格3.08元，页面https://item.szlcsc.com/979082.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SAYRH725MBC0B0AR00",
+        "brand": "SAW DPX FOR B28;Unbalanced;1.8*1.4*0.60mm"
+      },
+      "canonical": {
+        "partNumber": "SAYRH725MBC0B0AR00",
+        "brand": "muRata(村田)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SAYRH725MBC0B0AR00、库存品牌/品类SAW DPX FOR B28;Unbalanced;1.8*1.4*0.60mm，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号SAYRH725MBC0B0AR00，品牌muRata(村田)，取最大数量梯度1000+价格1.25元，页面https://item.szlcsc.com/979020.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SFX836CYA02",
+        "brand": "SAW DPX FOR B5;Unbalanced;1.8*1.4*0.60mm"
+      },
+      "canonical": {
+        "partNumber": "SFX836CYA02",
+        "brand": "Wisol(威盛)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SFX836CYA02、库存品牌/品类SAW DPX FOR B5;Unbalanced;1.8*1.4*0.60mm，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号SFX836CYA02，品牌Wisol(威盛)，取最大数量梯度1000+价格0.08279元，页面https://item.szlcsc.com/295089.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RFDIP1608060TM7T62",
+        "brand": "GPS-BT/WLAN Diplexer;1.6*0.8*0.70mm"
+      },
+      "canonical": {
+        "partNumber": "RFDIP1608060TM7T62",
+        "brand": "Walsin(华新科)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RFDIP1608060TM7T62、库存品牌/品类GPS-BT/WLAN Diplexer;1.6*0.8*0.70mm，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RFDIP1608060TM7T62，品牌Walsin(华新科)，取最大数量梯度8000+价格0.1693元，页面https://item.szlcsc.com/138879.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RFDIP2506BLM1T90",
+        "brand": "Dual-band Diplexers;698~2690/3300~5925;2.5*2.0*0.65mm"
+      },
+      "canonical": {
+        "partNumber": "RFDIP2506BLM1T90",
+        "brand": "Walsin(华新科)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RFDIP2506BLM1T90、库存品牌/品类Dual-band Diplexers;698~2690/3300~5925;2.5*2.0*0.65mm，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RFDIP2506BLM1T90，品牌Walsin(华新科)，取最大数量梯度4000+价格0.5973元，页面https://item.szlcsc.com/3456644.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SGM2036S-1.8XN5G/TR",
+        "brand": "2.5-5.5V INPUT,1.8V OUTPUT;300mA Low Consumption  LDO,SOT-23-5"
+      },
+      "canonical": {
+        "partNumber": "SGM2036S-1.8XN5G/TR",
+        "brand": "SGMICRO(圣邦微)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SGM2036S-1.8XN5G/TR、库存品牌/品类2.5-5.5V INPUT,1.8V OUTPUT;300mA Low Consumption  LDO,SOT-23-5，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号SGM2036S-1.8XN5G/TR，品牌SGMICRO(圣邦微)，取最大数量梯度500+价格0.7979元，页面https://item.szlcsc.com/5779473.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "ETA5050V0S2F",
+        "brand": "2.5-6V INPUT,1.0-6V OUTPUT;500mA Low Consumption LDO;SOT-23-5"
+      },
+      "canonical": {
+        "partNumber": "ETA5050V0S2F",
+        "brand": "ETA(钰泰)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号ETA5050V0S2F、库存品牌/品类2.5-6V INPUT,1.0-6V OUTPUT;500mA Low Consumption LDO;SOT-23-5，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号ETA5050V0S2F，品牌ETA(钰泰)，取最大数量梯度21000+价格0.10526元，页面https://item.szlcsc.com/8453546.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "ETA3485S2F",
+        "brand": "2MHz/1.5A StepDown DCDC Converter with 7V OVP;SOT23-5L;"
+      },
+      "canonical": {
+        "partNumber": "ETA3485S2F",
+        "brand": "ETA(钰泰)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号ETA3485S2F、库存品牌/品类2MHz/1.5A StepDown DCDC Converter with 7V OVP;SOT23-5L;，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号ETA3485S2F，品牌ETA(钰泰)，取最大数量梯度6000+价格0.24377元，页面https://item.szlcsc.com/8507055.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "UM809TS",
+        "brand": "Voltage comparator;Microprocessor Reset Circuits,3.08V,SOT-23"
+      },
+      "canonical": {
+        "partNumber": "UM809TS",
+        "brand": "Union(英联)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号UM809TS、库存品牌/品类Voltage comparator;Microprocessor Reset Circuits,3.08V,SOT-23，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号UM809TS，品牌Union(英联)，取最大数量梯度500+价格0.459元，页面https://item.szlcsc.com/8646670.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "VC7910",
+        "brand": "SP10T TX/RX Front End Module(FEM);5.5*5.3*0.9mm"
+      },
+      "canonical": {
+        "partNumber": "VC7910",
+        "brand": "VANCHIP(唯捷创芯)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号VC7910、库存品牌/品类SP10T TX/RX Front End Module(FEM);5.5*5.3*0.9mm，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号VC7910，品牌VANCHIP(唯捷创芯)，取最大数量梯度500+价格7.1669元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SKY53735-61",
+        "brand": "LMHB RX Front End Module(LFEM);4.2*6.2*0.7mm"
+      },
+      "canonical": {
+        "partNumber": "SKY53735-61",
+        "brand": "SKYWORKS"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SKY53735-61、库存品牌/品类LMHB RX Front End Module(LFEM);4.2*6.2*0.7mm，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号SKY53735-61，品牌SKYWORKS，取最大数量梯度1000+价格57.6242元，页面https://item.szlcsc.com/6132670.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SSC8023GS6",
+        "brand": "P-MOSFET;-20V;3.0A;0.55W;Vgs=-0.75V;SOT-23"
+      },
+      "canonical": {
+        "partNumber": "SSC8023GS6",
+        "brand": "AF(晶岳)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SSC8023GS6、库存品牌/品类P-MOSFET;-20V;3.0A;0.55W;Vgs=-0.75V;SOT-23，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号SSC8023GS6，品牌AF(晶岳)，取最大数量梯度21000+价格0.08151元，页面https://item.szlcsc.com/55258654.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SSC8122GS9",
+        "brand": "N-MOSFET;20V;350mA;300mW;Vgs=0.50V;SOT-723"
+      },
+      "canonical": {
+        "partNumber": "SSC8122GS9",
+        "brand": "AF(晶岳)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SSC8122GS9、库存品牌/品类N-MOSFET;20V;350mA;300mW;Vgs=0.50V;SOT-723，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号SSC8122GS9，品牌AF(晶岳)，取最大数量梯度20000+价格0.07258元，页面https://item.szlcsc.com/21025769.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "NTK3043NT1G",
+        "brand": "N-MOSFET;20V;285mA;Vgs=1.3V;tr=15ns;SOT-723"
+      },
+      "canonical": {
+        "partNumber": "NTK3043NT1G",
+        "brand": "onsemi(安森美)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号NTK3043NT1G、库存品牌/品类N-MOSFET;20V;285mA;Vgs=1.3V;tr=15ns;SOT-723，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号NTK3043NT1G，品牌onsemi(安森美)，取最大数量梯度2500+价格0.5417元，页面https://item.szlcsc.com/235863.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "F06F4",
+        "brand": "Fast Acting SMD Fuses;4.0A;32V;0603"
+      },
+      "canonical": {
+        "partNumber": "F06F4",
+        "brand": "TLC(竞沃)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号F06F4、库存品牌/品类Fast Acting SMD Fuses;4.0A;32V;0603，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号F06F4，品牌TLC(竞沃)，取最大数量梯度10000+价格0.1528元，页面https://item.szlcsc.com/3242855.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "GZ1608D102CTF",
+        "brand": "Ferrite Bead 1K@100MHz;400mA;0.5ohm;0603"
+      },
+      "canonical": {
+        "partNumber": "GZ1608D102CTF",
+        "brand": "Sunlord(顺络)"
+      },
+      "sources": [
+        "lcsc",
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号GZ1608D102CTF、库存品牌/品类Ferrite Bead 1K@100MHz;400mA;0.5ohm;0603，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号GZ1608D102CTF，品牌Sunlord(顺络)，取最大数量梯度600+价格0.0633元，页面https://item.szlcsc.com/93815.html；云汉芯城实际读取：型号GZ1608D102CTF，品牌Sunlord/深圳顺络电子，取最大数量梯度4000+价格0.042元，页面https://www.ickey.cn/detail/1003001028207220/GZ1608D102CTF.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "PTS641TK31SMTR2LFS",
+        "brand": "Tact Switch;DC12V/50mA;5PIN;8.4*6.4*3.1mm;Bromine free"
+      },
+      "canonical": {
+        "partNumber": "PTS641TK31SMTR2LFS",
+        "brand": "C&K"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号PTS641TK31SMTR2LFS、库存品牌/品类Tact Switch;DC12V/50mA;5PIN;8.4*6.4*3.1mm;Bromine free，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号PTS641TK31SMTR2LFS，品牌C&K，取最大数量梯度150+价格0.465元，页面https://item.szlcsc.com/270711.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "NSI6602VD-DLAR",
+        "brand": "纳芯微"
+      },
+      "canonical": {
+        "partNumber": "NSI6602VD-DLAR",
+        "brand": "NOVOSENSE/苏州纳芯微电子"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号NSI6602VD-DLAR、库存品牌/品类纳芯微，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号NSI6602VD-DLAR，品牌NOVOSENSE/苏州纳芯微电子，取最大数量梯度3000+价格7.065元，页面https://www.ickey.cn/detail/1003001028825187/NSI6602VD-DLAR.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "NSM2013-65B5F-DSWR",
+        "brand": "纳芯微"
+      },
+      "canonical": {
+        "partNumber": "NSM2013-65B5F-DSWR",
+        "brand": "NOVOSENSE/苏州纳芯微电子"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号NSM2013-65B5F-DSWR、库存品牌/品类纳芯微，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号NSM2013-65B5F-DSWR，品牌NOVOSENSE/苏州纳芯微电子，取最大数量梯度1000+价格8.315元，页面https://www.ickey.cn/detail/1003001045800550/NSM2013-65B5F-DSWR.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "IKW75N65EH5",
+        "brand": "英飞凌"
+      },
+      "canonical": {
+        "partNumber": "IKW75N65EH5",
+        "brand": "isc/无锡固电半导体"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号IKW75N65EH5、库存品牌/品类英飞凌，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号IKW75N65EH5，品牌isc/无锡固电半导体，取最大数量梯度600+价格40.68元，页面https://www.ickey.cn/detail/1003001446033712/IKW75N65EH5.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "B3F-1002-G",
+        "brand": "ORMON"
+      },
+      "canonical": {
+        "partNumber": "B3F-1002-G",
+        "brand": "OMRON(欧姆龙)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号B3F-1002-G、库存品牌/品类ORMON，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号B3F-1002-G，品牌OMRON(欧姆龙)，取最大数量梯度500+价格1.86元，页面https://item.szlcsc.com/2849769.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "H2405S-1WR3",
+        "brand": "MORNSUN"
+      },
+      "canonical": {
+        "partNumber": "H2405S-1WR3",
+        "brand": "HI-LINK/海凌科"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号H2405S-1WR3、库存品牌/品类MORNSUN，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号H2405S-1WR3，品牌HI-LINK/海凌科，取最大数量梯度5000+价格12.5875元，页面https://www.ickey.cn/detail/1003001027215189/H2405S-1WR3.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CJ7815",
+        "brand": "JSCJ"
+      },
+      "canonical": {
+        "partNumber": "CJ7815",
+        "brand": "CJ/长晶(长电)"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CJ7815、库存品牌/品类JSCJ，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号CJ7815，品牌CJ/长晶(长电)，取最大数量梯度2500+价格0.9697元，页面https://www.ickey.cn/detail/1003001023935697/CJ7815.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "W971GG6NB-25",
+        "brand": "WINBOD"
+      },
+      "canonical": {
+        "partNumber": "W971GG6NB-25",
+        "brand": "Winbond(华邦)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号W971GG6NB-25、库存品牌/品类WINBOD，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号W971GG6NB-25，品牌Winbond(华邦)，取最大数量梯度100+价格51.5元，页面https://item.szlcsc.com/2971814.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "AT24C128C-SSHM-T",
+        "brand": "ATMEL"
+      },
+      "canonical": {
+        "partNumber": "AT24C128C-SSHM-T",
+        "brand": "MICROCHIP(美国微芯)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号AT24C128C-SSHM-T、库存品牌/品类ATMEL，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号AT24C128C-SSHM-T，品牌MICROCHIP(美国微芯)，取最大数量梯度1000+价格1.25元，页面https://item.szlcsc.com/6943.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "EP4CGX75CF23C8N",
+        "brand": "ALTERA"
+      },
+      "canonical": {
+        "partNumber": "EP4CGX75CF23C8N",
+        "brand": "Intel/Altera"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号EP4CGX75CF23C8N、库存品牌/品类ALTERA，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号EP4CGX75CF23C8N，品牌Intel/Altera，取最大数量梯度1020+价格297.52元，页面https://item.szlcsc.com/6554143.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "TPA1882-SR",
+        "brand": "3PEAK"
+      },
+      "canonical": {
+        "partNumber": "TPA1882-SR",
+        "brand": "3PEAK/苏州思瑞浦微电子"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号TPA1882-SR、库存品牌/品类3PEAK，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号TPA1882-SR，品牌3PEAK/苏州思瑞浦微电子，取最大数量梯度4000+价格5元，页面https://www.ickey.cn/detail/1003001021189855/TPA1882-SR.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CA-IS3740LW",
+        "brand": "CHIPANALOG"
+      },
+      "canonical": {
+        "partNumber": "CA-IS3740LW",
+        "brand": "CHIPANALOG/上海川土微电子"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CA-IS3740LW、库存品牌/品类CHIPANALOG，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号CA-IS3740LW，品牌CHIPANALOG/上海川土微电子，取最大数量梯度1000+价格3.3元，页面https://www.ickey.cn/detail/1003001013444794/CA-IS3740LW.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "AT24C128C-SSHM-T",
+        "brand": "TI"
+      },
+      "canonical": {
+        "partNumber": "AT24C128C-SSHM-T",
+        "brand": "MICROCHIP(美国微芯)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号AT24C128C-SSHM-T、库存品牌/品类TI，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号AT24C128C-SSHM-T，品牌MICROCHIP(美国微芯)，取最大数量梯度1000+价格1.25元，页面https://item.szlcsc.com/6943.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "LM2576R-5.0",
+        "brand": "HTC"
+      },
+      "canonical": {
+        "partNumber": "LM2576R-5.0",
+        "brand": "HTC Korea"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号LM2576R-5.0、库存品牌/品类HTC，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号LM2576R-5.0，品牌HTC Korea，取最大数量梯度4800+价格3.6308元，页面https://www.ickey.cn/detail/1003001434160148/LM2576R-5.0.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "B0505S-2WR2",
+        "brand": "MORNSUN"
+      },
+      "canonical": {
+        "partNumber": "B0505S-2WR2",
+        "brand": "YLPTEC(易川)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号B0505S-2WR2、库存品牌/品类MORNSUN，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号B0505S-2WR2，品牌YLPTEC(易川)，取最大数量梯度1000+价格4.617元，页面https://item.szlcsc.com/3456888.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "ME6210A33PG",
+        "brand": "MICRONE"
+      },
+      "canonical": {
+        "partNumber": "ME6210A33PG",
+        "brand": "MicrOne/南京微盟电子"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号ME6210A33PG、库存品牌/品类MICRONE，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号ME6210A33PG，品牌MicrOne/南京微盟电子，取最大数量梯度1000+价格0.25元，页面https://www.ickey.cn/detail/1003001046066347/ME6210A33PG.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "AT2659S",
+        "brand": "中科微"
+      },
+      "canonical": {
+        "partNumber": "AT2659S",
+        "brand": "Icofchina/杭州中科微"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号AT2659S、库存品牌/品类中科微，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号AT2659S，品牌Icofchina/杭州中科微，取最大数量梯度9000+价格0.276元，页面https://www.ickey.cn/detail/1003001016346092/AT2659S.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "ATGM336H-5N31",
+        "brand": "中科微"
+      },
+      "canonical": {
+        "partNumber": "ATGM336H-5N31",
+        "brand": "Icofchina/杭州中科微"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号ATGM336H-5N31、库存品牌/品类中科微，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号ATGM336H-5N31，品牌Icofchina/杭州中科微，取最大数量梯度1000+价格15.84元，页面https://www.ickey.cn/detail/1003001017555413/ATGM336H-5N31.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "TAXM8M4QLDCDT2T",
+        "brand": "TAE(雅晶鑫)"
+      },
+      "canonical": {
+        "partNumber": "TAXM8M4QLDCDT2T",
+        "brand": "YJX(雅晶鑫)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号TAXM8M4QLDCDT2T、库存品牌/品类TAE(雅晶鑫)，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号TAXM8M4QLDCDT2T，品牌YJX(雅晶鑫)，取最大数量梯度5000+价格0.7009元，页面https://item.szlcsc.com/144637.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "X49SM8MSB2SC",
+        "brand": "YXC"
+      },
+      "canonical": {
+        "partNumber": "X49SM8MSB2SC",
+        "brand": "YXC/深圳扬兴科技"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号X49SM8MSB2SC、库存品牌/品类YXC，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号X49SM8MSB2SC，品牌YXC/深圳扬兴科技，取最大数量梯度5000+价格0.3066元，页面https://www.ickey.cn/detail/1003001047382624/X49SM8MSB2SC.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "DF25NA160",
+        "brand": "扬杰"
+      },
+      "canonical": {
+        "partNumber": "DF25NA160",
+        "brand": "YANGJIE/扬州扬杰电子"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号DF25NA160、库存品牌/品类扬杰，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号DF25NA160，品牌YANGJIE/扬州扬杰电子，取最大数量梯度96+价格10.1471元，页面https://www.ickey.cn/detail/1003001428409659/DF25NA160.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SS24",
+        "brand": "TWGMC"
+      },
+      "canonical": {
+        "partNumber": "SS24",
+        "brand": "CJ/长晶(长电)"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SS24、库存品牌/品类TWGMC，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号SS24，品牌CJ/长晶(长电)，取最大数量梯度5000+价格0.175元，页面https://www.ickey.cn/detail/1003001023937417/SS24.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "ZMM5239B",
+        "brand": "先科"
+      },
+      "canonical": {
+        "partNumber": "ZMM5239B",
+        "brand": "JSMSEMI(杰盛微)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号ZMM5239B、库存品牌/品类先科，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号ZMM5239B，品牌JSMSEMI(杰盛微)，取最大数量梯度75000+价格0.02822元，页面https://item.szlcsc.com/3057331.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "ZX-XH2.54-2PZZ",
+        "brand": "兆星"
+      },
+      "canonical": {
+        "partNumber": "ZX-XH2.54-2PZZ",
+        "brand": "Megastar"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号ZX-XH2.54-2PZZ、库存品牌/品类兆星，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号ZX-XH2.54-2PZZ，品牌Megastar，取最大数量梯度6000+价格0.0437元，页面https://www.ickey.cn/detail/1003001014001255/ZX-XH2.54-2PZZ.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "ZX-XH2.54-3PZZ",
+        "brand": "兆星"
+      },
+      "canonical": {
+        "partNumber": "ZX-XH2.54-3PZZ",
+        "brand": "Megastar"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号ZX-XH2.54-3PZZ、库存品牌/品类兆星，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号ZX-XH2.54-3PZZ，品牌Megastar，取最大数量梯度6000+价格0.0587元，页面https://www.ickey.cn/detail/1003001014001259/ZX-XH2.54-3PZZ.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "PZ254-2-04-S",
+        "brand": "HCTL(华灿天禄)"
+      },
+      "canonical": {
+        "partNumber": "PZ254-2-04-S",
+        "brand": "HCTL/华灿天禄"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号PZ254-2-04-S、库存品牌/品类HCTL(华灿天禄)，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号PZ254-2-04-S，品牌HCTL/华灿天禄，取最大数量梯度42000+价格0.2592元，页面https://www.ickey.cn/detail/100300105328333/PZ254-2-04-S.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "PZ254R-11-04P",
+        "brand": "XFCN"
+      },
+      "canonical": {
+        "partNumber": "PZ254R-11-04P",
+        "brand": "XFCN/兴飞连接器"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号PZ254R-11-04P、库存品牌/品类XFCN，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号PZ254R-11-04P，品牌XFCN/兴飞连接器，取最大数量梯度122000+价格0.0886元，页面https://www.ickey.cn/detail/1003001046070780/PZ254R-11-04P.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "PZ254R-11-06P",
+        "brand": "XFCN"
+      },
+      "canonical": {
+        "partNumber": "PZ254R-11-06P",
+        "brand": "XFCN/兴飞连接器"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号PZ254R-11-06P、库存品牌/品类XFCN，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号PZ254R-11-06P，品牌XFCN/兴飞连接器，取最大数量梯度81000+价格0.1339元，页面https://www.ickey.cn/detail/1003001046071111/PZ254R-11-06P.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "ZX-XH2.54-4PZZ",
+        "brand": "Megastar(兆星)"
+      },
+      "canonical": {
+        "partNumber": "ZX-XH2.54-4PZZ",
+        "brand": "Megastar"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号ZX-XH2.54-4PZZ、库存品牌/品类Megastar(兆星)，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号ZX-XH2.54-4PZZ，品牌Megastar，取最大数量梯度20000+价格0.081元，页面https://www.ickey.cn/detail/1003001021835996/ZX-XH2.54-4PZZ.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "PZ254-1-14-Z-8.5",
+        "brand": "HCTL(华灿天禄)"
+      },
+      "canonical": {
+        "partNumber": "PZ254-1-14-Z-8.5",
+        "brand": "HCTL/华灿天禄"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号PZ254-1-14-Z-8.5、库存品牌/品类HCTL(华灿天禄)，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号PZ254-1-14-Z-8.5，品牌HCTL/华灿天禄，取最大数量梯度24000+价格0.4536元，页面https://www.ickey.cn/detail/1003001024841994/PZ254-1-14-Z-8.5.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "PZ254V-12-10P",
+        "brand": "XFCN"
+      },
+      "canonical": {
+        "partNumber": "PZ254V-12-10P",
+        "brand": "XFCN/兴飞连接器"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号PZ254V-12-10P、库存品牌/品类XFCN，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号PZ254V-12-10P，品牌XFCN/兴飞连接器，取最大数量梯度63000+价格0.1503元，页面https://www.ickey.cn/detail/1003001046071201/PZ254V-12-10P.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "DW127R-22-10-34",
+        "brand": "DEALON(德艺隆)"
+      },
+      "canonical": {
+        "partNumber": "DW127R-22-10-34",
+        "brand": "DEALON/东莞德艺隆"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号DW127R-22-10-34、库存品牌/品类DEALON(德艺隆)，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号DW127R-22-10-34，品牌DEALON/东莞德艺隆，取最大数量梯度3000+价格0.6291元，页面https://www.ickey.cn/detail/1003001046075412/DW127R-22-10-34.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "MicroXNJ",
+        "brand": "SHOU HAN(首韩)"
+      },
+      "canonical": {
+        "partNumber": "MICROXNJ",
+        "brand": "SHOU HAN/深圳首韩科技"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号MicroXNJ、库存品牌/品类SHOU HAN(首韩)，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号MICROXNJ，品牌SHOU HAN/深圳首韩科技，取最大数量梯度1000+价格0.1438元，页面https://www.ickey.cn/detail/1003001039952576/MICROXNJ.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "ZX-XH2.54-5PZZ",
+        "brand": "Megastar(兆星)"
+      },
+      "canonical": {
+        "partNumber": "ZX-XH2.54-5PZZ",
+        "brand": "Megastar"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号ZX-XH2.54-5PZZ、库存品牌/品类Megastar(兆星)，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号ZX-XH2.54-5PZZ，品牌Megastar，取最大数量梯度20000+价格0.0872元，页面https://www.ickey.cn/detail/1003001021836169/ZX-XH2.54-5PZZ.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "M2016RS-08P",
+        "brand": "XFCN"
+      },
+      "canonical": {
+        "partNumber": "M2016RS-08P",
+        "brand": "XFCN/兴飞连接器"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号M2016RS-08P、库存品牌/品类XFCN，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号M2016RS-08P，品牌XFCN/兴飞连接器，取最大数量梯度32800+价格0.3294元，页面https://www.ickey.cn/detail/1003001046070867/M2016RS-08P.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "HC-SFP-03L",
+        "brand": "HCTL(华灿天禄)"
+      },
+      "canonical": {
+        "partNumber": "HC-SFP-03L",
+        "brand": "HCTL/华灿天禄"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号HC-SFP-03L、库存品牌/品类HCTL(华灿天禄)，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号HC-SFP-03L，品牌HCTL/华灿天禄，取最大数量梯度990+价格2.2874元，页面https://www.ickey.cn/detail/1003001021518340/HC-SFP-03L.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "DS1038-26FBNSIA74-0CC",
+        "brand": "CONNFCY"
+      },
+      "canonical": {
+        "partNumber": "DS1038-26FBNSIA74-0CC",
+        "brand": "CONNFLY"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号DS1038-26FBNSIA74-0CC、库存品牌/品类CONNFCY，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号DS1038-26FBNSIA74-0CC，品牌CONNFLY，取最大数量梯度1400+价格4.31元，页面https://item.szlcsc.com/78977.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "HR911105A",
+        "brand": "HANRUN(汉仁)"
+      },
+      "canonical": {
+        "partNumber": "HR911105A",
+        "brand": "HanRun/中山汉仁电子"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号HR911105A、库存品牌/品类HANRUN(汉仁)，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号HR911105A，品牌HanRun/中山汉仁电子，取最大数量梯度992+价格5.4057元，页面https://www.ickey.cn/detail/1003001012328098/HR911105A.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "ZX-XH2.54-6PZZ",
+        "brand": "Megastar(兆星)"
+      },
+      "canonical": {
+        "partNumber": "ZX-XH2.54-6PZZ",
+        "brand": "Megastar"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号ZX-XH2.54-6PZZ、库存品牌/品类Megastar(兆星)，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号ZX-XH2.54-6PZZ，品牌Megastar，取最大数量梯度3000+价格0.1093元，页面https://www.ickey.cn/detail/1003001014001515/ZX-XH2.54-6PZZ.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "PZ254-1-04-W-8.5",
+        "brand": "HCTL(华灿天禄)"
+      },
+      "canonical": {
+        "partNumber": "PZ254-1-04-W-8.5",
+        "brand": "HCTL/华灿天禄"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号PZ254-1-04-W-8.5、库存品牌/品类HCTL(华灿天禄)，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号PZ254-1-04-W-8.5，品牌HCTL/华灿天禄，取最大数量梯度84000+价格0.1296元，页面https://www.ickey.cn/detail/100300105330634/PZ254-1-04-W-8.5.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "DSHP04TSGER",
+        "brand": "康深"
+      },
+      "canonical": {
+        "partNumber": "DSHP04TSGER",
+        "brand": "YE/KE/广督"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号DSHP04TSGER、库存品牌/品类康深，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号DSHP04TSGER，品牌YE/KE/广督，取最大数量梯度6000+价格1.794元，页面https://www.ickey.cn/detail/1003001027405876/DSHP04TSGER.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "KH-2.54PH180-2X7P-L8.9",
+        "brand": "金航标"
+      },
+      "canonical": {
+        "partNumber": "KH-2.54PH180-2X7P-L8.9",
+        "brand": "Kinghelm/金航标电子"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号KH-2.54PH180-2X7P-L8.9、库存品牌/品类金航标，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号KH-2.54PH180-2X7P-L8.9，品牌Kinghelm/金航标电子，取最大数量梯度8000+价格0.4305元，页面https://www.ickey.cn/detail/1003001024442795/KH-2.54PH180-2X7P-L8.9.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "A1002WV-S-5P",
+        "brand": "乐清美广"
+      },
+      "canonical": {
+        "partNumber": "A1002WV-S-5P",
+        "brand": "CJT(长江连接器)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号A1002WV-S-5P、库存品牌/品类乐清美广，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号A1002WV-S-5P，品牌CJT(长江连接器)，取最大数量梯度4500+价格0.9708元，页面https://item.szlcsc.com/238618.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "B-3000R20P-0110",
+        "brand": "灿科盟"
+      },
+      "canonical": {
+        "partNumber": "B-3000R20P-0110",
+        "brand": "Ckmtw/深圳灿科盟"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号B-3000R20P-0110、库存品牌/品类灿科盟，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号B-3000R20P-0110，品牌Ckmtw/深圳灿科盟，取最大数量梯度4960+价格0.9884元，页面https://www.ickey.cn/detail/1003001028389539/B-3000R20P-0110.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "R-RJ45R08P-2006",
+        "brand": "Ckmtw(灿科盟)"
+      },
+      "canonical": {
+        "partNumber": "R-RJ45R08P-2006",
+        "brand": "Ckmtw/深圳灿科盟"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号R-RJ45R08P-2006、库存品牌/品类Ckmtw(灿科盟)，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号R-RJ45R08P-2006，品牌Ckmtw/深圳灿科盟，取最大数量梯度1000+价格2.7472元，页面https://www.ickey.cn/detail/1003001045692629/R-RJ45R08P-2006.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "KH-2.54PH180-2X13P-L8.9",
+        "brand": "金航标"
+      },
+      "canonical": {
+        "partNumber": "KH-2.54PH180-2X13P-L8.9",
+        "brand": "Kinghelm/金航标电子"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号KH-2.54PH180-2X13P-L8.9、库存品牌/品类金航标，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号KH-2.54PH180-2X13P-L8.9，品牌Kinghelm/金航标电子，取最大数量梯度12000+价格0.8475元，页面https://www.ickey.cn/detail/100300101142689/KH-2.54PH180-2X13P-L8.9.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "FNR4030S2R2MT",
+        "brand": "CJIANG"
+      },
+      "canonical": {
+        "partNumber": "FNR4030S2R2MT",
+        "brand": "CJIANG/深圳长江微电"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号FNR4030S2R2MT、库存品牌/品类CJIANG，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号FNR4030S2R2MT，品牌CJIANG/深圳长江微电，取最大数量梯度10000+价格0.1381元，页面https://www.ickey.cn/detail/1003001017271196/FNR4030S2R2MT.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "FTKB1207-101MT",
+        "brand": "长江"
+      },
+      "canonical": {
+        "partNumber": "FTKB1207-101MT",
+        "brand": "cjiang(长江微电)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号FTKB1207-101MT、库存品牌/品类长江，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号FTKB1207-101MT，品牌cjiang(长江微电)，取最大数量梯度5000+价格0.8272元，页面https://item.szlcsc.com/3597602.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "YNR4030-220M",
+        "brand": "YJYCOIN(益嘉源)"
+      },
+      "canonical": {
+        "partNumber": "YNR4030-220M",
+        "brand": "YJYCOIN/益嘉源"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号YNR4030-220M、库存品牌/品类YJYCOIN(益嘉源)，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号YNR4030-220M，品牌YJYCOIN/益嘉源，取最大数量梯度8000+价格0.22元，页面https://www.ickey.cn/detail/1003001021518107/YNR4030-220M.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "YHNR4020-2R2M",
+        "brand": "YJYCOIN(益嘉源)"
+      },
+      "canonical": {
+        "partNumber": "YHNR4020-2R2M",
+        "brand": "YJYCOIN/益嘉源"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号YHNR4020-2R2M、库存品牌/品类YJYCOIN(益嘉源)，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号YHNR4020-2R2M，品牌YJYCOIN/益嘉源，取最大数量梯度12000+价格0.3673元，页面https://www.ickey.cn/detail/1003001036579811/YHNR4020-2R2M.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SDCL1005C3N3STDF",
+        "brand": "SUNLORD"
+      },
+      "canonical": {
+        "partNumber": "SDCL1005C3N3STDF",
+        "brand": "Sunlord/深圳顺络电子"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SDCL1005C3N3STDF、库存品牌/品类SUNLORD，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号SDCL1005C3N3STDF，品牌Sunlord/深圳顺络电子，取最大数量梯度500+价格0.0131元，页面https://www.ickey.cn/detail/1003001424770572/SDCL1005C3N3STDF.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SDCL1005C2N4STDF",
+        "brand": "SUNLORD"
+      },
+      "canonical": {
+        "partNumber": "SDCL1005C2N4STDF",
+        "brand": "Sunlord/深圳顺络电子"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SDCL1005C2N4STDF、库存品牌/品类SUNLORD，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号SDCL1005C2N4STDF，品牌Sunlord/深圳顺络电子，取最大数量梯度100000+价格0.0154元，页面https://www.ickey.cn/detail/1003001436613461/SDCL1005C2N4STDF.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "744204",
+        "brand": "Wurth(伍尔特)"
+      },
+      "canonical": {
+        "partNumber": "744204",
+        "brand": "WÜRTH"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号744204、库存品牌/品类Wurth(伍尔特)，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号744204，品牌WÜRTH，取最大数量梯度200+价格19.0801元，页面https://www.ickey.cn/detail/10022010423620/744204.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "C3D1X206KF02C00",
+        "brand": "FARATRNIC"
+      },
+      "canonical": {
+        "partNumber": "C3D1X206KF02C00",
+        "brand": "Faratronic/厦门法拉电子"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号C3D1X206KF02C00、库存品牌/品类FARATRNIC，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号C3D1X206KF02C00，品牌Faratronic/厦门法拉电子，取最大数量梯度150+价格10.373元，页面https://www.ickey.cn/detail/1003001047335668/C3D1X206KF02C00.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "KM108M050J25RR0VH2FP0",
+        "brand": "承兴"
+      },
+      "canonical": {
+        "partNumber": "KM108M050J25RR0VH2FP0",
+        "brand": "Cheng Xing/东莞承兴电子"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号KM108M050J25RR0VH2FP0、库存品牌/品类承兴，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号KM108M050J25RR0VH2FP0，品牌Cheng Xing/东莞承兴电子，取最大数量梯度3100+价格0.8766元，页面https://www.ickey.cn/detail/1003001024044344/KM108M050J25RR0VH2FP0.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "1720495",
+        "brand": "PHOENUX"
+      },
+      "canonical": {
+        "partNumber": "1720495",
+        "brand": "Phoenix Contact(菲尼克斯)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号1720495、库存品牌/品类PHOENUX，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号1720495，品牌Phoenix Contact(菲尼克斯)，取最大数量梯度50+价格23.63元，页面https://item.szlcsc.com/6981385.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "PBV-R005-F1-0.5",
+        "brand": "伊萨普兰"
+      },
+      "canonical": {
+        "partNumber": "PBV-R005-F1-0.5",
+        "brand": "ISABELLENHUETTE"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号PBV-R005-F1-0.5、库存品牌/品类伊萨普兰，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号PBV-R005-F1-0.5，品牌ISABELLENHUETTE，取最大数量梯度125+价格215.0141元，页面https://www.ickey.cn/detail/100220145700957/PBV-R005-F1-0.5.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "3296Y-1-502",
+        "brand": "成都新城华创(BAOTER)"
+      },
+      "canonical": {
+        "partNumber": "3296Y-1-502",
+        "brand": "BOURNS"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号3296Y-1-502、库存品牌/品类成都新城华创(BAOTER)，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号3296Y-1-502，品牌BOURNS，取最大数量梯度1000+价格3.25元，页面https://item.szlcsc.com/6417855.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "UPC319G2-E2-A",
+        "brand": "RENESAS"
+      },
+      "canonical": {
+        "partNumber": "UPC319G2-E2-A",
+        "brand": "RENESAS(瑞萨)/IDT"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号UPC319G2-E2-A、库存品牌/品类RENESAS，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号UPC319G2-E2-A，品牌RENESAS(瑞萨)/IDT，取最大数量梯度1000+价格5.5元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "MCASU168SB7103KTNA01",
+        "brand": "Taiyo"
+      },
+      "canonical": {
+        "partNumber": "MCASU168SB7103KTNA01",
+        "brand": "TAIYO YUDEN(太诱)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号MCASU168SB7103KTNA01、库存品牌/品类Taiyo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号MCASU168SB7103KTNA01，品牌TAIYO YUDEN(太诱)，取最大数量梯度600+价格0.1194元，页面https://item.szlcsc.com/6724357.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "AC0805FR-073K9L",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "AC0805FR-073K9L",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号AC0805FR-073K9L、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号AC0805FR-073K9L，品牌YAGEO/国巨，取最大数量梯度50000+价格0.0176元，页面https://www.ickey.cn/detail/1003001046754004/AC0805FR-073K9L.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "UWX1C101MCL1GB",
+        "brand": "Nichicon"
+      },
+      "canonical": {
+        "partNumber": "UWX1C101MCL1GB",
+        "brand": "nichicon/尼吉康"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号UWX1C101MCL1GB、库存品牌/品类Nichicon，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号UWX1C101MCL1GB，品牌nichicon/尼吉康，取最大数量梯度100+价格1.7099元，页面https://www.ickey.cn/detail/1003001439141511/UWX1C101MCL1GB.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "XG4A-4034",
+        "brand": "ORMON"
+      },
+      "canonical": {
+        "partNumber": "XG4A-4034",
+        "brand": "OMRON(欧姆龙)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号XG4A-4034、库存品牌/品类ORMON，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号XG4A-4034，品牌OMRON(欧姆龙)，取最大数量梯度40+价格12.28元，页面https://item.szlcsc.com/8526828.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SCT2401TVBR",
+        "brand": "芯片"
+      },
+      "canonical": {
+        "partNumber": "SCT2401TVBR",
+        "brand": "SCT(芯洲科技)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SCT2401TVBR、库存品牌/品类芯片，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号SCT2401TVBR，品牌SCT(芯洲科技)，取最大数量梯度6000+价格0.9416元，页面https://item.szlcsc.com/2981185.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "GD25Q80ESIGR",
+        "brand": "芯片"
+      },
+      "canonical": {
+        "partNumber": "GD25Q80ESIGR",
+        "brand": "GigaDevice(兆易创新)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号GD25Q80ESIGR、库存品牌/品类芯片，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号GD25Q80ESIGR，品牌GigaDevice(兆易创新)，取最大数量梯度100+价格3.3元，页面https://item.szlcsc.com/3234193.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "NSD5604E-DHTSTR",
+        "brand": "芯片"
+      },
+      "canonical": {
+        "partNumber": "NSD5604E-DHTSTR",
+        "brand": "NOVOSENSE/苏州纳芯微电子"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号NSD5604E-DHTSTR、库存品牌/品类芯片，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号NSD5604E-DHTSTR，品牌NOVOSENSE/苏州纳芯微电子，取最大数量梯度3000+价格5.326元，页面https://www.ickey.cn/detail/1003001028825112/NSD5604E-DHTSTR.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "B2405S-1WR3",
+        "brand": "电源模块"
+      },
+      "canonical": {
+        "partNumber": "B2405S-1WR3",
+        "brand": "YLPTEC(易川)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号B2405S-1WR3、库存品牌/品类电源模块，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号B2405S-1WR3，品牌YLPTEC(易川)，取最大数量梯度989+价格3.736元，页面https://item.szlcsc.com/3567756.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "WRB1205S-1WR2",
+        "brand": "电源模块"
+      },
+      "canonical": {
+        "partNumber": "WRB1205S-1WR2",
+        "brand": "EVISUN(易成)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号WRB1205S-1WR2、库存品牌/品类电源模块，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号WRB1205S-1WR2，品牌EVISUN(易成)，取最大数量梯度990+价格15.183元，页面https://item.szlcsc.com/21971660.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "WRB2405S-3WR2",
+        "brand": "电源模块"
+      },
+      "canonical": {
+        "partNumber": "WRB2405S-3WR2",
+        "brand": "YLPTEC(易川)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号WRB2405S-3WR2、库存品牌/品类电源模块，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号WRB2405S-3WR2，品牌YLPTEC(易川)，取最大数量梯度880+价格11.2455元，页面https://item.szlcsc.com/6212719.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RJ45-202-007-02",
+        "brand": "以太网连接器"
+      },
+      "canonical": {
+        "partNumber": "RJ45-202-007-02",
+        "brand": "XUNPU(讯普)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RJ45-202-007-02、库存品牌/品类以太网连接器，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RJ45-202-007-02，品牌XUNPU(讯普)，取最大数量梯度1000+价格1.521元，页面https://item.szlcsc.com/8401858.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "DP83848KSQ/NOPB",
+        "brand": "以太网收发器"
+      },
+      "canonical": {
+        "partNumber": "DP83848KSQ/NOPB",
+        "brand": "TI(德州仪器)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号DP83848KSQ/NOPB、库存品牌/品类以太网收发器，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号DP83848KSQ/NOPB，品牌TI(德州仪器)，取最大数量梯度1000+价格3.86元，页面https://item.szlcsc.com/44586.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "TLV75533PDBVR",
+        "brand": "线性稳压器"
+      },
+      "canonical": {
+        "partNumber": "TLV75533PDBVR",
+        "brand": "TI(德州仪器)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号TLV75533PDBVR、库存品牌/品类线性稳压器，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号TLV75533PDBVR，品牌TI(德州仪器)，取最大数量梯度6000+价格0.3994元，页面https://item.szlcsc.com/391018.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "GZ2012D601TF",
+        "brand": "0805磁珠"
+      },
+      "canonical": {
+        "partNumber": "GZ2012D601TF",
+        "brand": "Sunlord(顺络)"
+      },
+      "sources": [
+        "lcsc",
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号GZ2012D601TF、库存品牌/品类0805磁珠，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号GZ2012D601TF，品牌Sunlord(顺络)，取最大数量梯度20000+价格0.0434元，页面https://item.szlcsc.com/1369.html；云汉芯城实际读取：型号GZ2012D601TF，品牌Sunlord/深圳顺络电子，取最大数量梯度20000+价格0.0425元，页面https://www.ickey.cn/detail/1003001012328465/GZ2012D601TF.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CBM321609U102T",
+        "brand": "1206磁珠"
+      },
+      "canonical": {
+        "partNumber": "CBM321609U102T",
+        "brand": "FH(风华)"
+      },
+      "sources": [
+        "lcsc",
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CBM321609U102T、库存品牌/品类1206磁珠，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号CBM321609U102T，品牌FH(风华)，取最大数量梯度8000+价格0.1538元，页面https://item.szlcsc.com/150490.html；云汉芯城实际读取：型号CBM321609U102T，品牌FH/广东风华高科，取最大数量梯度4000+价格0.1277元，页面https://www.ickey.cn/detail/1003001014881751/CBM321609U102T.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC0402JRNPO9BN101(100pF)",
+        "brand": "0402电容"
+      },
+      "canonical": {
+        "partNumber": "CC0402JRNPO9BN101",
+        "brand": "YAGEO(国巨)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CC0402JRNPO9BN101(100pF)、库存品牌/品类0402电容，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号CC0402JRNPO9BN101，品牌YAGEO(国巨)，取最大数量梯度50000+价格0.0044元，页面https://item.szlcsc.com/107415.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0402B104K250NT(100nF25V)",
+        "brand": "0402电容"
+      },
+      "canonical": {
+        "partNumber": "0402B104K250NT",
+        "brand": "FH(风华)"
+      },
+      "sources": [
+        "lcsc",
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号0402B104K250NT(100nF25V)、库存品牌/品类0402电容，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号0402B104K250NT，品牌FH(风华)，取最大数量梯度100000+价格0.0148元，页面https://item.szlcsc.com/57421.html；云汉芯城实际读取：型号0402B104K250NT，品牌FH/广东风华高科，取最大数量梯度1820000+价格0.0061元，页面https://www.ickey.cn/detail/1003001045936979/0402B104K250NT.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC0603JRNPO9BN103(10nF)",
+        "brand": "0603电容"
+      },
+      "canonical": {
+        "partNumber": "CC0603JRNPO9BN103",
+        "brand": "YAGEO(国巨)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CC0603JRNPO9BN103(10nF)、库存品牌/品类0603电容，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号CC0603JRNPO9BN103，品牌YAGEO(国巨)，取最大数量梯度20000+价格0.0815元，页面https://item.szlcsc.com/364455.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC0603KRX7R7BB225(2.2uF)",
+        "brand": "0603电容"
+      },
+      "canonical": {
+        "partNumber": "CC0603KRX7R7BB225",
+        "brand": "YAGEO(国巨)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CC0603KRX7R7BB225(2.2uF)、库存品牌/品类0603电容，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号CC0603KRX7R7BB225，品牌YAGEO(国巨)，取最大数量梯度8000+价格0.2309元，页面https://item.szlcsc.com/986111.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CL21A106KPFNNNE(10uF10V)",
+        "brand": "0805电容"
+      },
+      "canonical": {
+        "partNumber": "CL21A106KPFNNNE",
+        "brand": "SAMSUNG(三星)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CL21A106KPFNNNE(10uF10V)、库存品牌/品类0805电容，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号CL21A106KPFNNNE，品牌SAMSUNG(三星)，取最大数量梯度20000+价格0.08元，页面https://item.szlcsc.com/17708.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CL21A106KOQNNNE(10uF16V)",
+        "brand": "0805电容"
+      },
+      "canonical": {
+        "partNumber": "CL21A106KOQNNNE",
+        "brand": "SAMSUNG(三星)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CL21A106KOQNNNE(10uF16V)、库存品牌/品类0805电容，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号CL21A106KOQNNNE，品牌SAMSUNG(三星)，取最大数量梯度20000+价格0.069元，页面https://item.szlcsc.com/2065.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC1206KKX7RDBB102(1nF)",
+        "brand": "1206电容"
+      },
+      "canonical": {
+        "partNumber": "CC1206KKX7RDBB102",
+        "brand": "YAGEO(国巨)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CC1206KKX7RDBB102(1nF)、库存品牌/品类1206电容，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号CC1206KKX7RDBB102，品牌YAGEO(国巨)，取最大数量梯度51000+价格0.0585元，页面https://item.szlcsc.com/24367.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "1206B102K202NT(1nF)",
+        "brand": "1206电容"
+      },
+      "canonical": {
+        "partNumber": "1206B102K202NT",
+        "brand": "FH(风华)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号1206B102K202NT(1nF)、库存品牌/品类1206电容，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号1206B102K202NT，品牌FH(风华)，取最大数量梯度30000+价格0.0569元，页面https://item.szlcsc.com/9721.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "1206B103K102NT(10nF1kV)",
+        "brand": "1206电容"
+      },
+      "canonical": {
+        "partNumber": "1206B103K102NT",
+        "brand": "FH(风华)"
+      },
+      "sources": [
+        "lcsc",
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号1206B103K102NT(10nF1kV)、库存品牌/品类1206电容，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号1206B103K102NT，品牌FH(风华)，取最大数量梯度21000+价格0.1719元，页面https://item.szlcsc.com/9719.html；云汉芯城实际读取：型号1206B103K102NT，品牌FH/广东风华高科，取最大数量梯度3000+价格0.0992元，页面https://www.ickey.cn/detail/1003001012328455/1206B103K102NT.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC1206KKX5R8BB106(10uF25V)",
+        "brand": "1206电容"
+      },
+      "canonical": {
+        "partNumber": "CC1206KKX5R8BB106",
+        "brand": "YAGEO(国巨)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CC1206KKX5R8BB106(10uF25V)、库存品牌/品类1206电容，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号CC1206KKX5R8BB106，品牌YAGEO(国巨)，取最大数量梯度4000+价格1.4811元，页面https://item.szlcsc.com/140141.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0402WGJ0101TCE(100R)",
+        "brand": "0402电阻"
+      },
+      "canonical": {
+        "partNumber": "0402WGJ0101TCE",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc",
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号0402WGJ0101TCE(100R)、库存品牌/品类0402电阻，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号0402WGJ0101TCE，品牌UNI-ROYAL(厚声)，取最大数量梯度50000+价格0.0023元，页面https://item.szlcsc.com/25881.html；云汉芯城实际读取：型号0402WGJ0101TCE，品牌UNI-ROYAL，取最大数量梯度30000+价格0.0018元，页面https://www.ickey.cn/detail/100300107282910/0402WGJ0101TCE.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAF4871T5E(4K87)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAF4871T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号0603WAF4871T5E(4K87)、库存品牌/品类0603电阻，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号0603WAF4871T5E，品牌UNI-ROYAL(厚声)，取最大数量梯度5000+价格0.0066元，页面https://item.szlcsc.com/23772.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAF6491T5E(6K49)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAF6491T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc",
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号0603WAF6491T5E(6K49)、库存品牌/品类0603电阻，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号0603WAF6491T5E，品牌UNI-ROYAL(厚声)，取最大数量梯度5000+价格0.0266元，页面https://item.szlcsc.com/23815.html；云汉芯城实际读取：型号0603WAF6491T5E，品牌UNI-ROYAL，取最大数量梯度5000+价格0.0064元，页面https://www.ickey.cn/detail/1003001029691852/0603WAF6491T5E.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0603WAF2003T5E(200K)",
+        "brand": "0603电阻"
+      },
+      "canonical": {
+        "partNumber": "0603WAF2003T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc",
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号0603WAF2003T5E(200K)、库存品牌/品类0603电阻，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号0603WAF2003T5E，品牌UNI-ROYAL(厚声)，取最大数量梯度50000+价格0.0054元，页面https://item.szlcsc.com/26554.html；云汉芯城实际读取：型号0603WAF2003T5E，品牌UNI-ROYAL，取最大数量梯度15000+价格0.0038元，页面https://www.ickey.cn/detail/100300107283880/0603WAF2003T5E.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0805W8J0512T5E(5K1)",
+        "brand": "0805电阻"
+      },
+      "canonical": {
+        "partNumber": "0805W8J0512T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc",
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号0805W8J0512T5E(5K1)、库存品牌/品类0805电阻，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号0805W8J0512T5E，品牌UNI-ROYAL(厚声)，取最大数量梯度50000+价格0.0077元，页面https://item.szlcsc.com/26766.html；云汉芯城实际读取：型号0805W8J0512T5E，品牌UNI-ROYAL，取最大数量梯度15000+价格0.0056元，页面https://www.ickey.cn/detail/1003001013541421/0805W8J0512T5E.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "4D03WGJ0101T5E(100R)",
+        "brand": "0603排阻"
+      },
+      "canonical": {
+        "partNumber": "4D03WGJ0101T5E",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc",
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号4D03WGJ0101T5E(100R)、库存品牌/品类0603排阻，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号4D03WGJ0101T5E，品牌UNI-ROYAL(厚声)，取最大数量梯度100000+价格0.027522元，页面https://item.szlcsc.com/26249.html；云汉芯城实际读取：型号4D03WGJ0101T5E，品牌UNI-ROYAL，取最大数量梯度5000+价格0.0239元，页面https://www.ickey.cn/detail/1003001012808784/4D03WGJ0101T5E.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "07D390K",
+        "brand": "压敏电阻"
+      },
+      "canonical": {
+        "partNumber": "07D390K",
+        "brand": "R+O(宏嘉诚)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号07D390K、库存品牌/品类压敏电阻，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号07D390K，品牌R+O(宏嘉诚)，取最大数量梯度5000+价格0.238731元，页面https://item.szlcsc.com/51445322.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "07D471K",
+        "brand": "压敏电阻"
+      },
+      "canonical": {
+        "partNumber": "07D471K",
+        "brand": "R+O(宏嘉诚)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号07D471K、库存品牌/品类压敏电阻，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号07D471K，品牌R+O(宏嘉诚)，取最大数量梯度10000+价格0.127元，页面https://item.szlcsc.com/51445326.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "07D680K",
+        "brand": "压敏电阻"
+      },
+      "canonical": {
+        "partNumber": "07D680K",
+        "brand": "R+O(宏嘉诚)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号07D680K、库存品牌/品类压敏电阻，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号07D680K，品牌R+O(宏嘉诚)，取最大数量梯度5000+价格0.2366元，页面https://item.szlcsc.com/51445374.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "FPV453215E300PKT",
+        "brand": "压敏电阻"
+      },
+      "canonical": {
+        "partNumber": "FPV453215E300PKT",
+        "brand": "FH(风华)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号FPV453215E300PKT、库存品牌/品类压敏电阻，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号FPV453215E300PKT，品牌FH(风华)，取最大数量梯度6000+价格0.727元，页面https://item.szlcsc.com/6363290.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SS36BF",
+        "brand": "二极管"
+      },
+      "canonical": {
+        "partNumber": "SS36BF",
+        "brand": "SHIKUES(时科)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SS36BF、库存品牌/品类二极管，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号SS36BF，品牌SHIKUES(时科)，取最大数量梯度10000+价格0.201115元，页面https://item.szlcsc.com/762321.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SS36F",
+        "brand": "二极管"
+      },
+      "canonical": {
+        "partNumber": "SS36F",
+        "brand": "GOODWORK(固得沃克)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SS36F、库存品牌/品类二极管，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号SS36F，品牌GOODWORK(固得沃克)，取最大数量梯度24000+价格0.09144元，页面https://item.szlcsc.com/3160997.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "ES2JW",
+        "brand": "二极管"
+      },
+      "canonical": {
+        "partNumber": "ES2JW",
+        "brand": "R+O(宏嘉诚)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号ES2JW、库存品牌/品类二极管，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号ES2JW，品牌R+O(宏嘉诚)，取最大数量梯度51000+价格0.04464元，页面https://item.szlcsc.com/19354388.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SS510F",
+        "brand": "二极管"
+      },
+      "canonical": {
+        "partNumber": "SS510F",
+        "brand": "R+O(宏嘉诚)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SS510F、库存品牌/品类二极管，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号SS510F，品牌R+O(宏嘉诚)，取最大数量梯度9000+价格0.2142元，页面https://item.szlcsc.com/43223717.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "FR107W",
+        "brand": "二极管"
+      },
+      "canonical": {
+        "partNumber": "FR107W",
+        "brand": "R+O(宏嘉诚)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号FR107W、库存品牌/品类二极管，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号FR107W，品牌R+O(宏嘉诚)，取最大数量梯度51000+价格0.027156元，页面https://item.szlcsc.com/19354346.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RTL8723DS-CG",
+        "brand": "RTL8723DS-CG"
+      },
+      "canonical": {
+        "partNumber": "RTL8723DS-CG",
+        "brand": "REALTEK(瑞昱)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RTL8723DS-CG、库存品牌/品类RTL8723DS-CG，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RTL8723DS-CG，品牌REALTEK(瑞昱)，取最大数量梯度980+价格8.27元，页面https://item.szlcsc.com/2888489.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "XHP50D-00-0000-0D0HH40DV",
+        "brand": "CREE"
+      },
+      "canonical": {
+        "partNumber": "XHP50D-00-0000-0D0HH40DV",
+        "brand": "CREE LED"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号XHP50D-00-0000-0D0HH40DV、库存品牌/品类CREE，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号XHP50D-00-0000-0D0HH40DV，品牌CREE LED，取最大数量梯度1000+价格13.94元，页面https://item.szlcsc.com/18823725.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CX3225SA40000D0PTWCC",
+        "brand": "KYOCERA"
+      },
+      "canonical": {
+        "partNumber": "CX3225SA40000D0PTWCC",
+        "brand": "Kyocera AVX"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CX3225SA40000D0PTWCC、库存品牌/品类KYOCERA，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号CX3225SA40000D0PTWCC，品牌Kyocera AVX，取最大数量梯度100+价格7.38元，页面https://item.szlcsc.com/3182122.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CSBX1050-8R2M",
+        "brand": "Codaca"
+      },
+      "canonical": {
+        "partNumber": "CSBX1050-8R2M",
+        "brand": "CODACA(科达嘉)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CSBX1050-8R2M、库存品牌/品类Codaca，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号CSBX1050-8R2M，品牌CODACA(科达嘉)，取最大数量梯度1400+价格6.93元，页面https://item.szlcsc.com/7101701.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "MX25V1635FZNI",
+        "brand": "MACRONIX"
+      },
+      "canonical": {
+        "partNumber": "MX25V1635FZNI",
+        "brand": "MACRONIX/旺宏"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号MX25V1635FZNI、库存品牌/品类MACRONIX，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号MX25V1635FZNI，品牌MACRONIX/旺宏，取最大数量梯度5000+价格10.6785元，页面https://www.ickey.cn/detail/100340149264401/MX25V1635FZNI.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "XPEBWT-H1-0000-00DE7",
+        "brand": "CREE"
+      },
+      "canonical": {
+        "partNumber": "XPEBWT-H1-0000-00DE7",
+        "brand": "CREE LED"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号XPEBWT-H1-0000-00DE7、库存品牌/品类CREE，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号XPEBWT-H1-0000-00DE7，品牌CREE LED，取最大数量梯度1000+价格3.15元，页面https://item.szlcsc.com/18431211.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CSBX0640-4R7M",
+        "brand": "Codaca"
+      },
+      "canonical": {
+        "partNumber": "CSBX0640-4R7M",
+        "brand": "CODACA(科达嘉)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CSBX0640-4R7M、库存品牌/品类Codaca，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号CSBX0640-4R7M，品牌CODACA(科达嘉)，取最大数量梯度1000+价格6.04元，页面https://item.szlcsc.com/3303207.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "C0402C103J9RALTU",
+        "brand": "Kemet"
+      },
+      "canonical": {
+        "partNumber": "C0402C103J9RALTU",
+        "brand": "KEMET(基美)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号C0402C103J9RALTU、库存品牌/品类Kemet，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号C0402C103J9RALTU，品牌KEMET(基美)，取最大数量梯度1000+价格0.3092元，页面https://item.szlcsc.com/2384745.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CSR1206FK12L0",
+        "brand": "Stackpole"
+      },
+      "canonical": {
+        "partNumber": "CSR1206FK12L0",
+        "brand": "SEI(Stackpole Electronics Inc.)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CSR1206FK12L0、库存品牌/品类Stackpole，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号CSR1206FK12L0，品牌SEI(Stackpole Electronics Inc.)，取最大数量梯度150+价格1.2702元，页面https://item.szlcsc.com/323456.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "EEEFN2A470UP",
+        "brand": "Panasonic"
+      },
+      "canonical": {
+        "partNumber": "EEEFN2A470UP",
+        "brand": "PANASONIC(松下)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号EEEFN2A470UP、库存品牌/品类Panasonic，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号EEEFN2A470UP，品牌PANASONIC(松下)，取最大数量梯度30+价格3.28元，页面https://item.szlcsc.com/505714.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "BL0942",
+        "brand": "BELLING/贝岭"
+      },
+      "canonical": {
+        "partNumber": "BL0942",
+        "brand": "BL(上海贝岭)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号BL0942、库存品牌/品类BELLING/贝岭，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号BL0942，品牌BL(上海贝岭)，取最大数量梯度1000+价格2.35元，页面https://item.szlcsc.com/3009419.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CGA5L1X7R1H106K160AC(CGA5L1X7R1H106KT0Y0N)",
+        "brand": "TDK"
+      },
+      "canonical": {
+        "partNumber": "CGA5L1X7R1H106K160AC",
+        "brand": "TDK"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CGA5L1X7R1H106K160AC(CGA5L1X7R1H106KT0Y0N)、库存品牌/品类TDK，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号CGA5L1X7R1H106K160AC，品牌TDK，取最大数量梯度20000+价格1.1183元，页面https://www.ickey.cn/detail/1003001035186403/CGA5L1X7R1H106K160AC.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CSAB1040A-100M",
+        "brand": "Codaca/科达嘉"
+      },
+      "canonical": {
+        "partNumber": "CSAB1040A-100M",
+        "brand": "CODACA(科达嘉)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CSAB1040A-100M、库存品牌/品类Codaca/科达嘉，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号CSAB1040A-100M，品牌CODACA(科达嘉)，取最大数量梯度800+价格2.63元，页面https://item.szlcsc.com/7088882.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "S-89431ACNC-HBVTFG",
+        "brand": "SEIKO"
+      },
+      "canonical": {
+        "partNumber": "S-89431ACNC-HBVTFG",
+        "brand": "ABLIC(艾普凌科)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号S-89431ACNC-HBVTFG、库存品牌/品类SEIKO，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号S-89431ACNC-HBVTFG，品牌ABLIC(艾普凌科)，取最大数量梯度1000+价格1.96元，页面https://item.szlcsc.com/8036769.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "V07E275P",
+        "brand": "Littelfuse/力特"
+      },
+      "canonical": {
+        "partNumber": "V07E275P",
+        "brand": "Littelfuse(美国力特)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号V07E275P、库存品牌/品类Littelfuse/力特，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号V07E275P，品牌Littelfuse(美国力特)，取最大数量梯度150+价格0.8719元，页面https://item.szlcsc.com/1618214.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "8Y32000004",
+        "brand": "TXC"
+      },
+      "canonical": {
+        "partNumber": "8Y32000004",
+        "brand": "TXC(晶技)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号8Y32000004、库存品牌/品类TXC，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号8Y32000004，品牌TXC(晶技)，取最大数量梯度500+价格0.7571元，页面https://item.szlcsc.com/399344.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "PA2512FKE7W0R015E",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "PA2512FKE7W0R015E",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号PA2512FKE7W0R015E、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号PA2512FKE7W0R015E，品牌YAGEO/国巨，取最大数量梯度4000+价格2.2645元，页面https://www.ickey.cn/detail/100340149593939/PA2512FKE7W0R015E.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "A1501WR-S-5P-LCP",
+        "brand": "CJT"
+      },
+      "canonical": {
+        "partNumber": "A1501WR-S-5P-LCP",
+        "brand": "CJT/长江连接器"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号A1501WR-S-5P-LCP、库存品牌/品类CJT，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号A1501WR-S-5P-LCP，品牌CJT/长江连接器，取最大数量梯度5000+价格0.5445元，页面https://www.ickey.cn/detail/1003001029686003/A1501WR-S-5P-LCP.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "HSMC-C190",
+        "brand": "Avago technologies"
+      },
+      "canonical": {
+        "partNumber": "HSMC-C190",
+        "brand": "Broadcom(博通)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号HSMC-C190、库存品牌/品类Avago technologies，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号HSMC-C190，品牌Broadcom(博通)，取最大数量梯度30+价格2.35元，页面https://item.szlcsc.com/19352647.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "ZB25VQ32BSIG",
+        "brand": "Zbit"
+      },
+      "canonical": {
+        "partNumber": "ZB25VQ32BSIG",
+        "brand": "Zbit(恒烁)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号ZB25VQ32BSIG、库存品牌/品类Zbit，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号ZB25VQ32BSIG，品牌Zbit(恒烁)，取最大数量梯度2000+价格1.595元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "FOD817CSD",
+        "brand": "FAIRCHILD"
+      },
+      "canonical": {
+        "partNumber": "FOD817CSD",
+        "brand": "onsemi(安森美)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号FOD817CSD、库存品牌/品类FAIRCHILD，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号FOD817CSD，品牌onsemi(安森美)，取最大数量梯度1000+价格0.7884元，页面https://item.szlcsc.com/150867.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "DSL34",
+        "brand": "FormosaMS"
+      },
+      "canonical": {
+        "partNumber": "DSL34",
+        "brand": "R+O(宏嘉诚)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号DSL34、库存品牌/品类FormosaMS，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号DSL34，品牌R+O(宏嘉诚)，取最大数量梯度6000+价格0.26877元，页面https://item.szlcsc.com/24165506.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "VK7D0792A220MV",
+        "brand": "Ymin"
+      },
+      "canonical": {
+        "partNumber": "VK7D0792A220MV",
+        "brand": "Ymin(永铭)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号VK7D0792A220MV、库存品牌/品类Ymin，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号VK7D0792A220MV，品牌Ymin(永铭)，取最大数量梯度4800+价格0.4651元，页面https://item.szlcsc.com/496219.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SMAJ16A",
+        "brand": "ON Semiconductor"
+      },
+      "canonical": {
+        "partNumber": "SMAJ16A",
+        "brand": "Littelfuse(美国力特)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SMAJ16A、库存品牌/品类ON Semiconductor，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号SMAJ16A，品牌Littelfuse(美国力特)，取最大数量梯度2500+价格0.5884元，页面https://item.szlcsc.com/75683.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "LKMD1152G4R7MF",
+        "brand": "Ymin"
+      },
+      "canonical": {
+        "partNumber": "LKMD1152G4R7MF",
+        "brand": "Ymin(永铭)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号LKMD1152G4R7MF、库存品牌/品类Ymin，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号LKMD1152G4R7MF，品牌Ymin(永铭)，取最大数量梯度150+价格0.5086元，页面https://item.szlcsc.com/443889.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "MRN026432(2512)LR003FTS",
+        "brand": "SUP"
+      },
+      "canonical": {
+        "partNumber": "MRN026432LR003FTS",
+        "brand": "SUP(美隆)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号MRN026432(2512)LR003FTS、库存品牌/品类SUP，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号MRN026432(2512)LR003FTS，品牌SUP(美隆)，取最大数量梯度4000+价格0.2151元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "885012206077",
+        "brand": "WE(Wurth Elektronik)"
+      },
+      "canonical": {
+        "partNumber": "885012206077",
+        "brand": "Wurth(伍尔特)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号885012206077、库存品牌/品类WE(Wurth Elektronik)，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号885012206077，品牌Wurth(伍尔特)，取最大数量梯度1000+价格0.0175元，页面https://item.szlcsc.com/2272568.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "BAS70WS",
+        "brand": "PANJIT"
+      },
+      "canonical": {
+        "partNumber": "BAS70WS",
+        "brand": "R+O(宏嘉诚)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号BAS70WS、库存品牌/品类PANJIT，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号BAS70WS，品牌R+O(宏嘉诚)，取最大数量梯度51000+价格0.052545元，页面https://item.szlcsc.com/8589433.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "TCRG041005(0402)L6041BT25PPM",
+        "brand": "SUP"
+      },
+      "canonical": {
+        "partNumber": "TCRG041005L6041BT25PPM",
+        "brand": "SUP(美隆)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号TCRG041005(0402)L6041BT25PPM、库存品牌/品类SUP，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号TCRG041005(0402)L6041BT25PPM，品牌SUP(美隆)，取最大数量梯度10000+价格0.1929元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "TCRG041005(0402)L2323BT25PPM",
+        "brand": "SUP"
+      },
+      "canonical": {
+        "partNumber": "TCRG041005L2323BT25PPM",
+        "brand": "SUP(美隆)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号TCRG041005(0402)L2323BT25PPM、库存品牌/品类SUP，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号TCRG041005(0402)L2323BT25PPM，品牌SUP(美隆)，取最大数量梯度50000+价格0.1157元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "BZX84C27",
+        "brand": "Fairchild Semiconductor"
+      },
+      "canonical": {
+        "partNumber": "BZX84C27",
+        "brand": "ZOCA/卓凯半导体"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号BZX84C27、库存品牌/品类Fairchild Semiconductor，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号BZX84C27，品牌ZOCA/卓凯半导体，取最大数量梯度1500+价格0.0431元，页面https://www.ickey.cn/detail/1003001018529878/BZX84C27.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CRCW0805100KFKEBC",
+        "brand": "Vishay Dale"
+      },
+      "canonical": {
+        "partNumber": "CRCW0805100KFKEBC",
+        "brand": "VISHAY(威世)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CRCW0805100KFKEBC、库存品牌/品类Vishay Dale，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号CRCW0805100KFKEBC，品牌VISHAY(威世)，取最大数量梯度1000+价格0.0187元，页面https://item.szlcsc.com/4751149.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "XH-2AW",
+        "brand": "SFR"
+      },
+      "canonical": {
+        "partNumber": "XH-2AW",
+        "brand": "HCTL(华灿天禄)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号XH-2AW、库存品牌/品类SFR，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号XH-2AW，品牌HCTL(华灿天禄)，取最大数量梯度50000+价格0.03743元，页面https://item.szlcsc.com/3184382.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RR3225(1210)L30R0FT",
+        "brand": "SUPEROHM"
+      },
+      "canonical": {
+        "partNumber": "RR3225L30R0FT",
+        "brand": "SUP(美隆)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RR3225(1210)L30R0FT、库存品牌/品类SUPEROHM，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RR3225(1210)L30R0FT，品牌SUP(美隆)，取最大数量梯度14720+价格0.0449元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RL0805FR-7W0R51L",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "RL0805FR-7W0R51L",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RL0805FR-7W0R51L、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号RL0805FR-7W0R51L，品牌YAGEO/国巨，取最大数量梯度50000+价格0.0476元，页面https://www.ickey.cn/detail/1003001046793890/RL0805FR-7W0R51L.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC0805KRX7RZBB102",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "CC0805KRX7RZBB102",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CC0805KRX7RZBB102、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号CC0805KRX7RZBB102，品牌YAGEO/国巨，取最大数量梯度40000+价格0.0473元，页面https://www.ickey.cn/detail/1003001428295697/CC0805KRX7RZBB102.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC0402JRNPO9BN161",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "CC0402JRNPO9BN161",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CC0402JRNPO9BN161、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号CC0402JRNPO9BN161，品牌YAGEO/国巨，取最大数量梯度100000+价格0.0174元，页面https://www.ickey.cn/detail/1003001046748468/CC0402JRNPO9BN161.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RR3216(1206)L0R33FT",
+        "brand": "SUP"
+      },
+      "canonical": {
+        "partNumber": "RR3216L0R33FT",
+        "brand": "SUP(美隆)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RR3216(1206)L0R33FT、库存品牌/品类SUP，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RR3216(1206)L0R33FT，品牌SUP(美隆)，取最大数量梯度27050+价格0.0245元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RR3216(1206)L1R74FT",
+        "brand": "SUP"
+      },
+      "canonical": {
+        "partNumber": "RR3216L1R74FT",
+        "brand": "SUP(美隆)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RR3216(1206)L1R74FT、库存品牌/品类SUP，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RR3216(1206)L1R74FT，品牌SUP(美隆)，取最大数量梯度20000+价格0.033元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RR3216(1206)L3000FT",
+        "brand": "SUPEROHM"
+      },
+      "canonical": {
+        "partNumber": "RR3216L3000FT",
+        "brand": "SUP(美隆)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RR3216(1206)L3000FT、库存品牌/品类SUPEROHM，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RR3216(1206)L3000FT，品牌SUP(美隆)，取最大数量梯度38100+价格0.0174元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RR1608(0603)L471JT",
+        "brand": "SUP"
+      },
+      "canonical": {
+        "partNumber": "RR1608L471JT",
+        "brand": "SUP(美隆)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RR1608(0603)L471JT、库存品牌/品类SUP，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RR1608(0603)L471JT，品牌SUP(美隆)，取最大数量梯度129050+价格0.0052元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RR1608(0603)L2403FT",
+        "brand": "SUPEROHM"
+      },
+      "canonical": {
+        "partNumber": "RR1608L2403FT",
+        "brand": "SUP(美隆)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RR1608(0603)L2403FT、库存品牌/品类SUPEROHM，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RR1608(0603)L2403FT，品牌SUP(美隆)，取最大数量梯度111150+价格0.006元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RR1608(0603)L75R0FT",
+        "brand": "SUPEROHM"
+      },
+      "canonical": {
+        "partNumber": "RR1608L75R0FT",
+        "brand": "SUP(美隆)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RR1608(0603)L75R0FT、库存品牌/品类SUPEROHM，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RR1608(0603)L75R0FT，品牌SUP(美隆)，取最大数量梯度111150+价格0.006元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RR1005(0402)L3741FT",
+        "brand": "SUP"
+      },
+      "canonical": {
+        "partNumber": "RR1005L3741FT",
+        "brand": "SUP(美隆)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RR1005(0402)L3741FT、库存品牌/品类SUP，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RR1005(0402)L3741FT，品牌SUP(美隆)，取最大数量梯度200000+价格0.0033元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RR1005(0402)L2552FT",
+        "brand": "SUP"
+      },
+      "canonical": {
+        "partNumber": "RR1005L2552FT",
+        "brand": "SUP(美隆)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RR1005(0402)L2552FT、库存品牌/品类SUP，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RR1005(0402)L2552FT，品牌SUP(美隆)，取最大数量梯度200000+价格0.0033元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RR1005(0402)L20R0FT",
+        "brand": "SUP"
+      },
+      "canonical": {
+        "partNumber": "RR1005L20R0FT",
+        "brand": "SUP(美隆)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RR1005(0402)L20R0FT、库存品牌/品类SUP，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RR1005(0402)L20R0FT，品牌SUP(美隆)，取最大数量梯度200000+价格0.0033元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RR1005(0402)L3162FT",
+        "brand": "SUPEROHM"
+      },
+      "canonical": {
+        "partNumber": "RR1005L3162FT",
+        "brand": "SUP(美隆)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RR1005(0402)L3162FT、库存品牌/品类SUPEROHM，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RR1005(0402)L3162FT，品牌SUP(美隆)，取最大数量梯度200000+价格0.0033元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "MRM032012(0805)LR020FTU",
+        "brand": "SUPEROHM"
+      },
+      "canonical": {
+        "partNumber": "MRM032012LR020FTU",
+        "brand": "SUP(美隆)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号MRM032012(0805)LR020FTU、库存品牌/品类SUPEROHM，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号MRM032012(0805)LR020FTU，品牌SUP(美隆)，取最大数量梯度25000+价格0.2871元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "MMSZ5227B",
+        "brand": "PANJIT(强茂)"
+      },
+      "canonical": {
+        "partNumber": "MMSZ5227B",
+        "brand": "R+O(宏嘉诚)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号MMSZ5227B、库存品牌/品类PANJIT(强茂)，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号MMSZ5227B，品牌R+O(宏嘉诚)，取最大数量梯度51000+价格0.055521元，页面https://item.szlcsc.com/23994550.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CH340G",
+        "brand": "Dream Tech Innovation"
+      },
+      "canonical": {
+        "partNumber": "CH340G",
+        "brand": "WCH(南京沁恒)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CH340G、库存品牌/品类Dream Tech Innovation，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号CH340G，品牌WCH(南京沁恒)，取最大数量梯度1000+价格1.92元，页面https://item.szlcsc.com/14927.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RR1005(0402)L5R10FT",
+        "brand": "SUPEROHM"
+      },
+      "canonical": {
+        "partNumber": "RR1005L5R10FT",
+        "brand": "SUP(美隆)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RR1005(0402)L5R10FT、库存品牌/品类SUPEROHM，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RR1005(0402)L5R10FT，品牌SUP(美隆)，取最大数量梯度121250+价格0.0055元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "UMK105BJ224KV-F",
+        "brand": "Taiyou Yuden"
+      },
+      "canonical": {
+        "partNumber": "UMK105BJ224KV-F",
+        "brand": "TAIYO YUDEN(太诱)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号UMK105BJ224KV-F、库存品牌/品类Taiyou Yuden，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号UMK105BJ224KV-F，品牌TAIYO YUDEN(太诱)，取最大数量梯度20000+价格0.0643元，页面https://item.szlcsc.com/257630.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RR1005(0402)L6342FT",
+        "brand": "SUPEROHM"
+      },
+      "canonical": {
+        "partNumber": "RR1005L6342FT",
+        "brand": "SUP(美隆)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RR1005(0402)L6342FT、库存品牌/品类SUPEROHM，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号RR1005(0402)L6342FT，品牌SUP(美隆)，取最大数量梯度200000+价格0.0033元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "0402WGF2151TCE",
+        "brand": "UR"
+      },
+      "canonical": {
+        "partNumber": "0402WGF2151TCE",
+        "brand": "UNI-ROYAL(厚声)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号0402WGF2151TCE、库存品牌/品类UR，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号0402WGF2151TCE，品牌UNI-ROYAL(厚声)，取最大数量梯度10000+价格0.0096元，页面https://item.szlcsc.com/26621.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CL31B222KIFNNNE",
+        "brand": "Samsung"
+      },
+      "canonical": {
+        "partNumber": "CL31B222KIFNNNE",
+        "brand": "SAMSUNG(三星)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CL31B222KIFNNNE、库存品牌/品类Samsung，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号CL31B222KIFNNNE，品牌SAMSUNG(三星)，取最大数量梯度10000+价格0.1563元，页面https://item.szlcsc.com/530341.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "C1206C220JGGACAUTO",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "C1206C220JGGACAUTO",
+        "brand": "KEMET(基美)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号C1206C220JGGACAUTO、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号C1206C220JGGACAUTO，品牌KEMET(基美)，取最大数量梯度1000+价格1.0853元，页面https://item.szlcsc.com/7714983.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "AT0402BRD075K62L",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "AT0402BRD075K62L",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号AT0402BRD075K62L、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号AT0402BRD075K62L，品牌YAGEO/国巨，取最大数量梯度100000+价格0.2122元，页面https://www.ickey.cn/detail/1003001046783460/AT0402BRD075K62L.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SPRH73-101M",
+        "brand": "Codaca/科达嘉"
+      },
+      "canonical": {
+        "partNumber": "SPRH73-101M",
+        "brand": "CODACA(科达嘉)"
+      },
+      "sources": [
+        "lcsc"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SPRH73-101M、库存品牌/品类Codaca/科达嘉，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号SPRH73-101M，品牌CODACA(科达嘉)，取最大数量梯度20000+价格0.9253元"
       }
     }
   ]
