@@ -1,0 +1,22 @@
+--- previous/Config
++++ current/Config
+@@ -33,7 +33,7 @@
+ 
+     @property
+     def package(self):
+-        return self.stage / 'package-customer-stock-compact'
++        return self.stage / 'package-customer-upload-fix'
+ 
+     @property
+     def receipt(self):
+--- previous/validate_payload
++++ current/validate_payload
+@@ -71,7 +71,7 @@
+     # CSS selector safety is independently AST-reviewed; require scoped roots on every selector prelude.
+     css_clean = re.sub(r'/\*.*?\*/', '', css, flags=re.S)
+     for selector in re.findall(r'([^{}]+)\{', css_clean):
+-        if selector.strip() in {'@media (max-width:900px)', '@media (max-width:600px)', '@media (max-width: 640px)', '@media (max-width: 680px)'}:
++        if selector.strip() in {'@media (max-width:900px)', '@media (max-width:600px)', '@media (max-width: 640px)', '@media (max-width: 680px)', '@media (max-width: 560px)'}:
+             continue
+         need(not selector.strip().startswith('@') and all(any(root in one for root in
+              ('.customer-upload-history', '.customer-channel-inventory', '.customer-supply-dialog',

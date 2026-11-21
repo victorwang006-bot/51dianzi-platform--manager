@@ -1,0 +1,31 @@
+{
+  "scope": "customer-upload-file-fix-20261121-6Lfttf6o-1024",
+  "controllerSha256": "88f3e8236a191d8b8360f1c43d0f3e6cea33bfede50b019073aaf12b2db9eff1",
+  "oldControllerSha256": "6ff5f1677bc0352d3f989b4720d3ca268b97da8f7620a4ea3afd65ea657b5b9e",
+  "policySha256": "3227c956ae44231024140c58ef415a9f65a66e4544782bdc386fc1f62b81dec2",
+  "changedFunctionOrClassAST": [
+    "Config",
+    "validate_payload"
+  ],
+  "controllerWriterBackupCASApplyReloadRollbackVerifyNoReplayASTExact": true,
+  "onlyConfigPackageAndExistingMediaLiteralWhitelistDifferInMethods": true,
+  "noGuardRemoved": true,
+  "TTLSeconds": 5400,
+  "timerPause": false,
+  "frontHtmlSha256": "b66ff692008fe16000a3878933b3875bca66ea3231846d66f7be5d5d84483d35",
+  "frontAssetsProtected": 653,
+  "frontHtmlDependenciesProtected": 8,
+  "oldFixedPinsRetainedExceptActualNewFrontHTML": true,
+  "oldFilesRetained": true,
+  "staticTransportSourcesExact": true,
+  "exactLinksUnchanged": true,
+  "directoryIdentityFieldsUnchanged": true,
+  "explicitFileCount": 1262,
+  "necessaryShallowDirectoryCount": 693,
+  "candidateAssets": [
+    "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/BusinessWorkbenchPage-customer-batch-44bea9fd29f2afaa.js",
+    "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/BusinessWorkbenchPage-customer-batch-9ede89d2071ef2fe.js",
+    "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-batch-actions-cdd99dcb83de0c20.css"
+  ],
+  "actualCurrentCoordWholeBytesWillBeCapturedNotAssumed": true
+}

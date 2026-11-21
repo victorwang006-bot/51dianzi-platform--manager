@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "reviewerTask": "qp4e5jVmsAp0UHKwymyD5X",
+  "scope": "actual new API expression/UI T6/CSS/HTML differences + complete package and supplied current capture binding; no production reads or execution",
+  "manifestSha256": "d559a4a4ea2bceda0d13611b1993ab8cfd87eef070c8184ee7194c8a10997c21",
+  "captureSha256": "72bc7c1317ef0c01f408b3167d716b26d978ade8300a8a7b63655d876ad23ff7",
+  "checksPassed": 1074,
+  "changedControllerFunctionClassAST": [
+    "Config",
+    "validate_payload"
+  ],
+  "sourceCount": 52,
+  "payloadCount": 93,
+  "protectedRecords": 3017,
+  "remainingTTLAtReviewSeconds": 5126.534141,
+  "historicalOmittedPayloads": 45,
+  "databaseWrites": 0,
+  "productionConnections": 0,
+  "executedReleaseTool": false,
+  "reusedTests": 145,
+  "limitations": "supplied actual capture only; not a new live scan, deployment success, real login HTTP upload, inventory creation, or old report signing current manifest",
+  "topLevelChangedConstants": [
+    "API_PATCH_NAMES",
+    "LEAVES",
+    "SCOPE",
+    "SCOPE_POLICY"
+  ],
+  "specificSixReadyExact": true,
+  "actualCurrentCoordClosed": true,
+  "ownPriorFrontendHandoffByteExact": true
+}

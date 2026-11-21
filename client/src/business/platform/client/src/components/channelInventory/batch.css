@@ -583,3 +583,124 @@
   width: 100%;
   min-width: 120px;
 }
+
+/* Single-dialog three-step customer upload; no global or ordinary-channel changes. */
+.customer-supply-dialog .ci-batch-three-step {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.customer-supply-dialog .ci-batch-three-step > span {
+  min-width: 0;
+  padding: 9px 10px;
+  border-radius: 6px;
+  background: #f5f7fa;
+  color: #64748b;
+  font-size: 12px;
+}
+.customer-supply-dialog .ci-batch-three-step .is-active {
+  color: #185fa5;
+  background: #eef5fc;
+}
+.customer-supply-dialog .ci-batch-three-step [aria-current="step"] b {
+  color: #fff;
+  background: #185fa5;
+  border-color: #185fa5;
+}
+.customer-supply-dialog .customer-supply-method-controls .ci-primary {
+  color: #185fa5;
+  background: #eef5fc;
+  border-color: #c9ddf2;
+}
+.customer-supply-dialog .ci-batch-file-selection {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.customer-supply-dialog .ci-batch-drop {
+  justify-content: center;
+  margin-top: 0;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+.customer-supply-dialog .ci-batch-drop strong {
+  color: #334155;
+  font-weight: 600;
+}
+.customer-supply-dialog .ci-batch-drop p,
+.customer-supply-dialog .ci-batch-drop small {
+  color: #64748b;
+  font-size: 12px;
+}
+.customer-supply-dialog .ci-batch-retry-file {
+  min-width: 0;
+  padding: 10px 12px;
+}
+.customer-supply-dialog .ci-batch-retry-file > div {
+  min-width: 0;
+  flex: 1;
+}
+.customer-supply-dialog .ci-batch-retry-file strong {
+  display: block;
+  color: #334155;
+  overflow-wrap: anywhere;
+}
+.customer-supply-dialog .ci-batch-retry-file p {
+  color: #64748b;
+  line-height: 18px;
+}
+.customer-supply-dialog .ci-batch-file-error {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #991b1b;
+  background: #fff7f7;
+  overflow-wrap: anywhere;
+}
+.customer-supply-dialog .ci-batch-file-error strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.customer-supply-dialog .ci-batch-file-error p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 19px;
+}
+.customer-supply-dialog .ci-batch-footer-customer {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+}
+.customer-supply-dialog .ci-batch-footer-status {
+  flex: 1;
+  min-width: 0;
+  margin: 0 auto 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 19px;
+}
+.customer-supply-dialog .ci-batch-footer-customer .ci-button {
+  min-width: 80px;
+  cursor: pointer;
+}
+.customer-supply-dialog .ci-batch-footer-customer .ci-button:disabled {
+  cursor: not-allowed;
+}
+@media (max-width: 560px) {
+  .customer-supply-dialog .ci-batch-three-step {
+    gap: 4px;
+  }
+  .customer-supply-dialog .ci-batch-three-step > span {
+    padding: 8px 5px;
+    gap: 4px;
+    font-size: 11px;
+  }
+  .customer-supply-dialog .ci-batch-footer-status {
+    flex-basis: 100%;
+  }
+  .customer-supply-dialog .ci-batch-retry-file {
+    flex-wrap: wrap;
+  }
+}

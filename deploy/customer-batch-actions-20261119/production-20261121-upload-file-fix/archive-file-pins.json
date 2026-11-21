@@ -1,0 +1,90 @@
+{
+  "release-upload.py": {
+    "sha256": "88f3e8236a191d8b8360f1c43d0f3e6cea33bfede50b019073aaf12b2db9eff1",
+    "bytes": 720859
+  },
+  "scope-policy.json": {
+    "sha256": "3227c956ae44231024140c58ef415a9f65a66e4544782bdc386fc1f62b81dec2",
+    "bytes": 573129
+  },
+  "tool-proof.json": {
+    "sha256": "9c61b16b5590833e3b9097649b9ede1f23a969f5675a19d624ba952ce978663f",
+    "bytes": 1541
+  },
+  "method-delta.patch": {
+    "sha256": "01d7f2a0bb8929349bf05ecc78314a50994f92d5ecf85bdf51a8558c0d4b9d25",
+    "bytes": 1096
+  },
+  "current-binding-summary.json": {
+    "sha256": "c0e80029a537bac602690769deeef31e04be1d7aaeaba1d86cce55a4c37a32bd",
+    "bytes": 1643
+  },
+  "native-api-build-evidence.json": {
+    "sha256": "f40cbf3aa5b872d39c91ce2f7c295af7d541cc780073c1c8edb80323d7d6ded5",
+    "bytes": 687
+  },
+  "native-format-offline-result.json": {
+    "sha256": "ff3171d35765ffc605a89d696f1367c39b6f1deb1eabec0e63012cc615282a5d",
+    "bytes": 650
+  },
+  "entry-path-fix-proof.json": {
+    "sha256": "5a56b6ba5b3234366e3bf25aeff49693138011ccd88eeebdec34c88b4719dcb7",
+    "bytes": 426
+  },
+  "source-delta.patch": {
+    "sha256": "cb2c7091b81bcb78fb577e06b6081de1d42adc44b316d1d3aa40f02c67a14c07",
+    "bytes": 28950
+  },
+  "complete-budget-before-current.json": {
+    "sha256": "a8cc575a472b05cdd6fa76b93b701aa242beccfb9a68a3ede414ff454c84760c",
+    "bytes": 879
+  },
+  "affected-tests.log": {
+    "sha256": "d94e5356bff189edf83e4d49fdbd85ab3f0bf3f6621ef0664fad209b07c8b66e",
+    "bytes": 29086
+  },
+  "typecheck.log": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "native-ui-asset-pins.json": {
+    "sha256": "afa25050c88eb18aa20d32723b7dd82de999c8db2a641f77508963dc1195a5d5",
+    "bytes": 569
+  },
+  "README.md": {
+    "sha256": "d229148c75f46975f37634dafcb4c40b839d19a4280816d20a24c0e3df32c57d",
+    "bytes": 346
+  },
+  "review.json": {
+    "sha256": "c025b8d05ebb5270f27dfa5eeedce911045a9a6a6d8780370ab83ee1d2507019",
+    "bytes": 32262
+  },
+  "\u552f\u4e00\u79bb\u7ebf\u5dee\u91cf\u6838\u5bf9\u7ed3\u8bba.md": {
+    "sha256": "6708388926e3e68a77d74cb0adb013fb280b918992adcf30835834c53f30c99b",
+    "bytes": 3358
+  },
+  "mechanical-result.json": {
+    "sha256": "f22b8d1a4d99f24f491d77b99974a9ef28f699fa012539774ec7cb7a40b26c48",
+    "bytes": 1158
+  },
+  "receipt.json": {
+    "sha256": "a20b2072689295d9cabea092de299972461e104faa2244062f00c71f620582fe",
+    "bytes": 9282
+  },
+  "actual-release-summary.json": {
+    "sha256": "bb900ccf4cd3b67c04ff6385bb8819168570e5413be2056e699c4607c6936905",
+    "bytes": 1923
+  },
+  "actual-launch-budget.json": {
+    "sha256": "6dcec8bab2b5d43661f93243d222e6c5c440900aba51b7880c8a99046128737c",
+    "bytes": 348
+  },
+  "actual-live-original-file-format.json": {
+    "sha256": "572d8ee30b4205ad3ac7787b4063c15c0ca9c04bb78bc59e5823d4f3088e15a8",
+    "bytes": 683
+  },
+  "\u4e0a\u7ebf\u5b8c\u6210\u62a5\u544a.md": {
+    "sha256": "87922308e9e0868d16cc88842aafd7bdcc90393f0981d85851cc542ac6b3b3d7",
+    "bytes": 2618
+  }
+}

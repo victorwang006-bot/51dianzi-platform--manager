@@ -255,6 +255,8 @@ function BatchUploadSession(props: Props) {
   const [name, setName] = useState("");
   const [error, setError] = useState(initial.error);
   const [loading, setLoading] = useState(false);
+  const [fileStage, setFileStage] = useState<"original" | "table" | null>(null);
+  const [fileErrorStage, setFileErrorStage] = useState("");
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [excluded, setExcluded] = useState<number[]>([]);
@@ -372,23 +374,31 @@ function BatchUploadSession(props: Props) {
   const selectFile = async (file: File, retry = false) => {
     const token = ++serial.current;
     setError("");
+    setFileErrorStage("");
     if (!/\.(xlsx|xls|csv)$/i.test(file.name)) {
+      setFileErrorStage("文件格式不符合要求");
       setError("请选择 Excel（.xlsx/.xls）或 CSV 文件。");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
+      setFileErrorStage("文件超过大小限制");
       setError("每份文件最多 5MB，请拆分后上传。");
       return;
     }
     setLoading(true);
+    let failureStage = "表格读取未完成";
     try {
       if (latest.current.onOriginalFilePersist) {
+        failureStage = "原文件保存／记录核验未完成";
+        setFileStage("original");
         const original = retry && persistedFile.current?.file === file ? persistedFile.current.result : await latest.current.onOriginalFilePersist(file);
         persistedFile.current = { file, result: original };
         if (!current() || token !== serial.current) return;
         importSession.current = original.sessionData;
         rowMetadata.current = new Map(original.rows.map(r => [r.row, r.metadata]));
       }
+      failureStage = "表格读取未完成";
+      setFileStage("table");
       const XLSX = await import("xlsx");
       const buffer = await file.arrayBuffer();
       if (!current() || token !== serial.current) return;
@@ -434,13 +444,13 @@ function BatchUploadSession(props: Props) {
       if (current() && token === serial.current)
         { loadGrid(next, `${file.name} · ${sheetName}`, originalValues); setRetryFile(null); }
     } catch (e) {
-      if (current() && token === serial.current) { setRetryFile(file); }
+      if (current() && token === serial.current) { setRetryFile(file); setFileErrorStage(failureStage); }
       if (current() && token === serial.current)
         setError(
           e instanceof Error ? e.message : "文件读取失败，请用模板整理后重试。"
         );
     } finally {
-      if (current() && token === serial.current) setLoading(false);
+      if (current() && token === serial.current) { setLoading(false); setFileStage(null); }
     }
   };
   useEffect(() => {
@@ -896,14 +906,14 @@ function BatchUploadSession(props: Props) {
             </div>
             {modeLocked ? <p className="ci-dialog-note">请先完成或恢复原批次。</p> : null}
           </div> : null}
-          {customerMode && props.renderParseEntry ? <details className="ci-batch-note" open={entryMode === "parse" || (step === 3 && mapping.partNumber < 0) || Boolean(retryFile)}>
+          {customerMode && props.renderParseEntry ? <details className="ci-batch-note" open={entryMode === "parse" || (step === 3 && mapping.partNumber < 0)}>
             <summary>其他方式</summary><p>无法识别表格时，可提交原文件供人工整理；不会自动调用解析。</p>
             <Button type="button" variant="outline" className="ci-button" disabled={modeLocked} onClick={() => changeMode("parse")}>提交原文件人工整理</Button>
           </details> : null}
           {entryMode === "parse" && props.renderParseEntry ? props.renderParseEntry({ onDirtyChange: dirty => { setParseDirty(dirty); props.onDirtyChange(dirty); }, onBusyChange: setParseBusy }) : null}
-          {entryMode !== "parse" ? <div className="ci-batch-steps" style={{ padding: "0" }}>
-            {(customerMode ? [entryMode === "single" ? "填写物料" : "选文件", "核对", "结果"] : entryMode === "single" ? ["填写物料", "预览确认"] : ["选文件", "匹配字段", "确认上传"]).map((label, i) => (
-              <span key={label} className={step >= (customerMode ? [1, 3, 4][i] : entryMode === "single" && i === 1 ? 3 : i + 1) ? "is-active" : ""}>
+          {entryMode !== "parse" ? <div className={`ci-batch-steps${customerMode ? " ci-batch-three-step" : ""}`} style={{ padding: "0" }} aria-label={customerMode ? "上传进度：选文件、核对物料、上传结果" : undefined}>
+            {(customerMode ? [entryMode === "single" ? "填写物料" : "选文件", "核对物料", "上传结果"] : entryMode === "single" ? ["填写物料", "预览确认"] : ["选文件", "匹配字段", "确认上传"]).map((label, i) => (
+              <span key={label} aria-current={customerMode && step === [1, 3, 4][i] ? "step" : undefined} className={step >= (customerMode ? [1, 3, 4][i] : entryMode === "single" && i === 1 ? 3 : i + 1) ? "is-active" : ""}>
                 <b>{step > (customerMode ? [1, 3, 4][i] : entryMode === "single" && i === 1 ? 3 : i + 1) ? "✓" : i + 1}</b>
                 {label}
               </span>
@@ -976,9 +986,11 @@ function BatchUploadSession(props: Props) {
           </div> : null}
           {step === 1 && entryMode === "table" && (
           <>
+            <section className={customerMode ? "ci-batch-file-selection" : undefined} aria-label="选择库存文件">
             <div
               className={`ci-batch-drop ${dragging ? "is-dragging" : ""}`}
-              style={{ minHeight: "160px", padding: "10px 12px", gap: "5px" }}
+              style={{ minHeight: customerMode ? "124px" : "160px", padding: "10px 12px", gap: "5px" }}
+              aria-busy={loading}
               onDragOver={e => {
                 e.preventDefault();
                 if (!saved && !savedPreparation && !restoreBlocked) setDragging(true);
@@ -994,9 +1006,10 @@ function BatchUploadSession(props: Props) {
               <Icon kind="upload" size={24} />
               <strong>
                 {loading
-                  ? "正在读取本地表格…"
-                  : "拖拽库存表格到这里，或选择文件"}
+                  ? fileStage === "original" ? "正在保存并核验原文件…" : "正在读取表格…"
+                  : customerMode ? "拖拽库存表格到这里" : "拖拽库存表格到这里，或选择文件"}
               </strong>
+              {customerMode ? <p>{loading ? "请勿重复提交，完成后自动进入核对。" : "或点击底部“选择库存表格”"}</p> : null}
               <input
                 hidden
                 ref={fileInput}
@@ -1009,6 +1022,7 @@ function BatchUploadSession(props: Props) {
                   e.target.value = "";
                 }}
               />
+              {!customerMode ?
               <Button
                 type="button"
                 className="ci-button ci-primary"
@@ -1017,9 +1031,13 @@ function BatchUploadSession(props: Props) {
               >
                 <Icon kind="upload" size={15} />
                 选择库存表格
-              </Button>
+              </Button> : null}
+              {customerMode ? <small>Excel / CSV · 5MB以内 · 每批最多1000行</small> : null}
             </div>
-            {retryFile ? <><Button type="button" className="ci-button" disabled={loading} onClick={() => void selectFile(retryFile, true)}>按原文件重试保存／读取</Button>
+            {customerMode && retryFile ? <div className="ci-batch-file ci-batch-retry-file"><Icon kind="file" /><div><strong>{retryFile.name}</strong><p>保留原文件和请求号，重试不会另起未知批次。</p></div><button type="button" className="ci-inline-link" onClick={downloadOriginalFile}>下载原文件</button></div> : null}
+            {customerMode && error ? <div className="ci-error ci-batch-file-error" role="alert"><strong>{fileErrorStage || "暂无法继续上传"}</strong><p>{error}</p></div> : null}
+            </section>
+            {!customerMode && retryFile ? <><Button type="button" className="ci-button" disabled={loading} onClick={() => void selectFile(retryFile, true)}>按原文件重试保存／读取</Button>
               <button type="button" className="ci-inline-link" onClick={downloadOriginalFile}>下载原文件：{retryFile.name}</button></> : null}
             <button
               className="ci-batch-template"
@@ -1282,14 +1300,14 @@ function BatchUploadSession(props: Props) {
             </div>
           </>
         )}
-        {error && (
+        {error && !(customerMode && step === 1 && entryMode === "table") && (
           <div className="ci-error" role="alert">
             {error}
           </div>
         )}
         </div>
         <div
-          className="ci-dialog-footer ci-batch-footer"
+          className={`ci-dialog-footer ci-batch-footer${customerMode ? " ci-batch-footer-customer" : ""}`}
           style={{
             flex: "0 0 auto",
             marginTop: 0,
@@ -1297,6 +1315,7 @@ function BatchUploadSession(props: Props) {
             borderTop: "1px solid #e8edf3",
           }}
         >
+          {customerMode && step === 1 && entryMode === "table" ? <p className="ci-batch-footer-status" role="status">{loading ? fileStage === "original" ? "保存／核验原文件中…" : "读取表格中…" : retryFile ? "请沿用原文件重试" : "选好文件后自动进入核对"}</p> : null}
           {step > 1 && !hasQueue && (!customerMode || (!preparing && !busy)) && (
             <Button
               type="button"
@@ -1325,6 +1344,7 @@ function BatchUploadSession(props: Props) {
                 ? "完成"
                 : "取消"}
           </Button>
+          {customerMode && step === 1 && entryMode === "table" ? <Button type="button" className="ci-button ci-primary" disabled={loading || !!saved || !!savedPreparation || restoreBlocked} onClick={() => retryFile ? void selectFile(retryFile, true) : fileInput.current?.click()}><Icon kind="upload" size={15} />{loading ? "处理中…" : retryFile ? "重试原文件" : "选择库存表格"}</Button> : null}
           {step === 2 && (
             <Button
               type="button"

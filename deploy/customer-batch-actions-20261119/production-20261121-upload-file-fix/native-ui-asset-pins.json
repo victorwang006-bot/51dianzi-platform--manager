@@ -1,0 +1,17 @@
+[
+  {
+    "relative": "assets/BusinessWorkbenchPage-customer-batch-44bea9fd29f2afaa.js",
+    "sha256": "44bea9fd29f2afaad69527009dafb1a8177fb5ecd8243ea268387cef6ad2519a",
+    "size": 5515700
+  },
+  {
+    "relative": "assets/BusinessWorkbenchPage-customer-batch-9ede89d2071ef2fe.js",
+    "sha256": "9ede89d2071ef2fea38a9c9f85a389baeaafbb060021c7baab7ea4812a1913f2",
+    "size": 6413486
+  },
+  {
+    "relative": "assets/customer-batch-actions-cdd99dcb83de0c20.css",
+    "sha256": "cdd99dcb83de0c20872d3a14b71329565f14207e6ae4ffd9d8a665536dbfaba4",
+    "size": 2854
+  }
+]

@@ -1,0 +1,585 @@
+{
+  "bindings": {
+    "manifest": {
+      "assets": [
+        {
+          "relative": "assets/BusinessWorkbenchPage-customer-batch-44bea9fd29f2afaa.js",
+          "sha256": "44bea9fd29f2afaad69527009dafb1a8177fb5ecd8243ea268387cef6ad2519a",
+          "size": 5515700
+        },
+        {
+          "relative": "assets/BusinessWorkbenchPage-customer-batch-9ede89d2071ef2fe.js",
+          "sha256": "9ede89d2071ef2fea38a9c9f85a389baeaafbb060021c7baab7ea4812a1913f2",
+          "size": 6413486
+        },
+        {
+          "relative": "assets/customer-batch-actions-cdd99dcb83de0c20.css",
+          "sha256": "cdd99dcb83de0c20872d3a14b71329565f14207e6ae4ffd9d8a665536dbfaba4",
+          "size": 2854
+        }
+      ],
+      "captureSha256": "72bc7c1317ef0c01f408b3167d716b26d978ade8300a8a7b63655d876ad23ff7",
+      "controllerSha256": "88f3e8236a191d8b8360f1c43d0f3e6cea33bfede50b019073aaf12b2db9eff1",
+      "cssRelative": "assets/customer-batch-actions-cdd99dcb83de0c20.css",
+      "modules": [
+        {
+          "after": "assets/BusinessWorkbenchPage-customer-batch-44bea9fd29f2afaa.js",
+          "before": "assets/BusinessWorkbenchPage-customer-batch-5297b924efb0ba3e.js",
+          "sha256": "44bea9fd29f2afaad69527009dafb1a8177fb5ecd8243ea268387cef6ad2519a",
+          "size": 5515700
+        },
+        {
+          "after": "assets/BusinessWorkbenchPage-customer-batch-9ede89d2071ef2fe.js",
+          "before": "assets/BusinessWorkbenchPage-customer-batch-89fc00ca7c892b1c.js",
+          "sha256": "9ede89d2071ef2fea38a9c9f85a389baeaafbb060021c7baab7ea4812a1913f2",
+          "size": 6413486
+        }
+      ],
+      "nonce": "d7c421aec3f14f4f8a89b79fc5af230f",
+      "ownerNonce": "addb61160e714eac8b49cfbec97a41036a413f73c480463cbd4edae6fbf95f3b",
+      "ownerTask": "6Lfttf6oVWJ8YS69o5FkXQ",
+      "packageFiles": {
+        "admin-patch-records.json": {
+          "mode": 384,
+          "sha256": "9f745f1788b873c5c3386a656e0a6fb12c9773240cb37bbb9e467478b51eedbc",
+          "size": 1037
+        },
+        "after-admin-api.js": {
+          "mode": 384,
+          "sha256": "14034473467f2b22f3dcf2f11624b961c4c7831d69e41bb21ac401f9bb85a120",
+          "size": 1634047
+        },
+        "after-front-api.js": {
+          "mode": 384,
+          "sha256": "28ba370e600dcd89047200ec55e545edafe9890314bd49e334bdfa2ff7f77757",
+          "size": 5996827
+        },
+        "after-index.html": {
+          "mode": 384,
+          "sha256": "18efeb2b44b55d81a69f0d8dbaedcafa3f5d43ec2a8c7236929c578672c6a744",
+          "size": 844976
+        },
+        "assets/BusinessWorkbenchPage-customer-batch-44bea9fd29f2afaa.js": {
+          "mode": 384,
+          "sha256": "44bea9fd29f2afaad69527009dafb1a8177fb5ecd8243ea268387cef6ad2519a",
+          "size": 5515700
+        },
+        "assets/BusinessWorkbenchPage-customer-batch-9ede89d2071ef2fe.js": {
+          "mode": 384,
+          "sha256": "9ede89d2071ef2fea38a9c9f85a389baeaafbb060021c7baab7ea4812a1913f2",
+          "size": 6413486
+        },
+        "assets/customer-batch-actions-cdd99dcb83de0c20.css": {
+          "mode": 384,
+          "sha256": "cdd99dcb83de0c20872d3a14b71329565f14207e6ae4ffd9d8a665536dbfaba4",
+          "size": 2854
+        },
+        "before-admin-api.js": {
+          "mode": 384,
+          "sha256": "14034473467f2b22f3dcf2f11624b961c4c7831d69e41bb21ac401f9bb85a120",
+          "size": 1634047
+        },
+        "before-front-api.js": {
+          "mode": 384,
+          "sha256": "81ed910a32f95c2a647eb48fe57ff63646d23c5b677f8fc8816b0b80abea0fd8",
+          "size": 5996800
+        },
+        "before-index.html": {
+          "mode": 384,
+          "sha256": "675a3b5ca704de168960e59ad00b2f10c5cd2026a127f9a319588ca80b9fbd9d",
+          "size": 844893
+        },
+        "capture.json": {
+          "mode": 384,
+          "sha256": "72bc7c1317ef0c01f408b3167d716b26d978ade8300a8a7b63655d876ad23ff7",
+          "size": 2136510
+        },
+        "evidence/BusinessWorkbenchPage-customer-batch-5297b924efb0ba3e.js.abi.json": {
+          "mode": 384,
+          "sha256": "61f52fcfb932d0fbe7b0bbe0c60c72b06a84fe930af4958b3d369615f85b8e89",
+          "size": 7027
+        },
+        "evidence/BusinessWorkbenchPage-customer-batch-5297b924efb0ba3e.js.delta.json": {
+          "mode": 384,
+          "sha256": "15a99f9380ef91e1c1c72397d96e49afcbe43c79a238665901d36be9efb48183",
+          "size": 248297
+        },
+        "evidence/BusinessWorkbenchPage-customer-batch-89fc00ca7c892b1c.js.abi.json": {
+          "mode": 384,
+          "sha256": "61f52fcfb932d0fbe7b0bbe0c60c72b06a84fe930af4958b3d369615f85b8e89",
+          "size": 7027
+        },
+        "evidence/BusinessWorkbenchPage-customer-batch-89fc00ca7c892b1c.js.delta.json": {
+          "mode": 384,
+          "sha256": "051ff6ad944b3700828396224681f6d011747db7a8bb4c97d8ce6b03f7be7d23",
+          "size": 248297
+        },
+        "evidence/baseline/assets/BusinessWorkbenchPage-customer-batch-5297b924efb0ba3e.js": {
+          "mode": 384,
+          "sha256": "5297b924efb0ba3ececf4456da96dea7beb6341cd1a3b8eceb8c1e763804d573",
+          "size": 5511556
+        },
+        "evidence/baseline/assets/BusinessWorkbenchPage-customer-batch-89fc00ca7c892b1c.js": {
+          "mode": 384,
+          "sha256": "89fc00ca7c892b1c28d246a71cdbc88525f0bc73bdb9999c24a11ab3741c80d5",
+          "size": 6409342
+        },
+        "evidence/html.json": {
+          "mode": 384,
+          "sha256": "e2cc3de971b3ce8303f21b8bbd281a28f9b06dc0936df4b264b24f1e4791c329",
+          "size": 473
+        },
+        "evidence/previous-stock/backend-source.patch": {
+          "mode": 384,
+          "sha256": "08e351d16057e41fdaf256e8b9860c332642236537b90eebce55decbf54090ba",
+          "size": 3841
+        },
+        "evidence/previous-stock/backend-test.log": {
+          "mode": 384,
+          "sha256": "4ab11ee8be50d7d52ebcb7af2a3ec14930362d9576afd245307a9c0c2c825865",
+          "size": 78887
+        },
+        "evidence/previous-stock/ui-business-prefix-proof.json": {
+          "mode": 384,
+          "sha256": "d5e45e5e0132e7e3585a8826206879b39d85657904221569086f7ac88ff8bafc",
+          "size": 498
+        },
+        "evidence/previous-stock/ui-test-compact.log": {
+          "mode": 384,
+          "sha256": "26799d6bfdc34b7a84b829a8abd34fd861a82bcf62ef223d534186ea5c360cc3",
+          "size": 733
+        },
+        "evidence/previous-stock/ui-test.log": {
+          "mode": 384,
+          "sha256": "2d4a20862c07c76fabaa3dda110ac3023d212ecf61b67bb2c7ab62c19c4db7ba",
+          "size": 60383
+        },
+        "evidence/reviewer/independent-report.txt": {
+          "mode": 384,
+          "sha256": "95bfafc4c30671f05ee2000010e2692222c77092ee92a704477ec5c26c3c6c3b",
+          "size": 12877
+        },
+        "evidence/reviewer/r9-current-delta-binding.md": {
+          "mode": 384,
+          "sha256": "c56ac11716800c37d10f7c9b759eedf50f09e4e33a9c7d3b055f900421cd9be9",
+          "size": 5018
+        },
+        "evidence/source-files.json": {
+          "mode": 384,
+          "sha256": "0849dce0b28a29728f7b9f04a845428ad2d82bce7c9fbe4194efe9f88e9830ed",
+          "size": 563
+        },
+        "evidence/source/client/src/business/platform/client/src/components/channelInventory/BatchUpload.compact.test.ts": {
+          "mode": 384,
+          "sha256": "aacd864eb352db7f84e5f5bdfaa8b414e1e94e8329a74d346dba2ec8907f445f",
+          "size": 24138
+        },
+        "evidence/source/client/src/business/platform/client/src/components/channelInventory/BatchUpload.tsx": {
+          "mode": 384,
+          "sha256": "c49e3ff05c03e785f315dc78103d62f63f7b6b4600e1c51f58100127260bcc18",
+          "size": 86734
+        },
+        "evidence/source/client/src/business/platform/client/src/components/channelInventory/batch.css": {
+          "mode": 384,
+          "sha256": "c954ca6113798214c63dbd5f8be458a800d3e0936338826ec5307b267c9a8538",
+          "size": 15267
+        },
+        "evidence/source/client/src/business/platform/client/src/components/customers/CustomerChannelInventory.css": {
+          "mode": 384,
+          "sha256": "e4b8d25ee4af9644693b15f3697cf740806a758f1eaa2a19926ac8b831f900cb",
+          "size": 8657
+        },
+        "evidence/source/client/src/business/platform/client/src/components/customers/CustomerChannelInventory.test.ts": {
+          "mode": 384,
+          "sha256": "d093d76943b59071d42f19e37d1f8bb985a6652ba507a239aa8a9bb1463623a8",
+          "size": 21333
+        },
+        "evidence/source/client/src/business/platform/client/src/components/customers/CustomerChannelInventory.tsx": {
+          "mode": 384,
+          "sha256": "fa00dd57632c7a5ae554a28acd8c48b57b247ff7852e60198c4fe0ea987d4a14",
+          "size": 52322
+        },
+        "evidence/source/client/src/business/platform/client/src/components/customers/CustomerChannelInventory.unified.render.test.ts": {
+          "mode": 384,
+          "sha256": "cef1d70f3f19a5ba7dcefd2016b022d33225815653f633a006060a1ab980a5cd",
+          "size": 48417
+        },
+        "evidence/source/client/src/business/platform/client/src/components/customers/CustomerSupplyUploadDialog.css": {
+          "mode": 384,
+          "sha256": "c75170f37a8db0c00ce431220b3a87558d26fd19b9e52a3336a79a8b2ba45e5c",
+          "size": 3243
+        },
+        "evidence/source/client/src/business/platform/client/src/components/customers/CustomerSupplyUploadDialog.tsx": {
+          "mode": 384,
+          "sha256": "27da31734e7d5f334beb98182ead8873db3e97469bca4d60c28a9e6fa5b6e90d",
+          "size": 50098
+        },
+        "evidence/source/client/src/business/platform/client/src/components/customers/CustomerUploadFailuresDialog.tsx": {
+          "mode": 384,
+          "sha256": "38827a44616a95da7f2afb2bb9f7ebc153fe41d0ac882a9b2788662b67d15485",
+          "size": 24309
+        },
+        "evidence/source/client/src/business/platform/client/src/components/customers/CustomerUploadHistory.css": {
+          "mode": 384,
+          "sha256": "5bb5e1b2acbe30f1fedf569754c61da1bc954b234086a1c7e4a365cf400ccd3e",
+          "size": 7888
+        },
+        "evidence/source/client/src/business/platform/client/src/components/customers/CustomerUploadHistoryDialog.tsx": {
+          "mode": 384,
+          "sha256": "aa22529cbe177e6f7fd7db33f7201c924925398700932fca008b1119ff5dcf34",
+          "size": 28406
+        },
+        "evidence/source/client/src/business/platform/client/src/components/customers/CustomerWorkbenchSupply.test.ts": {
+          "mode": 384,
+          "sha256": "bfef97645f4654342cbbd5d78dadc58ee023cc66aaa04eab4df08194909b0aa9",
+          "size": 19537
+        },
+        "evidence/source/client/src/business/platform/client/src/components/customers/CustomerWorkbenchSupply.tsx": {
+          "mode": 384,
+          "sha256": "9c816b259882b081c2d504d238a43779df9df19ed99e62e32a8df97b62b23349",
+          "size": 12655
+        },
+        "evidence/source/client/src/business/platform/front-router-types/server/routers/channelInventory.ts": {
+          "mode": 384,
+          "sha256": "3536a901d141ad474f8d191452cffb87c45fbdeec6d2a1010b66de24ab3daa1e",
+          "size": 29780
+        },
+        "evidence/source/client/src/business/platform/front-router-types/server/services/channelInventory.ts": {
+          "mode": 384,
+          "sha256": "599329604618e3e561f234833cc3d20d14d08c078999c6305c93d3221ac1f44e",
+          "size": 50714
+        },
+        "evidence/source/client/src/business/platform/front-router-types/server/services/channelInventoryManagement.ts": {
+          "mode": 384,
+          "sha256": "9db78ce985a3b5c4fefd667f3d73aebfcb117b1d8f467c4a988bfb7501430e21",
+          "size": 24973
+        },
+        "evidence/source/client/src/business/platform/front-router-types/server/services/customerSupply.ts": {
+          "mode": 384,
+          "sha256": "235ee1a2d7827cccc9e7d8edc34731879998264d413fa4ba8801a33730e85d3e",
+          "size": 20766
+        },
+        "evidence/source/client/src/business/platform/front-router-types/server/services/customerUploadHistory.ts": {
+          "mode": 384,
+          "sha256": "0f4ba15c086a73ff72f5e378c5b6e13e1c70be21bfcacde8bd71b04b2847f01f",
+          "size": 64130
+        },
+        "evidence/source/client/src/business/platform/front-router-types/server/services/customerUploadHistoryExport.ts": {
+          "mode": 384,
+          "sha256": "2e9c8270c47395537a97c26b8ed153d76cb0ea5a3f5e95d5c049f4f731e565ed",
+          "size": 10746
+        },
+        "evidence/source/client/src/business/platform/front-router-types/server/services/customerUploadHistoryPolicy.ts": {
+          "mode": 384,
+          "sha256": "5915a006c1715d0686572ca8fe891b617e50f6130e2cf44f5a949181d4a1a10c",
+          "size": 6476
+        },
+        "evidence/source/client/src/business/platform/front-router-types/server/services/customerUploadHistoryValidation.ts": {
+          "mode": 384,
+          "sha256": "15098ed8ebff9e81f7f6c11257d63093bc0395ad6d1ce87bf6ca92f5eb72127f",
+          "size": 10097
+        },
+        "evidence/source/client/src/business/platform/front-router-types/server/services/customerUploadPrivateStorage.ts": {
+          "mode": 384,
+          "sha256": "a37e855075cd3f39137755a02fc989ecde18fa1d48596101d6536a0167cbc6bd",
+          "size": 48958
+        },
+        "evidence/source/client/src/business/platform/shared/channelInventoryBusinessPolicy.ts": {
+          "mode": 384,
+          "sha256": "9e8b54382e25137de5eabec654d71cdda0e7d71cb04a932f2ac18c99dd74860e",
+          "size": 7481
+        },
+        "evidence/source/client/src/business/platform/shared/channelInventoryManagement.ts": {
+          "mode": 384,
+          "sha256": "4a9c9d68f3a9baf8e7f470fa66332e0ad816ecd521bdcab1775e425609680641",
+          "size": 3852
+        },
+        "evidence/source/client/src/business/platform/shared/customerSupply.ts": {
+          "mode": 384,
+          "sha256": "b82c9381435017df40a491edfccd021fc5523a69d132dc11aeb3812bf49789ed",
+          "size": 2593
+        },
+        "evidence/source/client/src/business/platform/shared/customerUploadHistory.ts": {
+          "mode": 384,
+          "sha256": "bfa337e589fb0124e6e5d779a472c8d32ac791bb9289a71ea1e710f9286d9182",
+          "size": 14187
+        },
+        "evidence/source/client/src/business/platform/shared/internalBusinessOfficialInventory.ts": {
+          "mode": 384,
+          "sha256": "0d53d520c07cb2fa3c7524145bb504fa48c9e509ccba7264869d2c727d5bba57",
+          "size": 4712
+        },
+        "evidence/source/deploy/customer-batch-actions-20261119/apply-upload-once.py": {
+          "mode": 384,
+          "sha256": "5f24ba22dd8584eca24f1a35fa949a566728d2624e080055fc46b6c2400519f7",
+          "size": 7911
+        },
+        "evidence/source/deploy/customer-batch-actions-20261119/backend-builder.cjs": {
+          "mode": 384,
+          "sha256": "fc7c0b8b48a47efb60c0f00ce0d946c54da3666572045aded2402f1811704f14",
+          "size": 29038
+        },
+        "evidence/source/deploy/customer-batch-actions-20261119/backend-test.cjs": {
+          "mode": 384,
+          "sha256": "06f532c554284aa2836cde4ddf9c5fff497d079850c69c21b0633cde28b5bc77",
+          "size": 17531
+        },
+        "evidence/source/deploy/customer-batch-actions-20261119/build-native.mjs": {
+          "mode": 384,
+          "sha256": "99dfe4885f2139ee082b9485365b8085fe181b90f66834c0254107f519ca1a00",
+          "size": 11195
+        },
+        "evidence/source/deploy/customer-batch-actions-20261119/build-stock-compact.mjs": {
+          "mode": 384,
+          "sha256": "ff7e383b04df44900b8a8e4b5f367e0aa486186b6166e1a48d722e3d24d80a51",
+          "size": 8590
+        },
+        "evidence/source/deploy/customer-batch-actions-20261119/build-stock-upload.cjs": {
+          "mode": 384,
+          "sha256": "8638f53518059f16020d927d2c29f2a90a3e20daa4281c150a5bc1c16773bbe8",
+          "size": 5820
+        },
+        "evidence/source/deploy/customer-batch-actions-20261119/build-upload-file-fix.mjs": {
+          "mode": 384,
+          "sha256": "783991dc08481817e0b4756d1cd9be307b75a660ff5761f356cf2db7704d2581",
+          "size": 6455
+        },
+        "evidence/source/deploy/customer-batch-actions-20261119/build-upload-zip-fix.cjs": {
+          "mode": 384,
+          "sha256": "afd883f6ce2ad15eda9df8717e3192c8148700e4755fe10a1e07c0f968c6d787",
+          "size": 5382
+        },
+        "evidence/source/deploy/customer-batch-actions-20261119/prepare-bind-upload-once.py": {
+          "mode": 384,
+          "sha256": "cf6c247037ff807a6f289660b0a18fc884fa1dbcbd6f6b51a495961685810228",
+          "size": 8545
+        },
+        "evidence/source/deploy/customer-batch-actions-20261119/prepare-local.py": {
+          "mode": 384,
+          "sha256": "228a64cf55224e1ea1882ac4c66958fe961d5c80ada43a0e6a26cceb47e0319b",
+          "size": 22260
+        },
+        "evidence/source/deploy/customer-batch-actions-20261119/prepare-stock-controller.py": {
+          "mode": 384,
+          "sha256": "527b070d95093c153ddfae2475e9ed255f697425b5fe10e5bceeb9dde1633281",
+          "size": 7330
+        },
+        "evidence/source/deploy/customer-batch-actions-20261119/prepare-stock-package.py": {
+          "mode": 384,
+          "sha256": "dea7a3c02e00b875fc465bab3a59919708ace9b06c9c4055d4e12fdf1502bc36",
+          "size": 8348
+        },
+        "evidence/source/deploy/customer-batch-actions-20261119/prepare-upload-controller.py": {
+          "mode": 384,
+          "sha256": "b2a7f799d6e9cef960ce5809889ff8b2d3a9b4c636538cd6d546205d0bfbcf5f",
+          "size": 6149
+        },
+        "evidence/source/deploy/customer-batch-actions-20261119/prepare-upload-package.py": {
+          "mode": 384,
+          "sha256": "d42dece77dcfb8cfc9364cce9b306915a62a374655e48b95d8b796c99f088872",
+          "size": 7993
+        },
+        "evidence/source/deploy/customer-batch-actions-20261119/release.py": {
+          "mode": 384,
+          "sha256": "2c7047701591af1ee2c21f93fe84593184ff0e6e3ed3d40ad2ee1d0f87dea0f8",
+          "size": 146951
+        },
+        "evidence/source/deploy/customer-batch-actions-20261119/test-upload-native-format.mjs": {
+          "mode": 384,
+          "sha256": "6197fa8b8347e85795a73b083a185331b789292d17948cc431e59a0676066bc9",
+          "size": 3031
+        },
+        "evidence/source/deploy/customer-batch-actions-20261119/verify-upload-live-format.cjs": {
+          "mode": 384,
+          "sha256": "995fb80339d7b141cdfafe3aac45011bf67709778435fd5de6d2b97e3e409776",
+          "size": 2304
+        },
+        "evidence/source/deploy/customer-inventory-backend-20261114/core.cjs": {
+          "mode": 384,
+          "sha256": "f091d1d9db7e9772833fba865dd4ce912e55be116932eb3623d5221d4777b088",
+          "size": 9386
+        },
+        "evidence/source/deploy/upload-manage-20261119/build-support.mjs": {
+          "mode": 384,
+          "sha256": "0eca0c92e06eea9bc7905e7e04a95b663d1b3e98b5acb38ab570d633f8968337",
+          "size": 6570
+        },
+        "evidence/source/deploy/upload-manage-20261119/native-abi.mjs": {
+          "mode": 384,
+          "sha256": "a7d6a730d34f799c3fae33c7d632b3d2f1c14b7e1ab526a471458248efab2aef",
+          "size": 4937
+        },
+        "evidence/source/server/businessRouter.ts": {
+          "mode": 384,
+          "sha256": "f4dc901e661568031f767e5a5d7771dafb3480b9c498c7ab291ef4d8b19ec410",
+          "size": 97593
+        },
+        "evidence/source/server/customerSupplyEmptyChannel.test.ts": {
+          "mode": 384,
+          "sha256": "0f8e7b764240431f390780634f7b654636ef1fbbadbb64d5fbf3ceb4eaf0724f",
+          "size": 64402
+        },
+        "evidence/source/server/customerUploadHistoryBusinessInput.ts": {
+          "mode": 384,
+          "sha256": "69fc5881cddacf48a214bb537c1d5610f63b2ae5110a6d92d2dd0448f577e3d0",
+          "size": 529
+        },
+        "evidence/source/server/customerUploadPrivateStorage.test.ts": {
+          "mode": 384,
+          "sha256": "4c45c4f8cc0a002d3c0e3d3688938ca46b959b676d01e359eea24932321ae06b",
+          "size": 26445
+        },
+        "evidence/sources.json": {
+          "mode": 384,
+          "sha256": "1badaa9ef6ba3d2c08a6f101167f5952ac79b7b3c8b065e4221bf6e5e755c688",
+          "size": 342
+        },
+        "evidence/upload-fix/affected-tests.log": {
+          "mode": 384,
+          "sha256": "d94e5356bff189edf83e4d49fdbd85ab3f0bf3f6621ef0664fad209b07c8b66e",
+          "size": 29086
+        },
+        "evidence/upload-fix/api-build-evidence.json": {
+          "mode": 384,
+          "sha256": "f40cbf3aa5b872d39c91ce2f7c295af7d541cc780073c1c8edb80323d7d6ded5",
+          "size": 687
+        },
+        "evidence/upload-fix/compiled/private-storage.js": {
+          "mode": 384,
+          "sha256": "f065c186e6c2e8ece352afecd9b49854dfe6598adcf508ee03ccda864746e04d",
+          "size": 45364
+        },
+        "evidence/upload-fix/frontend-closed-handoff-and-pins.json": {
+          "mode": 384,
+          "sha256": "311bd3d79090cd6abec63386eebb480d9f97253fc9610adf789cdf7f9b69e3b1",
+          "size": 123587
+        },
+        "evidence/upload-fix/native-format-result.json": {
+          "mode": 384,
+          "sha256": "ff3171d35765ffc605a89d696f1367c39b6f1deb1eabec0e63012cc615282a5d",
+          "size": 650
+        },
+        "evidence/upload-fix/source-delta.patch": {
+          "mode": 384,
+          "sha256": "cb2c7091b81bcb78fb577e06b6081de1d42adc44b316d1d3aa40f02c67a14c07",
+          "size": 28950
+        },
+        "evidence/upload-fix/source-matrix.json": {
+          "mode": 384,
+          "sha256": "2cc93a46ddb25f77e8c3ed2daf72d0f9e533d1d07e70eb2d959b6acecef5a89e",
+          "size": 14567
+        },
+        "evidence/upload-fix/tool/controller-delta.patch": {
+          "mode": 384,
+          "sha256": "f6a4e29e8f12715140b274aa1357fbcb1b0c6d8c4b1e2e1a8f0ada4f16d3ed85",
+          "size": 975836
+        },
+        "evidence/upload-fix/tool/method-delta.patch": {
+          "mode": 384,
+          "sha256": "01d7f2a0bb8929349bf05ecc78314a50994f92d5ecf85bdf51a8558c0d4b9d25",
+          "size": 1096
+        },
+        "evidence/upload-fix/tool/release-upload.py": {
+          "mode": 384,
+          "sha256": "88f3e8236a191d8b8360f1c43d0f3e6cea33bfede50b019073aaf12b2db9eff1",
+          "size": 720859
+        },
+        "evidence/upload-fix/tool/scope-policy.json": {
+          "mode": 384,
+          "sha256": "3227c956ae44231024140c58ef415a9f65a66e4544782bdc386fc1f62b81dec2",
+          "size": 573129
+        },
+        "evidence/upload-fix/tool/tool-proof.json": {
+          "mode": 384,
+          "sha256": "9c61b16b5590833e3b9097649b9ede1f23a969f5675a19d624ba952ce978663f",
+          "size": 1541
+        },
+        "evidence/upload-fix/typecheck.log": {
+          "mode": 384,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "size": 0
+        },
+        "front-patch-records.json": {
+          "mode": 384,
+          "sha256": "9604aad0b34c946faa0f4afd65f3c92415da512fe6bdff405be654463b0201e9",
+          "size": 2062
+        }
+      },
+      "replacements": [
+        {
+          "after": "/assets/BusinessWorkbenchPage-customer-batch-44bea9fd29f2afaa.js",
+          "before": "/assets/BusinessWorkbenchPage-customer-batch-5297b924efb0ba3e.js"
+        },
+        {
+          "after": "/assets/BusinessWorkbenchPage-customer-batch-9ede89d2071ef2fe.js",
+          "before": "/assets/BusinessWorkbenchPage-customer-batch-89fc00ca7c892b1c.js"
+        }
+      ],
+      "schema": "customer-batch-sealed-manifest-v1",
+      "scope": "customer-upload-file-fix-20261121-6Lfttf6o-1024",
+      "sourceHashes": {
+        "client/src/business/platform/client/src/components/channelInventory/BatchUpload.compact.test.ts": "aacd864eb352db7f84e5f5bdfaa8b414e1e94e8329a74d346dba2ec8907f445f",
+        "client/src/business/platform/client/src/components/channelInventory/BatchUpload.tsx": "c49e3ff05c03e785f315dc78103d62f63f7b6b4600e1c51f58100127260bcc18",
+        "client/src/business/platform/client/src/components/channelInventory/batch.css": "c954ca6113798214c63dbd5f8be458a800d3e0936338826ec5307b267c9a8538",
+        "client/src/business/platform/client/src/components/customers/CustomerChannelInventory.css": "e4b8d25ee4af9644693b15f3697cf740806a758f1eaa2a19926ac8b831f900cb",
+        "client/src/business/platform/client/src/components/customers/CustomerChannelInventory.test.ts": "d093d76943b59071d42f19e37d1f8bb985a6652ba507a239aa8a9bb1463623a8",
+        "client/src/business/platform/client/src/components/customers/CustomerChannelInventory.tsx": "fa00dd57632c7a5ae554a28acd8c48b57b247ff7852e60198c4fe0ea987d4a14",
+        "client/src/business/platform/client/src/components/customers/CustomerChannelInventory.unified.render.test.ts": "cef1d70f3f19a5ba7dcefd2016b022d33225815653f633a006060a1ab980a5cd",
+        "client/src/business/platform/client/src/components/customers/CustomerSupplyUploadDialog.css": "c75170f37a8db0c00ce431220b3a87558d26fd19b9e52a3336a79a8b2ba45e5c",
+        "client/src/business/platform/client/src/components/customers/CustomerSupplyUploadDialog.tsx": "27da31734e7d5f334beb98182ead8873db3e97469bca4d60c28a9e6fa5b6e90d",
+        "client/src/business/platform/client/src/components/customers/CustomerUploadFailuresDialog.tsx": "38827a44616a95da7f2afb2bb9f7ebc153fe41d0ac882a9b2788662b67d15485",
+        "client/src/business/platform/client/src/components/customers/CustomerUploadHistory.css": "5bb5e1b2acbe30f1fedf569754c61da1bc954b234086a1c7e4a365cf400ccd3e",
+        "client/src/business/platform/client/src/components/customers/CustomerUploadHistoryDialog.tsx": "aa22529cbe177e6f7fd7db33f7201c924925398700932fca008b1119ff5dcf34",
+        "client/src/business/platform/client/src/components/customers/CustomerWorkbenchSupply.test.ts": "bfef97645f4654342cbbd5d78dadc58ee023cc66aaa04eab4df08194909b0aa9",
+        "client/src/business/platform/client/src/components/customers/CustomerWorkbenchSupply.tsx": "9c816b259882b081c2d504d238a43779df9df19ed99e62e32a8df97b62b23349",
+        "client/src/business/platform/front-router-types/server/routers/channelInventory.ts": "3536a901d141ad474f8d191452cffb87c45fbdeec6d2a1010b66de24ab3daa1e",
+        "client/src/business/platform/front-router-types/server/services/channelInventory.ts": "599329604618e3e561f234833cc3d20d14d08c078999c6305c93d3221ac1f44e",
+        "client/src/business/platform/front-router-types/server/services/channelInventoryManagement.ts": "9db78ce985a3b5c4fefd667f3d73aebfcb117b1d8f467c4a988bfb7501430e21",
+        "client/src/business/platform/front-router-types/server/services/customerSupply.ts": "235ee1a2d7827cccc9e7d8edc34731879998264d413fa4ba8801a33730e85d3e",
+        "client/src/business/platform/front-router-types/server/services/customerUploadHistory.ts": "0f4ba15c086a73ff72f5e378c5b6e13e1c70be21bfcacde8bd71b04b2847f01f",
+        "client/src/business/platform/front-router-types/server/services/customerUploadHistoryExport.ts": "2e9c8270c47395537a97c26b8ed153d76cb0ea5a3f5e95d5c049f4f731e565ed",
+        "client/src/business/platform/front-router-types/server/services/customerUploadHistoryPolicy.ts": "5915a006c1715d0686572ca8fe891b617e50f6130e2cf44f5a949181d4a1a10c",
+        "client/src/business/platform/front-router-types/server/services/customerUploadHistoryValidation.ts": "15098ed8ebff9e81f7f6c11257d63093bc0395ad6d1ce87bf6ca92f5eb72127f",
+        "client/src/business/platform/front-router-types/server/services/customerUploadPrivateStorage.ts": "a37e855075cd3f39137755a02fc989ecde18fa1d48596101d6536a0167cbc6bd",
+        "client/src/business/platform/shared/channelInventoryBusinessPolicy.ts": "9e8b54382e25137de5eabec654d71cdda0e7d71cb04a932f2ac18c99dd74860e",
+        "client/src/business/platform/shared/channelInventoryManagement.ts": "4a9c9d68f3a9baf8e7f470fa66332e0ad816ecd521bdcab1775e425609680641",
+        "client/src/business/platform/shared/customerSupply.ts": "b82c9381435017df40a491edfccd021fc5523a69d132dc11aeb3812bf49789ed",
+        "client/src/business/platform/shared/customerUploadHistory.ts": "bfa337e589fb0124e6e5d779a472c8d32ac791bb9289a71ea1e710f9286d9182",
+        "client/src/business/platform/shared/internalBusinessOfficialInventory.ts": "0d53d520c07cb2fa3c7524145bb504fa48c9e509ccba7264869d2c727d5bba57",
+        "deploy/customer-batch-actions-20261119/apply-upload-once.py": "5f24ba22dd8584eca24f1a35fa949a566728d2624e080055fc46b6c2400519f7",
+        "deploy/customer-batch-actions-20261119/backend-builder.cjs": "fc7c0b8b48a47efb60c0f00ce0d946c54da3666572045aded2402f1811704f14",
+        "deploy/customer-batch-actions-20261119/backend-test.cjs": "06f532c554284aa2836cde4ddf9c5fff497d079850c69c21b0633cde28b5bc77",
+        "deploy/customer-batch-actions-20261119/build-native.mjs": "99dfe4885f2139ee082b9485365b8085fe181b90f66834c0254107f519ca1a00",
+        "deploy/customer-batch-actions-20261119/build-stock-compact.mjs": "ff7e383b04df44900b8a8e4b5f367e0aa486186b6166e1a48d722e3d24d80a51",
+        "deploy/customer-batch-actions-20261119/build-stock-upload.cjs": "8638f53518059f16020d927d2c29f2a90a3e20daa4281c150a5bc1c16773bbe8",
+        "deploy/customer-batch-actions-20261119/build-upload-file-fix.mjs": "783991dc08481817e0b4756d1cd9be307b75a660ff5761f356cf2db7704d2581",
+        "deploy/customer-batch-actions-20261119/build-upload-zip-fix.cjs": "afd883f6ce2ad15eda9df8717e3192c8148700e4755fe10a1e07c0f968c6d787",
+        "deploy/customer-batch-actions-20261119/prepare-bind-upload-once.py": "cf6c247037ff807a6f289660b0a18fc884fa1dbcbd6f6b51a495961685810228",
+        "deploy/customer-batch-actions-20261119/prepare-local.py": "228a64cf55224e1ea1882ac4c66958fe961d5c80ada43a0e6a26cceb47e0319b",
+        "deploy/customer-batch-actions-20261119/prepare-stock-controller.py": "527b070d95093c153ddfae2475e9ed255f697425b5fe10e5bceeb9dde1633281",
+        "deploy/customer-batch-actions-20261119/prepare-stock-package.py": "dea7a3c02e00b875fc465bab3a59919708ace9b06c9c4055d4e12fdf1502bc36",
+        "deploy/customer-batch-actions-20261119/prepare-upload-controller.py": "b2a7f799d6e9cef960ce5809889ff8b2d3a9b4c636538cd6d546205d0bfbcf5f",
+        "deploy/customer-batch-actions-20261119/prepare-upload-package.py": "d42dece77dcfb8cfc9364cce9b306915a62a374655e48b95d8b796c99f088872",
+        "deploy/customer-batch-actions-20261119/release.py": "2c7047701591af1ee2c21f93fe84593184ff0e6e3ed3d40ad2ee1d0f87dea0f8",
+        "deploy/customer-batch-actions-20261119/test-upload-native-format.mjs": "6197fa8b8347e85795a73b083a185331b789292d17948cc431e59a0676066bc9",
+        "deploy/customer-batch-actions-20261119/verify-upload-live-format.cjs": "995fb80339d7b141cdfafe3aac45011bf67709778435fd5de6d2b97e3e409776",
+        "deploy/customer-inventory-backend-20261114/core.cjs": "f091d1d9db7e9772833fba865dd4ce912e55be116932eb3623d5221d4777b088",
+        "deploy/upload-manage-20261119/build-support.mjs": "0eca0c92e06eea9bc7905e7e04a95b663d1b3e98b5acb38ab570d633f8968337",
+        "deploy/upload-manage-20261119/native-abi.mjs": "a7d6a730d34f799c3fae33c7d632b3d2f1c14b7e1ab526a471458248efab2aef",
+        "server/businessRouter.ts": "f4dc901e661568031f767e5a5d7771dafb3480b9c498c7ab291ef4d8b19ec410",
+        "server/customerSupplyEmptyChannel.test.ts": "0f8e7b764240431f390780634f7b654636ef1fbbadbb64d5fbf3ceb4eaf0724f",
+        "server/customerUploadHistoryBusinessInput.ts": "69fc5881cddacf48a214bb537c1d5610f63b2ae5110a6d92d2dd0448f577e3d0",
+        "server/customerUploadPrivateStorage.test.ts": "4c45c4f8cc0a002d3c0e3d3688938ca46b959b676d01e359eea24932321ae06b"
+      }
+    },
+    "manifestSha256": "d559a4a4ea2bceda0d13611b1993ab8cfd87eef070c8184ee7194c8a10997c21"
+  },
+  "independent": true,
+  "ownerTask": "6Lfttf6oVWJ8YS69o5FkXQ",
+  "releaseApproved": true,
+  "reviewerHash": "95bfafc4c30671f05ee2000010e2692222c77092ee92a704477ec5c26c3c6c3b",
+  "reviewerScope": "qp4e5jVmsAp0UHKwymyD5X personally reviewed actual ZIP flags expression/T6/CSS/HTML delta, complete93payload/52sources and cap72bc current binding on 2026-11-21. Referenced reviewerHash is included immutable historical evidence only, NOT an old report signature on this new M; current approval is this task actual narrow review. No production read/execution or old-business re-review.",
+  "schema": "customer-batch-independent-review-v1",
+  "scope": "customer-upload-file-fix-20261121-6Lfttf6o-1024",
+  "status": "passed"
+}

@@ -52,6 +52,16 @@ function alteredZip(change: (entries: Record<string, Uint8Array>) => void): Buff
   const entries = unzipSync(workbook()); change(entries);
   return Buffer.from(zipSync(entries, { level: 6 }));
 }
+function zipWithFlags(flags: number, level: 0 | 6 = 6): Buffer {
+  const bytes = Buffer.from(zipSync(unzipSync(workbook()), { level }));
+  let p = central(bytes);
+  while (p >= 0 && bytes.readUInt32LE(p) === 0x02014b50) {
+    const local = bytes.readUInt32LE(p + 42);
+    bytes.writeUInt16LE(flags, p + 8); bytes.writeUInt16LE(flags, local + 6);
+    p += 46 + bytes.readUInt16LE(p + 28) + bytes.readUInt16LE(p + 30) + bytes.readUInt16LE(p + 32);
+  }
+  return bytes;
+}
 function central(bytes: Buffer): number { return bytes.indexOf(Buffer.from("504b0102", "hex")); }
 function xlsWithRecord(id: number, payload: Buffer): Buffer {
   const cfb = XLSX.CFB.read(workbook("xls"), { type: "buffer" });
@@ -65,6 +75,22 @@ function xlsWithRecord(id: number, payload: Buffer): Buffer {
 afterEach(async () => { controls.uuid = undefined; vi.clearAllMocks(); vi.restoreAllMocks(); for (const r of roots.splice(0)) await fs.rm(r, { recursive: true, force: true }); });
 
 describe("strict customer workbook inspection", () => {
+  it.each([0x0000, 0x0002, 0x0004, 0x0006, 0x0806])("accepts legal Deflate compression options 0x%s without changing original bytes", flags => {
+    const bytes = zipWithFlags(flags), inspected = inspectCustomerUploadFile(file(bytes, "xlsx"));
+    expect(inspected.bytes.equals(bytes)).toBe(true);
+    expect(inspected.sha256).toBe(crypto.createHash("sha256").update(bytes).digest("hex"));
+    expect(inspected.manifest).toEqual(inspectCustomerUploadFile(file(zipWithFlags(0), "xlsx")).manifest);
+  });
+  it.each([0x0007, 0x0046, 0x2006, 0x0016])("still rejects encryption and unsupported flags 0x%s before workbook parsing", flags => {
+    vi.mocked(XLSX.read).mockClear();
+    expect(() => inspectCustomerUploadFile(file(zipWithFlags(flags), "xlsx"))).toThrow(/拒绝加密、Zip64/);
+    expect(XLSX.read).not.toHaveBeenCalled();
+  });
+  it("does not allow Deflate option bits for stored entries and still checks header consistency", () => {
+    expect(() => inspectCustomerUploadFile(file(zipWithFlags(0x0006, 0), "xlsx"))).toThrow(/拒绝加密、Zip64/);
+    const bytes = zipWithFlags(0x0006); bytes.writeUInt16LE(0, 6);
+    expect(() => inspectCustomerUploadFile(file(bytes, "xlsx"))).toThrow(/本地头不一致/);
+  });
   it("returns the unmodified bytes and deterministic sha256/row evidence from ALL sheets", () => {
     const bytes = workbook(); const result = inspectCustomerUploadFile(file(bytes, "xlsx"));
     expect(result.bytes.equals(bytes)).toBe(true);
@@ -234,6 +260,18 @@ describe("strict customer workbook inspection", () => {
 });
 
 describe("private storage (temporary local files only, no DB/network)", () => {
+  it.skipIf(!process.env.CUSTOMER_UPLOAD_REGRESSION_FILE)("preserves the user's original 0x0006 Excel bytes through local private save/read", async () => {
+    const bytes = await fs.readFile(process.env.CUSTOMER_UPLOAD_REGRESSION_FILE!);
+    expect(crypto.createHash("sha256").update(bytes).digest("hex")).toBe("869c66b352c06b9e2864793a9c005bc812c81f794b84763795b23640f583d001");
+    const input = { ...file(bytes, "xlsx"), fileName: "工作簿1--宝.xlsx" };
+    const r = await root(), storage = createCustomerUploadPrivateStorage({ root: r });
+    const stored = await storage.put(input);
+    expect(stored.byteSize).toBe(47835);
+    expect(stored.manifest!.sheets).toHaveLength(1);
+    expect(stored.manifest!.sheets[0].rows).toHaveLength(319);
+    expect((await storage.read(stored.locator)).equals(bytes)).toBe(true);
+    expect((await fs.readFile(process.env.CUSTOMER_UPLOAD_REGRESSION_FILE!)).equals(bytes)).toBe(true);
+  });
   it("publishes original bytes with opaque UUID, 0700 directory and 0600 file, and reads exact bytes", async () => {
     const r = await root(), storage = createCustomerUploadPrivateStorage({ root: r }), input = file("型号,数量\nA,1");
     const stored = await storage.put(input);

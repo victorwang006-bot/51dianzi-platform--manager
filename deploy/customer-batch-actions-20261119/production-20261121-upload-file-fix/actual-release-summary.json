@@ -1,0 +1,41 @@
+{
+  "status": "UPLOAD_FIX_ACTUAL_APPLY_VERIFY_FORMAT_PASSED_CLOSED",
+  "scope": "customer-upload-file-fix-20261121-6Lfttf6o-1024",
+  "controllerSha256": "88f3e8236a191d8b8360f1c43d0f3e6cea33bfede50b019073aaf12b2db9eff1",
+  "manifestSha256": "d559a4a4ea2bceda0d13611b1993ab8cfd87eef070c8184ee7194c8a10997c21",
+  "reviewSha256": "c025b8d05ebb5270f27dfa5eeedce911045a9a6a6d8780370ab83ee1d2507019",
+  "receiptSha256": "e20026fbd81cda63514584c7b8d9750ac3d3ac2a86f9f50a3ce50438450c2f95",
+  "closedCoordSha256": "1c0006186f2c1b177efa012a1775cb34ca9655418ca093dbf4d57afed638b5f2",
+  "closedAtUtc": "2026-11-21T02:51:38.801376+00:00",
+  "readOnlyVerify": {
+    "status": "verified-live-matching-own-receipt",
+    "stateSha256": "96cb0c6b1ed21049aa765f75c20872b7126c3edb2f3370dda321298199d20b56",
+    "receiptSha256": "e20026fbd81cda63514584c7b8d9750ac3d3ac2a86f9f50a3ce50438450c2f95",
+    "productionWrites": 0,
+    "processCount": 12
+  },
+  "actualOriginalFileFormatAcceptance": {
+    "status": "ACTUAL_LIVE_NATIVE_ORIGINAL_FILE_FORMAT_PASSED",
+    "apiSha256": "28ba370e600dcd89047200ec55e545edafe9890314bd49e334bdfa2ff7f77757",
+    "fileSha256": "869c66b352c06b9e2864793a9c005bc812c81f794b84763795b23640f583d001",
+    "fileBytes": 47835,
+    "sourceRows": 319,
+    "manifestSha256": "b325d68a3cd39a74853340e7cfb96a2488eafdf80a5f206676b0ccdd4efbbfb5",
+    "actualXlsxResolvedPath": "/opt/releases/20261030-migration-v14/front/node_modules/.pnpm/xlsx@0.18.5/node_modules/xlsx/xlsx.js",
+    "xlsxVersion": "0.18.5",
+    "apiEntrypointExecuted": false,
+    "databaseWrites": 0,
+    "productionOriginalFileStorageWrites": 0,
+    "inventoryWrites": 0,
+    "notFullLoggedInHTTPUpload": true
+  },
+  "adminApiPhysicalWrites": 0,
+  "frontApiPhysicalWrites": 1,
+  "actualReloadEvents": 6,
+  "frontStaticWrites": 0,
+  "businessWrites": 0,
+  "envWrites": 0,
+  "timerPause": false,
+  "newMaintenanceWindow": false,
+  "elapsedSeconds": 188.6
+}

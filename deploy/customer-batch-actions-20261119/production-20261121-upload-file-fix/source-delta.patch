@@ -1,0 +1,429 @@
+[1mdiff --git a/client/src/business/platform/client/src/components/channelInventory/BatchUpload.compact.test.ts b/client/src/business/platform/client/src/components/channelInventory/BatchUpload.compact.test.ts[m
+[1mindex 152f33b..4f23533 100644[m
+[1m--- a/client/src/business/platform/client/src/components/channelInventory/BatchUpload.compact.test.ts[m
+[1m+++ b/client/src/business/platform/client/src/components/channelInventory/BatchUpload.compact.test.ts[m
+[36m@@ -65,7 +65,10 @@[m [mafterEach(() => { act(() => root.unmount()); container.remove(); document.body.r[m
+ describe("customer compact upload", () => {[m
+   it("defaults to spreadsheet/manual entry, recognizes the standard sheet directly into preview and never invokes parsing", async () => {[m
+     render();[m
+[31m-    expect(document.querySelector(".ci-batch-steps")?.textContent).toBe("1选文件2核对3结果");[m
+[32m+[m[32m    expect(document.querySelector(".ci-batch-steps")?.textContent).toBe("1选文件2核对物料3上传结果");[m
+[32m+[m[32m    expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);[m
+[32m+[m[32m    expect(button("选择库存表格").closest(".ci-batch-footer")).not.toBeNull();[m
+[32m+[m[32m    expect(document.querySelectorAll(".ci-batch-footer .ci-primary")).toHaveLength(1);[m
+     expect(button("手动录入")).toBeTruthy(); expect(parse).not.toHaveBeenCalled();[m
+     expect(isCollapsed(button("提交原文件人工整理"))).toBe(true);[m
+     await upload([["型号", "品牌", "数量", "报价", "币种"], ["ONE", "TI", "4,000", "0.125", "人民币"]]);[m
+[36m@@ -184,10 +187,39 @@[m [mdescribe("customer compact upload", () => {[m
+   it("reuses the same persisted file result on local read retry instead of saving the original again", async () => {[m
+     render(); const file = fileFor([["型号", "品牌", "币种"], ["ONE", "TI", "CNY"]]); const bytes = await file.arrayBuffer();[m
+     Object.defineProperty(file, "arrayBuffer", { configurable: true, value: vi.fn().mockRejectedValueOnce(new Error("local read failed")).mockResolvedValue(bytes) });[m
+[31m-    await uploadFile(file); expect(button("按原文件重试保存／读取")).toBeTruthy(); click(button("按原文件重试保存／读取")); await settle();[m
+[32m+[m[32m    await uploadFile(file);[m
+[32m+[m[32m    expect(document.querySelector(".ci-batch-file-error")?.textContent).toContain("表格读取未完成");[m
+[32m+[m[32m    expect(button("重试原文件").closest(".ci-batch-footer")).not.toBeNull();[m
+[32m+[m[32m    click(button("重试原文件")); await settle();[m
+     expect(persistOriginal).toHaveBeenCalledTimes(1); expect(button("导入1条").disabled).toBe(false);[m
+   });[m
+ [m
+[32m+[m[32m  it("shows the exact original-file failure beside the file, without another dialog or automatic manual parsing", async () => {[m
+[32m+[m[32m    persistOriginal.mockRejectedValueOnce(new Error("原文件未保存：文件格式校验未通过"));[m
+[32m+[m[32m    render(); const file = fileFor([["型号", "品牌", "币种"], ["ONE", "TI", "CNY"]]);[m
+[32m+[m[32m    await uploadFile(file);[m
+[32m+[m[32m    const alert = required(document.querySelector('[role="alert"]'));[m
+[32m+[m[32m    expect(alert.closest(".ci-batch-file-selection")).not.toBeNull();[m
+[32m+[m[32m    expect(alert.textContent).toContain("原文件保存／记录核验未完成");[m
+[32m+[m[32m    expect(alert.textContent).toContain("原文件未保存：文件格式校验未通过");[m
+[32m+[m[32m    expect(document.querySelector(".ci-batch-retry-file strong")?.textContent).toBe(file.name);[m
+[32m+[m[32m    expect(isCollapsed(button("提交原文件人工整理"))).toBe(true);[m
+[32m+[m[32m    expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);[m
+[32m+[m[32m    expect(document.querySelectorAll(".ci-batch-footer .ci-primary")).toHaveLength(1);[m
+[32m+[m[32m    expect(createCustomer).not.toHaveBeenCalled(); expect(create).not.toHaveBeenCalled();[m
+[32m+[m[32m    click(button("重试原文件")); await settle();[m
+[32m+[m[32m    expect(persistOriginal.mock.calls.map(call => call[0])).toEqual([file, file]);[m
+[32m+[m[32m    expect(document.querySelector(".ci-batch-file-error")).toBeNull();[m
+[32m+[m[32m    expect(button("导入1条").disabled).toBe(false); expect(parse).not.toHaveBeenCalled();[m
+[32m+[m[32m  });[m
+[32m+[m
+[32m+[m[32m  it("keeps file-selection errors visible and does not call persistence for invalid files", async () => {[m
+[32m+[m[32m    render(); await uploadFile(new File(["bad"], "wrong.pdf"));[m
+[32m+[m[32m    expect(document.querySelector(".ci-batch-file-selection [role=alert]")?.textContent).toContain("文件格式不符合要求");[m
+[32m+[m[32m    expect(button("选择库存表格").closest(".ci-batch-footer")).not.toBeNull();[m
+[32m+[m[32m    expect(persistOriginal).not.toHaveBeenCalled(); expect(create).not.toHaveBeenCalled();[m
+[32m+[m[32m  });[m
+[32m+[m
+   it("does not submit after identity change during customer batch preparation and retains the preparation UUID", async () => {[m
+     let finish!: (result: { id: number; channelId: number }) => void; let valid = true;[m
+     createCustomer.mockReturnValue(new Promise(resolve => { finish = resolve; })); render({ isCurrent: () => valid });[m
+[1mdiff --git a/client/src/business/platform/client/src/components/channelInventory/BatchUpload.tsx b/client/src/business/platform/client/src/components/channelInventory/BatchUpload.tsx[m
+[1mindex 5f6ee6d..ed02ebe 100644[m
+[1m--- a/client/src/business/platform/client/src/components/channelInventory/BatchUpload.tsx[m
+[1m+++ b/client/src/business/platform/client/src/components/channelInventory/BatchUpload.tsx[m
+[36m@@ -255,6 +255,8 @@[m [mfunction BatchUploadSession(props: Props) {[m
+   const [name, setName] = useState("");[m
+   const [error, setError] = useState(initial.error);[m
+   const [loading, setLoading] = useState(false);[m
+[32m+[m[32m  const [fileStage, setFileStage] = useState<"original" | "table" | null>(null);[m
+[32m+[m[32m  const [fileErrorStage, setFileErrorStage] = useState("");[m
+   const [busy, setBusy] = useState(false);[m
+   const [dragging, setDragging] = useState(false);[m
+   const [excluded, setExcluded] = useState<number[]>([]);[m
+[36m@@ -372,23 +374,31 @@[m [mfunction BatchUploadSession(props: Props) {[m
+   const selectFile = async (file: File, retry = false) => {[m
+     const token = ++serial.current;[m
+     setError("");[m
+[32m+[m[32m    setFileErrorStage("");[m
+     if (!/\.(xlsx|xls|csv)$/i.test(file.name)) {[m
+[32m+[m[32m      setFileErrorStage("文件格式不符合要求");[m
+       setError("请选择 Excel（.xlsx/.xls）或 CSV 文件。");[m
+       return;[m
+     }[m
+     if (file.size > 5 * 1024 * 1024) {[m
+[32m+[m[32m      setFileErrorStage("文件超过大小限制");[m
+       setError("每份文件最多 5MB，请拆分后上传。");[m
+       return;[m
+     }[m
+     setLoading(true);[m
+[32m+[m[32m    let failureStage = "表格读取未完成";[m
+     try {[m
+       if (latest.current.onOriginalFilePersist) {[m
+[32m+[m[32m        failureStage = "原文件保存／记录核验未完成";[m
+[32m+[m[32m        setFileStage("original");[m
+         const original = retry && persistedFile.current?.file === file ? persistedFile.current.result : await latest.current.onOriginalFilePersist(file);[m
+         persistedFile.current = { file, result: original };[m
+         if (!current() || token !== serial.current) return;[m
+         importSession.current = original.sessionData;[m
+         rowMetadata.current = new Map(original.rows.map(r => [r.row, r.metadata]));[m
+       }[m
+[32m+[m[32m      failureStage = "表格读取未完成";[m
+[32m+[m[32m      setFileStage("table");[m
+       const XLSX = await import("xlsx");[m
+       const buffer = await file.arrayBuffer();[m
+       if (!current() || token !== serial.current) return;[m
+[36m@@ -434,13 +444,13 @@[m [mfunction BatchUploadSession(props: Props) {[m
+       if (current() && token === serial.current)[m
+         { loadGrid(next, `${file.name} · ${sheetName}`, originalValues); setRetryFile(null); }[m
+     } catch (e) {[m
+[31m-      if (current() && token === serial.current) { setRetryFile(file); }[m
+[32m+[m[32m      if (current() && token === serial.current) { setRetryFile(file); setFileErrorStage(failureStage); }[m
+       if (current() && token === serial.current)[m
+         setError([m
+           e instanceof Error ? e.message : "文件读取失败，请用模板整理后重试。"[m
+         );[m
+     } finally {[m
+[31m-      if (current() && token === serial.current) setLoading(false);[m
+[32m+[m[32m      if (current() && token === serial.current) { setLoading(false); setFileStage(null); }[m
+     }[m
+   };[m
+   useEffect(() => {[m
+[36m@@ -896,14 +906,14 @@[m [mfunction BatchUploadSession(props: Props) {[m
+             </div>[m
+             {modeLocked ? <p className="ci-dialog-note">请先完成或恢复原批次。</p> : null}[m
+           </div> : null}[m
+[31m-          {customerMode && props.renderParseEntry ? <details className="ci-batch-note" open={entryMode === "parse" || (step === 3 && mapping.partNumber < 0) || Boolean(retryFile)}>[m
+[32m+[m[32m          {customerMode && props.renderParseEntry ? <details className="ci-batch-note" open={entryMode === "parse" || (step === 3 && mapping.partNumber < 0)}>[m
+             <summary>其他方式</summary><p>无法识别表格时，可提交原文件供人工整理；不会自动调用解析。</p>[m
+             <Button type="button" variant="outline" className="ci-button" disabled={modeLocked} onClick={() => changeMode("parse")}>提交原文件人工整理</Button>[m
+           </details> : null}[m
+           {entryMode === "parse" && props.renderParseEntry ? props.renderParseEntry({ onDirtyChange: dirty => { setParseDirty(dirty); props.onDirtyChange(dirty); }, onBusyChange: setParseBusy }) : null}[m
+[31m-          {entryMode !== "parse" ? <div className="ci-batch-steps" style={{ padding: "0" }}>[m
+[31m-            {(customerMode ? [entryMode === "single" ? "填写物料" : "选文件", "核对", "结果"] : entryMode === "single" ? ["填写物料", "预览确认"] : ["选文件", "匹配字段", "确认上传"]).map((label, i) => ([m
+[31m-              <span key={label} className={step >= (customerMode ? [1, 3, 4][i] : entryMode === "single" && i === 1 ? 3 : i + 1) ? "is-active" : ""}>[m
+[32m+[m[32m          {entryMode !== "parse" ? <div className={`ci-batch-steps${customerMode ? " ci-batch-three-step" : ""}`} style={{ padding: "0" }} aria-label={customerMode ? "上传进度：选文件、核对物料、上传结果" : undefined}>[m
+[32m+[m[32m            {(customerMode ? [entryMode === "single" ? "填写物料" : "选文件", "核对物料", "上传结果"] : entryMode === "single" ? ["填写物料", "预览确认"] : ["选文件", "匹配字段", "确认上传"]).map((label, i) => ([m
+[32m+[m[32m              <span key={label} aria-current={customerMode && step === [1, 3, 4][i] ? "step" : undefined} className={step >= (customerMode ? [1, 3, 4][i] : entryMode === "single" && i === 1 ? 3 : i + 1) ? "is-active" : ""}>[m
+                 <b>{step > (customerMode ? [1, 3, 4][i] : entryMode === "single" && i === 1 ? 3 : i + 1) ? "✓" : i + 1}</b>[m
+                 {label}[m
+               </span>[m
+[36m@@ -976,9 +986,11 @@[m [mfunction BatchUploadSession(props: Props) {[m
+           </div> : null}[m
+           {step === 1 && entryMode === "table" && ([m
+           <>[m
+[32m+[m[32m            <section className={customerMode ? "ci-batch-file-selection" : undefined} aria-label="选择库存文件">[m
+             <div[m
+               className={`ci-batch-drop ${dragging ? "is-dragging" : ""}`}[m
+[31m-              style={{ minHeight: "160px", padding: "10px 12px", gap: "5px" }}[m
+[32m+[m[32m              style={{ minHeight: customerMode ? "124px" : "160px", padding: "10px 12px", gap: "5px" }}[m
+[32m+[m[32m              aria-busy={loading}[m
+               onDragOver={e => {[m
+                 e.preventDefault();[m
+                 if (!saved && !savedPreparation && !restoreBlocked) setDragging(true);[m
+[36m@@ -994,9 +1006,10 @@[m [mfunction BatchUploadSession(props: Props) {[m
+               <Icon kind="upload" size={24} />[m
+               <strong>[m
+                 {loading[m
+[31m-                  ? "正在读取本地表格…"[m
+[31m-                  : "拖拽库存表格到这里，或选择文件"}[m
+[32m+[m[32m                  ? fileStage === "original" ? "正在保存并核验原文件…" : "正在读取表格…"[m
+[32m+[m[32m                  : customerMode ? "拖拽库存表格到这里" : "拖拽库存表格到这里，或选择文件"}[m
+               </strong>[m
+[32m+[m[32m              {customerMode ? <p>{loading ? "请勿重复提交，完成后自动进入核对。" : "或点击底部“选择库存表格”"}</p> : null}[m
+               <input[m
+                 hidden[m
+                 ref={fileInput}[m
+[36m@@ -1009,6 +1022,7 @@[m [mfunction BatchUploadSession(props: Props) {[m
+                   e.target.value = "";[m
+                 }}[m
+               />[m
+[32m+[m[32m              {!customerMode ?[m
+               <Button[m
+                 type="button"[m
+                 className="ci-button ci-primary"[m
+[36m@@ -1017,9 +1031,13 @@[m [mfunction BatchUploadSession(props: Props) {[m
+               >[m
+                 <Icon kind="upload" size={15} />[m
+                 选择库存表格[m
+[31m-              </Button>[m
+[32m+[m[32m              </Button> : null}[m
+[32m+[m[32m              {customerMode ? <small>Excel / CSV · 5MB以内 · 每批最多1000行</small> : null}[m
+             </div>[m
+[31m-            {retryFile ? <><Button type="button" className="ci-button" disabled={loading} onClick={() => void selectFile(retryFile, true)}>按原文件重试保存／读取</Button>[m
+[32m+[m[32m            {customerMode && retryFile ? <div className="ci-batch-file ci-batch-retry-file"><Icon kind="file" /><div><strong>{retryFile.name}</strong><p>保留原文件和请求号，重试不会另起未知批次。</p></div><button type="button" className="ci-inline-link" onClick={downloadOriginalFile}>下载原文件</button></div> : null}[m
+[32m+[m[32m            {customerMode && error ? <div className="ci-error ci-batch-file-error" role="alert"><strong>{fileErrorStage || "暂无法继续上传"}</strong><p>{error}</p></div> : null}[m
+[32m+[m[32m            </section>[m
+[32m+[m[32m            {!customerMode && retryFile ? <><Button type="button" className="ci-button" disabled={loading} onClick={() => void selectFile(retryFile, true)}>按原文件重试保存／读取</Button>[m
+               <button type="button" className="ci-inline-link" onClick={downloadOriginalFile}>下载原文件：{retryFile.name}</button></> : null}[m
+             <button[m
+               className="ci-batch-template"[m
+[36m@@ -1282,14 +1300,14 @@[m [mfunction BatchUploadSession(props: Props) {[m
+             </div>[m
+           </>[m
+         )}[m
+[31m-        {error && ([m
+[32m+[m[32m        {error && !(customerMode && step === 1 && entryMode === "table") && ([m
+           <div className="ci-error" role="alert">[m
+             {error}[m
+           </div>[m
+         )}[m
+         </div>[m
+         <div[m
+[31m-          className="ci-dialog-footer ci-batch-footer"[m
+[32m+[m[32m          className={`ci-dialog-footer ci-batch-footer${customerMode ? " ci-batch-footer-customer" : ""}`}[m
+           style={{[m
+             flex: "0 0 auto",[m
+             marginTop: 0,[m
+[36m@@ -1297,6 +1315,7 @@[m [mfunction BatchUploadSession(props: Props) {[m
+             borderTop: "1px solid #e8edf3",[m
+           }}[m
+         >[m
+[32m+[m[32m          {customerMode && step === 1 && entryMode === "table" ? <p className="ci-batch-footer-status" role="status">{loading ? fileStage === "original" ? "保存／核验原文件中…" : "读取表格中…" : retryFile ? "请沿用原文件重试" : "选好文件后自动进入核对"}</p> : null}[m
+           {step > 1 && !hasQueue && (!customerMode || (!preparing && !busy)) && ([m
+             <Button[m
+               type="button"[m
+[36m@@ -1325,6 +1344,7 @@[m [mfunction BatchUploadSession(props: Props) {[m
+                 ? "完成"[m
+                 : "取消"}[m
+           </Button>[m
+[32m+[m[32m          {customerMode && step === 1 && entryMode === "table" ? <Button type="button" className="ci-button ci-primary" disabled={loading || !!saved || !!savedPreparation || restoreBlocked} onClick={() => retryFile ? void selectFile(retryFile, true) : fileInput.current?.click()}><Icon kind="upload" size={15} />{loading ? "处理中…" : retryFile ? "重试原文件" : "选择库存表格"}</Button> : null}[m
+           {step === 2 && ([m
+             <Button[m
+               type="button"[m
+[1mdiff --git a/client/src/business/platform/client/src/components/channelInventory/batch.css b/client/src/business/platform/client/src/components/channelInventory/batch.css[m
+[1mindex a55a93f..c277e33 100644[m
+[1m--- a/client/src/business/platform/client/src/components/channelInventory/batch.css[m
+[1m+++ b/client/src/business/platform/client/src/components/channelInventory/batch.css[m
+[36m@@ -583,3 +583,124 @@[m
+   width: 100%;[m
+   min-width: 120px;[m
+ }[m
+[32m+[m
+[32m+[m[32m/* Single-dialog three-step customer upload; no global or ordinary-channel changes. */[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-three-step {[m
+[32m+[m[32m  display: grid;[m
+[32m+[m[32m  grid-template-columns: repeat(3, minmax(0, 1fr));[m
+[32m+[m[32m  gap: 8px;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-three-step > span {[m
+[32m+[m[32m  min-width: 0;[m
+[32m+[m[32m  padding: 9px 10px;[m
+[32m+[m[32m  border-radius: 6px;[m
+[32m+[m[32m  background: #f5f7fa;[m
+[32m+[m[32m  color: #64748b;[m
+[32m+[m[32m  font-size: 12px;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-three-step .is-active {[m
+[32m+[m[32m  color: #185fa5;[m
+[32m+[m[32m  background: #eef5fc;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-three-step [aria-current="step"] b {[m
+[32m+[m[32m  color: #fff;[m
+[32m+[m[32m  background: #185fa5;[m
+[32m+[m[32m  border-color: #185fa5;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .customer-supply-method-controls .ci-primary {[m
+[32m+[m[32m  color: #185fa5;[m
+[32m+[m[32m  background: #eef5fc;[m
+[32m+[m[32m  border-color: #c9ddf2;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-file-selection {[m
+[32m+[m[32m  display: grid;[m
+[32m+[m[32m  gap: 10px;[m
+[32m+[m[32m  min-width: 0;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-drop {[m
+[32m+[m[32m  justify-content: center;[m
+[32m+[m[32m  margin-top: 0;[m
+[32m+[m[32m  border-radius: 8px;[m
+[32m+[m[32m  background: #f8fbff;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-drop strong {[m
+[32m+[m[32m  color: #334155;[m
+[32m+[m[32m  font-weight: 600;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-drop p,[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-drop small {[m
+[32m+[m[32m  color: #64748b;[m
+[32m+[m[32m  font-size: 12px;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-retry-file {[m
+[32m+[m[32m  min-width: 0;[m
+[32m+[m[32m  padding: 10px 12px;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-retry-file > div {[m
+[32m+[m[32m  min-width: 0;[m
+[32m+[m[32m  flex: 1;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-retry-file strong {[m
+[32m+[m[32m  display: block;[m
+[32m+[m[32m  color: #334155;[m
+[32m+[m[32m  overflow-wrap: anywhere;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-retry-file p {[m
+[32m+[m[32m  color: #64748b;[m
+[32m+[m[32m  line-height: 18px;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-file-error {[m
+[32m+[m[32m  margin: 0;[m
+[32m+[m[32m  padding: 10px 12px;[m
+[32m+[m[32m  border: 1px solid #fecaca;[m
+[32m+[m[32m  border-radius: 6px;[m
+[32m+[m[32m  color: #991b1b;[m
+[32m+[m[32m  background: #fff7f7;[m
+[32m+[m[32m  overflow-wrap: anywhere;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-file-error strong {[m
+[32m+[m[32m  font-size: 13px;[m
+[32m+[m[32m  font-weight: 600;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-file-error p {[m
+[32m+[m[32m  margin: 4px 0 0;[m
+[32m+[m[32m  font-size: 12px;[m
+[32m+[m[32m  line-height: 19px;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-footer-customer {[m
+[32m+[m[32m  flex-wrap: wrap;[m
+[32m+[m[32m  align-items: center;[m
+[32m+[m[32m  gap: 8px;[m
+[32m+[m[32m  background: #fff;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-footer-status {[m
+[32m+[m[32m  flex: 1;[m
+[32m+[m[32m  min-width: 0;[m
+[32m+[m[32m  margin: 0 auto 0 0;[m
+[32m+[m[32m  color: #64748b;[m
+[32m+[m[32m  font-size: 12px;[m
+[32m+[m[32m  line-height: 19px;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-footer-customer .ci-button {[m
+[32m+[m[32m  min-width: 80px;[m
+[32m+[m[32m  cursor: pointer;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-footer-customer .ci-button:disabled {[m
+[32m+[m[32m  cursor: not-allowed;[m
+[32m+[m[32m}[m
+[32m+[m[32m@media (max-width: 560px) {[m
+[32m+[m[32m  .customer-supply-dialog .ci-batch-three-step {[m
+[32m+[m[32m    gap: 4px;[m
+[32m+[m[32m  }[m
+[32m+[m[32m  .customer-supply-dialog .ci-batch-three-step > span {[m
+[32m+[m[32m    padding: 8px 5px;[m
+[32m+[m[32m    gap: 4px;[m
+[32m+[m[32m    font-size: 11px;[m
+[32m+[m[32m  }[m
+[32m+[m[32m  .customer-supply-dialog .ci-batch-footer-status {[m
+[32m+[m[32m    flex-basis: 100%;[m
+[32m+[m[32m  }[m
+[32m+[m[32m  .customer-supply-dialog .ci-batch-retry-file {[m
+[32m+[m[32m    flex-wrap: wrap;[m
+[32m+[m[32m  }[m
+[32m+[m[32m}[m
+[1mdiff --git a/client/src/business/platform/front-router-types/server/services/customerUploadPrivateStorage.ts b/client/src/business/platform/front-router-types/server/services/customerUploadPrivateStorage.ts[m
+[1mindex b7eb596..21a949d 100644[m
+[1m--- a/client/src/business/platform/front-router-types/server/services/customerUploadPrivateStorage.ts[m
+[1m+++ b/client/src/business/platform/front-router-types/server/services/customerUploadPrivateStorage.ts[m
+[36m@@ -178,9 +178,11 @@[m [mfunction checkedZip(bytes: Buffer): Map<string, Buffer> {[m
+       xlen = bytes.readUInt16LE(p + 30),[m
+       clen = bytes.readUInt16LE(p + 32),[m
+       start = bytes.readUInt32LE(p + 42);[m
+[32m+[m[32m    // ZIP APPNOTE 4.4.4: bits 1/2 are compression options for Deflate,[m
+[32m+[m[32m    // not encryption. Other methods must not acquire these allowed bits.[m
+     if ([m
+       bytes.readUInt16LE(p + 6) > 20 ||[m
+[31m-      flags & ~0x0808 ||[m
+[32m+[m[32m      flags & ~(0x0808 | (method === 8 ? 0x0006 : 0)) ||[m
+       (method !== 0 && method !== 8) ||[m
+       bytes.readUInt16LE(p + 34) ||[m
+       p + 46 + nlen + xlen + clen > end ||[m
+[1mdiff --git a/server/customerUploadPrivateStorage.test.ts b/server/customerUploadPrivateStorage.test.ts[m
+[1mindex 35d546b..1490da6 100644[m
+[1m--- a/server/customerUploadPrivateStorage.test.ts[m
+[1m+++ b/server/customerUploadPrivateStorage.test.ts[m
+[36m@@ -52,6 +52,16 @@[m [mfunction alteredZip(change: (entries: Record<string, Uint8Array>) => void): Buff[m
+   const entries = unzipSync(workbook()); change(entries);[m
+   return Buffer.from(zipSync(entries, { level: 6 }));[m
+ }[m
+[32m+[m[32mfunction zipWithFlags(flags: number, level: 0 | 6 = 6): Buffer {[m
+[32m+[m[32m  const bytes = Buffer.from(zipSync(unzipSync(workbook()), { level }));[m
+[32m+[m[32m  let p = central(bytes);[m
+[32m+[m[32m  while (p >= 0 && bytes.readUInt32LE(p) === 0x02014b50) {[m
+[32m+[m[32m    const local = bytes.readUInt32LE(p + 42);[m
+[32m+[m[32m    bytes.writeUInt16LE(flags, p + 8); bytes.writeUInt16LE(flags, local + 6);[m
+[32m+[m[32m    p += 46 + bytes.readUInt16LE(p + 28) + bytes.readUInt16LE(p + 30) + bytes.readUInt16LE(p + 32);[m
+[32m+[m[32m  }[m
+[32m+[m[32m  return bytes;[m
+[32m+[m[32m}[m
+ function central(bytes: Buffer): number { return bytes.indexOf(Buffer.from("504b0102", "hex")); }[m
+ function xlsWithRecord(id: number, payload: Buffer): Buffer {[m
+   const cfb = XLSX.CFB.read(workbook("xls"), { type: "buffer" });[m
+[36m@@ -65,6 +75,22 @@[m [mfunction xlsWithRecord(id: number, payload: Buffer): Buffer {[m
+ afterEach(async () => { controls.uuid = undefined; vi.clearAllMocks(); vi.restoreAllMocks(); for (const r of roots.splice(0)) await fs.rm(r, { recursive: true, force: true }); });[m
+ [m
+ describe("strict customer workbook inspection", () => {[m
+[32m+[m[32m  it.each([0x0000, 0x0002, 0x0004, 0x0006, 0x0806])("accepts legal Deflate compression options 0x%s without changing original bytes", flags => {[m
+[32m+[m[32m    const bytes = zipWithFlags(flags), inspected = inspectCustomerUploadFile(file(bytes, "xlsx"));[m
+[32m+[m[32m    expect(inspected.bytes.equals(bytes)).toBe(true);[m
+[32m+[m[32m    expect(inspected.sha256).toBe(crypto.createHash("sha256").update(bytes).digest("hex"));[m
+[32m+[m[32m    expect(inspected.manifest).toEqual(inspectCustomerUploadFile(file(zipWithFlags(0), "xlsx")).manifest);[m
+[32m+[m[32m  });[m
+[32m+[m[32m  it.each([0x0007, 0x0046, 0x2006, 0x0016])("still rejects encryption and unsupported flags 0x%s before workbook parsing", flags => {[m
+[32m+[m[32m    vi.mocked(XLSX.read).mockClear();[m
+[32m+[m[32m    expect(() => inspectCustomerUploadFile(file(zipWithFlags(flags), "xlsx"))).toThrow(/拒绝加密、Zip64/);[m
+[32m+[m[32m    expect(XLSX.read).not.toHaveBeenCalled();[m
+[32m+[m[32m  });[m
+[32m+[m[32m  it("does not allow Deflate option bits for stored entries and still checks header consistency", () => {[m
+[32m+[m[32m    expect(() => inspectCustomerUploadFile(file(zipWithFlags(0x0006, 0), "xlsx"))).toThrow(/拒绝加密、Zip64/);[m
+[32m+[m[32m    const bytes = zipWithFlags(0x0006); bytes.writeUInt16LE(0, 6);[m
+[32m+[m[32m    expect(() => inspectCustomerUploadFile(file(bytes, "xlsx"))).toThrow(/本地头不一致/);[m
+[32m+[m[32m  });[m
+   it("returns the unmodified bytes and deterministic sha256/row evidence from ALL sheets", () => {[m
+     const bytes = workbook(); const result = inspectCustomerUploadFile(file(bytes, "xlsx"));[m
+     expect(result.bytes.equals(bytes)).toBe(true);[m
+[36m@@ -234,6 +260,18 @@[m [mdescribe("strict customer workbook inspection", () => {[m
+ });[m
+ [m
+ describe("private storage (temporary local files only, no DB/network)", () => {[m
+[32m+[m[32m  it.skipIf(!process.env.CUSTOMER_UPLOAD_REGRESSION_FILE)("preserves the user's original 0x0006 Excel bytes through local private save/read", async () => {[m
+[32m+[m[32m    const bytes = await fs.readFile(process.env.CUSTOMER_UPLOAD_REGRESSION_FILE!);[m
+[32m+[m[32m    expect(crypto.createHash("sha256").update(bytes).digest("hex")).toBe("869c66b352c06b9e2864793a9c005bc812c81f794b84763795b23640f583d001");[m
+[32m+[m[32m    const input = { ...file(bytes, "xlsx"), fileName: "工作簿1--宝.xlsx" };[m
+[32m+[m[32m    const r = await root(), storage = createCustomerUploadPrivateStorage({ root: r });[m
+[32m+[m[32m    const stored = await storage.put(input);[m
+[32m+[m[32m    expect(stored.byteSize).toBe(47835);[m
+[32m+[m[32m    expect(stored.manifest!.sheets).toHaveLength(1);[m
+[32m+[m[32m    expect(stored.manifest!.sheets[0].rows).toHaveLength(319);[m
+[32m+[m[32m    expect((await storage.read(stored.locator)).equals(bytes)).toBe(true);[m
+[32m+[m[32m    expect((await fs.readFile(process.env.CUSTOMER_UPLOAD_REGRESSION_FILE!)).equals(bytes)).toBe(true);[m
+[32m+[m[32m  });[m
+   it("publishes original bytes with opaque UUID, 0700 directory and 0600 file, and reads exact bytes", async () => {[m
+     const r = await root(), storage = createCustomerUploadPrivateStorage({ root: r }), input = file("型号,数量\nA,1");[m
+     const stored = await storage.put(input);[m

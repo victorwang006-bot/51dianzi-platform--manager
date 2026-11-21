@@ -1,0 +1,35 @@
+{
+  "status": "UPLOAD_FIX_ACTUAL_CURRENT_SCOPE_SEALED_NOT_APPLIED_NOT_APPROVED",
+  "scope": "customer-upload-file-fix-20261121-6Lfttf6o-1024",
+  "controllerSha256": "88f3e8236a191d8b8360f1c43d0f3e6cea33bfede50b019073aaf12b2db9eff1",
+  "policySha256": "3227c956ae44231024140c58ef415a9f65a66e4544782bdc386fc1f62b81dec2",
+  "manifestSha256": "d559a4a4ea2bceda0d13611b1993ab8cfd87eef070c8184ee7194c8a10997c21",
+  "captureSha256": "72bc7c1317ef0c01f408b3167d716b26d978ade8300a8a7b63655d876ad23ff7",
+  "capturedAtUtc": "2026-11-21T02:42:20.017466+00:00",
+  "ttlSeconds": 5400,
+  "protectedRecords": 3017,
+  "packageFiles": 93,
+  "sourceFiles": 52,
+  "sixReloadReady": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+  ],
+  "coordSha256": "6da1836d969f0a3735b47d97c066497e1b7e2e598baf3d3272b305791d4e8fd0",
+  "frontendHtmlSha256": "b66ff692008fe16000a3878933b3875bca66ea3231846d66f7be5d5d84483d35",
+  "currentBeforeTargetHashes": {
+    "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/index.html": "675a3b5ca704de168960e59ad00b2f10c5cd2026a127f9a319588ca80b9fbd9d",
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js": "14034473467f2b22f3dcf2f11624b961c4c7831d69e41bb21ac401f9bb85a120",
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js": "81ed910a32f95c2a647eb48fe57ff63646d23c5b677f8fc8816b0b80abea0fd8"
+  },
+  "lastSnapshotSeconds": 2.391468893736601,
+  "elapsedPrepareCaptureSealSeconds": 8.291875736322254,
+  "timerPause": false,
+  "publicWrites": 0,
+  "businessWrites": 0,
+  "newMaintenanceWindow": false,
+  "privateAllAncestorsMode0700ViaUmask077": true
+}

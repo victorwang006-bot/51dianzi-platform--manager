@@ -65,7 +65,10 @@ afterEach(() => { act(() => root.unmount()); container.remove(); document.body.r
 describe("customer compact upload", () => {
   it("defaults to spreadsheet/manual entry, recognizes the standard sheet directly into preview and never invokes parsing", async () => {
     render();
-    expect(document.querySelector(".ci-batch-steps")?.textContent).toBe("1选文件2核对3结果");
+    expect(document.querySelector(".ci-batch-steps")?.textContent).toBe("1选文件2核对物料3上传结果");
+    expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(button("选择库存表格").closest(".ci-batch-footer")).not.toBeNull();
+    expect(document.querySelectorAll(".ci-batch-footer .ci-primary")).toHaveLength(1);
     expect(button("手动录入")).toBeTruthy(); expect(parse).not.toHaveBeenCalled();
     expect(isCollapsed(button("提交原文件人工整理"))).toBe(true);
     await upload([["型号", "品牌", "数量", "报价", "币种"], ["ONE", "TI", "4,000", "0.125", "人民币"]]);
@@ -184,8 +187,37 @@ describe("customer compact upload", () => {
   it("reuses the same persisted file result on local read retry instead of saving the original again", async () => {
     render(); const file = fileFor([["型号", "品牌", "币种"], ["ONE", "TI", "CNY"]]); const bytes = await file.arrayBuffer();
     Object.defineProperty(file, "arrayBuffer", { configurable: true, value: vi.fn().mockRejectedValueOnce(new Error("local read failed")).mockResolvedValue(bytes) });
-    await uploadFile(file); expect(button("按原文件重试保存／读取")).toBeTruthy(); click(button("按原文件重试保存／读取")); await settle();
+    await uploadFile(file);
+    expect(document.querySelector(".ci-batch-file-error")?.textContent).toContain("表格读取未完成");
+    expect(button("重试原文件").closest(".ci-batch-footer")).not.toBeNull();
+    click(button("重试原文件")); await settle();
     expect(persistOriginal).toHaveBeenCalledTimes(1); expect(button("导入1条").disabled).toBe(false);
+  });
+
+  it("shows the exact original-file failure beside the file, without another dialog or automatic manual parsing", async () => {
+    persistOriginal.mockRejectedValueOnce(new Error("原文件未保存：文件格式校验未通过"));
+    render(); const file = fileFor([["型号", "品牌", "币种"], ["ONE", "TI", "CNY"]]);
+    await uploadFile(file);
+    const alert = required(document.querySelector('[role="alert"]'));
+    expect(alert.closest(".ci-batch-file-selection")).not.toBeNull();
+    expect(alert.textContent).toContain("原文件保存／记录核验未完成");
+    expect(alert.textContent).toContain("原文件未保存：文件格式校验未通过");
+    expect(document.querySelector(".ci-batch-retry-file strong")?.textContent).toBe(file.name);
+    expect(isCollapsed(button("提交原文件人工整理"))).toBe(true);
+    expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(document.querySelectorAll(".ci-batch-footer .ci-primary")).toHaveLength(1);
+    expect(createCustomer).not.toHaveBeenCalled(); expect(create).not.toHaveBeenCalled();
+    click(button("重试原文件")); await settle();
+    expect(persistOriginal.mock.calls.map(call => call[0])).toEqual([file, file]);
+    expect(document.querySelector(".ci-batch-file-error")).toBeNull();
+    expect(button("导入1条").disabled).toBe(false); expect(parse).not.toHaveBeenCalled();
+  });
+
+  it("keeps file-selection errors visible and does not call persistence for invalid files", async () => {
+    render(); await uploadFile(new File(["bad"], "wrong.pdf"));
+    expect(document.querySelector(".ci-batch-file-selection [role=alert]")?.textContent).toContain("文件格式不符合要求");
+    expect(button("选择库存表格").closest(".ci-batch-footer")).not.toBeNull();
+    expect(persistOriginal).not.toHaveBeenCalled(); expect(create).not.toHaveBeenCalled();
   });
 
   it("does not submit after identity change during customer batch preparation and retains the preparation UUID", async () => {

@@ -1,0 +1,18 @@
+{
+  "status": "OFFLINE_ZIP_FLAGS_EXPRESSION_ONLY_NOT_DEPLOYED",
+  "sourceSha256": "a37e855075cd3f39137755a02fc989ecde18fa1d48596101d6536a0167cbc6bd",
+  "builderSha256": "afd883f6ce2ad15eda9df8717e3192c8148700e4755fe10a1e07c0f968c6d787",
+  "originalCompilerAndMapperReused": true,
+  "expressionOnly": true,
+  "oldExpression": "flags & ~2056",
+  "newExpression": "flags & ~(2056 | (method === 8 ? 6 : 0))",
+  "adminApiUntouched": true,
+  "inverse": {
+    "byteExact": true,
+    "sha256": "81ed910a32f95c2a647eb48fe57ff63646d23c5b677f8fc8816b0b80abea0fd8",
+    "unchangedBytes": 5996787,
+    "allOutsideSlotsByteIdentical": true
+  },
+  "nodeCheck": true,
+  "globalBindingsChanged": false
+}

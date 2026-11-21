@@ -1,0 +1,12 @@
+{
+  "captureDeadlineEpoch": 1795234340.017466,
+  "actualSnapshotSeconds": [
+    2.3653026833198965,
+    2.391468893736601
+  ],
+  "remainingBeforeApplySeconds": 5009.814674377441,
+  "applyVerifyAcceptanceRecoveryConservativeSeconds": 1326.7478513680398,
+  "maintenanceDeadline": null,
+  "timerPause": false,
+  "noOldCaptureOrDeadlineReused": true
+}

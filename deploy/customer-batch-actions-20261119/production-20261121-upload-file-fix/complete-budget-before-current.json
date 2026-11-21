@@ -1,0 +1,22 @@
+{
+  "timerPause": false,
+  "newMaintenanceWindow": false,
+  "captureTTLSeconds": 5400,
+  "previousActualSnapshotsSeconds": [
+    2.793454044032842,
+    2.203351926058531
+  ],
+  "previousCompleteApplyVerifyActualSeconds": 179.36,
+  "newScopeExplicitFiles": 1262,
+  "previousScopeExplicitFiles": 598,
+  "planningSnapshotSecondsByConservativeFileCountRatio": 5.89521572503252,
+  "estimatedSnapshotCountAfterCaptureIncludingApplyVerify": 53,
+  "transferAndPrivateReconstructionReserveSeconds": 120,
+  "oneActualCaptureAndSealReserveSeconds": 60,
+  "oneIndependentReviewDeliveryReserveSeconds": 600,
+  "acceptanceAndRecoveryReserveSeconds": 1200,
+  "estimatedPrepareCaptureReviewApplyVerifyRecoverySeconds": 2292.4464334267236,
+  "actualNewCaptureSamplesMustReplaceRatioBeforeApply": true,
+  "estimateNotRuntimeGuarantee": true,
+  "oldTimestampOrMaintenanceDeadlineNotReused": true
+}

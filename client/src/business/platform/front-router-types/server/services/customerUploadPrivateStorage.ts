@@ -178,9 +178,11 @@ function checkedZip(bytes: Buffer): Map<string, Buffer> {
       xlen = bytes.readUInt16LE(p + 30),
       clen = bytes.readUInt16LE(p + 32),
       start = bytes.readUInt32LE(p + 42);
+    // ZIP APPNOTE 4.4.4: bits 1/2 are compression options for Deflate,
+    // not encryption. Other methods must not acquire these allowed bits.
     if (
       bytes.readUInt16LE(p + 6) > 20 ||
-      flags & ~0x0808 ||
+      flags & ~(0x0808 | (method === 8 ? 0x0006 : 0)) ||
       (method !== 0 && method !== 8) ||
       bytes.readUInt16LE(p + 34) ||
       p + 46 + nlen + xlen + clen > end ||

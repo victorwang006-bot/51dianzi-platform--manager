@@ -1,0 +1,10 @@
+{
+  "previousFailurePreserved": true,
+  "failureLogSha256": "849005dd1d6a1c35851122a33daa50d731ccf1e05044209d477e67fa6353d419",
+  "object": "historical executor filename",
+  "wrong": "release-6ff5f1677bc0352d3.py",
+  "correctFromFullHashPrefix16": "release-6ff5f1677bc0352d.py",
+  "failedBeforeLockStageCaptureOrAnyProductionWrite": true,
+  "newScopeAndControllerAndBusinessPayloadUnchanged": true,
+  "notApplyReplay": true
+}

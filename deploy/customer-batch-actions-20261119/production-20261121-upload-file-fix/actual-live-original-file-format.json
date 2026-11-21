@@ -1,0 +1,15 @@
+{
+  "status": "ACTUAL_LIVE_NATIVE_ORIGINAL_FILE_FORMAT_PASSED",
+  "apiSha256": "28ba370e600dcd89047200ec55e545edafe9890314bd49e334bdfa2ff7f77757",
+  "fileSha256": "869c66b352c06b9e2864793a9c005bc812c81f794b84763795b23640f583d001",
+  "fileBytes": 47835,
+  "sourceRows": 319,
+  "manifestSha256": "b325d68a3cd39a74853340e7cfb96a2488eafdf80a5f206676b0ccdd4efbbfb5",
+  "actualXlsxResolvedPath": "/opt/releases/20261030-migration-v14/front/node_modules/.pnpm/xlsx@0.18.5/node_modules/xlsx/xlsx.js",
+  "xlsxVersion": "0.18.5",
+  "apiEntrypointExecuted": false,
+  "databaseWrites": 0,
+  "productionOriginalFileStorageWrites": 0,
+  "inventoryWrites": 0,
+  "notFullLoggedInHTTPUpload": true
+}

@@ -2,7 +2,7 @@
 
 沿用现有后台、蓝色样式和原客户/账号授权。用户批准原方案，不创建新站点。与“前台任务”分工：本任务只改客户库存/上传处理，不改首页与芯片参数；独立工作目录，Git同步保留并发提交；正式发布用共享双锁与最新字节CAS，不全量dist，不覆盖前台API/资产。
 
-前列功能勾选项表示源码实现与隔离验证；最后发布项现已完成。**最新终态：2026-11-21 09:50:08紧凑客户库存工作台与Victor上传修复实际发布／六槽reload／verified持久闭窗，09:50:26原只读verify通过，09:55:01 Victor真实原生上下文canUpload=true。**本轮不暂停定时器、业务数据写入0、双锁及SSH已退出。下方11-20成功、较早“未上线／blocked”及原失败全部保留为历史。
+前列功能勾选项表示源码实现与隔离验证；最后发布项现已完成。**最新终态：2026-11-21 10:51:38原Excel兼容性修复与同弹窗三步优化实际发布／六槽reload／verified持久闭窗，原只读verify及现役原生原表格式验收通过。**本轮不暂停定时器、业务数据写入0、双锁及SSH已退出；09:50库存工作台/Victor准备修复及09:55真实context验收为上一轮已完成结果。下方11-20成功、较早“未上线／blocked”及原失败全部保留为历史。
 
 - [x] 库存工具栏新增“全部批次”，选项“11-19 14:30 · 库存.xlsx”。服务器按真实uploadBatchId及customerId同时筛选，型号/品牌继续配合，数量随批次更新。历史无批次记录不猜时间关联。
 - [x] 保留勾选物料“删除所选（N）”，未勾选隐藏；确认“删除选中的 N 条物料？”、按钮“取消｜删除”、成功“已删除”。只移除真实成功回执记录，权限/版本冲突记录保留，未知按原请求核实。
@@ -120,5 +120,21 @@ timer19:01:38实际恢复，19:01:39守护确认退出；19:08:54最后一次只
 09:55实际完成：新scope `customer-stock-compact-20261121-6Lfttf6o-exact-fixed`，M7826／cap0c43／executor6ff5／policy6031／独立review61cee绑定；原Controller apply与verify通过，receipt f3e54077…fdebb／closedcoord b08daf33…ccac2／state ff42356f…b3e62。六槽190/193/194/200/191/192真实滚动，179.36s；front API一叶81ed新字节、5992384B非目标exact，admin0物理写，frontStatic/业务DB/env写0。已审158+130/tsc/构建/正逆复用。
 
 Victor真实只读native context使用当前账号30004/front397751、实际official/business scope、企业1/客户1354/渠道30，131个SELECT（含必要FOR UPDATE）后双事务rollback；canUpload=true、disabledReason=null，275条raw与0条未删除库存前后不变。未进行生产造库存或真实用户上传，不冒称完整登录HTTP链路验收。原45分钟预算拒及恢复、21a双投影、private0755零attempt拒、验收脚本自身口径失败保留；只修已证对象，无强解锁/重放attempt。
-
 报告及真实去敏回执：`deploy/customer-batch-actions-20261119/production-20261121-0950/上线完成报告.md`及同目录`actual-release-summary.json`／`receipt.json`。定时器本轮保持原态，原双锁上下文与SSH finally均退出，生产串行窗口已释放；后续仅正常Git归档，不再增加生产扫描或审批。
+
+## 2026-11-21 10:24 新轮：原Excel兼容性修复与单弹窗三步优化
+
+用户10:24:43明确“修复此bug,并按照方案，实施优化页面”，10:25:03明确“一个弹窗、三步完成”。沿当前任务，不恢复已停止的协调任务，不创建新任务；前台10:21真实闭窗及释放交接已收到。本轮新current保护按HTML b66ff692...84483d35和当前coord实测绑定，不借旧scope/cap/授权。
+
+- [x] 纠正 `checkedZip` 仅Deflate方法的合法压缩选项位兼容性误判，用户“工作簿1--宝.xlsx”字节不改即可通过格式校验；保加密、Zip64、路径、CRC、本地/中央头一致性和解压资源上限。
+- [x] 同一真实上传弹窗三步：选文件 → 核对物料 → 上传结果；文件错误紧邻文件卡、明确保存/核验或表格读取未完成，固定底部一个主操作；保表格/手动入口、人工整理折叠入口、完整核对字段和原结果/恢复能力，不新增嵌套弹窗。
+- [x] 保权限、客户/渠道版本、原UUID、未知结果恢复和全部库存业务规则；不通过清浏览器存储、改原表或重建请求规避失败。
+- [x] 完成受影响离线检查、真实原表回归、原生局部构建与正逆字节；未变证据复用。完整新包后由既有前台本人做唯一窄差量/current核对，保互斥/CAS/备份/精确回退/真实验收和持久闭窗。未获新维护许可不暂停timer。
+
+10:26状态：原表47,835字节/SHA869c66...，319行含表头/12列；现役81ed原生纯校验精准复现flags=0x0006被旧掩码误拒。本轮仍0生产连接/写入/上传/重载；前台既有任务本人已同意承担唯一必要窄离线核对，未将此同意当审批。
+
+10:51:38实际完成：新scope `customer-upload-file-fix-20261121-6Lfttf6o-1024`，M d559a4a4／actualcap72bc7c13／executor88f3e823／policy3227c956／唯一review c025b8d0绑定；原一次apply和原verify通过，receipt `e20026fbd81cda63514584c7b8d9750ac3d3ac2a86f9f50a3ce50438450c2f95`／closedcoord whole `1c0006186f2c1b177efa012a1775cb34ca9655418ca093dbf4d57afed638b5f2`。完整apply+verify+原表只读验收188.6秒；6真实roll、12slot保护。front API现28ba370e...77757仅13字节旧表达式替换、5996787B非目标exact；admin0物理写，前台静态/DB/env/库存写0，不pause timer。
+
+145相关测试/tsc/临时本地原表原字节save-read/原生5合法及4非法标志回归通过；现役API纯inspector结合实际XLSX0.18.5读取同一原表47835B、319含表头行，manifest b325d68a...bbfb5 exact。此为真实部署后的原生格式只读确认，不冒称完整登录HTTP上传或已保存生产原件。首次私有入口误写17位旧文件名零锁/stage/cap/attempt/公开写失败保留，只按旧H[:16]修正；未重放已发生apply。
+
+实际去敏回执与源码证明在 `deploy/customer-batch-actions-20261119/production-20261121-upload-file-fix/`。原SSH exec已exit0、双锁释放、client finally closed，串行生产占用已向前台明确释放，之后仅正常Git归档，不增加生产读取、发布或审批。
