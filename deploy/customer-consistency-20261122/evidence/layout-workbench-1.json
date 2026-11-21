@@ -1,0 +1,38 @@
+{
+  "index": 1,
+  "input": "/home/ubuntu/work/customer-unread-hotfix-20261121-2353/candidate/assets/BusinessWorkbenchPage-unread-hotfix-6ffe72a5d81423ea.js",
+  "inputSHA": "6ffe72a5d81423eabfc6040604662ffc92788fa2ec83de4ad2f4f065e5c4278e",
+  "output": "/home/ubuntu/work/customer-consistency-release-20261122-0034/layout/candidate/assets/BusinessWorkbenchPage-customer-layout-71835d0dac01ae5d.js",
+  "outputSHA": "71835d0dac01ae5dccec6539500386292994018bf3a9b8edf495a6a77ed3d958",
+  "originalListSHA": "96691714a5f310c6bbbe53a51b91293efccb33b29cbcc32f6d50cbd09f59d709",
+  "outputListSHA": "41ce63269db99fec35ff49b4c5d958a06eadd328f98456ef0c6db575430868c9",
+  "checks": {
+    "allBytesExactInverse": true,
+    "onlyActualListSlots": true,
+    "nameTitleStarUnreadBytesPreserved": true,
+    "inlineCheckboxBytesPreserved": true,
+    "ternaryResultGateBytesPreserved": true,
+    "allNonLayoutBytesPreserved": true,
+    "noNewImports": true
+  },
+  "patches": [
+    {
+      "start": 3923234,
+      "end": 3923376,
+      "reason": "data-independent finite table width",
+      "afterStart": 3923234,
+      "afterEnd": 3923280,
+      "beforeBase64": "YGNhbGMoJHtNYXRoLm1heCgzMCwgLi4uX19uaURpc3BsYXllZC5tYXAoKGN1c3RvbWVyKSA9PiAoY3VzdG9tZXIubmFtZT8udHJpbSgpIHx8ICJcdTY3MkFcdTU0N0RcdTU0MERcdTVCQTJcdTYyMzciKS5sZW5ndGggKyA0KSl9ZW0gKyAxMTA4cHgpYA==",
+      "afterBase64": "InZhcigtLWN1c3RvbWVyLWxpc3QtdGFibGUtbWluLXdpZHRoLCAxMzEycHgpIg=="
+    },
+    {
+      "start": 3926920,
+      "end": 3927272,
+      "reason": "omit empty status wrapper; preserve all original status branches",
+      "afterStart": 3926824,
+      "afterEnd": 3927227,
+      "beforeBase64": "bigiZGl2Iix7Y2xhc3NOYW1lOiJtdC0wLjUgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTEuNSIsY2hpbGRyZW46W28/dCgic3BhbiIse2NsYXNzTmFtZToiY3VzdG9tZXItbGlzdC1zdGF0dXMgcm91bmRlZCBiZy1hbWJlci01MCBweC0xLjUgcHktMC41IGZvbnQtbWVkaXVtIHRleHQtYW1iZXItNzAwIixjaGlsZHJlbjoiXHU1Rjg1XHU4ODY1XHU1MTY4In0pOm51bGwsZS5hcmNoaXZlZEF0P3QoInNwYW4iLHtjbGFzc05hbWU6ImN1c3RvbWVyLWxpc3Qtc3RhdHVzIHJvdW5kZWQgYmctc2xhdGUtMTAwIHB4LTEuNSBweS0wLjUgdGV4dC1zbGF0ZS02MDAiLGNoaWxkcmVuOiJcdTVERjJcdTVGNTJcdTY4NjMifSk6bnVsbF19KQ==",
+      "afterBase64": "KG98fGUuYXJjaGl2ZWRBdCk/bigiZGl2Iix7Y2xhc3NOYW1lOiJjdXN0b21lci1saXN0LW5hbWUtc3RhdHVzZXMgbXQtMC41IGZsZXggaXRlbXMtY2VudGVyIGdhcC0xLjUiLGNoaWxkcmVuOltvP3QoInNwYW4iLHtjbGFzc05hbWU6ImN1c3RvbWVyLWxpc3Qtc3RhdHVzIHJvdW5kZWQgYmctYW1iZXItNTAgcHgtMS41IHB5LTAuNSBmb250LW1lZGl1bSB0ZXh0LWFtYmVyLTcwMCIsY2hpbGRyZW46Ilx1NUY4NVx1ODg2NVx1NTE2OCJ9KTpudWxsLGUuYXJjaGl2ZWRBdD90KCJzcGFuIix7Y2xhc3NOYW1lOiJjdXN0b21lci1saXN0LXN0YXR1cyByb3VuZGVkIGJnLXNsYXRlLTEwMCBweC0xLjUgcHktMC41IHRleHQtc2xhdGUtNjAwIixjaGlsZHJlbjoiXHU1REYyXHU1RjUyXHU2ODYzIn0pOm51bGxdfSk6bnVsbA=="
+    }
+  ]
+}

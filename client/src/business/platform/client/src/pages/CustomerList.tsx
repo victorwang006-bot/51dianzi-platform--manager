@@ -906,7 +906,7 @@ export default function CustomerList() {
           ) : (
             <div ref={tableRegionRef} className="customer-list-table-scroll" data-page-memory-scroll="customer-list-table" role="region" tabIndex={0} aria-label="客户列表，可横向滚动查看全部列">
             <Table className="admin-table-readable customer-list-table" containerClassName="customer-list-table-inner" aria-label="客户列表"
-              style={{ minWidth: `calc(${Math.max(30, ...displayedCustomerRows.map(customer => (customer.name?.trim() || "未命名客户").length + 4))}em + 1108px)` }}>
+              style={{ minWidth: "var(--customer-list-table-min-width, 1312px)" }}>
               <colgroup>
                 <col className="customer-list-col-name" />
                 <col className="customer-list-col-industry" />
@@ -974,10 +974,10 @@ export default function CustomerList() {
                           {stars.pendingCustomerId === customer.id && stars.busy ? <Loader2 size={16} aria-hidden="true" className="animate-spin" />
                             : <Star size={16} aria-hidden="true" />}
                         </button>
+                        <AdminNewInformationRowBadge isNew={newInformationRow.isNew} label="未读" className="customer-list-unread-label"
+                          ariaLabel="未读客户，打开详情成功后确认已读；列表浏览不会清除" />
                         </div>
-                        <div className="mt-0.5 flex items-center gap-1.5">
-                          <AdminNewInformationRowBadge isNew={newInformationRow.isNew} label="未读" className="customer-list-unread-label"
-                            ariaLabel="未读客户，打开详情成功后确认已读；列表浏览不会清除" />
+                        {incomplete || customer.archivedAt ? <div className="customer-list-name-statuses mt-0.5 flex items-center gap-1.5">
                           {incomplete ? (
                             <span className="customer-list-status rounded bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700">
                               待补全
@@ -988,7 +988,7 @@ export default function CustomerList() {
                               已归档
                             </span>
                           ) : null}
-                        </div>
+                        </div> : null}
                       </TableCell>
                       <TableCell className="customer-list-secondary-data truncate" title={getBusinessIndustryLabel(customer.industryCode)} data-testid="industry-cell">{getBusinessIndustryLabel(customer.industryCode)}</TableCell>
                       <TableCell className="customer-list-contacts-cell">

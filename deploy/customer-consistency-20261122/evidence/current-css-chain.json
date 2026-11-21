@@ -1,0 +1,467 @@
+{
+  "status": "COMPLETE_CURRENT_CSS_CHAIN_CAPTURED",
+  "adminHTMLSHA": "2bfcfc535f43f01a11c9d7e666904fe4fa4e8cfea4a19e9f6c4885f4ba3859ce",
+  "css": [
+    {
+      "url": "/assets/admin-workbench-compact-194389615e884867.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/admin-workbench-compact-194389615e884867.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/admin-workbench-compact-194389615e884867.css",
+      "links": 1,
+      "sha256": "194389615e8848675383024d7f856bbe892d140b2c24d0a2340d4780bc38719b",
+      "size": 639,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/admin-workbench-compact-194389615e884867.css"
+    },
+    {
+      "url": "/assets/customer-workbench-1bc41785d5ab.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-workbench-1bc41785d5ab.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-workbench-1bc41785d5ab.css",
+      "links": 1,
+      "sha256": "1bc41785d5ab2453c96bfd97e08b04c03670449bb91c092828389e4b6bb7f328",
+      "size": 7928,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/customer-workbench-1bc41785d5ab.css"
+    },
+    {
+      "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/procurement-demands-navigation-403b8716333e170e.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/procurement-demands-navigation-403b8716333e170e.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/procurement-demands-navigation-403b8716333e170e.css",
+      "links": 1,
+      "sha256": "403b8716333e170e448e7fbaf7d4812f49fd8311c762b5a5ca2352f3a60d5085",
+      "size": 4454,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/20261106-one-click-review-images-v11-admin-4ebf4856da0f/procurement-demands-navigation-403b8716333e170e.css"
+    },
+    {
+      "url": "/assets/inventory-overlay-0551f32fcd334ced.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/inventory-overlay-0551f32fcd334ced.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/inventory-overlay-0551f32fcd334ced.css",
+      "links": 1,
+      "sha256": "0551f32fcd334ced8270979fe467e011f95095c8700cdf03da663ca4f7695f7e",
+      "size": 207,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/inventory-overlay-0551f32fcd334ced.css"
+    },
+    {
+      "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BeaydR4L.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BeaydR4L.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BeaydR4L.css",
+      "links": 1,
+      "sha256": "87a9e4c8f3507ff46da85a5655232556fa33de184cf6f4a05347127c8be8d1ad",
+      "size": 201858,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BeaydR4L.css"
+    },
+    {
+      "url": "/assets/customer-list-header-d608d923a66f.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-list-header-d608d923a66f.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-list-header-d608d923a66f.css",
+      "links": 1,
+      "sha256": "d608d923a66f8e343a0212e46b1017fa3ccbc9baff7bab490d9f8bd4946bca20",
+      "size": 3466,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/customer-list-header-d608d923a66f.css"
+    },
+    {
+      "url": "/assets/admin-global-header-8fb5bd555322.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/admin-global-header-8fb5bd555322.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/admin-global-header-8fb5bd555322.css",
+      "links": 1,
+      "sha256": "8fb5bd555322ed40d748e4a4217f06f8a5ff750fccf8dfaae36dc36589c5842e",
+      "size": 142513,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/admin-global-header-8fb5bd555322.css"
+    },
+    {
+      "url": "/assets/inventory-density-03dae7d34255.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/inventory-density-03dae7d34255.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/inventory-density-03dae7d34255.css",
+      "links": 1,
+      "sha256": "03dae7d34255efb97c625272233bbad7831dbe8085268184c54a1f0a04ea11ac",
+      "size": 1400,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/inventory-density-03dae7d34255.css"
+    },
+    {
+      "url": "/assets/inventory-time-compact-ab7377762ccd.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/inventory-time-compact-ab7377762ccd.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/inventory-time-compact-ab7377762ccd.css",
+      "links": 1,
+      "sha256": "ab7377762ccd427fcc1cd54c04121856198863e1e6bdb6212a3caf581f4bc72c",
+      "size": 2784,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/inventory-time-compact-ab7377762ccd.css"
+    },
+    {
+      "url": "/assets/inventory-columns-ba0c8aa45192096f.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/inventory-columns-ba0c8aa45192096f.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/inventory-columns-ba0c8aa45192096f.css",
+      "links": 1,
+      "sha256": "ba0c8aa45192096f53979c509733dba55a6b0bd7051eb9576a78d5ff3add2436",
+      "size": 2069,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/inventory-columns-ba0c8aa45192096f.css"
+    },
+    {
+      "url": "/assets/composition-inventory-58182fae8f34ebefe8991ab56e654f9d057c9faa51793c3e7380eb5989fa87a3.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/composition-inventory-58182fae8f34ebefe8991ab56e654f9d057c9faa51793c3e7380eb5989fa87a3.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/composition-inventory-58182fae8f34ebefe8991ab56e654f9d057c9faa51793c3e7380eb5989fa87a3.css",
+      "links": 1,
+      "sha256": "58182fae8f34ebefe8991ab56e654f9d057c9faa51793c3e7380eb5989fa87a3",
+      "size": 1902,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/composition-inventory-58182fae8f34ebefe8991ab56e654f9d057c9faa51793c3e7380eb5989fa87a3.css"
+    },
+    {
+      "url": "/assets/composition-admin-67080a2ed3d9df308bdfcfdcad6766fa285c98e027b8c69867b22502bf6ede60.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/composition-admin-67080a2ed3d9df308bdfcfdcad6766fa285c98e027b8c69867b22502bf6ede60.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/composition-admin-67080a2ed3d9df308bdfcfdcad6766fa285c98e027b8c69867b22502bf6ede60.css",
+      "links": 1,
+      "sha256": "67080a2ed3d9df308bdfcfdcad6766fa285c98e027b8c69867b22502bf6ede60",
+      "size": 4496,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/composition-admin-67080a2ed3d9df308bdfcfdcad6766fa285c98e027b8c69867b22502bf6ede60.css"
+    },
+    {
+      "url": "/assets/compact-list-toolbar-f52a1e2467f48bf29cdc11ffae9912f78c96f5fcc04fd717a2393e3664d10007.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/compact-list-toolbar-f52a1e2467f48bf29cdc11ffae9912f78c96f5fcc04fd717a2393e3664d10007.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/compact-list-toolbar-f52a1e2467f48bf29cdc11ffae9912f78c96f5fcc04fd717a2393e3664d10007.css",
+      "links": 1,
+      "sha256": "f52a1e2467f48bf29cdc11ffae9912f78c96f5fcc04fd717a2393e3664d10007",
+      "size": 2765,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/compact-list-toolbar-f52a1e2467f48bf29cdc11ffae9912f78c96f5fcc04fd717a2393e3664d10007.css"
+    },
+    {
+      "url": "/assets/admin-list-location-8ffadcc0979c5e7b1a7416137144b3beffb75444b5907d18e5384eb7bae8cb2d.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/admin-list-location-8ffadcc0979c5e7b1a7416137144b3beffb75444b5907d18e5384eb7bae8cb2d.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/admin-list-location-8ffadcc0979c5e7b1a7416137144b3beffb75444b5907d18e5384eb7bae8cb2d.css",
+      "links": 1,
+      "sha256": "8ffadcc0979c5e7b1a7416137144b3beffb75444b5907d18e5384eb7bae8cb2d",
+      "size": 5149,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/admin-list-location-8ffadcc0979c5e7b1a7416137144b3beffb75444b5907d18e5384eb7bae8cb2d.css"
+    },
+    {
+      "url": "/assets/inquiry-reception-7dc97ecfc1c40bbcaa66de96f0aeb326c913dfd4f87467120102cdf6771140fc.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/inquiry-reception-7dc97ecfc1c40bbcaa66de96f0aeb326c913dfd4f87467120102cdf6771140fc.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/inquiry-reception-7dc97ecfc1c40bbcaa66de96f0aeb326c913dfd4f87467120102cdf6771140fc.css",
+      "links": 1,
+      "sha256": "7dc97ecfc1c40bbcaa66de96f0aeb326c913dfd4f87467120102cdf6771140fc",
+      "size": 6724,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/inquiry-reception-7dc97ecfc1c40bbcaa66de96f0aeb326c913dfd4f87467120102cdf6771140fc.css"
+    },
+    {
+      "url": "/assets/admin-primary-menu-reminders-8ca656c3fc7973284c44cd32b8f5334ca7fb44f282ff6207f90e3b2939fbadfe.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/admin-primary-menu-reminders-8ca656c3fc7973284c44cd32b8f5334ca7fb44f282ff6207f90e3b2939fbadfe.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/admin-primary-menu-reminders-8ca656c3fc7973284c44cd32b8f5334ca7fb44f282ff6207f90e3b2939fbadfe.css",
+      "links": 1,
+      "sha256": "8ca656c3fc7973284c44cd32b8f5334ca7fb44f282ff6207f90e3b2939fbadfe",
+      "size": 286,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/admin-primary-menu-reminders-8ca656c3fc7973284c44cd32b8f5334ca7fb44f282ff6207f90e3b2939fbadfe.css"
+    },
+    {
+      "url": "/assets/inquiry-reception-experience-1841c7bc1e1588584ab4785210eb08d7e686913035a5e85bd8cf5c3ba83e9af4.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/inquiry-reception-experience-1841c7bc1e1588584ab4785210eb08d7e686913035a5e85bd8cf5c3ba83e9af4.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/inquiry-reception-experience-1841c7bc1e1588584ab4785210eb08d7e686913035a5e85bd8cf5c3ba83e9af4.css",
+      "links": 1,
+      "sha256": "1841c7bc1e1588584ab4785210eb08d7e686913035a5e85bd8cf5c3ba83e9af4",
+      "size": 8064,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/inquiry-reception-experience-1841c7bc1e1588584ab4785210eb08d7e686913035a5e85bd8cf5c3ba83e9af4.css"
+    },
+    {
+      "url": "/assets/inquiry-reception-front-chat-design-e412e6a7d87028b454ac1a485b8feafb0f944769a3c33e71f3e38e3bb2d4bdbd.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/inquiry-reception-front-chat-design-e412e6a7d87028b454ac1a485b8feafb0f944769a3c33e71f3e38e3bb2d4bdbd.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/inquiry-reception-front-chat-design-e412e6a7d87028b454ac1a485b8feafb0f944769a3c33e71f3e38e3bb2d4bdbd.css",
+      "links": 1,
+      "sha256": "e412e6a7d87028b454ac1a485b8feafb0f944769a3c33e71f3e38e3bb2d4bdbd",
+      "size": 13928,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/inquiry-reception-front-chat-design-e412e6a7d87028b454ac1a485b8feafb0f944769a3c33e71f3e38e3bb2d4bdbd.css"
+    },
+    {
+      "url": "/assets/sales-order-consolidation-025e4489de338468e2eca53ce7eebf15edcb1c4b9b7afd3a36c8a8cf137c32e7.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/sales-order-consolidation-025e4489de338468e2eca53ce7eebf15edcb1c4b9b7afd3a36c8a8cf137c32e7.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/sales-order-consolidation-025e4489de338468e2eca53ce7eebf15edcb1c4b9b7afd3a36c8a8cf137c32e7.css",
+      "links": 1,
+      "sha256": "025e4489de338468e2eca53ce7eebf15edcb1c4b9b7afd3a36c8a8cf137c32e7",
+      "size": 347,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/sales-order-consolidation-025e4489de338468e2eca53ce7eebf15edcb1c4b9b7afd3a36c8a8cf137c32e7.css"
+    },
+    {
+      "url": "/assets/navigation-compact-967d4546ae9c41417f7305e2e56fb6003e96f0651865310996400121cf034c35.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/navigation-compact-967d4546ae9c41417f7305e2e56fb6003e96f0651865310996400121cf034c35.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/navigation-compact-967d4546ae9c41417f7305e2e56fb6003e96f0651865310996400121cf034c35.css",
+      "links": 1,
+      "sha256": "967d4546ae9c41417f7305e2e56fb6003e96f0651865310996400121cf034c35",
+      "size": 4743,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/navigation-compact-967d4546ae9c41417f7305e2e56fb6003e96f0651865310996400121cf034c35.css"
+    },
+    {
+      "url": "/assets/sales-unified-dc940e31bf165037f5c2f9ae9e46c012f5dde3460ead7ee891a195ef4ab43d28.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/sales-unified-dc940e31bf165037f5c2f9ae9e46c012f5dde3460ead7ee891a195ef4ab43d28.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/sales-unified-dc940e31bf165037f5c2f9ae9e46c012f5dde3460ead7ee891a195ef4ab43d28.css",
+      "links": 1,
+      "sha256": "dc940e31bf165037f5c2f9ae9e46c012f5dde3460ead7ee891a195ef4ab43d28",
+      "size": 13643,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/sales-unified-dc940e31bf165037f5c2f9ae9e46c012f5dde3460ead7ee891a195ef4ab43d28.css"
+    },
+    {
+      "url": "/assets/sales-mall-business-template-0bcd06cfbf169e87873512df62dafe28ae61fc8c1fbdf593b019a46dab12fb24.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/sales-mall-business-template-0bcd06cfbf169e87873512df62dafe28ae61fc8c1fbdf593b019a46dab12fb24.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/sales-mall-business-template-0bcd06cfbf169e87873512df62dafe28ae61fc8c1fbdf593b019a46dab12fb24.css",
+      "links": 1,
+      "sha256": "0bcd06cfbf169e87873512df62dafe28ae61fc8c1fbdf593b019a46dab12fb24",
+      "size": 5123,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/sales-mall-business-template-0bcd06cfbf169e87873512df62dafe28ae61fc8c1fbdf593b019a46dab12fb24.css"
+    },
+    {
+      "url": "/assets/customer-workbench-57da79a664a78c88d9d8dd548d9a63ecf3e0b1af325755cfeab5f7eefec2a827.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-workbench-57da79a664a78c88d9d8dd548d9a63ecf3e0b1af325755cfeab5f7eefec2a827.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-workbench-57da79a664a78c88d9d8dd548d9a63ecf3e0b1af325755cfeab5f7eefec2a827.css",
+      "links": 1,
+      "sha256": "57da79a664a78c88d9d8dd548d9a63ecf3e0b1af325755cfeab5f7eefec2a827",
+      "size": 36223,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/customer-workbench-57da79a664a78c88d9d8dd548d9a63ecf3e0b1af325755cfeab5f7eefec2a827.css"
+    },
+    {
+      "url": "/assets/customer-profile-compact-295de5e736a635117c974037ae49307eda98f44bee69ea7e656591230a64814f.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-profile-compact-295de5e736a635117c974037ae49307eda98f44bee69ea7e656591230a64814f.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-profile-compact-295de5e736a635117c974037ae49307eda98f44bee69ea7e656591230a64814f.css",
+      "links": 1,
+      "sha256": "295de5e736a635117c974037ae49307eda98f44bee69ea7e656591230a64814f",
+      "size": 7093,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/customer-profile-compact-295de5e736a635117c974037ae49307eda98f44bee69ea7e656591230a64814f.css"
+    },
+    {
+      "url": "/assets/personal-center-bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/personal-center-bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/personal-center-bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049.css",
+      "links": 1,
+      "sha256": "bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049",
+      "size": 6440,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/personal-center-bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049.css"
+    },
+    {
+      "url": "/assets/profile-staff-ui-profile-staff-82debf05eb11e875a558434575b181e935021cd9dc152616ec376c10bf491c55.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/profile-staff-ui-profile-staff-82debf05eb11e875a558434575b181e935021cd9dc152616ec376c10bf491c55.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/profile-staff-ui-profile-staff-82debf05eb11e875a558434575b181e935021cd9dc152616ec376c10bf491c55.css",
+      "links": 1,
+      "sha256": "82debf05eb11e875a558434575b181e935021cd9dc152616ec376c10bf491c55",
+      "size": 18073,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/profile-staff-ui-profile-staff-82debf05eb11e875a558434575b181e935021cd9dc152616ec376c10bf491c55.css"
+    },
+    {
+      "url": "/assets/channel-inventory-reference-navigation-reference-ui-84184014c648680f5a538e88353ee8f41fc4e00c5beeeb77b1838a5af40de4c0.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/channel-inventory-reference-navigation-reference-ui-84184014c648680f5a538e88353ee8f41fc4e00c5beeeb77b1838a5af40de4c0.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/channel-inventory-reference-navigation-reference-ui-84184014c648680f5a538e88353ee8f41fc4e00c5beeeb77b1838a5af40de4c0.css",
+      "links": 1,
+      "sha256": "84184014c648680f5a538e88353ee8f41fc4e00c5beeeb77b1838a5af40de4c0",
+      "size": 276,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/channel-inventory-reference-navigation-reference-ui-84184014c648680f5a538e88353ee8f41fc4e00c5beeeb77b1838a5af40de4c0.css"
+    },
+    {
+      "url": "/assets/ChannelInventoryHost-adjustments-e0e24486164aa6c60b3fb3213bdb0d68dbf201f66652f5ae75c04baf549e5efc.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/ChannelInventoryHost-adjustments-e0e24486164aa6c60b3fb3213bdb0d68dbf201f66652f5ae75c04baf549e5efc.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/ChannelInventoryHost-adjustments-e0e24486164aa6c60b3fb3213bdb0d68dbf201f66652f5ae75c04baf549e5efc.css",
+      "links": 1,
+      "sha256": "e0e24486164aa6c60b3fb3213bdb0d68dbf201f66652f5ae75c04baf549e5efc",
+      "size": 3239,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/ChannelInventoryHost-adjustments-e0e24486164aa6c60b3fb3213bdb0d68dbf201f66652f5ae75c04baf549e5efc.css"
+    },
+    {
+      "url": "/assets/ChannelInventoryHost-remediation-367eba0c8f63fe5cb098dd972d15de74a9db3c9a4915801a9e25d0b1b766505c.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/ChannelInventoryHost-remediation-367eba0c8f63fe5cb098dd972d15de74a9db3c9a4915801a9e25d0b1b766505c.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/ChannelInventoryHost-remediation-367eba0c8f63fe5cb098dd972d15de74a9db3c9a4915801a9e25d0b1b766505c.css",
+      "links": 1,
+      "sha256": "367eba0c8f63fe5cb098dd972d15de74a9db3c9a4915801a9e25d0b1b766505c",
+      "size": 1537,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/ChannelInventoryHost-remediation-367eba0c8f63fe5cb098dd972d15de74a9db3c9a4915801a9e25d0b1b766505c.css"
+    },
+    {
+      "url": "/assets/ChannelInventoryHost-inventory-compact-edit-bb14afb63f856ad40526de19d7436cd8fbbb6a1393f9b2aa597c411a52df80e6.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/ChannelInventoryHost-inventory-compact-edit-bb14afb63f856ad40526de19d7436cd8fbbb6a1393f9b2aa597c411a52df80e6.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/ChannelInventoryHost-inventory-compact-edit-bb14afb63f856ad40526de19d7436cd8fbbb6a1393f9b2aa597c411a52df80e6.css",
+      "links": 1,
+      "sha256": "bb14afb63f856ad40526de19d7436cd8fbbb6a1393f9b2aa597c411a52df80e6",
+      "size": 14594,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/ChannelInventoryHost-inventory-compact-edit-bb14afb63f856ad40526de19d7436cd8fbbb6a1393f9b2aa597c411a52df80e6.css"
+    },
+    {
+      "url": "/assets/ChannelInventoryHost-customer-origin-edit-8a057e3b66a85a83b8e475457138a45798ffa2ee07f9b5e97071d6d90fd26edf.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/ChannelInventoryHost-customer-origin-edit-8a057e3b66a85a83b8e475457138a45798ffa2ee07f9b5e97071d6d90fd26edf.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/ChannelInventoryHost-customer-origin-edit-8a057e3b66a85a83b8e475457138a45798ffa2ee07f9b5e97071d6d90fd26edf.css",
+      "links": 2,
+      "sha256": "8a057e3b66a85a83b8e475457138a45798ffa2ee07f9b5e97071d6d90fd26edf",
+      "size": 663,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/ChannelInventoryHost-customer-origin-edit-8a057e3b66a85a83b8e475457138a45798ffa2ee07f9b5e97071d6d90fd26edf.css"
+    },
+    {
+      "url": "/assets/ChannelInventoryHost-manual-reference-edit-7ec863b61664fc7a58c1683e39623869fb72b82705366ad4fccb1a792fc8a65c.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/ChannelInventoryHost-manual-reference-edit-7ec863b61664fc7a58c1683e39623869fb72b82705366ad4fccb1a792fc8a65c.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/ChannelInventoryHost-manual-reference-edit-7ec863b61664fc7a58c1683e39623869fb72b82705366ad4fccb1a792fc8a65c.css",
+      "links": 2,
+      "sha256": "7ec863b61664fc7a58c1683e39623869fb72b82705366ad4fccb1a792fc8a65c",
+      "size": 808,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/ChannelInventoryHost-manual-reference-edit-7ec863b61664fc7a58c1683e39623869fb72b82705366ad4fccb1a792fc8a65c.css"
+    },
+    {
+      "url": "/assets/CustomerChannelInventory-unified-cdd5358599db3ebe1ee2d3c774789fb63e46b130558b34b5b946fef4c045d8e6.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/CustomerChannelInventory-unified-cdd5358599db3ebe1ee2d3c774789fb63e46b130558b34b5b946fef4c045d8e6.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/CustomerChannelInventory-unified-cdd5358599db3ebe1ee2d3c774789fb63e46b130558b34b5b946fef4c045d8e6.css",
+      "links": 1,
+      "sha256": "cdd5358599db3ebe1ee2d3c774789fb63e46b130558b34b5b946fef4c045d8e6",
+      "size": 968,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/CustomerChannelInventory-unified-cdd5358599db3ebe1ee2d3c774789fb63e46b130558b34b5b946fef4c045d8e6.css"
+    },
+    {
+      "url": "/assets/CustomerParseUpload-8dd5ff8562c287e8a173d2208d5f71644c28e22baca9bcf6530d501492d30a31.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/CustomerParseUpload-8dd5ff8562c287e8a173d2208d5f71644c28e22baca9bcf6530d501492d30a31.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/CustomerParseUpload-8dd5ff8562c287e8a173d2208d5f71644c28e22baca9bcf6530d501492d30a31.css",
+      "links": 2,
+      "sha256": "8dd5ff8562c287e8a173d2208d5f71644c28e22baca9bcf6530d501492d30a31",
+      "size": 2833,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/CustomerParseUpload-8dd5ff8562c287e8a173d2208d5f71644c28e22baca9bcf6530d501492d30a31.css"
+    },
+    {
+      "url": "/assets/CustomerUpdatedDate-deabd14d5a0cc1a0e053ed520cf2ffb50a335a927dece552d8de89010e32af24.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/CustomerUpdatedDate-deabd14d5a0cc1a0e053ed520cf2ffb50a335a927dece552d8de89010e32af24.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/CustomerUpdatedDate-deabd14d5a0cc1a0e053ed520cf2ffb50a335a927dece552d8de89010e32af24.css",
+      "links": 2,
+      "sha256": "deabd14d5a0cc1a0e053ed520cf2ffb50a335a927dece552d8de89010e32af24",
+      "size": 391,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/CustomerUpdatedDate-deabd14d5a0cc1a0e053ed520cf2ffb50a335a927dece552d8de89010e32af24.css"
+    },
+    {
+      "url": "/assets/OfficialMall-native-v10-8da2d002881676a1.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/OfficialMall-native-v10-8da2d002881676a1.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/OfficialMall-native-v10-8da2d002881676a1.css",
+      "links": 1,
+      "sha256": "8da2d002881676a1e6eeeffd4ed3f1faceb8f9728e1711e026a6797690da8d12",
+      "size": 8903,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/OfficialMall-native-v10-8da2d002881676a1.css"
+    },
+    {
+      "url": "/assets/AdminNewInformation-badge-08e7332c1c26a0be.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/AdminNewInformation-badge-08e7332c1c26a0be.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/AdminNewInformation-badge-08e7332c1c26a0be.css",
+      "links": 1,
+      "sha256": "08e7332c1c26a0bea31b3fc36b733b1239d748a206eb569c9f4305e3aec20665",
+      "size": 878,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/AdminNewInformation-badge-08e7332c1c26a0be.css"
+    },
+    {
+      "url": "/assets/InboundDocuments-v2-a213f3b6c1c556c3.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/InboundDocuments-v2-a213f3b6c1c556c3.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/InboundDocuments-v2-a213f3b6c1c556c3.css",
+      "links": 1,
+      "sha256": "a213f3b6c1c556c38a66c557e97f93432977b0da6c4cd100a22db744a4baa1d2",
+      "size": 1053,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/InboundDocuments-v2-a213f3b6c1c556c3.css"
+    },
+    {
+      "url": "/assets/CompanyStockSales-scoped-c511e36ac5cf5bfc.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/CompanyStockSales-scoped-c511e36ac5cf5bfc.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/CompanyStockSales-scoped-c511e36ac5cf5bfc.css",
+      "links": 1,
+      "sha256": "c511e36ac5cf5bfcc51a72c8a3e6c423511c2a6b4bbe5b97847b897c6d64e29b",
+      "size": 10193,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/CompanyStockSales-scoped-c511e36ac5cf5bfc.css"
+    },
+    {
+      "url": "/assets/crm-sales-order-delta-70ac2ce2d3507909.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/crm-sales-order-delta-70ac2ce2d3507909.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/crm-sales-order-delta-70ac2ce2d3507909.css",
+      "links": 1,
+      "sha256": "70ac2ce2d3507909e5e084855aa364b75c7b74d03cbbafbeb8daee5913c384d0",
+      "size": 3807,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/crm-sales-order-delta-70ac2ce2d3507909.css"
+    },
+    {
+      "url": "/assets/profile-commission-simple-7f2cb86c3b489b732cd67677787e98ee66c5cdcdf916aa67b719263b3f0b9e12.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/profile-commission-simple-7f2cb86c3b489b732cd67677787e98ee66c5cdcdf916aa67b719263b3f0b9e12.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/profile-commission-simple-7f2cb86c3b489b732cd67677787e98ee66c5cdcdf916aa67b719263b3f0b9e12.css",
+      "links": 1,
+      "sha256": "7f2cb86c3b489b732cd67677787e98ee66c5cdcdf916aa67b719263b3f0b9e12",
+      "size": 6148,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/profile-commission-simple-7f2cb86c3b489b732cd67677787e98ee66c5cdcdf916aa67b719263b3f0b9e12.css"
+    },
+    {
+      "url": "/assets/customer-upload-compact-bb24e724fc97e425.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-upload-compact-bb24e724fc97e425.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-upload-compact-bb24e724fc97e425.css",
+      "links": 1,
+      "sha256": "bb24e724fc97e425d4c245d2811d83af4c8beff2b080d43eb65e851d8e3ffe21",
+      "size": 1390,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/customer-upload-compact-bb24e724fc97e425.css"
+    },
+    {
+      "url": "/assets/customer-upload-history-3cddbfc1c80d3769.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-upload-history-3cddbfc1c80d3769.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-upload-history-3cddbfc1c80d3769.css",
+      "links": 1,
+      "sha256": "3cddbfc1c80d3769dca9dda9855981d5cf99ed12118045b8908f436dabcf0d95",
+      "size": 7299,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/customer-upload-history-3cddbfc1c80d3769.css"
+    },
+    {
+      "url": "/assets/customer-upload-manage-3b83db4061a4088e.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-upload-manage-3b83db4061a4088e.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-upload-manage-3b83db4061a4088e.css",
+      "links": 1,
+      "sha256": "3b83db4061a4088ea88d1a192377024f93b026913c730c41d044c71ea0978ea3",
+      "size": 2936,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/customer-upload-manage-3b83db4061a4088e.css"
+    },
+    {
+      "url": "/assets/customer-batch-actions-0abf3e1aacf580cf.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-batch-actions-0abf3e1aacf580cf.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-batch-actions-0abf3e1aacf580cf.css",
+      "links": 1,
+      "sha256": "0abf3e1aacf580cfda4a0f9f45db055a549ed5cb4e59d2c09b96b8e22c23fb97",
+      "size": 13399,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/customer-batch-actions-0abf3e1aacf580cf.css"
+    },
+    {
+      "url": "/assets/customer-batch-actions-ea794bf45ade4eb3.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-batch-actions-ea794bf45ade4eb3.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-batch-actions-ea794bf45ade4eb3.css",
+      "links": 1,
+      "sha256": "ea794bf45ade4eb3186427faa1141072408e995cbbb984d17913a5e995ecc725",
+      "size": 6155,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/customer-batch-actions-ea794bf45ade4eb3.css"
+    },
+    {
+      "url": "/assets/customer-batch-actions-cdd99dcb83de0c20.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-batch-actions-cdd99dcb83de0c20.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-batch-actions-cdd99dcb83de0c20.css",
+      "links": 1,
+      "sha256": "cdd99dcb83de0c20872d3a14b71329565f14207e6ae4ffd9d8a665536dbfaba4",
+      "size": 2854,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/customer-batch-actions-cdd99dcb83de0c20.css"
+    },
+    {
+      "url": "/assets/customer-batch-actions-af6b970e3a2e2e06.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-batch-actions-af6b970e3a2e2e06.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-batch-actions-af6b970e3a2e2e06.css",
+      "links": 1,
+      "sha256": "af6b970e3a2e2e06ede82b8ea6e2f4f16596b8171072c9d6aea2b761d377f3c0",
+      "size": 1259,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/customer-batch-actions-af6b970e3a2e2e06.css"
+    },
+    {
+      "url": "/assets/customer-profile-refined-f8d5bedee4c9c8a7.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-profile-refined-f8d5bedee4c9c8a7.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-profile-refined-f8d5bedee4c9c8a7.css",
+      "links": 1,
+      "sha256": "f8d5bedee4c9c8a76aae5a4c6dd9906e18a1f89301f9526e5b6ecc99343f7072",
+      "size": 9298,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/customer-profile-refined-f8d5bedee4c9c8a7.css"
+    },
+    {
+      "url": "/assets/channel-inventory-admin-v3-4a72eb9795dbe8ac.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/channel-inventory-admin-v3-4a72eb9795dbe8ac.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/channel-inventory-admin-v3-4a72eb9795dbe8ac.css",
+      "links": 1,
+      "sha256": "4a72eb9795dbe8ac794fe52f8e65c3da26d5b004aca50167e1ad9492e4e7c4ef",
+      "size": 773,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/channel-inventory-admin-v3-4a72eb9795dbe8ac.css"
+    },
+    {
+      "url": "/assets/customer-unread-hotfix-0cd15c6df7928beb.css",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-unread-hotfix-0cd15c6df7928beb.css",
+      "requestedPath": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/customer-unread-hotfix-0cd15c6df7928beb.css",
+      "links": 1,
+      "sha256": "0cd15c6df7928bebd39997c7b2ab33d8acb964926a3197340099ae87101eb11b",
+      "size": 13416,
+      "local": "/home/ubuntu/work/customer-consistency-release-20261122-0034/capture/css/customer-unread-hotfix-0cd15c6df7928beb.css"
+    }
+  ],
+  "businessRPCs": 0,
+  "businessTestWrites": 0
+}

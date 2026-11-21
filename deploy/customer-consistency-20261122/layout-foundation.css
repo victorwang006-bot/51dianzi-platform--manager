@@ -1,0 +1,318 @@
+.customer-list-page {
+  min-width: 0;
+  --customer-list-actions-width: 88px;
+  --customer-list-demand-width: 112px;
+}
+
+.customer-list-page .customer-list-control {
+  height: var(--admin-content-control-height, 32px);
+  border-radius: 6px;
+  font-size: var(--admin-content-font-body, 12px);
+}
+
+/* The shared filter bar is a horizontal flex container. Keep the two groups
+ * full-width and stacked here; their controls can wrap without page overflow. */
+.customer-list-page .customer-list-filters {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+.customer-list-page .customer-list-filter-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  width: 100%;
+  min-width: 0;
+  gap: 8px;
+}
+
+.customer-list-page .customer-list-filter-row > .customer-list-control {
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+.customer-list-page .customer-list-search-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 360px;
+  width: auto;
+  min-width: min(240px, 100%);
+  max-width: 520px;
+}
+
+.customer-list-page .customer-list-search-group .customer-list-search {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+}
+
+.customer-list-page .customer-list-filter-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
+  gap: 6px;
+}
+
+.customer-list-page .customer-list-more-filters {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.customer-list-page .customer-list-updated-dates {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+  gap: 6px;
+}
+
+.customer-list-page .customer-list-date-input {
+  flex: 0 0 136px;
+  width: 136px;
+  min-width: 0;
+  max-width: 100%;
+  padding-inline: 8px;
+}
+
+.customer-list-page .customer-list-date-error {
+  margin: 0 0 8px;
+  color: #a32d2d;
+}
+
+@media (max-width: 680px) {
+  .customer-list-page .customer-list-search-group {
+    flex-basis: 100%;
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+.customer-list-page .customer-list-caption {
+  color: var(--admin-color-muted, #64748b);
+  font-size: var(--admin-content-font-caption, 11px);
+  line-height: var(--admin-content-caption-line-height, 1.5);
+}
+
+.customer-list-page .customer-list-status {
+  font-size: var(--admin-content-font-caption, 11px);
+  line-height: var(--admin-content-caption-line-height, 18px);
+}
+
+.customer-list-page .customer-list-error {
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 1.5);
+}
+
+.customer-list-page .customer-list-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  isolation: isolate;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline-end: calc(var(--customer-list-demand-width) + var(--customer-list-actions-width) + 12px);
+}
+
+/* One scroll owner, including keyboard scrolling; do not nest auto scrollers. */
+.customer-list-page .customer-list-table-inner[data-slot="table-container"] {
+  overflow: visible;
+}
+
+.customer-list-page .customer-list-table {
+  width: 100%;
+  min-width: 1304px;
+  table-layout: fixed;
+  color: var(--admin-color-text, #303642);
+  font-size: var(--admin-content-font-body, 12px);
+}
+
+/* Keep these widths in local CSS rather than depending on utility extraction. */
+/* The sole flexible column takes surplus width (236px at the minimum). This
+ * prevents fixed-layout surplus distribution changing the sticky widths. */
+.customer-list-page .customer-list-col-name { width: auto; }
+.customer-list-page .customer-list-col-industry { width: 136px; }
+.customer-list-page .customer-list-col-contacts { width: 312px; }
+.customer-list-page .customer-list-col-stage { width: 144px; }
+.customer-list-page .customer-list-col-owner { width: 108px; }
+.customer-list-page .customer-list-col-supply { width: 168px; }
+.customer-list-page .customer-list-col-demand { width: var(--customer-list-demand-width); }
+.customer-list-page .customer-list-col-actions { width: var(--customer-list-actions-width); }
+
+.customer-list-page .customer-list-table th {
+  height: var(--admin-content-control-height, 32px);
+  padding: 6px 10px;
+  color: var(--admin-color-secondary, #475569);
+  font-size: var(--admin-content-font-caption, 11px);
+}
+
+.customer-list-page .customer-list-table td {
+  padding: 10px;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 18px);
+}
+
+.customer-list-page .customer-list-table tr {
+  border-color: var(--admin-color-border, #e2e8f0);
+}
+
+.customer-list-page .customer-list-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.customer-list-page .customer-list-name {
+  color: #185fa5;
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 18px);
+}
+
+.customer-list-page .customer-list-secondary-data {
+  color: var(--admin-color-secondary, #475569);
+}
+
+.customer-list-page .customer-list-name-line {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 4px;
+}
+
+.customer-list-page .customer-list-name-line .customer-list-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customer-list-page .customer-list-star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 28px;
+  padding: 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.customer-list-page .customer-list-star svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+}
+
+.customer-list-page .customer-list-star[aria-pressed="true"] {
+  color: #eab308;
+}
+
+.customer-list-page .customer-list-star[aria-pressed="true"] svg {
+  fill: currentColor;
+}
+
+.customer-list-page .customer-list-star[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+.customer-list-page .customer-list-star[aria-busy="true"] svg {
+  fill: none;
+}
+
+/* Pagination and header/filter controls keep the normal rectangular treatment. */
+.customer-list-page .customer-list-pagination {
+  height: var(--admin-content-control-height, 32px);
+  border-radius: 6px;
+  font-size: var(--admin-content-font-body, 12px);
+}
+
+/* Fixed widths/right offsets agree with colgroup, leaving demand visible too. */
+.customer-list-page .customer-list-table :is(.customer-list-demand-column, .customer-list-actions-column) {
+  position: sticky;
+  z-index: 1;
+  background: #fff;
+}
+
+.customer-list-page .customer-list-table .customer-list-demand-column {
+  right: var(--customer-list-actions-width);
+  box-shadow: -4px 0 8px -6px #64748b;
+  border-left: 1px solid var(--admin-color-border, #e2e8f0);
+}
+
+.customer-list-page .customer-list-table .customer-list-actions-column {
+  right: 0;
+}
+
+.customer-list-page .customer-list-table th:is(.customer-list-demand-column, .customer-list-actions-column) {
+  z-index: 2;
+  background: #f8fafc;
+}
+
+.customer-list-page .customer-list-table tbody tr:hover :is(.customer-list-demand-column, .customer-list-actions-column) {
+  background: #f8fafc;
+}
+
+.customer-list-page .customer-list-supply-actions {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+
+.customer-list-page .customer-list-text-action-wrap {
+  display: inline-flex;
+  min-width: 0;
+}
+
+.customer-list-page .customer-list-text-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #185fa5;
+  font-family: inherit;
+  font-size: var(--admin-content-font-body, 12px);
+  font-weight: 400;
+  line-height: var(--admin-content-line-height, 18px);
+  white-space: nowrap;
+  cursor: pointer;
+  scroll-margin-inline: 12px;
+}
+
+.customer-list-page .customer-list-text-action:hover:not([aria-disabled="true"]) {
+  color: #0c447c;
+  text-decoration: underline;
+}
+
+.customer-list-page :is(.customer-list-text-action, .customer-list-name, .customer-list-star, .customer-list-table-scroll):focus-visible {
+  outline: 2px solid #185fa5;
+  outline-offset: 2px;
+}
+
+.customer-list-page .customer-list-text-action[aria-disabled="true"] {
+  color: var(--admin-color-muted, #64748b);
+  cursor: not-allowed;
+}
+
+/* Description remains available to a keyboard/screen-reader user of the button. */
+.customer-list-page .customer-list-action-reason {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+

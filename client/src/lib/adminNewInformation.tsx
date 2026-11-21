@@ -159,12 +159,16 @@ type EventRecord = {
 type Runtime = {
   events: Map<string, Map<string, EventRecord>>;
   subscribers: Set<() => void>;
+  invalidations: Map<string, number>;
+  summaryRequests: Map<string, number>;
+  summaryCompleted: Map<string, number>;
+  summarySubscribers: Set<() => void>;
 };
 const runtimes = new WeakMap<QueryClient, Runtime>();
 function runtimeFor(client: QueryClient): Runtime {
   let runtime = runtimes.get(client);
   if (!runtime) {
-    runtime = { events: new Map(), subscribers: new Set() };
+    runtime = { events: new Map(), subscribers: new Set(), invalidations: new Map(), summaryRequests: new Map(), summaryCompleted: new Map(), summarySubscribers: new Set() };
     runtimes.set(client, runtime);
   }
   return runtime;
@@ -179,6 +183,7 @@ function eventsFor(runtime: Runtime, token: string): Map<string, EventRecord> {
 }
 function notify(runtime: Runtime) {
   runtime.subscribers.forEach(callback => callback());
+  runtime.summarySubscribers.forEach(callback => callback());
 }
 function purgeEvents(
   runtime: Runtime,
@@ -197,59 +202,77 @@ function purgeEvents(
   notify(runtime);
 }
 
-/** Broadcast invalidation only: NEVER persist browser-side read state. Hidden tabs
- * receive an invalidation but their disabled queries do not fetch until visible. */
+/** Explicit same-page notification boundaries, not a merged business QueryClient.
+ * Only mounted, currently permitted account/module/scope registrations participate.
+ * BroadcastChannel supplements this registry across tabs; it is not the local bus. */
 const CHANNEL = "51dianzi-admin-new-information-v1";
-type ChannelEntry = { channel: BroadcastChannel; users: number };
-const channels = new WeakMap<QueryClient, ChannelEntry>();
-function useTabInvalidation(client: QueryClient) {
-  useEffect(() => {
-    if (
-      typeof window === "undefined" ||
-      typeof window.BroadcastChannel !== "function"
-    )
-      return;
-    let entry = channels.get(client);
-    if (!entry) {
-      let channel: BroadcastChannel;
-      try {
-        channel = new window.BroadcastChannel(CHANNEL);
-      } catch {
-        return;
-      } // Privacy restrictions: polling/focus remains functional.
-      channel.onmessage = (event: MessageEvent<unknown>) => {
-        const message = event.data;
-        if (
-          isRecord(message) &&
-          message.type === "displayed" &&
-          typeof message.account === "string"
-        ) {
-          void client.invalidateQueries({
-            queryKey: ["adminNewInformation", message.account],
-          });
-        }
-      };
-      entry = { channel, users: 0 };
-      channels.set(client, entry);
-    }
-    entry.users++;
-    return () => {
-      if (entry && --entry.users === 0) {
-        entry.channel.close();
-        channels.delete(client);
-      }
-    };
-  }, [client]);
-}
-function invalidateDisplayed(client: QueryClient, token: string) {
-  void client.invalidateQueries({ queryKey: ["adminNewInformation", token] });
-  try {
-    channels
-      .get(client)
-      ?.channel.postMessage({ type: "displayed", account: token });
-  } catch {
-    /* Broadcast failure must never turn an accepted server mark into failure. */
+type NotificationBoundary = {
+  client: QueryClient;
+  token: string;
+  module?: AdminNewInformationModule;
+  scope?: string;
+  valid: () => boolean;
+};
+const notificationBoundaries = new Set<NotificationBoundary>();
+let tabChannel: BroadcastChannel | undefined;
+const invalidationKey = (token: string, module?: AdminNewInformationModule, scope?: string) =>
+  JSON.stringify([token, module ?? "summary", scope || ""]);
+function refreshDisplayed(token: string, module?: AdminNewInformationModule, scope?: string) {
+  const targets = new Map<QueryClient, NotificationBoundary[]>();
+  for (const boundary of Array.from(notificationBoundaries)) {
+    if (boundary.token !== token || !boundary.valid() ||
+        (module && boundary.module && (boundary.module !== module || (boundary.scope || "") !== (scope || "")))) continue;
+    const list = targets.get(boundary.client) ?? [];
+    list.push(boundary);
+    targets.set(boundary.client, list);
   }
+  for (const [client, boundaries] of Array.from(targets)) {
+    const runtime = runtimeFor(client);
+    for (const key of Array.from(new Set(boundaries.map(boundary => invalidationKey(token, boundary.module, boundary.scope)))))
+      runtime.invalidations.set(key, (runtime.invalidations.get(key) ?? 0) + 1);
+    notify(runtime);
+    const predicate = (query: { queryKey: readonly unknown[] }) => boundaries.some(boundary =>
+      boundary.valid() && (boundary.module === undefined
+        ? query.queryKey[2] === "summary"
+        : (query.queryKey[2] === "inspect" || query.queryKey[2] === "unreadRefs") &&
+          query.queryKey[3] === boundary.module && query.queryKey[4] === (boundary.scope || "")));
+    const filter = { queryKey: ["adminNewInformation", token], predicate };
+    // Invalidate alone does not cancel an initial in-flight fetch with no data.
+    // Advance the epoch synchronously, then cancel before starting a fresh read.
+    void client.cancelQueries(filter).then(() => {
+      if (boundaries.some(boundary => boundary.valid())) return client.invalidateQueries(filter);
+    }).catch(() => { /* Accepted receipts remain accepted; query status exposes read failures. */ });
+  }
+}
+function useNotificationRegistration(boundary: Omit<NotificationBoundary, "token"> & { token: string | null }) {
+  useEffect(() => {
+    if (!boundary.token || !boundary.valid()) return;
+    const registration = { ...boundary, token: boundary.token };
+    notificationBoundaries.add(registration);
+    if (!tabChannel && typeof window !== "undefined" && typeof window.BroadcastChannel === "function") {
+      try {
+        tabChannel = new window.BroadcastChannel(CHANNEL);
+        tabChannel.onmessage = (event: MessageEvent<unknown>) => {
+          const message = event.data;
+          if (isRecord(message) && message.type === "displayed" && typeof message.account === "string" &&
+              (message.module === undefined || ADMIN_NEW_INFORMATION_MODULES.includes(message.module as AdminNewInformationModule)) &&
+              (message.scope === undefined || typeof message.scope === "string")) {
+            // Never echo a received invalidation, and never revive an old identity.
+            refreshDisplayed(message.account, message.module as AdminNewInformationModule | undefined, message.scope as string | undefined);
+          }
+        };
+      } catch { /* Local registrations still synchronize without broadcasting. */ }
+    }
+    return () => {
+      notificationBoundaries.delete(registration);
+      if (!notificationBoundaries.size) { tabChannel?.close(); tabChannel = undefined; }
+    };
+  }, [boundary.client, boundary.token, boundary.module, boundary.scope, boundary.valid]);
+}
+function invalidateDisplayed(token: string, module: AdminNewInformationModule, scope?: string) {
+  refreshDisplayed(token, module, scope);
+  try { tabChannel?.postMessage({ type: "displayed", account: token, module, scope }); }
+  catch { /* Broadcasting cannot turn an accepted server mark into failure. */ }
 }
 export function useAdminNewInformationPageVisible(): boolean {
   const [visible, setVisible] = useState(
@@ -322,15 +345,15 @@ function useAccessBoundary(
     if (token && !permitted) purge(token, module);
     prior.current = { token, allowed: permitted };
   }, [queryClient, token, permitted, module]);
-  useTabInvalidation(queryClient);
+  const valid = useCallback(() => current.current.generation === generation &&
+    current.current.allowed && deniedGeneration !== generation, [generation, deniedGeneration]);
+  useNotificationRegistration({ client: queryClient, token, module, scope, valid });
   return {
     queryClient,
     token,
     permitted,
-    valid: () =>
-      current.current.generation === generation &&
-      current.current.allowed &&
-      deniedGeneration !== generation,
+    generation,
+    valid,
     deny: () => {
       if (current.current.generation === generation) {
         current.current.allowed = false;
@@ -348,13 +371,27 @@ export function useAdminNewInformationSummary(
 ) {
   const access = useAccessBoundary(options);
   const visible = useAdminNewInformationPageVisible();
+  const runtime = runtimeFor(access.queryClient);
+  const [, summaryRedraw] = useState(0);
+  useEffect(() => {
+    const redraw = () => summaryRedraw(value => value + 1);
+    runtime.summarySubscribers.add(redraw);
+    return () => { runtime.summarySubscribers.delete(redraw); };
+  }, [runtime]);
   const query = useQuery({
     queryKey: adminNewInformationKeys.summary(options.accountKey),
     enabled: access.permitted && visible,
     queryFn: async ({ signal }) => {
+      const token = access.token!;
+      const key = invalidationKey(token);
+      const epoch = runtime.invalidations.get(key) ?? 0;
+      const sequence = (runtime.summaryRequests.get(token) ?? 0) + 1;
+      runtime.summaryRequests.set(token, sequence);
       const data = await options.client.summary({ signal });
-      if (signal.aborted || !access.valid())
+      if (signal.aborted || !access.valid() || epoch !== (runtime.invalidations.get(key) ?? 0) ||
+          sequence !== runtime.summaryRequests.get(token))
         throw new CancelledError({ silent: true });
+      runtime.summaryCompleted.set(key, epoch);
       return data;
     },
     retry: false,
@@ -375,14 +412,15 @@ export function useAdminNewInformationSummary(
   // resurrect persisted counts from the previously revoked authority.
   const known = useRef({
     token: access.token,
+    generation: access.generation,
     modules: {} as Partial<Record<AdminNewInformationModule, AdminNewInformationModuleSummary>>,
     blocked: new Set<AdminNewInformationModule>(),
     data: undefined as AdminNewInformationSummary | undefined,
     updatedAt: -1,
   });
-  if (known.current.token !== access.token) {
+  if (known.current.token !== access.token || known.current.generation !== access.generation) {
     known.current = {
-      token: access.token, modules: {}, blocked: new Set(ADMIN_NEW_INFORMATION_MODULES), data: undefined, updatedAt: -1,
+      token: access.token, generation: access.generation, modules: {}, blocked: new Set(ADMIN_NEW_INFORMATION_MODULES), data: undefined, updatedAt: -1,
     };
   }
   const cache = known.current;
@@ -412,7 +450,9 @@ export function useAdminNewInformationSummary(
         cache.modules[module] = { ...item, ...(item.children ? { children: { ...item.children } } : {}) };
         cache.blocked.delete(module);
       } else if (item.reason === "temporary" && item.lastKnown === true && validCount(item.count) &&
-          !cache.blocked.has(module) && !cache.modules[module]) {
+          !cache.blocked.has(module)) {
+        // This is the latest completed SERVER query in this boundary, not a
+        // local decrement. A newer valid lastKnown replaces the older hook value.
         cache.modules[module] = { ...item, ...(item.children ? { children: { ...item.children } } : {}) };
       }
     }
@@ -435,10 +475,22 @@ export function useAdminNewInformationSummary(
     const item = moduleSummary(module, canReadModule);
     return item !== undefined && (query.isError || item.lastKnown === true);
   };
+  const syncState = (module: AdminNewInformationModule): "disabled" | "pending" | "failed" | "synced" => {
+    if (!access.permitted || revoked || options.moduleCanRead?.[module] === false) return "disabled";
+    if (query.isFetching) return "pending";
+    const item = summary?.modules[module];
+    if (query.isError || (query.isSuccess && !item?.available)) return "failed";
+    if (access.queryClient.getQueryState(adminNewInformationKeys.summary(options.accountKey))?.isInvalidated) return "pending";
+    const key = invalidationKey(access.token!);
+    if ((runtime.summaryCompleted.get(key) ?? -1) < (runtime.invalidations.get(key) ?? 0)) return "pending";
+    return query.isSuccess && item?.available ? "synced" : "pending";
+  };
   return {
     query,
     summary,
     moduleSummary,
+    syncState,
+    retrySummary: () => access.valid() && visible ? query.refetch({ cancelRefetch: true }) : Promise.resolve(undefined),
     isModuleLastKnown,
     lastKnown: ADMIN_NEW_INFORMATION_MODULES.some(module => isModuleLastKnown(module)),
     status:
@@ -527,6 +579,7 @@ export interface AdminNewInformationRowPresentation {
   ref: RefCallback<HTMLElement>;
   markError: unknown;
   markState?: EventRecord["state"];
+  verificationState: "blocked" | "checking" | "missing" | "failed" | "confirmed" | "pending" | "new";
 }
 
 export function useAdminNewInformationRows(
@@ -552,6 +605,8 @@ export function useAdminNewInformationRows(
       options.listReady &&
       normalizedRefs.length > 0,
     queryFn: async ({ signal }) => {
+      const readKey = invalidationKey(access.token!, options.module, scope);
+      const epoch = runtimeFor(access.queryClient).invalidations.get(readKey) ?? 0;
       const items: AdminNewInformationInspection["items"] = [];
       // Large lists are inspected in schema-compliant batches. No truncation.
       for (let start = 0; start < normalizedRefs.length; start += 100) {
@@ -563,7 +618,7 @@ export function useAdminNewInformationRows(
           },
           { signal }
         );
-        if (signal.aborted || !access.valid())
+        if (signal.aborted || !access.valid() || epoch !== (runtimeFor(access.queryClient).invalidations.get(readKey) ?? 0))
           throw new CancelledError({ silent: true });
         items.push(...data.items);
       }
@@ -774,7 +829,7 @@ export function useAdminNewInformationRows(
           batch.forEach(item => events.set(item.key, { state: "seen" }));
           if (state.options.retainUnreadWhileVisible === false)
             batch.forEach(item => latched.current.delete(item.key));
-          invalidateDisplayed(state.access.queryClient, state.access.token!);
+          invalidateDisplayed(state.access.token!, state.options.module, state.scope);
         })
         .catch((error: unknown) => {
           if (!state.access.valid() || controller.signal.aborted) return;
@@ -920,6 +975,14 @@ export function useAdminNewInformationRows(
       ),
       markError: record?.state === "failed" && item?.isNew ? record.error : undefined,
       markState: record?.state,
+      verificationState: !access.permitted || revoked || !access.valid() ? "blocked"
+        : !options.listReady ? "checking"
+        : record?.state === "failed" || query.isError ? "failed"
+        : record?.state === "seen" ? "confirmed"
+        : query.isFetching || !query.isSuccess ? "checking"
+        : !item || (item.isNew && !item.receipt) ? "missing"
+        : item.isNew === false ? "confirmed"
+        : record?.state === "pending" ? "pending" : "new",
     };
   };
   return {
@@ -1042,7 +1105,7 @@ export function useAdminNewInformationContextRows(
   options: Omit<AdminNewInformationRowsOptions, "accountKey" | "canRead">
 ) {
   const context = useContext(AdminNewInformationContext);
-  return useAdminNewInformationRows({
+  const rows = useAdminNewInformationRows({
     ...options,
     client: context?.client ?? disabledAdminNewInformationClient,
     accountKey: context?.accountKey ?? null,
@@ -1051,6 +1114,8 @@ export function useAdminNewInformationContextRows(
       (options.expectedAccountKey === undefined || accountToken(options.expectedAccountKey) === accountToken(context.accountKey))
     ),
   });
+  return { ...rows, summarySyncState: context?.summary.syncState(options.module) ?? "disabled",
+    retrySummary: context?.summary.retrySummary ?? (() => Promise.resolve(undefined)) };
 }
 
 /** Entire authorized unread set, not a filter over one already-paginated page. */
@@ -1096,9 +1161,11 @@ export function useAdminNewInformationContextUnreadRefs(options: {
     queryKey: key,
     enabled: enabled && visible,
     queryFn: async ({ signal }) => {
+      const readKey = invalidationKey(access.token!, options.module, options.scope);
+      const epoch = runtimeFor(access.queryClient).invalidations.get(readKey) ?? 0;
       if (!capability) throw new Error("当前后台未支持未读客户筛选，请更新服务后重试");
       const data = await capability({ module: options.module, scope: options.scope }, { signal });
-      if (signal.aborted || !access.valid()) throw new CancelledError({ silent: true });
+      if (signal.aborted || !access.valid() || epoch !== (runtimeFor(access.queryClient).invalidations.get(readKey) ?? 0)) throw new CancelledError({ silent: true });
       if (!isRecord(data) || data.available !== true || !Array.isArray(data.refs) ||
           data.refs.some(ref => typeof ref !== "string")) throw new Error("未读客户筛选暂不可用，请重试");
       return { refs: data.refs, customerIds: customerIdsFromAdminUnreadRefs(data.refs), available: true as const };

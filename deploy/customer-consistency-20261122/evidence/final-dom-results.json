@@ -1,0 +1,2218 @@
+{
+  "status": "PASS",
+  "scenarioCount": 19,
+  "runtime": {
+    "file": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/AdminNewInformation-customer-consistency-runtime-cff8bad8c4d94617.js",
+    "sha256": "cff8bad8c4d94617cb9b77e0280ab4713cee5a844bec551dc3c1d1a7b4ebc9fd"
+  },
+  "native": [
+    {
+      "file": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-d2d15dd34c5cdf0d.js",
+      "bundleSHA": "d2d15dd34c5cdf0df1644318ddf499d38e3ea6656656b2d6e70ff4d27655e339",
+      "functionSHA": "61ae2ca6dd500e04e88620294b8054cafdcc8bfe93003130638ba77f3b815ae9"
+    },
+    {
+      "file": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js",
+      "bundleSHA": "a24dc29e7d929523007e9f701a970e25c75e63bfcb2b7bbe43db9d48c3e7746c",
+      "functionSHA": "61ae2ca6dd500e04e88620294b8054cafdcc8bfe93003130638ba77f3b815ae9"
+    }
+  ],
+  "results": [
+    {
+      "name": "real WB0 native detail same QC accepted",
+      "WB": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-d2d15dd34c5cdf0d.js",
+      "dualQueryClients": false,
+      "broadcast": false,
+      "throwBroadcast": false,
+      "mainAndNativeFunctionReallyRendered": true,
+      "geometryAndObserverMocked": true,
+      "initial": {
+        "header": "90",
+        "detailStatus": "已读 · 已确认",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": "seen",
+        "verificationState": "confirmed",
+        "summarySyncState": "synced",
+        "visibleBadgeStatus": null
+      },
+      "markAttempts": 1,
+      "fixtureSeen": true,
+      "returnListNew": "false",
+      "returnUnreadFilter": "[]",
+      "rowsOptions": {
+        "module": "customers",
+        "refs": [
+          "customer:81"
+        ],
+        "scope": "42",
+        "listReady": true,
+        "acknowledgeOnVisible": true,
+        "retainUnreadWhileVisible": false,
+        "expectedAccountKey": 9
+      },
+      "calls": [
+        {
+          "method": "mock.inspect",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 1,
+          "account": 9,
+          "seen": false,
+          "signal": true
+        },
+        {
+          "method": "mock.markDisplayed",
+          "input": {
+            "receipts": [
+              "OFFLINE_FAKE_RECEIPT_1"
+            ]
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 2,
+          "account": 9,
+          "seen": true,
+          "signal": true
+        },
+        {
+          "method": "mock.inspect",
+          "n": 2,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.inspect",
+          "n": 3,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.unreadRefs",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "scope": "42"
+          },
+          "seen": true
+        }
+      ],
+      "businessMutations": 0,
+      "realNetworkCalls": 0,
+      "queryCounts": {
+        "summary": 2,
+        "inspect": 3,
+        "unread": 1
+      },
+      "invalidations": {
+        "admin": 1,
+        "business": 1,
+        "otherAccount": 0,
+        "otherDomain": 0,
+        "otherModule": 0,
+        "disabled": 0
+      }
+    },
+    {
+      "name": "real WB1 native detail same QC accepted",
+      "WB": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js",
+      "dualQueryClients": false,
+      "broadcast": false,
+      "throwBroadcast": false,
+      "mainAndNativeFunctionReallyRendered": true,
+      "geometryAndObserverMocked": true,
+      "initial": {
+        "header": "90",
+        "detailStatus": "已读 · 已确认",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": "seen",
+        "verificationState": "confirmed",
+        "summarySyncState": "synced",
+        "visibleBadgeStatus": null
+      },
+      "markAttempts": 1,
+      "fixtureSeen": true,
+      "returnListNew": "false",
+      "returnUnreadFilter": "[]",
+      "rowsOptions": {
+        "module": "customers",
+        "refs": [
+          "customer:81"
+        ],
+        "scope": "42",
+        "listReady": true,
+        "acknowledgeOnVisible": true,
+        "retainUnreadWhileVisible": false,
+        "expectedAccountKey": 9
+      },
+      "calls": [
+        {
+          "method": "mock.inspect",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 1,
+          "account": 9,
+          "seen": false,
+          "signal": true
+        },
+        {
+          "method": "mock.markDisplayed",
+          "input": {
+            "receipts": [
+              "OFFLINE_FAKE_RECEIPT_1"
+            ]
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 2,
+          "account": 9,
+          "seen": true,
+          "signal": true
+        },
+        {
+          "method": "mock.inspect",
+          "n": 2,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.inspect",
+          "n": 3,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.unreadRefs",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "scope": "42"
+          },
+          "seen": true
+        }
+      ],
+      "businessMutations": 0,
+      "realNetworkCalls": 0,
+      "queryCounts": {
+        "summary": 2,
+        "inspect": 3,
+        "unread": 1
+      },
+      "invalidations": {
+        "admin": 1,
+        "business": 1,
+        "otherAccount": 0,
+        "otherDomain": 0,
+        "otherModule": 0,
+        "disabled": 0
+      }
+    },
+    {
+      "name": "dual QC BroadcastChannel accepted",
+      "WB": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js",
+      "dualQueryClients": true,
+      "broadcast": true,
+      "throwBroadcast": false,
+      "mainAndNativeFunctionReallyRendered": true,
+      "geometryAndObserverMocked": true,
+      "initial": {
+        "header": "90",
+        "detailStatus": "已读 · 已确认",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": "seen",
+        "verificationState": "confirmed",
+        "summarySyncState": "synced",
+        "visibleBadgeStatus": null
+      },
+      "markAttempts": 1,
+      "fixtureSeen": true,
+      "returnListNew": "false",
+      "returnUnreadFilter": "[]",
+      "rowsOptions": {
+        "module": "customers",
+        "refs": [
+          "customer:81"
+        ],
+        "scope": "42",
+        "listReady": true,
+        "acknowledgeOnVisible": true,
+        "retainUnreadWhileVisible": false,
+        "expectedAccountKey": 9
+      },
+      "calls": [
+        {
+          "method": "mock.inspect",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 1,
+          "account": 9,
+          "seen": false,
+          "signal": true
+        },
+        {
+          "method": "mock.markDisplayed",
+          "input": {
+            "receipts": [
+              "OFFLINE_FAKE_RECEIPT_1"
+            ]
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.inspect",
+          "n": 2,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 2,
+          "account": 9,
+          "seen": true,
+          "signal": true
+        },
+        {
+          "method": "mock.inspect",
+          "n": 3,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.unreadRefs",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "scope": "42"
+          },
+          "seen": true
+        }
+      ],
+      "businessMutations": 0,
+      "realNetworkCalls": 0,
+      "queryCounts": {
+        "summary": 2,
+        "inspect": 3,
+        "unread": 1
+      },
+      "invalidations": {
+        "admin": 1,
+        "business": 1,
+        "otherAccount": 0,
+        "otherDomain": 0,
+        "otherModule": 0,
+        "disabled": 0
+      }
+    },
+    {
+      "name": "dual QC NO BroadcastChannel immediately refreshes header90",
+      "WB": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js",
+      "dualQueryClients": true,
+      "broadcast": false,
+      "throwBroadcast": false,
+      "mainAndNativeFunctionReallyRendered": true,
+      "geometryAndObserverMocked": true,
+      "initial": {
+        "header": "90",
+        "detailStatus": "已读 · 已确认",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": "seen",
+        "verificationState": "confirmed",
+        "summarySyncState": "synced",
+        "visibleBadgeStatus": null
+      },
+      "markAttempts": 1,
+      "fixtureSeen": true,
+      "returnListNew": "false",
+      "returnUnreadFilter": "[]",
+      "rowsOptions": {
+        "module": "customers",
+        "refs": [
+          "customer:81"
+        ],
+        "scope": "42",
+        "listReady": true,
+        "acknowledgeOnVisible": true,
+        "retainUnreadWhileVisible": false,
+        "expectedAccountKey": 9
+      },
+      "calls": [
+        {
+          "method": "mock.inspect",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 1,
+          "account": 9,
+          "seen": false,
+          "signal": true
+        },
+        {
+          "method": "mock.markDisplayed",
+          "input": {
+            "receipts": [
+              "OFFLINE_FAKE_RECEIPT_1"
+            ]
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.inspect",
+          "n": 2,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 2,
+          "account": 9,
+          "seen": true,
+          "signal": true
+        },
+        {
+          "method": "mock.inspect",
+          "n": 3,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.unreadRefs",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "scope": "42"
+          },
+          "seen": true
+        }
+      ],
+      "businessMutations": 0,
+      "realNetworkCalls": 0,
+      "queryCounts": {
+        "summary": 2,
+        "inspect": 3,
+        "unread": 1
+      },
+      "invalidations": {
+        "admin": 1,
+        "business": 1,
+        "otherAccount": 0,
+        "otherDomain": 0,
+        "otherModule": 0,
+        "disabled": 0
+      }
+    },
+    {
+      "name": "dual QC BroadcastChannel constructor throws but local refresh90",
+      "WB": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js",
+      "dualQueryClients": true,
+      "broadcast": false,
+      "throwBroadcast": true,
+      "mainAndNativeFunctionReallyRendered": true,
+      "geometryAndObserverMocked": true,
+      "initial": {
+        "header": "90",
+        "detailStatus": "已读 · 已确认",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": "seen",
+        "verificationState": "confirmed",
+        "summarySyncState": "synced",
+        "visibleBadgeStatus": null
+      },
+      "markAttempts": 1,
+      "fixtureSeen": true,
+      "returnListNew": "false",
+      "returnUnreadFilter": "[]",
+      "rowsOptions": {
+        "module": "customers",
+        "refs": [
+          "customer:81"
+        ],
+        "scope": "42",
+        "listReady": true,
+        "acknowledgeOnVisible": true,
+        "retainUnreadWhileVisible": false,
+        "expectedAccountKey": 9
+      },
+      "calls": [
+        {
+          "method": "mock.inspect",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 1,
+          "account": 9,
+          "seen": false,
+          "signal": true
+        },
+        {
+          "method": "mock.markDisplayed",
+          "input": {
+            "receipts": [
+              "OFFLINE_FAKE_RECEIPT_1"
+            ]
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.inspect",
+          "n": 2,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 2,
+          "account": 9,
+          "seen": true,
+          "signal": true
+        },
+        {
+          "method": "mock.inspect",
+          "n": 3,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.unreadRefs",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "scope": "42"
+          },
+          "seen": true
+        }
+      ],
+      "businessMutations": 0,
+      "realNetworkCalls": 0,
+      "queryCounts": {
+        "summary": 2,
+        "inspect": 3,
+        "unread": 1
+      },
+      "invalidations": {
+        "admin": 1,
+        "business": 1,
+        "otherAccount": 0,
+        "otherDomain": 0,
+        "otherModule": 0,
+        "disabled": 0
+      }
+    },
+    {
+      "name": "missing current customer proof is visible, never mark",
+      "WB": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js",
+      "dualQueryClients": false,
+      "broadcast": false,
+      "throwBroadcast": false,
+      "mainAndNativeFunctionReallyRendered": true,
+      "geometryAndObserverMocked": true,
+      "initial": {
+        "header": "91",
+        "detailStatus": "当前客户核验未返回完整凭证，未读提醒未清除",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": null,
+        "verificationState": "missing",
+        "summarySyncState": "synced",
+        "visibleBadgeStatus": null
+      },
+      "markAttempts": 0,
+      "fixtureSeen": false,
+      "returnListNew": "false",
+      "returnUnreadFilter": "[81]",
+      "rowsOptions": {
+        "module": "customers",
+        "refs": [
+          "customer:81"
+        ],
+        "scope": "42",
+        "listReady": true,
+        "acknowledgeOnVisible": true,
+        "retainUnreadWhileVisible": false,
+        "expectedAccountKey": 9
+      },
+      "calls": [
+        {
+          "method": "mock.inspect",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 1,
+          "account": 9,
+          "seen": false,
+          "signal": true
+        },
+        {
+          "method": "mock.inspect",
+          "n": 2,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.unreadRefs",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "scope": "42"
+          },
+          "seen": false
+        }
+      ],
+      "businessMutations": 0,
+      "realNetworkCalls": 0,
+      "queryCounts": {
+        "summary": 1,
+        "inspect": 2,
+        "unread": 1
+      },
+      "invalidations": {
+        "admin": 0,
+        "business": 0,
+        "otherAccount": 0,
+        "otherDomain": 0,
+        "otherModule": 0,
+        "disabled": 0
+      }
+    },
+    {
+      "name": "missing receipt is visible, never mark",
+      "WB": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js",
+      "dualQueryClients": false,
+      "broadcast": false,
+      "throwBroadcast": false,
+      "mainAndNativeFunctionReallyRendered": true,
+      "geometryAndObserverMocked": true,
+      "initial": {
+        "header": "91",
+        "detailStatus": "当前客户核验未返回完整凭证，未读提醒未清除",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": null,
+        "verificationState": "missing",
+        "summarySyncState": "synced",
+        "visibleBadgeStatus": null
+      },
+      "markAttempts": 0,
+      "fixtureSeen": false,
+      "returnListNew": "true",
+      "returnUnreadFilter": "[81]",
+      "rowsOptions": {
+        "module": "customers",
+        "refs": [
+          "customer:81"
+        ],
+        "scope": "42",
+        "listReady": true,
+        "acknowledgeOnVisible": true,
+        "retainUnreadWhileVisible": false,
+        "expectedAccountKey": 9
+      },
+      "calls": [
+        {
+          "method": "mock.inspect",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 1,
+          "account": 9,
+          "seen": false,
+          "signal": true
+        },
+        {
+          "method": "mock.inspect",
+          "n": 2,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.unreadRefs",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "scope": "42"
+          },
+          "seen": false
+        }
+      ],
+      "businessMutations": 0,
+      "realNetworkCalls": 0,
+      "queryCounts": {
+        "summary": 1,
+        "inspect": 2,
+        "unread": 1
+      },
+      "invalidations": {
+        "admin": 0,
+        "business": 0,
+        "otherAccount": 0,
+        "otherDomain": 0,
+        "otherModule": 0,
+        "disabled": 0
+      }
+    },
+    {
+      "name": "expected number versus string account visibly blocked, no mark",
+      "WB": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js",
+      "dualQueryClients": false,
+      "broadcast": false,
+      "throwBroadcast": false,
+      "mainAndNativeFunctionReallyRendered": true,
+      "geometryAndObserverMocked": true,
+      "initial": {
+        "header": "91",
+        "detailStatus": "账号或权限核验阻断，未读提醒未清除",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": null,
+        "verificationState": "blocked",
+        "summarySyncState": "synced",
+        "visibleBadgeStatus": null
+      },
+      "markAttempts": 0,
+      "fixtureSeen": false,
+      "returnListNew": "true",
+      "returnUnreadFilter": "[81]",
+      "rowsOptions": {
+        "module": "customers",
+        "refs": [
+          "customer:81"
+        ],
+        "scope": "42",
+        "listReady": true,
+        "acknowledgeOnVisible": true,
+        "retainUnreadWhileVisible": false,
+        "expectedAccountKey": "9"
+      },
+      "calls": [
+        {
+          "method": "mock.summary",
+          "n": 1,
+          "account": 9,
+          "seen": false,
+          "signal": true
+        },
+        {
+          "method": "mock.inspect",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.unreadRefs",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "scope": "42"
+          },
+          "seen": false
+        }
+      ],
+      "businessMutations": 0,
+      "realNetworkCalls": 0,
+      "queryCounts": {
+        "summary": 1,
+        "inspect": 1,
+        "unread": 1
+      },
+      "invalidations": {
+        "admin": 0,
+        "business": 0,
+        "otherAccount": 0,
+        "otherDomain": 0,
+        "otherModule": 0,
+        "disabled": 0
+      }
+    },
+    {
+      "name": "mark failure explicit retry gets fresh receipt",
+      "WB": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js",
+      "dualQueryClients": false,
+      "broadcast": false,
+      "throwBroadcast": false,
+      "mainAndNativeFunctionReallyRendered": true,
+      "geometryAndObserverMocked": true,
+      "initial": {
+        "header": "91",
+        "detailStatus": "已读确认失败，未读提醒未清除。重试确认",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": "failed",
+        "verificationState": "failed",
+        "summarySyncState": "synced",
+        "visibleBadgeStatus": null
+      },
+      "retry": {
+        "header": "90",
+        "detailStatus": "已读 · 已确认",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": "seen",
+        "verificationState": "confirmed",
+        "summarySyncState": "synced",
+        "visibleBadgeStatus": null
+      },
+      "markAttempts": 2,
+      "fixtureSeen": true,
+      "returnListNew": "false",
+      "returnUnreadFilter": "[]",
+      "rowsOptions": {
+        "module": "customers",
+        "refs": [
+          "customer:81"
+        ],
+        "scope": "42",
+        "listReady": true,
+        "acknowledgeOnVisible": true,
+        "retainUnreadWhileVisible": false,
+        "expectedAccountKey": 9
+      },
+      "calls": [
+        {
+          "method": "mock.inspect",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 1,
+          "account": 9,
+          "seen": false,
+          "signal": true
+        },
+        {
+          "method": "mock.markDisplayed",
+          "input": {
+            "receipts": [
+              "OFFLINE_FAKE_RECEIPT_1"
+            ]
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.inspect",
+          "n": 2,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.markDisplayed",
+          "input": {
+            "receipts": [
+              "OFFLINE_FAKE_RECEIPT_2"
+            ]
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 2,
+          "account": 9,
+          "seen": true,
+          "signal": true
+        },
+        {
+          "method": "mock.inspect",
+          "n": 3,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.inspect",
+          "n": 4,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.unreadRefs",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "scope": "42"
+          },
+          "seen": true
+        }
+      ],
+      "businessMutations": 0,
+      "realNetworkCalls": 0,
+      "queryCounts": {
+        "summary": 2,
+        "inspect": 4,
+        "unread": 1
+      },
+      "invalidations": {
+        "admin": 1,
+        "business": 1,
+        "otherAccount": 0,
+        "otherDomain": 0,
+        "otherModule": 0,
+        "disabled": 0
+      }
+    },
+    {
+      "name": "hidden tab never marks successful main",
+      "WB": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js",
+      "dualQueryClients": false,
+      "broadcast": false,
+      "throwBroadcast": false,
+      "mainAndNativeFunctionReallyRendered": true,
+      "geometryAndObserverMocked": true,
+      "initial": {
+        "header": "unknown",
+        "detailStatus": "未读状态核验中…",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": null,
+        "verificationState": "checking",
+        "summarySyncState": "pending",
+        "visibleBadgeStatus": "待更新"
+      },
+      "markAttempts": 0,
+      "fixtureSeen": false,
+      "returnListNew": "true",
+      "returnUnreadFilter": "[81]",
+      "rowsOptions": {
+        "module": "customers",
+        "refs": [
+          "customer:81"
+        ],
+        "scope": "42",
+        "listReady": true,
+        "acknowledgeOnVisible": true,
+        "retainUnreadWhileVisible": false,
+        "expectedAccountKey": 9
+      },
+      "calls": [
+        {
+          "method": "mock.inspect",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.unreadRefs",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "scope": "42"
+          },
+          "seen": false
+        }
+      ],
+      "businessMutations": 0,
+      "realNetworkCalls": 0,
+      "queryCounts": {
+        "summary": 0,
+        "inspect": 1,
+        "unread": 1
+      },
+      "invalidations": {
+        "admin": 0,
+        "business": 0,
+        "otherAccount": 0,
+        "otherDomain": 0,
+        "otherModule": 0,
+        "disabled": 0
+      }
+    },
+    {
+      "name": "new server temporary lastKnown90 replaces old hook91",
+      "WB": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js",
+      "dualQueryClients": true,
+      "broadcast": false,
+      "throwBroadcast": false,
+      "mainAndNativeFunctionReallyRendered": true,
+      "geometryAndObserverMocked": true,
+      "initial": {
+        "header": "90",
+        "detailStatus": "已读 · 已确认，顶部更新失败（待同步）重查顶部摘要",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": "seen",
+        "verificationState": "confirmed",
+        "summarySyncState": "failed",
+        "visibleBadgeStatus": "更新失败"
+      },
+      "markAttempts": 1,
+      "fixtureSeen": true,
+      "returnListNew": "false",
+      "returnUnreadFilter": "[]",
+      "rowsOptions": {
+        "module": "customers",
+        "refs": [
+          "customer:81"
+        ],
+        "scope": "42",
+        "listReady": true,
+        "acknowledgeOnVisible": true,
+        "retainUnreadWhileVisible": false,
+        "expectedAccountKey": 9
+      },
+      "calls": [
+        {
+          "method": "mock.inspect",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 1,
+          "account": 9,
+          "seen": false,
+          "signal": true
+        },
+        {
+          "method": "mock.markDisplayed",
+          "input": {
+            "receipts": [
+              "OFFLINE_FAKE_RECEIPT_1"
+            ]
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.inspect",
+          "n": 2,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 2,
+          "account": 9,
+          "seen": true,
+          "signal": true
+        },
+        {
+          "method": "mock.inspect",
+          "n": 3,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.unreadRefs",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "scope": "42"
+          },
+          "seen": true
+        }
+      ],
+      "businessMutations": 0,
+      "realNetworkCalls": 0,
+      "queryCounts": {
+        "summary": 2,
+        "inspect": 3,
+        "unread": 1
+      },
+      "invalidations": {
+        "admin": 1,
+        "business": 1,
+        "otherAccount": 0,
+        "otherDomain": 0,
+        "otherModule": 0,
+        "disabled": 0
+      }
+    },
+    {
+      "name": "unknown temporary0 does NOT replace proven91",
+      "WB": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js",
+      "dualQueryClients": true,
+      "broadcast": false,
+      "throwBroadcast": false,
+      "mainAndNativeFunctionReallyRendered": true,
+      "geometryAndObserverMocked": true,
+      "initial": {
+        "header": "91",
+        "detailStatus": "已读 · 已确认，顶部更新失败（待同步）重查顶部摘要",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": "seen",
+        "verificationState": "confirmed",
+        "summarySyncState": "failed",
+        "visibleBadgeStatus": "更新失败"
+      },
+      "markAttempts": 1,
+      "fixtureSeen": true,
+      "returnListNew": "false",
+      "returnUnreadFilter": "[]",
+      "rowsOptions": {
+        "module": "customers",
+        "refs": [
+          "customer:81"
+        ],
+        "scope": "42",
+        "listReady": true,
+        "acknowledgeOnVisible": true,
+        "retainUnreadWhileVisible": false,
+        "expectedAccountKey": 9
+      },
+      "calls": [
+        {
+          "method": "mock.inspect",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 1,
+          "account": 9,
+          "seen": false,
+          "signal": true
+        },
+        {
+          "method": "mock.markDisplayed",
+          "input": {
+            "receipts": [
+              "OFFLINE_FAKE_RECEIPT_1"
+            ]
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.inspect",
+          "n": 2,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 2,
+          "account": 9,
+          "seen": true,
+          "signal": true
+        },
+        {
+          "method": "mock.inspect",
+          "n": 3,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.unreadRefs",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "scope": "42"
+          },
+          "seen": true
+        }
+      ],
+      "businessMutations": 0,
+      "realNetworkCalls": 0,
+      "queryCounts": {
+        "summary": 2,
+        "inspect": 3,
+        "unread": 1
+      },
+      "invalidations": {
+        "admin": 1,
+        "business": 1,
+        "otherAccount": 0,
+        "otherDomain": 0,
+        "otherModule": 0,
+        "disabled": 0
+      }
+    },
+    {
+      "name": "accepted summary failure and summary-only recovery never repeats mark",
+      "WB": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js",
+      "dualQueryClients": true,
+      "broadcast": false,
+      "throwBroadcast": false,
+      "mainAndNativeFunctionReallyRendered": true,
+      "geometryAndObserverMocked": true,
+      "initial": {
+        "header": "91",
+        "detailStatus": "已读 · 已确认，顶部更新失败（待同步）重查顶部摘要",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": "seen",
+        "verificationState": "confirmed",
+        "summarySyncState": "failed",
+        "visibleBadgeStatus": "更新失败"
+      },
+      "retry": {
+        "header": "90",
+        "detailStatus": "已读 · 已确认",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": "seen",
+        "verificationState": "confirmed",
+        "summarySyncState": "synced",
+        "visibleBadgeStatus": null
+      },
+      "markAttempts": 1,
+      "fixtureSeen": true,
+      "returnListNew": "false",
+      "returnUnreadFilter": "[]",
+      "rowsOptions": {
+        "module": "customers",
+        "refs": [
+          "customer:81"
+        ],
+        "scope": "42",
+        "listReady": true,
+        "acknowledgeOnVisible": true,
+        "retainUnreadWhileVisible": false,
+        "expectedAccountKey": 9
+      },
+      "calls": [
+        {
+          "method": "mock.inspect",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 1,
+          "account": 9,
+          "seen": false,
+          "signal": true
+        },
+        {
+          "method": "mock.markDisplayed",
+          "input": {
+            "receipts": [
+              "OFFLINE_FAKE_RECEIPT_1"
+            ]
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.inspect",
+          "n": 2,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 2,
+          "account": 9,
+          "seen": true,
+          "signal": true
+        },
+        {
+          "method": "mock.summary",
+          "n": 3,
+          "account": 9,
+          "seen": true,
+          "signal": true
+        },
+        {
+          "method": "mock.inspect",
+          "n": 3,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.unreadRefs",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "scope": "42"
+          },
+          "seen": true
+        }
+      ],
+      "businessMutations": 0,
+      "realNetworkCalls": 0,
+      "queryCounts": {
+        "summary": 3,
+        "inspect": 3,
+        "unread": 1
+      },
+      "invalidations": {
+        "admin": 1,
+        "business": 1,
+        "otherAccount": 0,
+        "otherDomain": 0,
+        "otherModule": 0,
+        "disabled": 0
+      }
+    },
+    {
+      "name": "late cancelled in-flight summary91 cannot rebound after accept90",
+      "WB": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js",
+      "dualQueryClients": true,
+      "broadcast": false,
+      "throwBroadcast": false,
+      "mainAndNativeFunctionReallyRendered": true,
+      "geometryAndObserverMocked": true,
+      "initial": {
+        "header": "90",
+        "detailStatus": "已读 · 已确认",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": "seen",
+        "verificationState": "confirmed",
+        "summarySyncState": "synced",
+        "visibleBadgeStatus": null
+      },
+      "late": {
+        "header": "90",
+        "detailStatus": "已读 · 已确认",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": "seen",
+        "verificationState": "confirmed",
+        "summarySyncState": "synced",
+        "visibleBadgeStatus": null
+      },
+      "markAttempts": 1,
+      "fixtureSeen": true,
+      "returnListNew": "false",
+      "returnUnreadFilter": "[]",
+      "rowsOptions": {
+        "module": "customers",
+        "refs": [
+          "customer:81"
+        ],
+        "scope": "42",
+        "listReady": true,
+        "acknowledgeOnVisible": true,
+        "retainUnreadWhileVisible": false,
+        "expectedAccountKey": 9
+      },
+      "calls": [
+        {
+          "method": "mock.inspect",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 1,
+          "account": 9,
+          "seen": false,
+          "signal": true
+        },
+        {
+          "method": "mock.summary",
+          "n": 2,
+          "account": 9,
+          "seen": false,
+          "signal": true
+        },
+        {
+          "method": "mock.markDisplayed",
+          "input": {
+            "receipts": [
+              "OFFLINE_FAKE_RECEIPT_1"
+            ]
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.inspect",
+          "n": 2,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 3,
+          "account": 9,
+          "seen": true,
+          "signal": true
+        },
+        {
+          "method": "mock.inspect",
+          "n": 3,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.unreadRefs",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "scope": "42"
+          },
+          "seen": true
+        }
+      ],
+      "businessMutations": 0,
+      "realNetworkCalls": 0,
+      "queryCounts": {
+        "summary": 3,
+        "inspect": 3,
+        "unread": 1
+      },
+      "invalidations": {
+        "admin": 1,
+        "business": 1,
+        "otherAccount": 0,
+        "otherDomain": 0,
+        "otherModule": 0,
+        "disabled": 0
+      }
+    },
+    {
+      "name": "late cancelled unread-only refs do not rebound after accept",
+      "WB": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js",
+      "dualQueryClients": true,
+      "broadcast": false,
+      "throwBroadcast": false,
+      "mainAndNativeFunctionReallyRendered": true,
+      "geometryAndObserverMocked": true,
+      "initial": {
+        "header": "90",
+        "detailStatus": "已读 · 已确认",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": "seen",
+        "verificationState": "confirmed",
+        "summarySyncState": "synced",
+        "visibleBadgeStatus": null,
+        "filter": "[]"
+      },
+      "markAttempts": 1,
+      "fixtureSeen": true,
+      "returnListNew": "false",
+      "returnUnreadFilter": "[]",
+      "rowsOptions": {
+        "module": "customers",
+        "refs": [
+          "customer:81"
+        ],
+        "scope": "42",
+        "listReady": true,
+        "acknowledgeOnVisible": true,
+        "retainUnreadWhileVisible": false,
+        "expectedAccountKey": 9
+      },
+      "calls": [
+        {
+          "method": "mock.inspect",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.unreadRefs",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "scope": "42"
+          },
+          "seen": false
+        },
+        {
+          "method": "mock.summary",
+          "n": 1,
+          "account": 9,
+          "seen": false,
+          "signal": true
+        },
+        {
+          "method": "mock.markDisplayed",
+          "input": {
+            "receipts": [
+              "OFFLINE_FAKE_RECEIPT_1"
+            ]
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.inspect",
+          "n": 2,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.unreadRefs",
+          "n": 2,
+          "input": {
+            "module": "customers",
+            "scope": "42"
+          },
+          "seen": true
+        },
+        {
+          "method": "mock.summary",
+          "n": 2,
+          "account": 9,
+          "seen": true,
+          "signal": true
+        },
+        {
+          "method": "mock.inspect",
+          "n": 3,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        }
+      ],
+      "businessMutations": 0,
+      "realNetworkCalls": 0,
+      "queryCounts": {
+        "summary": 2,
+        "inspect": 3,
+        "unread": 2
+      },
+      "invalidations": {
+        "admin": 1,
+        "business": 1,
+        "otherAccount": 0,
+        "otherDomain": 0,
+        "otherModule": 0,
+        "disabled": 0
+      }
+    },
+    {
+      "name": "same-page old pending receipt ignored after account switches",
+      "WB": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js",
+      "dualQueryClients": true,
+      "broadcast": false,
+      "throwBroadcast": false,
+      "mainAndNativeFunctionReallyRendered": true,
+      "geometryAndObserverMocked": true,
+      "initial": {
+        "header": "77",
+        "detailStatus": "已读 · 已确认",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": null,
+        "verificationState": "confirmed",
+        "summarySyncState": "synced",
+        "visibleBadgeStatus": null
+      },
+      "transition": {
+        "header": "77",
+        "detailStatus": "已读 · 已确认",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": null,
+        "verificationState": "confirmed",
+        "summarySyncState": "synced",
+        "visibleBadgeStatus": null
+      },
+      "markAttempts": 1,
+      "fixtureSeen": true,
+      "returnListNew": "false",
+      "returnUnreadFilter": "[]",
+      "rowsOptions": {
+        "module": "customers",
+        "refs": [
+          "customer:81"
+        ],
+        "scope": "42",
+        "listReady": true,
+        "acknowledgeOnVisible": true,
+        "retainUnreadWhileVisible": false,
+        "expectedAccountKey": 10
+      },
+      "calls": [
+        {
+          "method": "mock.inspect",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 1,
+          "account": 9,
+          "seen": false,
+          "signal": true
+        },
+        {
+          "method": "mock.markDisplayed",
+          "input": {
+            "receipts": [
+              "OFFLINE_FAKE_RECEIPT_1"
+            ]
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.inspect",
+          "n": 2,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 10
+        },
+        {
+          "method": "mock.summary",
+          "n": 2,
+          "account": 10,
+          "seen": false,
+          "signal": true
+        },
+        {
+          "method": "mock.inspect",
+          "n": 3,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 10
+        },
+        {
+          "method": "mock.unreadRefs",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "scope": "42"
+          },
+          "seen": true
+        }
+      ],
+      "businessMutations": 0,
+      "realNetworkCalls": 0,
+      "queryCounts": {
+        "summary": 2,
+        "inspect": 3,
+        "unread": 1
+      },
+      "invalidations": {
+        "admin": 0,
+        "business": 0,
+        "otherAccount": 0,
+        "otherDomain": 0,
+        "otherModule": 0,
+        "disabled": 0
+      }
+    },
+    {
+      "name": "same-page old pending receipt ignored after disabled boundary",
+      "WB": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js",
+      "dualQueryClients": true,
+      "broadcast": false,
+      "throwBroadcast": false,
+      "mainAndNativeFunctionReallyRendered": true,
+      "geometryAndObserverMocked": true,
+      "initial": {
+        "header": "unknown",
+        "detailStatus": "账号或权限核验阻断，未读提醒未清除",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": null,
+        "verificationState": "blocked",
+        "summarySyncState": "disabled",
+        "visibleBadgeStatus": null
+      },
+      "transition": {
+        "header": "unknown",
+        "detailStatus": "账号或权限核验阻断，未读提醒未清除",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": null,
+        "verificationState": "blocked",
+        "summarySyncState": "disabled",
+        "visibleBadgeStatus": null
+      },
+      "markAttempts": 1,
+      "fixtureSeen": true,
+      "returnListNew": "false",
+      "returnUnreadFilter": "unavailable",
+      "rowsOptions": {
+        "module": "customers",
+        "refs": [
+          "customer:81"
+        ],
+        "scope": "42",
+        "listReady": true,
+        "acknowledgeOnVisible": true,
+        "retainUnreadWhileVisible": false,
+        "expectedAccountKey": 9
+      },
+      "calls": [
+        {
+          "method": "mock.inspect",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 1,
+          "account": 9,
+          "seen": false,
+          "signal": true
+        },
+        {
+          "method": "mock.markDisplayed",
+          "input": {
+            "receipts": [
+              "OFFLINE_FAKE_RECEIPT_1"
+            ]
+          },
+          "account": 9
+        }
+      ],
+      "businessMutations": 0,
+      "realNetworkCalls": 0,
+      "queryCounts": {
+        "summary": 1,
+        "inspect": 1,
+        "unread": 0
+      },
+      "invalidations": {
+        "admin": 0,
+        "business": 0,
+        "otherAccount": 0,
+        "otherDomain": 0,
+        "otherModule": 0,
+        "disabled": 0
+      }
+    },
+    {
+      "name": "same-page account merchant module and disabled isolation without broadcast",
+      "WB": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js",
+      "dualQueryClients": true,
+      "broadcast": false,
+      "throwBroadcast": false,
+      "mainAndNativeFunctionReallyRendered": true,
+      "geometryAndObserverMocked": true,
+      "initial": {
+        "header": "90",
+        "detailStatus": "已读 · 已确认",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": "seen",
+        "verificationState": "confirmed",
+        "summarySyncState": "synced",
+        "visibleBadgeStatus": null
+      },
+      "markAttempts": 1,
+      "fixtureSeen": true,
+      "returnListNew": "false",
+      "returnUnreadFilter": "[]",
+      "rowsOptions": {
+        "module": "customers",
+        "refs": [
+          "customer:81"
+        ],
+        "scope": "42",
+        "listReady": true,
+        "acknowledgeOnVisible": true,
+        "retainUnreadWhileVisible": false,
+        "expectedAccountKey": 9
+      },
+      "calls": [
+        {
+          "method": "mock.inspect",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.inspect",
+          "n": 2,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "99"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.inspect",
+          "n": 3,
+          "input": {
+            "module": "inventory",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 1,
+          "account": 9,
+          "seen": false,
+          "signal": true
+        },
+        {
+          "method": "mock.markDisplayed",
+          "input": {
+            "receipts": [
+              "OFFLINE_FAKE_RECEIPT_1"
+            ]
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.inspect",
+          "n": 4,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 2,
+          "account": 9,
+          "seen": true,
+          "signal": true
+        },
+        {
+          "method": "mock.inspect",
+          "n": 5,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.unreadRefs",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "scope": "42"
+          },
+          "seen": true
+        }
+      ],
+      "businessMutations": 0,
+      "realNetworkCalls": 0,
+      "queryCounts": {
+        "summary": 2,
+        "inspect": 5,
+        "unread": 1
+      },
+      "invalidations": {
+        "admin": 1,
+        "business": 1,
+        "otherAccount": 0,
+        "otherDomain": 0,
+        "otherModule": 0,
+        "disabled": 0
+      }
+    },
+    {
+      "name": "disabled unread filter remains unavailable and cannot become empty proof",
+      "WB": "/home/ubuntu/work/customer-consistency-release-20261122-0034/candidate/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js",
+      "dualQueryClients": true,
+      "broadcast": false,
+      "throwBroadcast": false,
+      "mainAndNativeFunctionReallyRendered": true,
+      "geometryAndObserverMocked": true,
+      "initial": {
+        "header": "90",
+        "detailStatus": "已读 · 已确认",
+        "mainMounted": true,
+        "refType": "function",
+        "markState": "seen",
+        "verificationState": "confirmed",
+        "summarySyncState": "synced",
+        "visibleBadgeStatus": null,
+        "filter": "unavailable"
+      },
+      "markAttempts": 1,
+      "fixtureSeen": true,
+      "returnListNew": "false",
+      "returnUnreadFilter": "unavailable",
+      "rowsOptions": {
+        "module": "customers",
+        "refs": [
+          "customer:81"
+        ],
+        "scope": "42",
+        "listReady": true,
+        "acknowledgeOnVisible": true,
+        "retainUnreadWhileVisible": false,
+        "expectedAccountKey": 9
+      },
+      "calls": [
+        {
+          "method": "mock.inspect",
+          "n": 1,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 1,
+          "account": 9,
+          "seen": false,
+          "signal": true
+        },
+        {
+          "method": "mock.markDisplayed",
+          "input": {
+            "receipts": [
+              "OFFLINE_FAKE_RECEIPT_1"
+            ]
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.inspect",
+          "n": 2,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        },
+        {
+          "method": "mock.summary",
+          "n": 2,
+          "account": 9,
+          "seen": true,
+          "signal": true
+        },
+        {
+          "method": "mock.inspect",
+          "n": 3,
+          "input": {
+            "module": "customers",
+            "refs": [
+              "customer:81"
+            ],
+            "scope": "42"
+          },
+          "account": 9
+        }
+      ],
+      "businessMutations": 0,
+      "realNetworkCalls": 0,
+      "queryCounts": {
+        "summary": 2,
+        "inspect": 3,
+        "unread": 0
+      },
+      "invalidations": {
+        "admin": 1,
+        "business": 1,
+        "otherAccount": 0,
+        "otherDomain": 0,
+        "otherModule": 0,
+        "disabled": 0
+      }
+    }
+  ],
+  "limits": [
+    "Exact final native IM functions extracted from supplied full WB bundles execute with original React/ReactDOM/React Query in JSDOM.",
+    "No business subcomponent activity: imported children are inert; context/get are successful fixtures.",
+    "Geometry/IntersectionObserver/BroadcastChannel are mocks, not production browser witnesses.",
+    "All summary/inspect/markDisplayed/unreadRefs calls are in-memory mocks; no real account authorization, signed receipt, RPC, persistent seen or production mark is proven.",
+    "No network/SSH/browser/DB/deployment/Git activity occurs in this test."
+  ]
+}

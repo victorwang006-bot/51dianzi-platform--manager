@@ -1,0 +1,83 @@
+{
+  "status": "PASS",
+  "scope": "Read-only static checks; only QA fixture/scripts edited",
+  "sourcePins": {
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/CustomerList.tsx": "a96ea86bedb3ea211c85ccd748a97e79e8f5b2c3e49899d2c6203794a73099bb",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/CustomerList.css": "8a8fd4992e64b336079dde967cb16d758420d2cd2cd178534d8b4a1610babab7",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/CustomerDetail.tsx": "2888e137aa2a6ca99e055df36c985d85e647c5a303244c79a72ca36aad576e31",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminNewInformation.tsx": "b2063fcc851cce2e2bbd57037fb50be6ba61c0422c4e91ddf91c576ce55908cd",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminNewInformationBadge.tsx": "9f7508c625e3f273b3c7195a5110e9695eff7531f9022b8d220fa43c7837a29c",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminNewInformationMenuBadge.tsx": "069e624af72c9243f7faa01731cd795b3653a6f45f0fc45f84d13c57747c66ae"
+  },
+  "layout": [
+    {
+      "wb": 0,
+      "beforeSHA": "792e2858756474bb402383109593bbc591386761656a1fb5ccf6c63d12a96c32",
+      "afterSHA": "b8ed2b8ff4cf9788b291c568b2e0e69db123337b79840b17f62db41ed8099b7e",
+      "exactInverse": true,
+      "patchCount": 2,
+      "slots": [
+        "data-independent finite table width",
+        "omit empty status wrapper; preserve all original status branches"
+      ],
+      "listFunction": "Jw",
+      "listSHA": "853d7134de2e3dd0bd73bd6ed8c0693beaba06069ddf145a2eca8994623757eb"
+    },
+    {
+      "wb": 1,
+      "beforeSHA": "6ffe72a5d81423eabfc6040604662ffc92788fa2ec83de4ad2f4f065e5c4278e",
+      "afterSHA": "71835d0dac01ae5dccec6539500386292994018bf3a9b8edf495a6a77ed3d958",
+      "exactInverse": true,
+      "patchCount": 2,
+      "slots": [
+        "data-independent finite table width",
+        "omit empty status wrapper; preserve all original status branches"
+      ],
+      "listFunction": "vt",
+      "listSHA": "41ce63269db99fec35ff49b4c5d958a06eadd328f98456ef0c6db575430868c9"
+    }
+  ],
+  "aliasBindings": {
+    "binding": {
+      "qe": "client/src/business/platform/client/src/hooks/usePageMemory#useListPositionRestore",
+      "we": "client/src/business/platform/client/src/lib/pageMemory#confirmCustomerFilters"
+    },
+    "calls": [
+      {
+        "alias": "qe",
+        "arguments": [
+          "u",
+          "!!C&&l&&i.ready&&!s.isPending&&!s.isError"
+        ],
+        "text": "qe(u,!!C&&l&&i.ready&&!s.isPending&&!s.isError)"
+      },
+      {
+        "alias": "we",
+        "arguments": [],
+        "text": "we()"
+      },
+      {
+        "alias": "we",
+        "arguments": [],
+        "text": "we()"
+      }
+    ],
+    "fixtureSHA": "2d847f939e04ff3e96297547375b5fc08644f45aa6257a86d305c12bb33af81a",
+    "correction": "Only offline QA alias binding swapped; native module and actual pageMemory unchanged"
+  },
+  "notificationGuards": {
+    "successfulMainRefUnchanged": true,
+    "errorLoadingNoRef": true,
+    "freshReceiptRetryBytesUnchanged": true,
+    "positiveAcceptedContractBytesUnchanged": true,
+    "incomingBroadcastHasNoRebroadcast": true
+  },
+  "css": {
+    "exactPreviousPrefix": true,
+    "exactSourceSuffix": true,
+    "sourceDerivedLocalFoundation": true,
+    "foundationSHA": "33b507a917eb96e7db1f070706da0a4f9addbdd9c52d69543cbe6a4ee9052c23",
+    "historicHeaderRulesExcluded": true,
+    "sha256": "cf40aaf6c37f2fa53c09fb2844dfd8e221c6330b50c7eb8a4af2a77c96d09b76"
+  }
+}

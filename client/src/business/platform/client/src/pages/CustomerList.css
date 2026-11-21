@@ -562,3 +562,132 @@
   white-space: nowrap;
   word-break: keep-all;
 }
+
+/* customer-layout-20261122 BEGIN — finite, data-independent list geometry.
+ * The name column alone absorbs 280–360px; the other seven total 1032px.
+ * Keep one scroll owner and the original sticky demand/follow-up actions. */
+.customer-list-page {
+  --customer-list-demand-width: 128px;
+  --customer-list-actions-width: 88px;
+  --customer-list-table-min-width: 1312px;
+  --customer-list-table-max-width: 1392px;
+}
+.customer-list-page .customer-list-table {
+  width: 100%;
+  min-width: var(--customer-list-table-min-width);
+  max-width: var(--customer-list-table-max-width);
+  table-layout: fixed;
+}
+.customer-list-page .customer-list-col-name { width: auto; }
+.customer-list-page .customer-list-col-industry { width: 112px; }
+.customer-list-page .customer-list-col-contacts { width: 244px; }
+.customer-list-page .customer-list-col-stage { width: 132px; }
+.customer-list-page .customer-list-col-owner { width: 96px; }
+.customer-list-page .customer-list-col-supply { width: 232px; }
+.customer-list-page .customer-list-table :is(th, td):nth-child(6) {
+  width: 232px;
+  min-width: 232px;
+  white-space: normal;
+}
+.customer-list-page .customer-list-name-line {
+  min-width: 0;
+  width: 100%;
+  min-height: 28px;
+  flex-wrap: nowrap;
+}
+.customer-list-page .customer-list-name-line .customer-list-name,
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .customer-list-page .customer-list-name-line .customer-list-name {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.customer-list-page .customer-list-name-line :is(.customer-list-star, .customer-list-unread-label) {
+  flex: 0 0 auto;
+}
+.customer-list-page .customer-list-name-statuses {
+  flex-wrap: wrap;
+  white-space: normal;
+}
+/* This is a minimum content area, not a fixed tr height. Exceptional status,
+ * contacts and retry content can increase the row without hiding any action. */
+.customer-list-page .customer-list-table .customer-list-supply-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  min-width: 0;
+  min-height: 28px;
+  max-width: 100%;
+}
+.customer-list-page .customer-list-supply-actions .customer-list-text-action-wrap {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+.customer-list-page .customer-list-supply-actions .customer-list-text-action {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  text-align: center;
+}
+/* Beat shared toolbar specificity locally; never alter the shared component. */
+.customer-list-page .d51-compact-list-toolbar .d51-compact-list-toolbar__row {
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  gap: 8px 12px;
+}
+.customer-list-page .d51-compact-list-toolbar .d51-compact-list-toolbar__filters {
+  flex: 1 1 0;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 8px;
+}
+.customer-list-page .d51-compact-list-toolbar .d51-compact-list-toolbar__actions {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  align-items: flex-start;
+  margin-inline-start: 0;
+}
+.customer-list-page .d51-compact-list-toolbar .d51-compact-list-search-group.customer-list-search-group {
+  flex: 1 1 240px;
+  min-width: min(220px, 100%);
+  max-width: 320px;
+}
+.customer-list-page .d51-compact-list-toolbar .customer-list-filter-actions {
+  flex: 0 0 auto;
+  align-items: flex-start;
+  max-width: 100%;
+}
+@media (max-width: 680px) {
+  .customer-list-page .d51-compact-list-toolbar .d51-compact-list-toolbar__row {
+    flex-wrap: wrap;
+  }
+  .customer-list-page .d51-compact-list-toolbar .d51-compact-list-toolbar__actions {
+    order: -1;
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .customer-list-page .d51-compact-list-toolbar .d51-compact-list-toolbar__filters {
+    flex-basis: 100%;
+  }
+  .customer-list-page .d51-compact-list-toolbar .d51-compact-list-search-group.customer-list-search-group {
+    flex-basis: 100%;
+    width: 100%;
+    max-width: 100%;
+  }
+  .customer-list-page .d51-compact-list-toolbar .customer-list-filter-actions {
+    flex: 1 1 100%;
+  }
+}
+/* customer-layout-20261122 END */

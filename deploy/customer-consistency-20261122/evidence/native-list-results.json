@@ -1,0 +1,5663 @@
+{
+  "offline": true,
+  "scope": "Full original native list functions with bounded business mocks; no React geometry claim from this suite.",
+  "workbenches": [
+    {
+      "wb": 0,
+      "source": {
+        "file": "/home/ubuntu/work/customer-consistency-release-20261122-0034/layout/tests/native-input/workbench-0.js",
+        "functionName": "Jw",
+        "byteOffset": 2287476,
+        "charOffset": 2246703,
+        "line": 315,
+        "functionBytes": 34756,
+        "bundleSHA256": "b8ed2b8ff4cf9788b291c568b2e0e69db123337b79840b17f62db41ed8099b7e",
+        "functionSHA256": "853d7134de2e3dd0bd73bd6ed8c0693beaba06069ddf145a2eca8994623757eb",
+        "module": "production top-level Jw",
+        "unmodifiedFunction": true
+      },
+      "states": 16,
+      "renders": 29,
+      "mutations": 0,
+      "history": [
+        {
+          "step": "unchecked",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": false,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 3,
+            "pageSize": 20
+          },
+          "rowIds": [
+            11,
+            12
+          ],
+          "nativeObservedRows": [
+            11,
+            12
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:11",
+              "customer:12"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": false,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 83,
+          "text": "我的客户全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户客户名称所属行业联系人 / 电话等级 / 阶段负责人供应库存需求录入跟进OFFLINE_CUSTOMER_11Offline industryA新线索Offline actor需求录入跟进OFFLINE_CUSTOMER_12Offline industryA新线索Offline actor需求录入跟进共 83 条 · 第 3 / 5 页上一页下一页",
+          "renderCount": 2,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "unchecked",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": false,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "unchecked",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 3,
+                  "pageSize": 20
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "unchecked",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    11,
+                    12
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "unchecked",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:11",
+                  "customer:12"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "unchecked",
+              "method": "mock.customerSupplySummary.query",
+              "args": {
+                "customerIds": [
+                  11,
+                  12
+                ],
+                "expectedEnterpriseId": 7,
+                "expectedActorUserId": 101
+              }
+            },
+            {
+              "step": "unchecked",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": false,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "unchecked",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 3,
+                  "pageSize": 20
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "unchecked",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    11,
+                    12
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "unchecked",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:11",
+                  "customer:12"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "checked-pending-stale-cache",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": false,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": []
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 0,
+          "text": "我的客户全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户正在核验未读客户…共 0 条 · 第 1 / 1 页上一页下一页",
+          "renderCount": 4,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "checked-pending-stale-cache",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "checked-pending-stale-cache",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": []
+                },
+                "options": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "step": "checked-pending-stale-cache",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "checked-pending-stale-cache",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "checked-pending-stale-cache",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "checked-pending-stale-cache",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": []
+                },
+                "options": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "step": "checked-pending-stale-cache",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "checked-pending-stale-cache",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "ids-ready-list-pending",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 0,
+          "text": "我的客户全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户共 0 条 · 第 1 / 1 页上一页下一页",
+          "renderCount": 6,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "ids-ready-list-pending",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "ids-ready-list-pending",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "ids-ready-list-pending",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "ids-ready-list-pending",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "ids-ready-list-pending",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "ids-ready-list-pending",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "ids-ready-list-pending",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "ids-ready-list-pending",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "success",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [
+            22,
+            24
+          ],
+          "nativeObservedRows": [
+            22,
+            24
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:22",
+              "customer:24"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 5,
+          "text": "我的客户全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户客户名称所属行业联系人 / 电话等级 / 阶段负责人供应库存需求录入跟进OFFLINE_CUSTOMER_22Offline industryA新线索Offline actor需求录入跟进OFFLINE_CUSTOMER_24Offline industryA新线索Offline actor需求录入跟进共 5 条 · 第 1 / 1 页上一页下一页",
+          "renderCount": 8,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "success",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "success",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "success",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    22,
+                    24
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "success",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:22",
+                  "customer:24"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "success",
+              "method": "mock.customerSupplySummary.query",
+              "args": {
+                "customerIds": [
+                  22,
+                  24
+                ],
+                "expectedEnterpriseId": 7,
+                "expectedActorUserId": 101
+              }
+            },
+            {
+              "step": "success",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "success",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "success",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    22,
+                    24
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "success",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:22",
+                  "customer:24"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "server-narrowing-violation",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "text": "我的客户全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户后台未正确限定未读客户，筛选暂不可用，请更新服务后重试",
+          "renderCount": 10,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "server-narrowing-violation",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "server-narrowing-violation",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "server-narrowing-violation",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "server-narrowing-violation",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "server-narrowing-violation",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "server-narrowing-violation",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "server-narrowing-violation",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "server-narrowing-violation",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "narrowing-retry-pending",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": false,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": []
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 0,
+          "text": "我的客户全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户正在核验未读客户…共 0 条 · 第 1 / 1 页上一页下一页",
+          "renderCount": 12,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "narrowing-retry-pending",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "narrowing-retry-pending",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": []
+                },
+                "options": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "step": "narrowing-retry-pending",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "narrowing-retry-pending",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "narrowing-retry-pending",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "narrowing-retry-pending",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": []
+                },
+                "options": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "step": "narrowing-retry-pending",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "narrowing-retry-pending",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "true-empty-stale-cache",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": false,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": []
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 0,
+          "text": "我的客户全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户没有未读客户共 0 条 · 第 1 / 1 页上一页下一页",
+          "renderCount": 13,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "true-empty-stale-cache",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "true-empty-stale-cache",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": []
+                },
+                "options": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "step": "true-empty-stale-cache",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "true-empty-stale-cache",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "unread-failed-stale-cache",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": false,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": []
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "text": "我的客户全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户OFFLINE_UNREAD_FAILURE",
+          "renderCount": 14,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "unread-failed-stale-cache",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "unread-failed-stale-cache",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": []
+                },
+                "options": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "step": "unread-failed-stale-cache",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "unread-failed-stale-cache",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "unread-retry-pending",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": false,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": []
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 0,
+          "text": "我的客户全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户正在核验未读客户…共 0 条 · 第 1 / 1 页上一页下一页",
+          "renderCount": 15,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "unread-retry-pending",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "unread-retry-pending",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": []
+                },
+                "options": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "step": "unread-retry-pending",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "unread-retry-pending",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "retry-success",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [
+            22,
+            24
+          ],
+          "nativeObservedRows": [
+            22,
+            24
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:22",
+              "customer:24"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 5,
+          "text": "我的客户全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户客户名称所属行业联系人 / 电话等级 / 阶段负责人供应库存需求录入跟进OFFLINE_CUSTOMER_22Offline industryA新线索Offline actor需求录入跟进OFFLINE_CUSTOMER_24Offline industryA新线索Offline actor需求录入跟进共 5 条 · 第 1 / 1 页上一页下一页",
+          "renderCount": 17,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "retry-success",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "retry-success",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "retry-success",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    22,
+                    24
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "retry-success",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:22",
+                  "customer:24"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "retry-success",
+              "method": "mock.customerSupplySummary.query",
+              "args": {
+                "customerIds": [
+                  22,
+                  24
+                ],
+                "expectedEnterpriseId": 7,
+                "expectedActorUserId": 101
+              }
+            },
+            {
+              "step": "retry-success",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "retry-success",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "retry-success",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    22,
+                    24
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "retry-success",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:22",
+                  "customer:24"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "unread-row-verification-failure",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [
+            22,
+            24
+          ],
+          "nativeObservedRows": [
+            22,
+            24
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:22",
+              "customer:24"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 5,
+          "text": "未读标识核验失败，未读提醒不会被清除。重试未读核验我的客户全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户客户名称所属行业联系人 / 电话等级 / 阶段负责人供应库存需求录入跟进OFFLINE_CUSTOMER_22Offline industryA新线索Offline actor需求录入跟进OFFLINE_CUSTOMER_24Offline industryA新线索Offline actor需求录入跟进共 5 条 · 第 1 / 1 页上一页下一页",
+          "renderCount": 18,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "unread-row-verification-failure",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "unread-row-verification-failure",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "unread-row-verification-failure",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    22,
+                    24
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "unread-row-verification-failure",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:22",
+                  "customer:24"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "unread-row-retry-success",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [
+            22,
+            24
+          ],
+          "nativeObservedRows": [
+            22,
+            24
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:22",
+              "customer:24"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 5,
+          "text": "我的客户全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户客户名称所属行业联系人 / 电话等级 / 阶段负责人供应库存需求录入跟进OFFLINE_CUSTOMER_22Offline industryA新线索Offline actor需求录入跟进OFFLINE_CUSTOMER_24Offline industryA新线索Offline actor需求录入跟进共 5 条 · 第 1 / 1 页上一页下一页",
+          "renderCount": 19,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "unread-row-retry-success",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "unread-row-retry-success",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "unread-row-retry-success",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    22,
+                    24
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "unread-row-retry-success",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:22",
+                  "customer:24"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "foreign-enterprise-result",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 0,
+          "text": "我的客户全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户没有符合当前筛选的未读客户可以新建客户，或调整筛选条件后再试。录入第一位客户共 0 条 · 第 1 / 1 页上一页下一页",
+          "renderCount": 21,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "foreign-enterprise-result",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "foreign-enterprise-result",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "foreign-enterprise-result",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "foreign-enterprise-result",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "foreign-enterprise-result",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "foreign-enterprise-result",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "foreign-enterprise-result",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "foreign-enterprise-result",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "foreign-recovery",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [
+            22,
+            24
+          ],
+          "nativeObservedRows": [
+            22,
+            24
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:22",
+              "customer:24"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 5,
+          "text": "我的客户全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户客户名称所属行业联系人 / 电话等级 / 阶段负责人供应库存需求录入跟进OFFLINE_CUSTOMER_22Offline industryA新线索Offline actor需求录入跟进OFFLINE_CUSTOMER_24Offline industryA新线索Offline actor需求录入跟进共 5 条 · 第 1 / 1 页上一页下一页",
+          "renderCount": 23,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "foreign-recovery",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "foreign-recovery",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "foreign-recovery",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    22,
+                    24
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "foreign-recovery",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:22",
+                  "customer:24"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "foreign-recovery",
+              "method": "mock.customerSupplySummary.query",
+              "args": {
+                "customerIds": [
+                  22,
+                  24
+                ],
+                "expectedEnterpriseId": 7,
+                "expectedActorUserId": 101
+              }
+            },
+            {
+              "step": "foreign-recovery",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "foreign-recovery",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "foreign-recovery",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    22,
+                    24
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "foreign-recovery",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:22",
+                  "customer:24"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "list-failure-stale-data",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "text": "我的客户全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户OFFLINE_LIST_FAILURE",
+          "renderCount": 25,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "list-failure-stale-data",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "list-failure-stale-data",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "list-failure-stale-data",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "list-failure-stale-data",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "list-failure-stale-data",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "list-failure-stale-data",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "list-failure-stale-data",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "list-failure-stale-data",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "cancel",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": false,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20
+          },
+          "rowIds": [
+            11,
+            12
+          ],
+          "nativeObservedRows": [
+            11,
+            12
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:11",
+              "customer:12"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": false,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 83,
+          "text": "我的客户全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户客户名称所属行业联系人 / 电话等级 / 阶段负责人供应库存需求录入跟进OFFLINE_CUSTOMER_11Offline industryA新线索Offline actor需求录入跟进OFFLINE_CUSTOMER_12Offline industryA新线索Offline actor需求录入跟进共 83 条 · 第 1 / 5 页上一页下一页",
+          "renderCount": 29,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "cancel",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": false,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "cancel",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "cancel",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    11,
+                    12
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "cancel",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:11",
+                  "customer:12"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "cancel",
+              "method": "mock.customerSupplySummary.query",
+              "args": {
+                "customerIds": [
+                  11,
+                  12
+                ],
+                "expectedEnterpriseId": 7,
+                "expectedActorUserId": 101
+              }
+            },
+            {
+              "step": "cancel",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": false,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "cancel",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "cancel",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    11,
+                    12
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "cancel",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:11",
+                  "customer:12"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "wb": 1,
+      "source": {
+        "file": "/home/ubuntu/work/customer-consistency-release-20261122-0034/layout/tests/native-input/workbench-1.js",
+        "functionName": "vt",
+        "byteOffset": 3976472,
+        "charOffset": 3898970,
+        "line": 799,
+        "functionBytes": 31487,
+        "bundleSHA256": "71835d0dac01ae5dccec6539500386292994018bf3a9b8edf495a6a77ed3d958",
+        "functionSHA256": "41ce63269db99fec35ff49b4c5d958a06eadd328f98456ef0c6db575430868c9",
+        "module": "__CW_CUSTOMER_LIST_UPDATED_20261116_GET",
+        "unmodifiedFunction": true
+      },
+      "states": 16,
+      "renders": 30,
+      "mutations": 0,
+      "history": [
+        {
+          "step": "unchecked",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": false,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 3,
+            "pageSize": 20
+          },
+          "rowIds": [
+            11,
+            12
+          ],
+          "nativeObservedRows": [
+            11,
+            12
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:11",
+              "customer:12"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": false,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 83,
+          "text": "全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户客户名称所属行业联系人 / 电话等级 / 阶段负责人供应库存需求录入跟进OFFLINE_CUSTOMER_11Offline industryA新线索Offline actor需求录入跟进OFFLINE_CUSTOMER_12Offline industryA新线索Offline actor需求录入跟进共 83 条 · 第 3 / 5 页上一页下一页",
+          "renderCount": 3,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "unchecked",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": false,
+                "listReady": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "unchecked",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 3,
+                  "pageSize": 20
+                },
+                "options": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "step": "unchecked",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "unchecked",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "unchecked",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": false,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "unchecked",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 3,
+                  "pageSize": 20
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "unchecked",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    11,
+                    12
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "unchecked",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:11",
+                  "customer:12"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "unchecked",
+              "method": "mock.customerSupplySummary.query",
+              "args": {
+                "customerIds": [
+                  11,
+                  12
+                ],
+                "expectedEnterpriseId": 7,
+                "expectedActorUserId": 101
+              }
+            },
+            {
+              "step": "unchecked",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": false,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "unchecked",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 3,
+                  "pageSize": 20
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "unchecked",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    11,
+                    12
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "unchecked",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:11",
+                  "customer:12"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "checked-pending-stale-cache",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": false,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": []
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "text": "全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户正在核验未读客户…",
+          "renderCount": 5,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "checked-pending-stale-cache",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "checked-pending-stale-cache",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": []
+                },
+                "options": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "step": "checked-pending-stale-cache",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "checked-pending-stale-cache",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "checked-pending-stale-cache",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "checked-pending-stale-cache",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": []
+                },
+                "options": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "step": "checked-pending-stale-cache",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "checked-pending-stale-cache",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "ids-ready-list-pending",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "text": "全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户",
+          "renderCount": 7,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "ids-ready-list-pending",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "ids-ready-list-pending",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "ids-ready-list-pending",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "ids-ready-list-pending",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "ids-ready-list-pending",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "ids-ready-list-pending",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "ids-ready-list-pending",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "ids-ready-list-pending",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "success",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [
+            22,
+            24
+          ],
+          "nativeObservedRows": [
+            22,
+            24
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:22",
+              "customer:24"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 5,
+          "text": "全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户客户名称所属行业联系人 / 电话等级 / 阶段负责人供应库存需求录入跟进OFFLINE_CUSTOMER_22Offline industryA新线索Offline actor需求录入跟进OFFLINE_CUSTOMER_24Offline industryA新线索Offline actor需求录入跟进共 5 条 · 第 1 / 1 页上一页下一页",
+          "renderCount": 9,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "success",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "success",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "success",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    22,
+                    24
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "success",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:22",
+                  "customer:24"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "success",
+              "method": "mock.customerSupplySummary.query",
+              "args": {
+                "customerIds": [
+                  22,
+                  24
+                ],
+                "expectedEnterpriseId": 7,
+                "expectedActorUserId": 101
+              }
+            },
+            {
+              "step": "success",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "success",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "success",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    22,
+                    24
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "success",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:22",
+                  "customer:24"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "server-narrowing-violation",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "text": "全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户后台未正确限定未读客户，筛选暂不可用，请更新服务后重试",
+          "renderCount": 11,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "server-narrowing-violation",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "server-narrowing-violation",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "server-narrowing-violation",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "server-narrowing-violation",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "server-narrowing-violation",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "server-narrowing-violation",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "server-narrowing-violation",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "server-narrowing-violation",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "narrowing-retry-pending",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": false,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": []
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "text": "全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户正在核验未读客户…",
+          "renderCount": 13,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "narrowing-retry-pending",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "narrowing-retry-pending",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": []
+                },
+                "options": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "step": "narrowing-retry-pending",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "narrowing-retry-pending",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "narrowing-retry-pending",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "narrowing-retry-pending",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": []
+                },
+                "options": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "step": "narrowing-retry-pending",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "narrowing-retry-pending",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "true-empty-stale-cache",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": false,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": []
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "text": "全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户没有未读客户",
+          "renderCount": 14,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "true-empty-stale-cache",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "true-empty-stale-cache",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": []
+                },
+                "options": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "step": "true-empty-stale-cache",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "true-empty-stale-cache",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "unread-failed-stale-cache",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": false,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": []
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "text": "全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户OFFLINE_UNREAD_FAILURE",
+          "renderCount": 15,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "unread-failed-stale-cache",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "unread-failed-stale-cache",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": []
+                },
+                "options": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "step": "unread-failed-stale-cache",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "unread-failed-stale-cache",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "unread-retry-pending",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": false,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": []
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "text": "全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户正在核验未读客户…",
+          "renderCount": 16,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "unread-retry-pending",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "unread-retry-pending",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": []
+                },
+                "options": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "step": "unread-retry-pending",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "unread-retry-pending",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "retry-success",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [
+            22,
+            24
+          ],
+          "nativeObservedRows": [
+            22,
+            24
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:22",
+              "customer:24"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 5,
+          "text": "全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户客户名称所属行业联系人 / 电话等级 / 阶段负责人供应库存需求录入跟进OFFLINE_CUSTOMER_22Offline industryA新线索Offline actor需求录入跟进OFFLINE_CUSTOMER_24Offline industryA新线索Offline actor需求录入跟进共 5 条 · 第 1 / 1 页上一页下一页",
+          "renderCount": 18,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "retry-success",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "retry-success",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "retry-success",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    22,
+                    24
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "retry-success",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:22",
+                  "customer:24"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "retry-success",
+              "method": "mock.customerSupplySummary.query",
+              "args": {
+                "customerIds": [
+                  22,
+                  24
+                ],
+                "expectedEnterpriseId": 7,
+                "expectedActorUserId": 101
+              }
+            },
+            {
+              "step": "retry-success",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "retry-success",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "retry-success",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    22,
+                    24
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "retry-success",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:22",
+                  "customer:24"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "unread-row-verification-failure",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [
+            22,
+            24
+          ],
+          "nativeObservedRows": [
+            22,
+            24
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:22",
+              "customer:24"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 5,
+          "text": "未读标识核验失败，未读提醒不会被清除。重试未读核验全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户客户名称所属行业联系人 / 电话等级 / 阶段负责人供应库存需求录入跟进OFFLINE_CUSTOMER_22Offline industryA新线索Offline actor需求录入跟进OFFLINE_CUSTOMER_24Offline industryA新线索Offline actor需求录入跟进共 5 条 · 第 1 / 1 页上一页下一页",
+          "renderCount": 19,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "unread-row-verification-failure",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "unread-row-verification-failure",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "unread-row-verification-failure",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    22,
+                    24
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "unread-row-verification-failure",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:22",
+                  "customer:24"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "unread-row-retry-success",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [
+            22,
+            24
+          ],
+          "nativeObservedRows": [
+            22,
+            24
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:22",
+              "customer:24"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 5,
+          "text": "全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户客户名称所属行业联系人 / 电话等级 / 阶段负责人供应库存需求录入跟进OFFLINE_CUSTOMER_22Offline industryA新线索Offline actor需求录入跟进OFFLINE_CUSTOMER_24Offline industryA新线索Offline actor需求录入跟进共 5 条 · 第 1 / 1 页上一页下一页",
+          "renderCount": 20,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "unread-row-retry-success",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "unread-row-retry-success",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "unread-row-retry-success",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    22,
+                    24
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "unread-row-retry-success",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:22",
+                  "customer:24"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "foreign-enterprise-result",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "text": "全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户没有符合当前筛选的未读客户可录入客户或调整筛选。录入第一位客户",
+          "renderCount": 22,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "foreign-enterprise-result",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "foreign-enterprise-result",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "foreign-enterprise-result",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "foreign-enterprise-result",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "foreign-enterprise-result",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "foreign-enterprise-result",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "foreign-enterprise-result",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "foreign-enterprise-result",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "foreign-recovery",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [
+            22,
+            24
+          ],
+          "nativeObservedRows": [
+            22,
+            24
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:22",
+              "customer:24"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 5,
+          "text": "全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户客户名称所属行业联系人 / 电话等级 / 阶段负责人供应库存需求录入跟进OFFLINE_CUSTOMER_22Offline industryA新线索Offline actor需求录入跟进OFFLINE_CUSTOMER_24Offline industryA新线索Offline actor需求录入跟进共 5 条 · 第 1 / 1 页上一页下一页",
+          "renderCount": 24,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "foreign-recovery",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "foreign-recovery",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "foreign-recovery",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    22,
+                    24
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "foreign-recovery",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:22",
+                  "customer:24"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "foreign-recovery",
+              "method": "mock.customerSupplySummary.query",
+              "args": {
+                "customerIds": [
+                  22,
+                  24
+                ],
+                "expectedEnterpriseId": 7,
+                "expectedActorUserId": 101
+              }
+            },
+            {
+              "step": "foreign-recovery",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "foreign-recovery",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "foreign-recovery",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    22,
+                    24
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "foreign-recovery",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:22",
+                  "customer:24"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "list-failure-stale-data",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": true,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20,
+            "customerIds": [
+              22,
+              24,
+              29,
+              30,
+              31
+            ]
+          },
+          "rowIds": [],
+          "nativeObservedRows": [],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [],
+            "scope": "7",
+            "listReady": false,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": true,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": null,
+          "text": "全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户OFFLINE_LIST_FAILURE",
+          "renderCount": 26,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "list-failure-stale-data",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "list-failure-stale-data",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "list-failure-stale-data",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "list-failure-stale-data",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "list-failure-stale-data",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": true,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "list-failure-stale-data",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20,
+                  "customerIds": [
+                    22,
+                    24,
+                    29,
+                    30,
+                    31
+                  ]
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "list-failure-stale-data",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": false,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "list-failure-stale-data",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [],
+                "scope": "7",
+                "listReady": false,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        },
+        {
+          "step": "cancel",
+          "fullFunctionReturnedJSX": true,
+          "noMapException": true,
+          "checked": false,
+          "listQueryEnabled": true,
+          "listInput": {
+            "keyword": "",
+            "scope": "mine",
+            "starMode": "assignee",
+            "expectedEnterpriseId": 7,
+            "expectedActorUserId": 101,
+            "archived": false,
+            "due": "all",
+            "starredOnly": false,
+            "page": 1,
+            "pageSize": 20
+          },
+          "rowIds": [
+            11,
+            12
+          ],
+          "nativeObservedRows": [
+            11,
+            12
+          ],
+          "unreadRowsInput": {
+            "module": "customers",
+            "refs": [
+              "customer:11",
+              "customer:12"
+            ],
+            "scope": "7",
+            "listReady": true,
+            "acknowledgeOnVisible": false,
+            "retainUnreadWhileVisible": false,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "unreadRefsInput": {
+            "module": "customers",
+            "scope": "7",
+            "enabled": false,
+            "listReady": true,
+            "expectedAccountKey": "offline-admin-7"
+          },
+          "serverTotalRendered": 83,
+          "text": "全企业全部等级A级客户B级客户C级客户D级客户全部跟进今日待跟进已逾期只看未读搜索重置更多筛选录入客户客户名称所属行业联系人 / 电话等级 / 阶段负责人供应库存需求录入跟进OFFLINE_CUSTOMER_11Offline industryA新线索Offline actor需求录入跟进OFFLINE_CUSTOMER_12Offline industryA新线索Offline actor需求录入跟进共 83 条 · 第 1 / 5 页上一页下一页",
+          "renderCount": 30,
+          "mutations": 0,
+          "events": [
+            {
+              "step": "cancel",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": false,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "cancel",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "cancel",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    11,
+                    12
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "cancel",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:11",
+                  "customer:12"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "cancel",
+              "method": "mock.customerSupplySummary.query",
+              "args": {
+                "customerIds": [
+                  11,
+                  12
+                ],
+                "expectedEnterpriseId": 7,
+                "expectedActorUserId": 101
+              }
+            },
+            {
+              "step": "cancel",
+              "method": "mock.unreadRefs",
+              "args": {
+                "module": "customers",
+                "scope": "7",
+                "enabled": false,
+                "listReady": true,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            },
+            {
+              "step": "cancel",
+              "method": "mock.customer.list.useQuery",
+              "args": {
+                "input": {
+                  "keyword": "",
+                  "scope": "mine",
+                  "starMode": "assignee",
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101,
+                  "archived": false,
+                  "due": "all",
+                  "starredOnly": false,
+                  "page": 1,
+                  "pageSize": 20
+                },
+                "options": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "step": "cancel",
+              "method": "mock.customer.contactsSummary.useQuery",
+              "args": {
+                "input": {
+                  "customerIds": [
+                    11,
+                    12
+                  ],
+                  "expectedEnterpriseId": 7,
+                  "expectedActorUserId": 101
+                },
+                "options": {
+                  "enabled": true,
+                  "retry": false,
+                  "staleTime": 0,
+                  "refetchOnMount": "always"
+                }
+              }
+            },
+            {
+              "step": "cancel",
+              "method": "mock.unreadRows",
+              "args": {
+                "module": "customers",
+                "refs": [
+                  "customer:11",
+                  "customer:12"
+                ],
+                "scope": "7",
+                "listReady": true,
+                "acknowledgeOnVisible": false,
+                "retainUnreadWhileVisible": false,
+                "expectedAccountKey": "offline-admin-7"
+              }
+            }
+          ],
+          "checkboxLocation": "first child of original customer-list-filter-actions",
+          "checkboxHandler": "native onChange event.target.checked"
+        }
+      ],
+      "status": "PASS"
+    }
+  ],
+  "status": "PASS"
+}

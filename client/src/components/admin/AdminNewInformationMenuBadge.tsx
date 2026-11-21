@@ -27,6 +27,7 @@ export function AdminNewInformationMenuBadge({ module, source }: {
   const lastKnown = summary.isModuleLastKnown(module);
   const count = module === "sales" && source && total !== undefined
     ? data?.children?.[source] ?? (data?.available ? 0 : undefined) : total;
-  return <AdminNewInformationBadge count={count} placement="nav" lastKnown={lastKnown}
+  if (summary.syncState(module) === "disabled") return null;
+  return <AdminNewInformationBadge count={count} placement="nav" lastKnown={lastKnown} updateState={summary.syncState(module)}
     ariaLabel={count === undefined ? undefined : `${labels[module]}${source === "business" ? "·业务订单" : source === "mall" ? "·商城订单" : ""}：${count}条未查看新信息${lastKnown ? "（上次成功查询，当前更新失败）" : ""}`} />;
 }
