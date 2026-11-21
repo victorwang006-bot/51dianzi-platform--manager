@@ -29,7 +29,7 @@ vi.mock("../../../../../api/business-trpc", () => ({
 }));
 vi.mock("../channelInventory/FactoryMaterialPublish", () => ({ useFactoryMaterialPublish: (props: any) => {
   runtime.publish = props;
-  return { dialog: null, action: (row: any) => React.createElement(React.Fragment, null,
+  return { dialog: null, status: (row: any) => row.publicationStatus, previewAction: () => React.createElement(React.Fragment), action: (row: any) => React.createElement(React.Fragment, null,
     React.createElement("button", { className: "ci-inline-link", disabled: !props.available || !props.authorized || row.canPublish !== true }, "发布")) };
 } }));
 vi.mock("../channelInventory/ChannelInventorySourcePanel", async importOriginal => ({
@@ -118,21 +118,21 @@ describe("customer inventory uses the main Host's compact defaults", () => {
   });
   it("has the same nine columns, widths, copy model, price precision and compact edit/more actions", async () => {
     await render();
-    expect([...host.querySelectorAll("th")].map(cell => cell.textContent)).toEqual(["", "型号", "品牌", "负责人", "来源客户", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "操作"]);
-    expect([...host.querySelectorAll<HTMLTableColElement>("col")].map(col => col.dataset.column)).toEqual(["selection", ...DEFAULT_CHANNEL_INVENTORY_COLUMNS]);
+    expect([...host.querySelectorAll("th")].map(cell => cell.textContent)).toEqual(["", "型号", "品牌", "负责人", "来源客户", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "上架状态", "操作"]);
+    expect([...host.querySelectorAll<HTMLTableColElement>("col")].map(col => col.dataset.column)).toEqual(["selection", ...DEFAULT_CHANNEL_INVENTORY_COLUMNS.flatMap(id => id === "actions" ? ["publication", id] : [id])]);
     const layout = channelInventoryColumnLayout(DEFAULT_CHANNEL_INVENTORY_COLUMNS, false);
-    expect([...host.querySelectorAll<HTMLTableColElement>("col")].map(col => col.style.width)).toEqual(["36px", ...layout.visible.map(col => `${col.width}px`)]);
-    expect(host.querySelector<HTMLTableElement>("table")?.style.getPropertyValue("--ci-stock-min-width")).toBe(`${layout.minWidth + 36}px`);
-    expect(host.querySelectorAll("tbody tr td")).toHaveLength(10);
+    expect([...host.querySelectorAll<HTMLTableColElement>("col")].map(col => col.style.width)).toEqual(["36px", ...layout.visible.flatMap(col => col.id === "actions" ? ["80px", `${col.width + 80}px`] : [`${col.width}px`])]);
+    expect(host.querySelector<HTMLTableElement>("table")?.style.getPropertyValue("--ci-stock-min-width")).toBe(`${layout.minWidth + 196}px`);
+    expect(host.querySelectorAll("tbody tr td")).toHaveLength(11);
     expect(host.querySelector(".ci-material-qty-col.ci-number")?.textContent).toBe("0");
     expect(host.querySelector("td.ci-material-price-col")?.textContent).toBe("¥0.000000000001未税");
     expect(host.querySelector('.ci-part-copy-button[aria-label="复制完整型号：MODEL-SUFFIX/EXACT"]')).not.toBeNull();
     expect(host.querySelector("td.ci-material-lead-col, td.ci-material-date-col")).toBeNull();
-    expect([...host.querySelectorAll(".ci-col-actions .ci-row-actions button")].map(button => button.textContent)).toEqual(["编辑", "删除", "更多"]);
+    expect([...host.querySelectorAll(".ci-col-actions .ci-row-actions button")].map(button => button.textContent)).toEqual(["发布", "编辑", "删除", "更多"]);
     expect(host.querySelector(".ci-flat-view .ci-compact-stock-table")).not.toBeNull();
     expect(MaterialEditPanel).toBe(SharedMaterialEditPanel);
     const css = readFileSync("client/src/business/platform/client/src/components/customers/CustomerChannelInventory.css", "utf8");
-    expect(css).not.toMatch(/--ci-stock-min-width|\.ci-row-actions\s*\{|\.ci-material-part-col\s*\{/);
+    expect(css).not.toMatch(/--ci-stock-min-width|\.ci-material-part-col\s*\{/);
   });
   it("keeps authorized CRM customer independent from both marketplace references and legacy channel hints", async () => {
     await render();
@@ -165,8 +165,8 @@ describe("customer inventory uses the main Host's compact defaults", () => {
     if (state === "error") runtime.list.mockRejectedValueOnce(new Error("synthetic list failure"));
     if (state === "loading") runtime.list.mockImplementationOnce(() => new Promise(() => undefined));
     await render({ enabled: state !== "disabled" });
-    expect(host.querySelectorAll("thead th")).toHaveLength(10); expect(host.querySelectorAll("col")).toHaveLength(10);
-    expect(host.querySelector<HTMLTableCellElement>("tbody .ci-empty")?.colSpan).toBe(10);
+    expect(host.querySelectorAll("thead th")).toHaveLength(11); expect(host.querySelectorAll("col")).toHaveLength(11);
+    expect(host.querySelector<HTMLTableCellElement>("tbody .ci-empty")?.colSpan).toBe(11);
     expect(Boolean(host.querySelector(".customer-stock-empty"))).toBe(state === "unbound" || state === "empty");
     expect(runtime.lookup).not.toHaveBeenCalled();
     expect(host.querySelector('[aria-label="客户渠道库存分页"]')?.parentElement?.querySelector(".ci-tablewrap nav")).toBeFalsy();
@@ -219,7 +219,7 @@ describe("customer source/edit grants are the same fail-closed gate", () => {
   it("keeps notes/native publish boundaries independent without broadening inventory edit", async () => {
     runtime.scope.officialInventoryPermissions.note = false; runtime.scope.officialInventoryPermissions.publish = false;
     await render(); await more(); expect(document.body.textContent).not.toContain("本人备注");
-    expect(runtime.publish.available).toBe(false); expect(required(document.querySelector<HTMLButtonElement>('[role="menu"] button')).disabled).toBe(true);
+    expect(runtime.publish.available).toBe(false); expect(named("发布").disabled).toBe(true);
     await click(named("备注（3）")); expect(runtime.panel.canWriteNote).toBe(false); expect(runtime.panel.canAddNote).toBe(false);
   });
 });

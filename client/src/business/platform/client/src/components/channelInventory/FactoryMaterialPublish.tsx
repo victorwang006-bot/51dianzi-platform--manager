@@ -110,6 +110,7 @@ export function useFactoryMaterialPublish(props: PublishProps) {
   const [session, setSession] = useState<{
     scopeKey: string;
     row: FactoryMaterialPublishRow;
+    mode: "publish" | "unpublish" | "preview";
   } | null>(null);
   const [receipt, setReceipt] = useState<{
     scopeKey: string;
@@ -156,12 +157,12 @@ export function useFactoryMaterialPublish(props: PublishProps) {
       latest.current.rows.some(
         row => row.id === active.row.id && row.canPublish === true
       ));
-  const open = (row: FactoryMaterialPublishRow) => {
+  const open = (row: FactoryMaterialPublishRow, mode: "publish" | "unpublish" | "preview") => {
     if (!current() || !props.context || row.canPublish !== true) return;
     // A list hint is never reception evidence. Query only after selecting a row.
     const action = () => {
       if (!current() || !latest.current.proofReady || !latest.current.rows.some(item => item.id === row.id && item.revision === row.revision && item.canPublish === true)) return;
-      setSession({ scopeKey: authorityKey, row: {
+      setSession({ scopeKey: authorityKey, mode, row: {
         id: row.id, revision: row.revision, partNumber: row.partNumber,
         brand: row.brand, qty: row.qty, price: row.price,
         canPublish: row.canPublish, publicationStatus: row.publicationStatus,
@@ -169,15 +170,17 @@ export function useFactoryMaterialPublish(props: PublishProps) {
     };
     props.onAction ? props.onAction(action) : action();
   };
-  const action = (row: FactoryMaterialPublishRow) => {
-    const published =
-      row.publicationStatus === "published" ||
-      (receipt?.scopeKey === authorityKey &&
+  const status = (row: FactoryMaterialPublishRow) => {
+    return receipt?.scopeKey === authorityKey &&
         receipt.result.materialId === row.id &&
         receipt.result.revision === row.revision &&
-        receipt.proofVersion === props.proofVersion);
+        receipt.proofVersion === props.proofVersion
+      ? receipt.result.status : row.publicationStatus;
+  };
+  const action = (row: FactoryMaterialPublishRow) => {
+    const published = status(row) === "published";
     const reason = published
-      ? "该材料已发布"
+      ? !props.authorized || row.canPublish !== true ? "当前账号没有该材料的上下架权限" : undefined
       : factoryMaterialPublishDisabledReason(row, props.authorized);
     return (
       <React.Fragment>
@@ -194,26 +197,30 @@ export function useFactoryMaterialPublish(props: PublishProps) {
         title={reason}
         onClick={() => {
           if (!current() || reason || !props.context) return;
-          open(row);
+          open({ ...row, publicationStatus: published ? "published" : "unpublished" }, published ? "unpublish" : "publish");
         }}
       >
-        {published ? "已发布" : "发布"}
+        {published ? "下架" : "上架"}
       </button>
-      {published && props.authorized && row.canPublish === true ? (
-        <button type="button" className="ci-inline-link" data-factory-reception-action
-          disabled={!props.available || !props.context || Boolean(active)}
-          onClick={() => open({ ...row, publicationStatus: "published" })}>接待预览</button>
-      ) : null}
+      {published ? <a className="ci-inline-link" data-factory-view-front
+        href={`https://51dianzi.com/search?q=${encodeURIComponent(row.partNumber)}&brand=${encodeURIComponent(row.brand)}`}
+        target="_blank" rel="noopener noreferrer">查看前台</a> : null}
       </React.Fragment>
     );
   };
+  const previewAction = (row: FactoryMaterialPublishRow) => status(row) === "published" && props.authorized && row.canPublish === true
+    ? <button type="button" className="ci-inline-link" data-factory-reception-action
+        disabled={!props.available || !props.context || Boolean(active)}
+        onClick={() => open({ ...row, publicationStatus: "published" }, "preview")}>接待预览</button>
+    : <React.Fragment />;
   return {
-    action,
+    action, previewAction, status,
     dialog:
       active && !permissionRevoked ? (
         <FactoryMaterialPublishConfirmation
           key={`${active.scopeKey}:${active.row.id}`}
           row={active.row}
+          mode={active.mode}
           context={props.context!}
           isCurrent={current}
           onCancel={() => setSession(null)}
@@ -235,6 +242,7 @@ export function useFactoryMaterialPublish(props: PublishProps) {
 
 type ConfirmationProps = {
   row: FactoryMaterialPublishRow;
+  mode?: "publish" | "unpublish" | "preview";
   context: InventoryContext;
   isCurrent: () => boolean;
   onCancel: () => void;
@@ -252,7 +260,9 @@ export function FactoryMaterialPublishConfirmation(props: ConfirmationProps) {
     retry: false, trpc: { abortOnUnmount: true } });
   const evidence = previewFactoryMaterialReceptionResultSchema.safeParse(preview.data);
   const previewVerified = !preview.isFetching && !preview.error && evidence.success;
-  const readOnly = props.row.publicationStatus === "published";
+  const mode = props.mode ?? (props.row.publicationStatus === "published" ? "preview" : "publish");
+  const readOnly = mode === "preview";
+  const unpublish = mode === "unpublish";
   const [busy, setBusy] = useState(false);
   const [locked, setLocked] = useState(false);
   const [message, setMessage] = useState("");
@@ -273,8 +283,10 @@ export function FactoryMaterialPublishConfirmation(props: ConfirmationProps) {
     if (
       !current() ||
       busyRef.current ||
-      (!previewVerified && !locked) ||
-      factoryMaterialPublishDisabledReason(props.row, true)
+      readOnly ||
+      (!unpublish && !previewVerified && !locked) ||
+      (!unpublish && factoryMaterialPublishDisabledReason(props.row, true)) ||
+      (unpublish && (!props.row.canPublish || props.row.publicationStatus !== "published" || !Number.isSafeInteger(props.row.revision) || props.row.revision <= 0))
     )
       return;
     frozen.current ??= {
@@ -283,6 +295,7 @@ export function FactoryMaterialPublishConfirmation(props: ConfirmationProps) {
       requestId: inventoryRequestId(),
       expectedEnterpriseId: props.context.expectedEnterpriseId,
       expectedActorUserId: props.context.expectedActorUserId,
+      ...(unpublish ? { published: false } : {}),
     };
     const payload = frozen.current;
     busyRef.current = true;
@@ -293,13 +306,13 @@ export function FactoryMaterialPublishConfirmation(props: ConfirmationProps) {
       if (!current()) return;
       if (
         result.materialId !== payload.materialId ||
-        result.status !== "published" ||
+        result.status !== (payload.published === false ? "unpublished" : "published") ||
         typeof result.publicId !== "string" ||
         !/^ocp_[a-f0-9]{32}$/.test(result.publicId) ||
         !Number.isSafeInteger(result.revision) ||
         result.revision !== payload.expectedRevision
       )
-        throw new Error("发布返回结果无效，尚未确认发布成功。");
+        throw new Error("上下架返回结果无效，尚未确认操作成功。");
       frozen.current = null;
       props.onPublished(result);
     } catch (error) {
@@ -317,15 +330,15 @@ export function FactoryMaterialPublishConfirmation(props: ConfirmationProps) {
   const price = factoryMaterialPublicPrice(props.row.price);
   return (
     <InventoryConfirmation
-      title={readOnly ? "材料接待预览" : "确认发布材料"}
+      title={readOnly ? "材料接待预览" : unpublish ? "确认下架材料" : "确认上架材料"}
       busy={busy}
       locked={locked}
-      disabled={!readOnly && !previewVerified && !locked}
+      disabled={!readOnly && !unpublish && !previewVerified && !locked}
       onCancel={props.onCancel}
       onConfirm={() => { if (readOnly) props.onCancel(); else void confirm(); }}
-      confirmLabel={readOnly ? "关闭" : "确认发布"}
+      confirmLabel={readOnly ? "关闭" : unpublish ? "确认下架" : "确认上架"}
     >
-      <p>{readOnly ? "以下材料已公开展示。" : "以下材料将公开展示。"}不会公开渠道来源、联系人或内部备注。</p>
+      <p>{unpublish ? "下架后，以下材料不再展示在前台渠道库存；原库存、上传文件和历史询价保留。" : readOnly ? "以下材料已公开展示。" : "以下材料将公开展示。"}不会公开渠道来源、联系人或内部备注。</p>
       <p data-factory-reception-preview>
         {preview.isFetching
           ? "51电子网工厂渠道接待：正在核验当前实际接待员工…"

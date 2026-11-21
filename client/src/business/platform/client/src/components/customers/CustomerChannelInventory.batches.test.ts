@@ -19,7 +19,7 @@ vi.mock("../../../../../api/business-trpc", () => ({
   trpc: { useUtils: () => rt.utils, channelInventory: {
     updateTeamMaterial: { useMutation: () => ({ mutateAsync: rt.update }) }, deleteMaterials: { useMutation: () => ({ mutateAsync: rt.remove }) } } },
 }));
-vi.mock("../channelInventory/FactoryMaterialPublish", () => ({ useFactoryMaterialPublish: () => ({ dialog: null, action: () => React.createElement(React.Fragment) }) }));
+vi.mock("../channelInventory/FactoryMaterialPublish", () => ({ useFactoryMaterialPublish: () => ({ dialog: null, status: (row: any) => row.publicationStatus, previewAction: () => React.createElement(React.Fragment), action: () => React.createElement(React.Fragment) }) }));
 import { CustomerChannelInventory, type CustomerChannelInventoryProps } from "./CustomerChannelInventory";
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 const identity = { enterpriseId: 31, actorUserId: 7, key: "AUTH-A" };

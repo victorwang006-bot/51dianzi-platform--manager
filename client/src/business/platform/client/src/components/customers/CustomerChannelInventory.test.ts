@@ -35,7 +35,7 @@ vi.mock("../channelInventory/ChannelInventorySourcePanel", async importOriginal 
 vi.mock("../channelInventory/CollaborationNotesPanel", () => ({ CollaborationNotesPanel: (props: any) => { runtime.panel = props; return React.createElement("div", { role: "dialog" }, "NOTES"); } }));
 vi.mock("../channelInventory/FactoryMaterialPublish", () => ({ useFactoryMaterialPublish: (props: any) => {
   runtime.publish = props;
-  return { dialog: null, action: (row: any) => React.createElement("button", { disabled: !props.authorized || !props.available || row.canPublish !== true }, "发布") };
+  return { dialog: null, status: (row: any) => row.publicationStatus, previewAction: () => React.createElement(React.Fragment), action: (row: any) => React.createElement("button", { disabled: !props.authorized || !props.available || row.canPublish !== true }, "发布") };
 } }));
 import { CustomerChannelInventory, customerInventoryInput, verifiedCustomerInventory, type CustomerChannelInventoryProps } from "./CustomerChannelInventory";
 import { inventoryCompanyLabel } from "../channelInventory/company";
@@ -104,11 +104,11 @@ describe("customer-bound channel inventory", () => {
     expect(runtime.query).toHaveBeenCalledTimes(1);
     expect(runtime.query.mock.calls[0][0]).toEqual({ expectedEnterpriseId: 31, expectedActorUserId: 7, customerId: 801, partNumber: undefined, brand: undefined, page: 1, pageSize: 20 });
     expect(runtime.query.mock.calls[0][1]).toEqual({ signal: expect.any(AbortSignal) });
-    expect([...host.querySelectorAll("th")].map(th => th.textContent)).toEqual(["", "型号", "品牌", "负责人", "来源客户", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "操作"]);
+    expect([...host.querySelectorAll("th")].map(th => th.textContent)).toEqual(["", "型号", "品牌", "负责人", "来源客户", "可供数量", "报价 CNY", "渠道参考一", "渠道参考二", "上架状态", "操作"]);
     expect(host.textContent).toContain("共 1 条"); expect(host.textContent).toContain("SAME-MODEL"); expect(host.textContent).toContain("¥0"); expect(host.textContent).toContain("未税");
     expect(host.querySelector("td.ci-material-qty-col")?.textContent).toBe("0");
     expect(host.querySelector("td.ci-material-source-col")?.textContent).toBe("客户公司");
-    expect([...host.querySelectorAll(".ci-row-actions button")].map(item => item.textContent)).toEqual(["编辑", "删除", "更多"]);
+    expect([...host.querySelectorAll(".ci-row-actions button")].map(item => item.textContent)).toEqual(["发布", "编辑", "删除", "更多"]);
   });
   it("removes the fixed filter explanation node without losing search, refresh or pagination", async () => {
     await render();
@@ -163,7 +163,7 @@ describe("customer-bound channel inventory", () => {
     expect(host.querySelector("tbody .customer-stock-empty")?.textContent).toContain("暂无客户库存");
     expect(host.querySelector("tbody .customer-stock-empty")?.getAttribute("role")).toBe("status");
     expect(host.textContent).toContain("共 0 条");
-    expect(host.querySelectorAll("th")).toHaveLength(10);
+    expect(host.querySelectorAll("th")).toHaveLength(11);
     expect(button("搜索").disabled).toBe(false); expect(button("刷新库存").disabled).toBe(false);
     expect(runtime.query).toHaveBeenCalledTimes(1);
     expect(runtime.query.mock.calls[0][0]).toMatchObject({ customerId: 801, expectedEnterpriseId: 31, expectedActorUserId: 7 });
@@ -227,7 +227,7 @@ it("keeps inventory query/proof guards and all non-zero-binding status branches 
   const source = readFileSync("client/src/business/platform/client/src/components/customers/CustomerChannelInventory.tsx", "utf8");
   expect(source).not.toContain('<p className="ci-readonly">');
   expect(source).not.toContain("当前没有可读取的已确认渠道库存。");
-  expect(source).toContain('!rows.length ? <tr><td colSpan={10} className="ci-empty customer-stock-empty-cell"');
+  expect(source).toContain('!rows.length ? <tr><td colSpan={11} className="ci-empty customer-stock-empty-cell"');
   expect(source).toContain("if (!readable) return;");
   expect(source).toContain("utils.client.channelInventory.listTeamMaterials.query(input, { signal: controller.signal })");
   expect(source).toContain("verifiedCustomerInventory(value, input, props.customerVersion)");

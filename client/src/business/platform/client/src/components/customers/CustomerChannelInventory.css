@@ -80,3 +80,12 @@
   .customer-channel-inventory > .ci-toolbar .ci-brand-input { max-width: none; }
   .customer-channel-inventory .customer-stock-empty { justify-content: flex-start; padding: 16px; }
 }
+
+/* Approved channel publication controls; no global inventory/mall selectors. */
+.customer-channel-inventory .ci-publication-col { width: 80px; white-space: nowrap; }
+.customer-channel-inventory .ci-publication-status { display: inline-flex; padding: 2px 7px; border-radius: 4px; background: #f1f5f9; color: #64748b; font-size: 12px; line-height: 20px; }
+.customer-channel-inventory .ci-publication-status.is-published { background: #ecfdf3; color: #15803d; }
+.customer-channel-inventory .ci-col-actions { min-width: 210px; }
+.customer-channel-inventory .ci-row-actions { flex-wrap: wrap; gap: 4px; }
+.customer-channel-inventory .ci-row-actions [data-factory-publish-action] { color: #185fa5; border-color: #bad1e9; }
+.customer-channel-inventory .ci-row-actions [data-factory-view-front] { color: #185fa5; }
