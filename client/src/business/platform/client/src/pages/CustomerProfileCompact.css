@@ -303,3 +303,61 @@
     overflow-wrap: anywhere;
   }
 }
+
+/* Customer profile refined 20261121: confirmed compact demo, real data and handlers retained. */
+.erp-ui.customer-workbench.customer-profile-tight .customer-detail-top-actions { margin-bottom: 6px; padding-bottom: 0; gap: 8px; align-items: center; }
+.erp-ui.customer-workbench.customer-profile-tight .customer-workbench-top-buttons .crm-btn { height: 32px; min-height: 32px; padding: 0 12px; font-size: 13px; }
+.erp-ui.customer-workbench.customer-profile-tight .customer-workbench-tabs { margin-bottom: 10px; }
+.erp-ui.customer-workbench.customer-profile-tight .customer-workbench-tabs button { padding-top: 6px; padding-bottom: 6px; }
+.erp-ui.customer-workbench.customer-profile-tight .customer-profile-demand-action,
+.erp-ui.customer-workbench.customer-profile-tight .customer-profile-contact-action { border: 1px solid #c4d6e9; color: #185fa5; background: #f8fbff; }
+.erp-ui.customer-workbench.customer-profile-tight .customer-profile-demand-action:hover:not(:disabled),
+.erp-ui.customer-workbench.customer-profile-tight .customer-profile-contact-action:hover:not(:disabled) { border-color: #99b9db; background: #eff6fe; }
+.erp-ui.customer-workbench.customer-profile-tight .customer-profile-demand-action:disabled,
+.erp-ui.customer-workbench.customer-profile-tight .customer-profile-contact-action:disabled { opacity: .5; cursor: not-allowed; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company > #customer-base { display: grid; grid-template-columns: minmax(270px,.8fr) minmax(0,1.4fr); border-color: #e2e8f1; box-shadow: 0 2px 8px #34507004; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-heading { padding: 8px 18px; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-base > .customer-profile-heading { grid-column: 1 / -1; grid-row: 1; border-bottom: 1px solid #eef2f7; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-summary { grid-column: 1; grid-row: 2; display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 2px; padding: 8px 18px 10px; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-summary > span { display: flex; align-items: center; gap: 0; line-height: 26px; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-summary em { width: 82px; flex: 0 0 82px; margin: 0; font-style: normal; color: #8090a3; font-size: 13px; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-summary b { font-weight: 500; color: #354c67; font-size: 14px; overflow-wrap: anywhere; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-summary .customer-profile-stage { display: inline-flex; background: #eff5fc; color: #4679af; border-radius: 4px; padding: 0 8px; font-size: 12px; line-height: 24px; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-contacts { grid-column: 2; grid-row: 2; padding: 8px 18px 10px; border-top: 0; border-left: 1px solid #edf1f6; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-contacts-title { margin-bottom: 7px; color: #8191a5; font-size: 12px; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-contacts .customer-workbench-contacts { flex-direction: row; gap: 12px; flex-wrap: wrap; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-contacts .customer-workbench-contacts > article { display: flex; flex-direction: column; align-items: flex-start; flex: 1 1 190px; width: auto; min-width: 0; gap: 2px; border: 1px solid #e6edf5; border-radius: 6px; padding: 7px 12px; background: #fbfcfe; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-contacts .customer-workbench-contacts > article > div { gap: 7px; line-height: 24px; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-contacts .customer-workbench-contacts > article strong { color: #344c67; font-size: 14px; font-weight: 600; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-contacts .customer-workbench-contacts > article > p { font-size: 13px; line-height: 22px; color: #5c7592; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-contacts .customer-workbench-contacts > article > p.customer-detail-meta { font-size: 12px; line-height: 20px; color: #92a0b0; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-editor { grid-column: 1 / -1; grid-row: 3; padding: 14px 18px; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups { border-color: #e2e8f1; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-follow-heading { border-bottom: 1px solid #eef2f7; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups .customer-profile-follow-record { position: relative; margin: 0 18px 0 30px; padding: 12px 0 12px 18px; border-left: 1px solid #e0e9f3; border-top: 0; border-bottom: 0; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups .customer-profile-follow-record::before { position: absolute; content: ''; width: 7px; height: 7px; background: #7b9fc6; border: 3px solid #f5f9fe; box-sizing: content-box; border-radius: 50%; left: -7px; top: 21px; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups .customer-profile-follow-meta { gap: 7px; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups .customer-profile-follow-meta > span:first-child { color: #536b87; font-size: 13px; font-weight: 600; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups .customer-profile-follow-meta time.customer-detail-meta { margin-left: auto; color: #96a3b3; font-size: 12px; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups .customer-profile-follow-record .customer-detail-history-action { margin-left: 9px; min-height: 28px !important; height: 28px !important; border: 1px solid #e1e8f1; border-radius: 5px; padding: 0 8px; color: #728ba8; font-size: 12px; background: #fff; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups .customer-detail-history-action:hover { border-color: #a5bfdc; color: #185fa5; background: #f5f9fe; }
+.erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups .customer-detail-followup-body { color: #435a73; font-size: 14px; margin-top: 6px; line-height: 1.8; }
+@media (max-width: 1050px) {
+  .erp-ui.customer-workbench.customer-profile-tight #customer-panel-company > #customer-base { grid-template-columns: minmax(230px,.8fr) minmax(0,1.2fr); }
+  .erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-contacts .customer-workbench-contacts > article { flex-basis: 100%; }
+}
+@media (max-width: 680px) {
+  .erp-ui.customer-workbench.customer-profile-tight #customer-panel-company > #customer-base { display: block; }
+  .erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-heading { padding: 10px 12px; }
+  .erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-heading-actions { gap: 6px; margin: 4px 0 0; width: 100%; justify-content: flex-start; }
+  .erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-heading-actions .crm-btn { padding: 0 9px; font-size: 12px; }
+  .erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-summary { padding: 10px 12px; gap: 2px; }
+  .erp-ui.customer-workbench.customer-profile-tight #customer-panel-company .customer-profile-contacts { padding: 10px 12px 12px; border-left: 0; border-top: 1px solid #edf1f6; }
+  .erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-contacts .customer-workbench-contacts { flex-direction: column; gap: 8px; }
+  .erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-contacts .customer-workbench-contacts > article { flex-basis: auto; width: 100%; }
+  .erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups .customer-profile-follow-record { margin: 0 12px 0 22px; padding-left: 13px; }
+  .erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups .customer-profile-follow-meta { gap: 6px; }
+  .erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups .customer-profile-follow-meta time.customer-detail-meta { margin-left: 0; font-size: 11px; }
+  .erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups .customer-profile-follow-record .customer-detail-history-action { margin: 6px 0 0; }
+  .erp-ui.customer-workbench.customer-profile-tight #customer-panel-company #customer-followups .customer-detail-followup-body { font-size: 13px; }
+}

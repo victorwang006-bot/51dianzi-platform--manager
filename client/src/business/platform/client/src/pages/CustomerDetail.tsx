@@ -556,11 +556,10 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
       <div className="customer-detail-top-actions mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2"><h1 className="admin-page-title customer-detail-name">{customer.name}</h1><span className={`crm-badge ${customer.grade === "A" ? "bg-[#FCEBEB] text-[#A32D2D]" : customer.grade === "B" ? "bg-[#FFF7E6] text-[#B8741A]" : "bg-[#e8f0fe] text-[#185FA5]"}`}>{customer.grade}级</span>{isArchived && <span className="crm-badge bg-slate-100 text-slate-500">已归档</span>}</div>
-          <p className="customer-detail-meta mt-1">负责人：{customer.assignedName} · 创建于 {formatCustomerDateTime(customer.createdAt)}</p>
         </div>
         <div className="customer-workbench-top-buttons">
           <button type="button" className="crm-btn" title="回到进入详情前的页面，保留筛选、页码与位置" onClick={requestBack}>返回上一页</button>
-          <button type="button" className="crm-btn crm-btn-primary" disabled={isArchived} onClick={() => guardAction(() => { commitTab("demands"); setCreateDemandToken(++createDemandSequence.current); })}>新增需求</button>
+          <button type="button" className="crm-btn customer-profile-demand-action" disabled={isArchived} onClick={() => guardAction(() => { commitTab("demands"); setCreateDemandToken(++createDemandSequence.current); })}>新增需求</button>
           {tab !== "company" && <button type="button" className="crm-btn" disabled={isArchived} onClick={() => guardAction(() => { commitTab("company"); if (!followOpen) openFollowUp(); })}>新增跟进</button>}
           {canManageAll && <DropdownMenu open={moreOpen} onOpenChange={open => { if (!open) setMoreOpen(false); else guardAction(() => setMoreOpen(true)); }}><DropdownMenuTrigger asChild><button type="button" className="crm-btn">更多</button></DropdownMenuTrigger><DropdownMenuContent align="end">{!isArchived ? <><DropdownMenuItem onSelect={() => guardAction(() => setActionDialog("transfer"))}>转移负责人</DropdownMenuItem><DropdownMenuItem className="text-red-700" onSelect={() => guardAction(() => setActionDialog("archive"))}>归档客户</DropdownMenuItem></> : <DropdownMenuItem onSelect={() => guardAction(() => setActionDialog("restore"))}>恢复客户</DropdownMenuItem>}</DropdownMenuContent></DropdownMenu>}
         </div>
@@ -581,14 +580,14 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
           <div className="customer-profile-heading-actions">
             {!isArchived && !basicExpanded && <button type="button" className="crm-btn" aria-controls="customer-base-editor" onClick={() => setBasicExpanded(true)}>编辑资料</button>}
             {!isArchived && basicExpanded && <button type="button" className="crm-btn crm-btn-primary" disabled={!form || updateMutation.isPending || !contactScope.ready} onClick={() => void submitUpdate()}>{updateMutation.isPending ? "保存中…" : "保存修改"}</button>}
-            <button type="button" className="crm-btn crm-btn-primary" disabled={!contactScope.ready} onClick={() => setContactsOpen(true)}>管理联系人</button>
+            <button type="button" className="crm-btn customer-profile-contact-action" disabled={!contactScope.ready} onClick={() => setContactsOpen(true)}>管理联系人</button>
             <button type="button" className="crm-btn" aria-expanded={basicExpanded} aria-controls="customer-base-editor" onClick={() => setBasicExpanded(open => !open)}>{basicExpanded ? "收起" : "展开详情"}</button>
           </div>
         </div>
         <div className="customer-detail-summary customer-profile-summary">
-          <span>所属行业：{getBusinessIndustryLabel(customer.industryCode)}</span>
-          <span>当前阶段：{CUSTOMER_STAGE_LABELS[form?.stage ?? customer.stage]}</span>
-          <span>下次跟进：{formatCustomerDateTime(customer.nextFollowUpAt)}</span>
+          <span><em>所属行业</em><b>{getBusinessIndustryLabel(customer.industryCode)}</b></span>
+          <span><em>当前阶段</em><b className="customer-profile-stage">{CUSTOMER_STAGE_LABELS[form?.stage ?? customer.stage]}</b></span>
+          <span><em>下次跟进</em><b>{formatCustomerDateTime(customer.nextFollowUpAt)}</b></span>
         </div>
         {basicExpanded && <div id="customer-base-editor" className="customer-profile-editor">
           <p className="customer-detail-meta customer-profile-version">版本 {customer.version} · 上次更新 {formatCustomerDateTime(customer.updatedAt)}</p>
