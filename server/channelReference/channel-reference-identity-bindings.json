@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "snapshotSha256": "f407aa5f5b6c345f2e11cafe13dc181adf98ee6329075344915587ee24b2790a",
+  "snapshotSha256": "b98c8763637752d28def8235bd65d6865b553f50c35cd9a4b563baef87f5dcbb",
   "bindings": [
     {
       "raw": {
@@ -132,7 +132,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -152,7 +153,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -172,7 +174,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -380,7 +383,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -484,7 +488,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -504,7 +509,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -814,7 +820,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -855,7 +862,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -917,7 +925,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -958,7 +967,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -999,7 +1009,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -1040,7 +1051,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -1551,7 +1563,8 @@
         "brand": "Sunlord(顺络)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -1592,7 +1605,8 @@
         "brand": "TI(德州仪器)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -1612,7 +1626,8 @@
         "brand": "TI(德州仪器)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -1854,7 +1869,8 @@
         "brand": "TI(德州仪器)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261117-aggregation-v1",
@@ -2534,7 +2550,8 @@
         "brand": "onsemi(安森美)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261121-price-fill-v1",
@@ -3735,7 +3752,8 @@
         "brand": "BOURNS"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261121-price-fill-v1",
@@ -3995,7 +4013,8 @@
         "brand": "TI(德州仪器)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261121-price-fill-v1",
@@ -4015,7 +4034,8 @@
         "brand": "TI(德州仪器)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261121-price-fill-v1",
@@ -4300,7 +4320,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261121-price-fill-v1",
@@ -4604,7 +4625,8 @@
         "brand": "CREE LED"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261121-price-fill-v1",
@@ -4684,7 +4706,8 @@
         "brand": "CREE LED"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261121-price-fill-v1",
@@ -4864,7 +4887,8 @@
         "brand": "Littelfuse(美国力特)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261121-price-fill-v1",
@@ -4984,7 +5008,8 @@
         "brand": "onsemi(安森美)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261121-price-fill-v1",
@@ -5204,7 +5229,8 @@
         "brand": "VISHAY(威世)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261121-price-fill-v1",
@@ -5644,7 +5670,8 @@
         "brand": "UNI-ROYAL(厚声)"
       },
       "sources": [
-        "lcsc"
+        "lcsc",
+        "ickey"
       ],
       "confirmation": {
         "reviewVersion": "20261121-price-fill-v1",
@@ -5732,6 +5759,966 @@
         "uniqueManufacturer": true,
         "additionalSpecificationsMatch": true,
         "basis": "按补齐价格原则：库存型号SPRH73-101M、库存品牌/品类Codaca/科达嘉，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。立创商城实际读取：型号SPRH73-101M，品牌CODACA(科达嘉)，取最大数量梯度20000+价格0.9253元"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "BZX84B5V1",
+        "brand": "台湾强茂"
+      },
+      "canonical": {
+        "partNumber": "BZX84B5V1",
+        "brand": "Diotec Semiconductor"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号BZX84B5V1、库存品牌/品类台湾强茂，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号BZX84B5V1，品牌Diotec Semiconductor，取最大数量梯度9000+价格0.2303元，页面https://www.ickey.cn/detail/100230101985389/BZX84B5V1.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "MMSZ5244B",
+        "brand": "台湾强茂"
+      },
+      "canonical": {
+        "partNumber": "MMSZ5244B",
+        "brand": "RECTRON/台湾丽正"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号MMSZ5244B、库存品牌/品类台湾强茂，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号MMSZ5244B，品牌RECTRON/台湾丽正，取最大数量梯度75000+价格0.4123元，页面https://www.ickey.cn/detail/100230135205703/MMSZ5244B.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "GRM188B11E104KA01D",
+        "brand": "Murata"
+      },
+      "canonical": {
+        "partNumber": "GRM188B11E104KA01D",
+        "brand": "muRata/村田"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号GRM188B11E104KA01D、库存品牌/品类Murata，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号GRM188B11E104KA01D，品牌muRata/村田，取最大数量梯度50000+价格0.043元，页面https://www.ickey.cn/detail/1003001047544674/GRM188B11E104KA01D.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "WRB1212S-3WR2",
+        "brand": "MORNSUN"
+      },
+      "canonical": {
+        "partNumber": "WRB1212S-3WR2",
+        "brand": "Mornsun/金升阳"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号WRB1212S-3WR2、库存品牌/品类MORNSUN，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号WRB1212S-3WR2，品牌Mornsun/金升阳，取最大数量梯度1+价格22.2559元，页面https://www.ickey.cn/detail/1003001018325029/WRB1212S-3WR2.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "BZT52C2V7",
+        "brand": "MDD"
+      },
+      "canonical": {
+        "partNumber": "BZT52C2V7",
+        "brand": "Diotec Semiconductor"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号BZT52C2V7、库存品牌/品类MDD，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号BZT52C2V7，品牌Diotec Semiconductor，取最大数量梯度45000+价格0.1697元，页面https://www.ickey.cn/detail/100230135047201/BZT52C2V7.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "LL4148",
+        "brand": "先科"
+      },
+      "canonical": {
+        "partNumber": "LL4148",
+        "brand": "ON"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号LL4148、库存品牌/品类先科，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号LL4148，品牌ON，取最大数量梯度5000+价格0.2204元，页面https://www.ickey.cn/detail/100230101975764/LL4148.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SMBJ18CA",
+        "brand": "MDD"
+      },
+      "canonical": {
+        "partNumber": "SMBJ18CA",
+        "brand": "Taiwan Semiconductor/台湾半导体"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SMBJ18CA、库存品牌/品类MDD，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号SMBJ18CA，品牌Taiwan Semiconductor/台湾半导体，取最大数量梯度9000+价格2.5312元，页面https://www.ickey.cn/detail/100230134748885/SMBJ18CA.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "2RL1600L-8/B",
+        "brand": "Brightking"
+      },
+      "canonical": {
+        "partNumber": "2RL1600L-8/B",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号2RL1600L-8/B、库存品牌/品类Brightking，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号2RL1600L-8/B，品牌YAGEO/国巨，取最大数量梯度5000+价格4.4779元，页面https://www.ickey.cn/detail/100230101998967/2RL1600L-8__point__B.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "B5819W",
+        "brand": "JSCJ"
+      },
+      "canonical": {
+        "partNumber": "B5819W",
+        "brand": "GOOD-ARK/苏州固锝电子"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号B5819W、库存品牌/品类JSCJ，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号B5819W，品牌GOOD-ARK/苏州固锝电子，取最大数量梯度9000+价格0.6676元，页面https://www.ickey.cn/detail/100230134159392/B5819W.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "B6B-XH-A(LF)(SN)",
+        "brand": "JST"
+      },
+      "canonical": {
+        "partNumber": "B6B-XH-A",
+        "brand": "JST"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号B6B-XH-A(LF)(SN)、库存品牌/品类JST，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号B6B-XH-A，品牌JST，取最大数量梯度491+价格2.8853元，页面https://www.ickey.cn/detail/100240104409070/B6B-XH-A.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "1206B105K101CT",
+        "brand": "WALSIN"
+      },
+      "canonical": {
+        "partNumber": "1206B105K101CT",
+        "brand": "Walsin/华新科"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号1206B105K101CT、库存品牌/品类WALSIN，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号1206B105K101CT，品牌Walsin/华新科，取最大数量梯度6000+价格0.3092元，页面https://www.ickey.cn/detail/1000201022215535/1206B105K101CT.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "B72220S0551K101",
+        "brand": "EPCOS"
+      },
+      "canonical": {
+        "partNumber": "B72220S0551K101",
+        "brand": "TDK"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号B72220S0551K101、库存品牌/品类EPCOS，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号B72220S0551K101，品牌TDK，取最大数量梯度1000+价格7.3813元，页面https://www.ickey.cn/detail/100250102252963/B72220S0551K101.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "AC0805FR-072K87L",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "AC0805FR-072K87L",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号AC0805FR-072K87L、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号AC0805FR-072K87L，品牌YAGEO/国巨，取最大数量梯度50000+价格0.0585元，页面https://www.ickey.cn/detail/100230135305035/AC0805FR-072K87L.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "AC0603JR-071K2L",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "AC0603JR-071K2L",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号AC0603JR-071K2L、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号AC0603JR-071K2L，品牌YAGEO/国巨，取最大数量梯度50000+价格0.0356元，页面https://www.ickey.cn/detail/1000201024314840/AC0603JR-071K2L.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SS26",
+        "brand": "二极管"
+      },
+      "canonical": {
+        "partNumber": "SS26",
+        "brand": "Taiwan Semiconductor/台湾半导体"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SS26、库存品牌/品类二极管，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号SS26，品牌Taiwan Semiconductor/台湾半导体，取最大数量梯度9000+价格0.6193元，页面https://www.ickey.cn/detail/100230134913800/SS26.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RT0402BRD073K6L",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "RT0402BRD073K6L",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RT0402BRD073K6L、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号RT0402BRD073K6L，品牌YAGEO/国巨，取最大数量梯度150000+价格0.3911元，页面https://www.ickey.cn/detail/100230134593164/RT0402BRD073K6L.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "ALS-DPDIC17-78C/L749/TR8",
+        "brand": "Everlight/亿光"
+      },
+      "canonical": {
+        "partNumber": "ALS-DPDIC17-78C/L749/TR8",
+        "brand": "EVERLIGHT"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号ALS-DPDIC17-78C/L749/TR8、库存品牌/品类Everlight/亿光，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号ALS-DPDIC17-78C/L749/TR8，品牌EVERLIGHT，取最大数量梯度1000000+价格8.8475元，页面https://www.ickey.cn/detail/100230135878357/ALS-DPDIC17-78C__point__L749__point__TR8.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SPRH1210-471M",
+        "brand": "Codaca"
+      },
+      "canonical": {
+        "partNumber": "SPRH1210-471M",
+        "brand": "CODACA/科达嘉"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SPRH1210-471M、库存品牌/品类Codaca，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号SPRH1210-471M，品牌CODACA/科达嘉，取最大数量梯度100+价格7.6371元，页面https://www.ickey.cn/detail/1000201018912831/SPRH1210-471M.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SPRH1210-271M",
+        "brand": "Codaca"
+      },
+      "canonical": {
+        "partNumber": "SPRH1210-271M",
+        "brand": "CODACA/科达嘉"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SPRH1210-271M、库存品牌/品类Codaca，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号SPRH1210-271M，品牌CODACA/科达嘉，取最大数量梯度100+价格7.6371元，页面https://www.ickey.cn/detail/1000201018912833/SPRH1210-271M.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "SPRH1210-221M",
+        "brand": "Codaca"
+      },
+      "canonical": {
+        "partNumber": "SPRH1210-221M",
+        "brand": "CODACA/科达嘉"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号SPRH1210-221M、库存品牌/品类Codaca，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号SPRH1210-221M，品牌CODACA/科达嘉，取最大数量梯度2500+价格6.2671元，页面https://www.ickey.cn/detail/1000201019174595/SPRH1210-221M.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "B82496C3399J",
+        "brand": "EPCOS(TDK)"
+      },
+      "canonical": {
+        "partNumber": "B82496C3399J",
+        "brand": "TDK"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号B82496C3399J、库存品牌/品类EPCOS(TDK)，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号B82496C3399J，品牌TDK，取最大数量梯度32000+价格1.1082元，页面https://www.ickey.cn/detail/100230135805364/B82496C3399J.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "GRM3195C2A823JA01D",
+        "brand": "Murata"
+      },
+      "canonical": {
+        "partNumber": "GRM3195C2A823JA01D",
+        "brand": "muRata/村田"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号GRM3195C2A823JA01D、库存品牌/品类Murata，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号GRM3195C2A823JA01D，品牌muRata/村田，取最大数量梯度2000+价格1.4444元，页面https://www.ickey.cn/detail/100250107168047/GRM3195C2A823JA01D.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "GRM21BC72A105KE01L",
+        "brand": "Murata"
+      },
+      "canonical": {
+        "partNumber": "GRM21BC72A105KE01L",
+        "brand": "muRata/村田"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号GRM21BC72A105KE01L、库存品牌/品类Murata，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号GRM21BC72A105KE01L，品牌muRata/村田，取最大数量梯度1+价格4.8891元，页面https://www.ickey.cn/detail/100230101957645/GRM21BC72A105KE01L.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC1812KKX7RDBB222",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "CC1812KKX7RDBB222",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CC1812KKX7RDBB222、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号CC1812KKX7RDBB222，品牌YAGEO/国巨，取最大数量梯度1000+价格3.7881元，页面https://www.ickey.cn/detail/100230102059281/CC1812KKX7RDBB222.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "4-1437106-7",
+        "brand": "AMP"
+      },
+      "canonical": {
+        "partNumber": "4-1437106-7",
+        "brand": "TE Connectivity"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号4-1437106-7、库存品牌/品类AMP，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号4-1437106-7，品牌TE Connectivity，取最大数量梯度10050+价格4.3943元，页面https://www.ickey.cn/detail/100070145263907/4-1437106-7.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "GRM21BR71A106KA73L",
+        "brand": "Murata"
+      },
+      "canonical": {
+        "partNumber": "GRM21BR71A106KA73L",
+        "brand": "muRata/村田"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号GRM21BR71A106KA73L、库存品牌/品类Murata，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号GRM21BR71A106KA73L，品牌muRata/村田，取最大数量梯度47+价格1.4942元，页面https://www.ickey.cn/detail/100230101996124/GRM21BR71A106KA73L.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "GJM1555C1HR75WB01D",
+        "brand": "Murata"
+      },
+      "canonical": {
+        "partNumber": "GJM1555C1HR75WB01D",
+        "brand": "muRata/村田"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号GJM1555C1HR75WB01D、库存品牌/品类Murata，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号GJM1555C1HR75WB01D，品牌muRata/村田，取最大数量梯度10000+价格0.1358元，页面https://www.ickey.cn/detail/1003001028251724/GJM1555C1HR75WB01D.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC0402KRX5R9BB224",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "CC0402KRX5R9BB224",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CC0402KRX5R9BB224、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号CC0402KRX5R9BB224，品牌YAGEO/国巨，取最大数量梯度20000+价格0.8254元，页面https://www.ickey.cn/detail/100250103405624/CC0402KRX5R9BB224.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "GCM188R71H154KA64D",
+        "brand": "Murata"
+      },
+      "canonical": {
+        "partNumber": "GCM188R71H154KA64D",
+        "brand": "muRata/村田"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号GCM188R71H154KA64D、库存品牌/品类Murata，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号GCM188R71H154KA64D，品牌muRata/村田，取最大数量梯度32000+价格0.0734元，页面https://www.ickey.cn/detail/1003001036562526/GCM188R71H154KA64D.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "BZX84C10",
+        "brand": "ON Semiconductor"
+      },
+      "canonical": {
+        "partNumber": "BZX84C10",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号BZX84C10、库存品牌/品类ON Semiconductor，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号BZX84C10，品牌YAGEO/国巨，取最大数量梯度5000+价格0.1506元，页面https://www.ickey.cn/detail/100230101998906/BZX84C10.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC0603BRNPO9BNR82",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "CC0603BRNPO9BNR82",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CC0603BRNPO9BNR82、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号CC0603BRNPO9BNR82，品牌YAGEO/国巨，取最大数量梯度500+价格0.3644元，页面https://www.ickey.cn/detail/1000201020854431/CC0603BRNPO9BNR82.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC0603JRX7R7BB563",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "CC0603JRX7R7BB563",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CC0603JRX7R7BB563、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号CC0603JRX7R7BB563，品牌YAGEO/国巨，取最大数量梯度12000+价格0.2527元，页面https://www.ickey.cn/detail/1000201020960241/CC0603JRX7R7BB563.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC1206KRX7R0BB472",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "CC1206KRX7R0BB472",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CC1206KRX7R0BB472、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号CC1206KRX7R0BB472，品牌YAGEO/国巨，取最大数量梯度3000+价格0.5453元，页面https://www.ickey.cn/detail/100230134159918/CC1206KRX7R0BB472.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "NE555D",
+        "brand": "ST"
+      },
+      "canonical": {
+        "partNumber": "NE555D",
+        "brand": "TI"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号NE555D、库存品牌/品类ST，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号NE555D，品牌TI，取最大数量梯度5025+价格4.6064元，页面https://www.ickey.cn/detail/100230101967826/NE555D.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC0402JRNPO9BN301",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "CC0402JRNPO9BN301",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CC0402JRNPO9BN301、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号CC0402JRNPO9BN301，品牌YAGEO/国巨，取最大数量梯度500+价格0.1974元，页面https://www.ickey.cn/detail/1000201021064632/CC0402JRNPO9BN301.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "GCM155R71H683KE02D",
+        "brand": "Murata"
+      },
+      "canonical": {
+        "partNumber": "GCM155R71H683KE02D",
+        "brand": "muRata/村田"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号GCM155R71H683KE02D、库存品牌/品类Murata，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号GCM155R71H683KE02D，品牌muRata/村田，取最大数量梯度10000+价格0.0207元，页面https://www.ickey.cn/detail/1003001036561695/GCM155R71H683KE02D.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "GRM155R71H153KA12D",
+        "brand": "Murata"
+      },
+      "canonical": {
+        "partNumber": "GRM155R71H153KA12D",
+        "brand": "muRata/村田"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号GRM155R71H153KA12D、库存品牌/品类Murata，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号GRM155R71H153KA12D，品牌muRata/村田，取最大数量梯度10000+价格0.0747元，页面https://www.ickey.cn/detail/100240104519040/GRM155R71H153KA12D.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC0603JRNPO0BN100",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "CC0603JRNPO0BN100",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CC0603JRNPO0BN100、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号CC0603JRNPO0BN100，品牌YAGEO/国巨，取最大数量梯度5000+价格0.1058元，页面https://www.ickey.cn/detail/100230102029732/CC0603JRNPO0BN100.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RC0603FR-073K6L",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "RC0603FR-073K6L",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RC0603FR-073K6L、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号RC0603FR-073K6L，品牌YAGEO/国巨，取最大数量梯度10+价格0.2018元，页面https://www.ickey.cn/detail/100230134821583/RC0603FR-073K6L.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "GRM155R61A103KA01D",
+        "brand": "Murata"
+      },
+      "canonical": {
+        "partNumber": "GRM155R61A103KA01D",
+        "brand": "muRata/村田"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号GRM155R61A103KA01D、库存品牌/品类Murata，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号GRM155R61A103KA01D，品牌muRata/村田，取最大数量梯度100+价格0.1594元，页面https://www.ickey.cn/detail/100230102038160/GRM155R61A103KA01D.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC0402KRX7R7BB563",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "CC0402KRX7R7BB563",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CC0402KRX7R7BB563、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号CC0402KRX7R7BB563，品牌YAGEO/国巨，取最大数量梯度25+价格0.1044元，页面https://www.ickey.cn/detail/100230134870030/CC0402KRX7R7BB563.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "LQW15AN2N5C00D",
+        "brand": "Murata"
+      },
+      "canonical": {
+        "partNumber": "LQW15AN2N5C00D",
+        "brand": "muRata/村田"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号LQW15AN2N5C00D、库存品牌/品类Murata，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号LQW15AN2N5C00D，品牌muRata/村田，取最大数量梯度70000+价格0.4415元，页面https://www.ickey.cn/detail/100230135078926/LQW15AN2N5C00D.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "GRM21BC80J476ME01L",
+        "brand": "Murata"
+      },
+      "canonical": {
+        "partNumber": "GRM21BC80J476ME01L",
+        "brand": "muRata/村田"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号GRM21BC80J476ME01L、库存品牌/品类Murata，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号GRM21BC80J476ME01L，品牌muRata/村田，取最大数量梯度3000+价格1.585元，页面https://www.ickey.cn/detail/100230135968266/GRM21BC80J476ME01L.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RL1206FR-070R16L",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "RL1206FR-070R16L",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RL1206FR-070R16L、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号RL1206FR-070R16L，品牌YAGEO/国巨，取最大数量梯度10000+价格0.4877元，页面https://www.ickey.cn/detail/100250107631691/RL1206FR-070R16L.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "RL1210FR-070R025L",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "RL1210FR-070R025L",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号RL1210FR-070R025L、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号RL1210FR-070R025L，品牌YAGEO/国巨，取最大数量梯度5000+价格1.4734元，页面https://www.ickey.cn/detail/100230102247043/RL1210FR-070R025L.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "CC0402JRNPO8BN181",
+        "brand": "Yageo"
+      },
+      "canonical": {
+        "partNumber": "CC0402JRNPO8BN181",
+        "brand": "YAGEO/国巨"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号CC0402JRNPO8BN181、库存品牌/品类Yageo，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号CC0402JRNPO8BN181，品牌YAGEO/国巨，取最大数量梯度100000+价格0.0604元，页面https://www.ickey.cn/detail/100230135184929/CC0402JRNPO8BN181.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "GRM319R72A471KA01D",
+        "brand": "Murata"
+      },
+      "canonical": {
+        "partNumber": "GRM319R72A471KA01D",
+        "brand": "muRata/村田"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号GRM319R72A471KA01D、库存品牌/品类Murata，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号GRM319R72A471KA01D，品牌muRata/村田，取最大数量梯度8000+价格0.3658元，页面https://www.ickey.cn/detail/10025010650873/GRM319R72A471KA01D.html"
+      }
+    },
+    {
+      "raw": {
+        "partNumber": "APHB1608LQBDCGKC",
+        "brand": "Kingbright"
+      },
+      "canonical": {
+        "partNumber": "APHB1608LQBDCGKC",
+        "brand": "Kingbright Electronic"
+      },
+      "sources": [
+        "ickey"
+      ],
+      "confirmation": {
+        "reviewVersion": "20261121-price-fill-v1",
+        "manufacturerSpecificCompleteMpn": true,
+        "uniqueManufacturer": true,
+        "additionalSpecificationsMatch": true,
+        "basis": "按补齐价格原则：库存型号APHB1608LQBDCGKC、库存品牌/品类Kingbright，与渠道公开页同型号商品对应(库存品牌多为品类词或简称)。云汉芯城实际读取：型号APHB1608LQBDCGKC，品牌Kingbright Electronic，取最大数量梯度20000+价格1.8781元，页面https://www.ickey.cn/detail/1000201024294217/APHB1608LQBDCGKC.html"
       }
     }
   ]

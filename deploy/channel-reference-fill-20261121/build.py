@@ -88,7 +88,6 @@ def ickey_cands(rec, pn):
     for row in q['rows']:
         model = (row.get('model') or '').strip()
         if model.upper() not in (pn.upper(), strip_paren(pn).upper()): continue
-        if (row.get('currency') or '').lower() != 'rmb': continue
         nums, rmb = row.get('nums') or [], row.get('rmb') or []
         if not nums or len(nums) != len(rmb): continue
         tiers = {}
@@ -104,7 +103,7 @@ def ickey_cands(rec, pn):
         stock = row.get('stock')
         stock = int(stock) if isinstance(stock, (int, float)) and stock >= 0 else None
         out.append(dict(source='ickey', model=model, brand=(row.get('brand') or '').strip(), code=str(row.get('sku')) if row.get('sku') else None, tiers=tl,
-                        url=url, partner=False, stock=stock, packaging=row.get('packaging') or None, unit=None, tax='included',
+                        url=url, partner=False, stock=stock, packaging=row.get('packaging') or None, unit=None, tax=('included' if (row.get('currency') or '').lower() == 'rmb' else 'unknown'), cur=(row.get('currency') or '').lower(),
                         sell=row.get('sellState'), at=iso(rec.get('at_ickey', rec['at'])), idnum=None))
     return out
 
@@ -177,7 +176,7 @@ def rank(c, brand):
     mm = bm(brand, c['brand'], s) is not None
     if s == 'lcsc':
         return (0 if mm else 1, 1 if c['partner'] else 0, 0 if c['idnum'] else 1)
-    return (0 if mm else 1, 0 if (c.get('sell') == 1) else 1, 0 if (c['stock'] or 0) > 0 else 1)
+    return (0 if mm else 1, 0 if c.get('cur') == 'rmb' else 1, 0 if (c.get('sell') == 1) else 1, 0 if (c['stock'] or 0) > 0 else 1)
 
 def pick(cs, brand):
     if not cs: return None
