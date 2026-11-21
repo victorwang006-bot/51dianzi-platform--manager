@@ -3,14 +3,17 @@ import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 import {
   ADMIN_NEW_INFORMATION_MODULES,
+  ADMIN_NEW_INFORMATION_MAX_UNREAD_REFS,
   adminNewInformationInspectSchema,
   adminNewInformationMarkSchema,
+  adminNewInformationUnreadRefsSchema,
   type AdminNewInformationInspection,
   type AdminNewInformationModule,
   type AdminNewInformationModuleSummary,
   type AdminNewInformationRow,
   type AdminNewInformationSummary,
   type AdminNewInformationUnavailableReason,
+  type AdminNewInformationUnreadRefs,
 } from "../../shared/adminNewInformation";
 import {
   adminNewInformationStates,
@@ -142,6 +145,10 @@ export interface AdminNewInformationService {
   summary(
     viewer: AdminNewInformationViewer
   ): Promise<AdminNewInformationSummary>;
+  unreadRefs(
+    viewer: AdminNewInformationViewer,
+    input: { module: AdminNewInformationModule; scope?: string }
+  ): Promise<AdminNewInformationUnreadRefs>;
   inspect(
     viewer: AdminNewInformationViewer,
     input: AdminNewInformationInspectInput
@@ -598,6 +605,51 @@ export function createAdminNewInformationService(
       }
       return { modules };
     },
+    async unreadRefs(viewer, input) {
+      assertViewer(viewer);
+      const checked = adminNewInformationUnreadRefsSchema.parse(input);
+      secret();
+      try {
+        return await fence(viewer, () =>
+          store.withModule(viewer, checked.module, async state => {
+            const current = await scan(viewer, checked.module, state.initialized);
+            // Read-only baseline compatibility: do not establish or write ANY seen
+            // facts. Explicit post-activation events remain new on the first query.
+            const effective = { ...state, seen: new Set(state.seen) };
+            if (!state.initialized) {
+              for (const row of current.rows)
+                if (row.historical !== false) effective.seen.add(eventKey(row));
+            }
+            const unseen = current.rows.filter(row => isNew(effective, row, current.scope));
+            const candidates = Array.from(new Set(unseen.map(row => row.id)));
+            const refs = new Set<string>();
+            if (checked.scope === undefined) {
+              if (candidates.length > ADMIN_NEW_INFORMATION_MAX_UNREAD_REFS) throw unavailable();
+              for (const ref of candidates) refs.add(ref);
+            } else {
+              const exact = new Set(unseen.map(eventKey));
+              // Even an empty snapshot rechecks the selected scope live. Never use
+              // child aliases/client metadata as merchant authorization evidence.
+              for (let offset = 0; offset < Math.max(1, candidates.length); offset += 100) {
+                const batch = candidates.slice(offset, offset + 100);
+                const reply = await deps.source.lookup({ viewer, module: checked.module, refs: batch, scope: checked.scope });
+                if (!reply || reply.available !== true) throw unavailable();
+                assertScope(reply.scope);
+                if (!sameScope(current.scope, reply.scope)) throw unavailable();
+                const allowed = new Set(batch);
+                for (const row of validateEvents(reply.items)) {
+                  if (allowed.has(row.id) && exact.has(eventKey(row)) && isNew(effective, row, reply.scope)) refs.add(row.id);
+                }
+                if (refs.size > ADMIN_NEW_INFORMATION_MAX_UNREAD_REFS) throw unavailable();
+              }
+            }
+            return { refs: Array.from(refs).sort(), available: true as const };
+          })
+        );
+      } catch {
+        throw unavailable();
+      }
+    },
     async inspect(viewer, input) {
       assertViewer(viewer);
       const checked = adminNewInformationInspectSchema.parse(input);
@@ -700,6 +752,7 @@ export function createAdminNewInformationService(
               AdminNewInformationModule,
               Map<string, number>
             >();
+            const provenScopes = new Map<AdminNewInformationModule, AdminNewInformationScope>();
             for (const module of modules) {
               const selected = receipts.filter(receipt => receipt.m === module);
               const state = states.get(module)!;
@@ -732,6 +785,9 @@ export function createAdminNewInformationService(
                   reply.scope.version !== first.sc
                 )
                   throw unavailable();
+                const previousScope = provenScopes.get(module);
+                if (previousScope && !sameScope(previousScope, reply.scope)) throw unavailable();
+                provenScopes.set(module, reply.scope);
                 const real = new Set(validateEvents(reply.items).map(eventKey));
                 for (const receipt of group) {
                   const key = eventKey({ id: receipt.id, version: receipt.ev });
@@ -748,6 +804,21 @@ export function createAdminNewInformationService(
               }
               pending.set(module, additions);
             }
+            const summaries = new Map<AdminNewInformationModule, AdminNewInformationModuleSummary>();
+            for (const module of modules) {
+              const state = states.get(module)!;
+              const current = await scan(viewer, module, state.initialized);
+              if (!sameScope(current.scope, provenScopes.get(module)!)) throw unavailable();
+              const real = new Set(current.rows.map(eventKey));
+              for (const receipt of receipts.filter(receipt => receipt.m === module)) {
+                if (!real.has(eventKey({ id: receipt.id, version: receipt.ev }))) throw unavailable();
+              }
+              // Count the full fresh snapshot with staged exact event keys. Counting
+              // identities may be shared; subtracting receipt/row count is incorrect.
+              const staged = { ...state, seen: new Set(state.seen) };
+              for (const key of pending.get(module)!.keys()) staged.seen.add(key);
+              summaries.set(module, countEvents(staged, current.rows, current.scope));
+            }
             let marked = 0;
             const commitTime = now();
             // Even already-seen receipts must remain valid at the batch linearization point.
@@ -759,6 +830,7 @@ export function createAdminNewInformationService(
                 state.seen.add(key);
                 marked++;
               }
+              state.lastSummary = summaries.get(module)!;
             }
             return { marked, accepted: checked.receipts.length };
           })

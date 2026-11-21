@@ -67,6 +67,8 @@ export type AdminNewInformationRowBadgeProps = {
   presentationKey?: string;
   className?: string;
   ariaLabel?: string;
+  /** Native customer list uses explicit 未读; legacy modules keep 新. */
+  label?: string;
 };
 export function AdminNewInformationRowBadge({
   isNew,
@@ -76,6 +78,7 @@ export function AdminNewInformationRowBadge({
   presentationKey,
   className = "",
   ariaLabel = "新信息，已在当前列表展示后会记录为已展示",
+  label = "新",
 }: AdminNewInformationRowBadgeProps) {
   const instance = useId();
   const row = useAdminNewInformationRowContext(
@@ -94,7 +97,7 @@ export function AdminNewInformationRowBadge({
       aria-label={ariaLabel}
       role="status"
     >
-      新
+      {label}
     </span>
   );
 }

@@ -1,0 +1,151 @@
+{
+  "scope": "admin-polish-20261121-2257",
+  "status": "PREPARED_NOT_DEPLOYED",
+  "sourceBaseline": {
+    "manager": "9dc378d72b988e1e23235b40fbb84e43afbd7976",
+    "platform": "28dbce1105d4d8310d7ad61e9f547cfff5a79ef6"
+  },
+  "adminHTML": {
+    "local": "/home/ubuntu/work/admin-polish-release-20261121-2257/static-candidate/index.html",
+    "beforeSHA": "d9df9c5dfc1a5a1f0823278b0e56b988f0d504528a534175f0b2476da2ef938f",
+    "afterSHA": "937b3d0fdc5e220b094617704b14668ed84fc70e71b0ed456c36f679b1ab8dfa",
+    "size": 857197
+  },
+  "assets": [
+    {
+      "url": "/assets/AdminNewInformation-admin-polish-runtime-67feeba8e334ea18.js",
+      "local": "/home/ubuntu/work/admin-polish-release-20261121-2257/ui-candidate/AdminNewInformation-admin-polish-runtime-67feeba8e334ea18.js",
+      "sha256": "67feeba8e334ea189caa1ec9c4302d105b5f78265a2fe95cddce5ca8c51134f9",
+      "size": 298839,
+      "side": "admin"
+    },
+    {
+      "url": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "local": "/home/ubuntu/work/admin-polish-release-20261121-2257/ui-candidate/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "sha256": "6614aeb7b2a8f529f13f215055973acb7c3e52c16431fcc5fbb54638a3ad1e45",
+      "size": 99347,
+      "side": "admin"
+    },
+    {
+      "url": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "local": "/home/ubuntu/work/admin-polish-release-20261121-2257/pages-candidate/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "sha256": "30effd9ea32def6273e25ec4e557527a0d1932fb1d1e09303739f75768d918dc",
+      "size": 5546009,
+      "side": "admin"
+    },
+    {
+      "url": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "local": "/home/ubuntu/work/admin-polish-release-20261121-2257/pages-candidate/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "sha256": "53fe6b444a4b67757285e705468dd452439a5394784a80b53454da4189e6d0ce",
+      "size": 6443627,
+      "side": "admin"
+    },
+    {
+      "side": "admin",
+      "url": "/assets/admin-polish-26ff8393db557184.css",
+      "local": "/home/ubuntu/work/admin-polish-release-20261121-2257/static-candidate/assets/admin-polish-26ff8393db557184.css",
+      "sha256": "26ff8393db557184ce834df9c3da93aa471b5a9cae2656c5f14c07c9d3a9a063",
+      "size": 10783
+    }
+  ],
+  "api": {
+    "admin": {
+      "sha256": "84bb6eed50d466e54209311d5ec0d70a1cf734b650a00b8d6f658287a5cfa1b9",
+      "beforeSha256": "bf4f50ae028d4f5ef634f84cf93059b795ae944421e8c222a8d130b110bfb2f1",
+      "bytes": 1634297,
+      "delta": "/home/ubuntu/work/admin-polish-release-20261121-2257/backend-candidate/admin-delta.json",
+      "slots": [
+        "newInformation.admin import URL",
+        "customerListSchema.customerIds"
+      ],
+      "hunks": 2,
+      "candidate": "/home/ubuntu/work/admin-polish-release-20261121-2257/backend-candidate/admin-api.js",
+      "adminCustomerService": "absent: native customer.list forwards to platform; schema slot only",
+      "nativeFactoryBindingUnchanged": true,
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+      "local": "/home/ubuntu/work/admin-polish-release-20261121-2257/backend-candidate/admin-api.js",
+      "beforeSHA": "bf4f50ae028d4f5ef634f84cf93059b795ae944421e8c222a8d130b110bfb2f1",
+      "afterSHA": "84bb6eed50d466e54209311d5ec0d70a1cf734b650a00b8d6f658287a5cfa1b9",
+      "size": 1634297
+    },
+    "front": {
+      "sha256": "65850e0660fcee0db86f2b8bf959f30b5450576f971599347c0cf69ef617776d",
+      "beforeSha256": "e9ef886f8e67e8b47ed4949d77b1d96cf13e19f628a10402c5288de05fe7be1d",
+      "bytes": 5997347,
+      "delta": "/home/ubuntu/work/admin-polish-release-20261121-2257/backend-candidate/front-delta.json",
+      "slots": [
+        "customerListSchema.customerIds",
+        "listCustomers direct input validation",
+        "listCustomers.conditions before shared WHERE/COUNT"
+      ],
+      "hunks": 3,
+      "candidate": "/home/ubuntu/work/admin-polish-release-20261121-2257/backend-candidate/front-api.js",
+      "originalBranchesUnchanged": true,
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+      "local": "/home/ubuntu/work/admin-polish-release-20261121-2257/backend-candidate/front-api.js",
+      "beforeSHA": "e9ef886f8e67e8b47ed4949d77b1d96cf13e19f628a10402c5288de05fe7be1d",
+      "afterSHA": "65850e0660fcee0db86f2b8bf959f30b5450576f971599347c0cf69ef617776d",
+      "size": 5997347
+    }
+  },
+  "runtimes": [
+    {
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/runtime/newInformation.admin.df1b13f2d03cf6832c75f2219884fc37f6a28777edf9647b077564dd026307a1.runtime.mjs",
+      "local": "/home/ubuntu/work/admin-polish-release-20261121-2257/backend-candidate/runtime/newInformation.admin.df1b13f2d03cf6832c75f2219884fc37f6a28777edf9647b077564dd026307a1.runtime.mjs",
+      "sha256": "df1b13f2d03cf6832c75f2219884fc37f6a28777edf9647b077564dd026307a1",
+      "size": 100047
+    }
+  ],
+  "checks": {
+    "static": {
+      "fullHTMLInverse": true,
+      "allNonTargetAliasesPreserved": true,
+      "sameNativeSingletons": true,
+      "frontHTMLUntouched": true,
+      "channelInventoryLatestPreserved": true
+    },
+    "pages": {
+      "wholeNativeInverseExact": true,
+      "allOutsideAuthorizedSlotsBytesPreserved": true,
+      "protectedFunctionsByteExact": true,
+      "noFullNativeRebuild": true,
+      "noNewReact": true,
+      "noNewQueryClient": true,
+      "noNewTRPC": true,
+      "noNewBusinessScope": true,
+      "sourceSnapshotStable": true,
+      "globalUnreadRefsBeforeServerPagination": true,
+      "emptyUnreadDisablesList": true,
+      "unsupportedUnreadIsFailureNotEmpty": true,
+      "listInspectOnly": true,
+      "detailSuccessfulMainRefSingleCustomer": true,
+      "detailFailureFreshInspectionRetry": true,
+      "serverStarOrderingAndPaginationPreserved": true,
+      "allOriginalContactsTeamsDatesUploadsCreateInventoryInvoicesPreserved": true,
+      "noHTMLWrites": true,
+      "noProductionWrites": true,
+      "noBrowser": true,
+      "allModuleImportExportBytesExact": true,
+      "nodeCheckBothAssets": true
+    },
+    "backend": {
+      "syntax": true,
+      "astExactSlots": true,
+      "inverseVerified": true,
+      "outsideHunksVerified": true,
+      "originalPermissionBranchesUnchanged": true,
+      "nativeDepsABIUnchanged": true,
+      "noApiStartup": true,
+      "noDatabase": true,
+      "noSSH": true,
+      "noGit": true,
+      "noProductionWrites": true,
+      "noOldGeneratorExecution": true,
+      "noMigration": true,
+      "unchangedFactsContract": true,
+      "selectedNativeABITests": true
+    }
+  },
+  "frontHTMLPreservedSHA": "c2313f91eeb4a8d696d3cab4f0884cb4028553be9aed12fd725294bbef90028e",
+  "verificationBoundary": "Offline source and compiled ABI tests; production release/authenticated unread checks not yet performed"
+}

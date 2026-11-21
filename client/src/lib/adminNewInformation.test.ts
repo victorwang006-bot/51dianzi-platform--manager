@@ -22,6 +22,8 @@ import {
   createAdminNewInformationHooks,
   useAdminNewInformationContext,
   useAdminNewInformationContextRows,
+  useAdminNewInformationContextUnreadRefs,
+  customerIdsFromAdminUnreadRefs,
   useAdminNewInformationRows,
   useAdminNewInformationSummary,
   isAdminNewInformationRowVisible,
@@ -248,6 +250,10 @@ function RowsView({
   ids = ["source:1"],
   y = 20,
   duplicates = false,
+  acknowledgeOnVisible = true,
+  retainUnreadWhileVisible = true,
+  module = "reception",
+  scope = "original-team:42",
 }: {
   account?: string;
   canRead?: boolean;
@@ -255,15 +261,21 @@ function RowsView({
   ids?: string[];
   y?: number;
   duplicates?: boolean;
+  acknowledgeOnVisible?: boolean;
+  retainUnreadWhileVisible?: boolean;
+  module?: "reception" | "customers";
+  scope?: string;
 }) {
   latestRows = useAdminNewInformationRows({
     client: api,
     accountKey: account,
     canRead,
-    module: "reception",
-    scope: "original-team:42",
+    module,
+    scope,
     refs: ids,
     listReady: ready,
+    acknowledgeOnVisible,
+    retainUnreadWhileVisible,
   });
   const presentations = duplicates
     ? ["inquiry:list", "inquiry:dedup"]
@@ -1038,5 +1050,124 @@ describe("multi-tab invalidation", () => {
     expect(api.summary).toHaveBeenCalledTimes(hiddenCalls);
     expect(window.localStorage.length).toBe(0);
     remote.close();
+  });
+});
+
+let latestUnread: ReturnType<typeof useAdminNewInformationContextUnreadRefs>;
+function UnreadView({ scope = "30061", enabled = true, ready = true }: { scope?: string; enabled?: boolean; ready?: boolean }) {
+  latestUnread = useAdminNewInformationContextUnreadRefs({ module: "customers", scope, enabled, listReady: ready });
+  return h("output", { "data-available": String(latestUnread.available), "data-error": String(Boolean(latestUnread.error)),
+    "data-ids": latestUnread.customerIds === undefined ? "unknown" : JSON.stringify(latestUnread.customerIds) });
+}
+function UnreadProvider({ scope = "30061", account = "admin:1", enabled = true, ready = true }: { scope?: string; account?: string; enabled?: boolean; ready?: boolean }) {
+  return h(AdminNewInformationProvider, { client: api, accountKey: account, canRead: true,
+    children: h(UnreadView, { scope, enabled, ready }) });
+}
+describe("customer detail acknowledgement and full-set unread filter", () => {
+  it("visible customer list only inspects, including retry/focus/poll; never marks", async () => {
+    vi.mocked(api.inspect).mockResolvedValue(inspection("customer:801"));
+    await render(h(RowsView, { ids: ["customer:801"], module: "customers", scope: "30061", acknowledgeOnVisible: false, retainUnreadWhileVisible: false }));
+    await intersect(); await tick(45000);
+    await act(async () => latestRows.retryDisplayed()); await tick();
+    expect(api.inspect).toHaveBeenCalled(); expect(api.markDisplayed).not.toHaveBeenCalled();
+    expect(host.querySelector("[role=status]")).not.toBeNull();
+  });
+  it("successful single-customer native receipt removes visible latch immediately and invalidates ALL account queries", async () => {
+    vi.mocked(api.inspect).mockResolvedValue(inspection("customer:801"));
+    await render(h(RowsView, { ids: ["customer:801"], module: "customers", scope: "30061", retainUnreadWhileVisible: false }));
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    await intersect();
+    expect(api.markDisplayed).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(api.markDisplayed).mock.calls[0][0].receipts).toEqual(["server.signed.receipt.1"]);
+    expect(host.querySelector("[role=status]")).toBeNull();
+    expect(latestRows.getRow("customer:801").markState).toBe("seen");
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["adminNewInformation", "string:admin:1"] });
+  });
+  it("failed/expired confirmation keeps unread and retries ONLY after fresh inspection, never the old token", async () => {
+    vi.mocked(api.inspect).mockResolvedValue(inspection("customer:801", "expired.token"));
+    vi.mocked(api.markDisplayed).mockRejectedValueOnce(new Error("expired"));
+    await render(h(RowsView, { ids: ["customer:801"], module: "customers", scope: "30061", retainUnreadWhileVisible: false }));
+    await intersect(); expect(latestRows.getRow("customer:801").markError).toBeTruthy();
+    const fresh = deferred<AdminNewInformationInspection>();
+    vi.mocked(api.inspect).mockReturnValueOnce(fresh.promise);
+    vi.mocked(api.markDisplayed).mockResolvedValue({ marked: 1, accepted: 1 });
+    await act(async () => { void latestRows.retryDisplayed(); }); await tick();
+    expect(api.markDisplayed).toHaveBeenCalledTimes(1); expect(host.querySelector("[role=status]")).not.toBeNull();
+    await act(async () => fresh.resolve(inspection("customer:801", "fresh.token"))); await tick();
+    expect(api.markDisplayed).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(api.markDisplayed).mock.calls[1][0].receipts).toEqual(["fresh.token"]);
+    expect(host.querySelector("[role=status]")).toBeNull();
+  });
+  it("fresh retry inspection failure preserves old failure and does not submit the stale receipt", async () => {
+    vi.mocked(api.inspect).mockResolvedValue(inspection("customer:801"));
+    vi.mocked(api.markDisplayed).mockRejectedValue(new Error("network"));
+    await render(h(RowsView, { ids: ["customer:801"], module: "customers", retainUnreadWhileVisible: false })); await intersect();
+    vi.mocked(api.inspect).mockRejectedValue(new Error("inspect failed"));
+    await act(async () => { await latestRows.retryDisplayed(); }); await tick();
+    expect(api.markDisplayed).toHaveBeenCalledTimes(1); expect(latestRows.getRow("customer:801").markError).toBeTruthy();
+    expect(host.querySelector("[role=status]")).not.toBeNull();
+  });
+  it("a merchant swap aborts pending detail receipt and never reuses old scope evidence", async () => {
+    const pending = deferred<unknown>(); vi.mocked(api.markDisplayed).mockReturnValueOnce(pending.promise);
+    vi.mocked(api.inspect).mockResolvedValue(inspection("customer:801"));
+    await render(h(RowsView, { ids: ["customer:801"], module: "customers", scope: "30061", retainUnreadWhileVisible: false })); await intersect();
+    const signal = vi.mocked(api.markDisplayed).mock.calls[0][1]?.signal;
+    await render(h(RowsView, { ids: ["customer:801"], module: "customers", scope: "30062", retainUnreadWhileVisible: false, acknowledgeOnVisible: false }));
+    expect(signal?.aborted).toBe(true);
+    await act(async () => pending.resolve({ marked: 1, accepted: 1 })); await tick();
+    expect(queryClient.getQueriesData({ queryKey: adminNewInformationKeys.rows("admin:1", "customers", "30061") })).toEqual([]);
+    expect(latestRows.getRow("customer:801").markState).not.toBe("seen");
+  });
+  it("does not obtain full unread IDs unless explicitly enabled and authority ready; empty is a proved success", async () => {
+    api.unreadRefs = vi.fn(async () => ({ refs: [], available: true }));
+    await render(h(UnreadProvider, { enabled: false })); expect(api.unreadRefs).not.toHaveBeenCalled();
+    await render(h(UnreadProvider, { ready: false })); expect(api.unreadRefs).not.toHaveBeenCalled();
+    await render(h(UnreadProvider));
+    expect(api.unreadRefs).toHaveBeenCalledWith({ module: "customers", scope: "30061" }, expect.objectContaining({ signal: expect.any(AbortSignal) }));
+    expect(latestUnread.customerIds).toEqual([]); expect(latestUnread.available).toBe(true);
+    expect(api.markDisplayed).not.toHaveBeenCalled();
+  });
+  it("legacy client without optional capability and a query failure remain unknown/errors, never fake empty; explicit retry works", async () => {
+    await render(h(UnreadProvider)); expect(latestUnread.error).toBeTruthy(); expect(latestUnread.customerIds).toBeUndefined();
+    api.unreadRefs = vi.fn().mockRejectedValueOnce(new Error("unavailable")).mockResolvedValue({ refs: ["customer:802", "customer:801"], available: true });
+    await render(h(UnreadProvider)); await act(async () => { await latestUnread.retry(); }); await tick();
+    expect(latestUnread.error).toBeTruthy(); expect(latestUnread.customerIds).toBeUndefined();
+    await act(async () => { await latestUnread.retry(); }); await tick();
+    expect(latestUnread.customerIds).toEqual([801, 802]);
+  });
+  it("scope/account switch rejects a late old response; disabling clears the authorized unread set", async () => {
+    const old = deferred<{ refs: string[]; available: true }>();
+    api.unreadRefs = vi.fn().mockReturnValueOnce(old.promise).mockResolvedValue({ refs: ["customer:802"], available: true });
+    await render(h(UnreadProvider)); await render(h(UnreadProvider, { scope: "30062", account: "admin:2" }));
+    await act(async () => old.resolve({ refs: ["customer:801"], available: true })); await tick();
+    expect(latestUnread.customerIds).toEqual([802]);
+    expect(queryClient.getQueriesData({ queryKey: adminNewInformationKeys.account("admin:1") })).toEqual([]);
+    await render(h(UnreadProvider, { scope: "30062", account: "admin:2", enabled: false }));
+    expect(latestUnread.customerIds).toBeUndefined();
+    expect(queryClient.getQueryData(adminNewInformationKeys.unreadRefs("admin:2", "customers", "30062"))).toBeUndefined();
+  });
+  it.each([["customer:0"], ["customer:-1"], ["customer:01"], ["customer:1.5"], ["channel:1"], ["customer:9007199254740992"]])("rejects unsafe/non-customer refs %j", refs => {
+    expect(() => customerIdsFromAdminUnreadRefs(refs)).toThrow();
+  });
+  it("safely deduplicates positive IDs and rejects input over 2000 without truncation", () => {
+    expect(customerIdsFromAdminUnreadRefs(["customer:3", "customer:1", "customer:3"])).toEqual([1, 3]);
+    expect(() => customerIdsFromAdminUnreadRefs(Array.from({ length: 2001 }, (_, n) => `customer:${n + 1}`))).toThrow("2000");
+  });
+});
+
+describe("customer bound-admin identity", () => {
+  it("a provided expectedAccountKey must match the original admin provider before any inspect/mark", async () => {
+    function Bound({ expected }: { expected: string }) {
+      latestRows = useAdminNewInformationContextRows({ module: "customers", scope: "30061", refs: ["customer:801"],
+        listReady: true, expectedAccountKey: expected, retainUnreadWhileVisible: false });
+      const row = latestRows.getRow("customer:801");
+      return h("div", { ref: row.ref }, h(AdminNewInformationRowBadge, { isNew: row.isNew }));
+    }
+    const view = (expected: string) => h(AdminNewInformationProvider, { client: api, accountKey: "admin:1", canRead: true, children: h(Bound, { expected }) });
+    vi.mocked(api.inspect).mockResolvedValue(inspection("customer:801"));
+    await render(view("admin:2")); await intersect();
+    expect(api.inspect).not.toHaveBeenCalled(); expect(api.markDisplayed).not.toHaveBeenCalled();
+    await render(view("admin:1")); await intersect();
+    expect(api.inspect).toHaveBeenCalled(); expect(api.markDisplayed).toHaveBeenCalledTimes(1);
   });
 });

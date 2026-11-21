@@ -1094,3 +1094,148 @@ describe("physical inquiry presentation and signed multi-fact receipts", () => {
     expect(f.store.states.get(f.store.key(a, "reception"))?.seen.size).toBe(0);
   });
 });
+
+describe("complete unread refs and authoritative display summaries", () => {
+  it("enumerates a complete multipage snapshot, deduplicates physical refs, preserves seen/history/self rules without marking", async () => {
+    const f = fixture();
+    await f.service.summary(a);
+    f.source.pageSize = 20;
+    const rows = Array.from({ length: 205 }, (_, i) => event(`customer:${i + 1}`, "created:1", { historical: false }));
+    f.source.set("customers", [...rows, rows[0], event("customer:1", "assignment:2", { historical: false }),
+      event("history", "v1", { historical: true }), event("self", "v1", { actorKey: "employee:self", historical: false })]);
+    const before = new Set(f.store.states.get(f.store.key(a, "customers"))!.seen);
+    const result = await f.service.unreadRefs(a, { module: "customers" });
+    expect(result.available).toBe(true); expect(result.refs).toHaveLength(205);
+    expect(new Set(result.refs)).toEqual(new Set(rows.map(row => row.id)));
+    expect(f.source.lookupCalls).toHaveLength(0);
+    expect(f.store.states.get(f.store.key(a, "customers"))!.seen).toEqual(before);
+    const token = (await f.service.inspect(a, { module: "customers", refs: ["customer:1"] })).items[0].receipt!;
+    await f.service.markDisplayed(a, { receipts: [token] });
+    expect((await f.service.unreadRefs(a, { module: "customers" })).refs).not.toContain("customer:1");
+    expect((await f.service.unreadRefs(b, { module: "customers" })).refs).toContain("customer:1");
+  });
+
+  it("keeps initial legacy baseline suppression ephemeral, never establishes or marks seen from unreadRefs", async () => {
+    const f = fixture();
+    f.source.set("sales", [event("legacy"), event("history", "v1", { historical: true }), event("fresh", "v1", { historical: false })]);
+    expect(await f.service.unreadRefs(a, { module: "sales" })).toEqual({ refs: ["fresh"], available: true });
+    const state = f.store.states.get(f.store.key(a, "sales"))!;
+    expect(state.initialized).toBe(false); expect(state.seen.size).toBe(0);
+  });
+
+  it("accepts 2000 physical refs and fails explicitly on 2001 rather than truncating or returning empty", async () => {
+    const f = fixture();
+    const rows = Array.from({ length: 2001 }, (_, i) => event(`r:${i}`, "v1", { historical: false }));
+    f.source.set("sales", rows.slice(0, 2000));
+    expect((await f.service.unreadRefs(a, { module: "sales" })).refs).toHaveLength(2000);
+    f.source.set("sales", rows);
+    await expect(f.service.unreadRefs(a, { module: "sales" })).rejects.toMatchObject({ code: "SERVICE_UNAVAILABLE" });
+    expect(f.store.states.get(f.store.key(a, "sales"))!.seen.size).toBe(0);
+  });
+
+  it("reauthorizes scoped refs in batches <=100, permits a bounded merchant inside a larger global snapshot and matches exact events", async () => {
+    const f = fixture();
+    f.source.set("sales", Array.from({ length: 2101 }, (_, i) => event(`r:${i}`, "v1", { historical: false })));
+    const lookup = f.source.lookup.bind(f.source);
+    vi.spyOn(f.source, "lookup").mockImplementation(async input => {
+      const reply = await lookup(input);
+      if (!reply.available) return reply;
+      return { ...reply, items: reply.items.filter(row => Number(row.id.slice(2)) < 205)
+        .map(row => row.id === "r:0" ? { ...row, version: "later:2" } : row) };
+    });
+    const result = await f.service.unreadRefs(a, { module: "sales", scope: "17" });
+    expect(result.refs).toHaveLength(204); expect(result.refs).not.toContain("r:0");
+    expect(f.source.lookupCalls).toHaveLength(22);
+    expect(f.source.lookupCalls.every(call => call.scope === "17" && call.refs.length <= 100)).toBe(true);
+    expect(f.store.states.get(f.store.key(a, "sales"))!.seen.size).toBe(0);
+  });
+
+  it("rechecks empty scoped snapshots and rejects denied, partial, changed fingerprint and invalid viewers without fake empty", async () => {
+    const f = fixture();
+    expect(await f.service.unreadRefs(a, { module: "sales", scope: "17" })).toEqual({ refs: [], available: true });
+    expect(f.source.lookupCalls.at(-1)).toMatchObject({ refs: [], scope: "17" });
+    f.source.failLookup = true;
+    await expect(f.service.unreadRefs(a, { module: "sales", scope: "17" })).rejects.toMatchObject({ code: "SERVICE_UNAVAILABLE" });
+    f.source.failLookup = false;
+    f.source.onLookup = () => { f.source.scope.version = "grants:changed"; };
+    await expect(f.service.unreadRefs(a, { module: "sales", scope: "17" })).rejects.toMatchObject({ code: "SERVICE_UNAVAILABLE" });
+    f.source.onLookup = undefined; f.source.denied = true;
+    await expect(f.service.unreadRefs(a, { module: "sales" })).rejects.toMatchObject({ code: "SERVICE_UNAVAILABLE" });
+    await expect(f.service.unreadRefs({ ...a, sessionVersion: 0 }, { module: "sales" })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    f.source.denied = false; f.source.pageSize = 1; f.source.mutateSnapshot = true;
+    f.source.set("sales", [event("r1"), event("r2")]);
+    await expect(f.service.unreadRefs(a, { module: "sales" })).rejects.toMatchObject({ code: "SERVICE_UNAVAILABLE" });
+  });
+
+  it("updates stored lastSummary immediately from fresh facts, retains later versions and duplicate receipt acceptance", async () => {
+    const f = fixture();
+    f.source.set("sales", [event("r", "v1", { historical: false, children: ["orders"] }), event("other", "v1", { historical: false, children: ["outbound"] })]);
+    await f.service.summary(a);
+    const token = await receipt(f, "r");
+    f.source.set("sales", [...f.source.rows.get("sales")!, event("r", "later:2", { historical: false, children: ["orders"] })]);
+    expect(await f.service.markDisplayed(a, { receipts: [token, token] })).toEqual({ marked: 1, accepted: 2 });
+    expect(f.store.states.get(f.store.key(a, "sales"))!.lastSummary).toEqual({ count: 2, available: true, children: { orders: 1, outbound: 1 } });
+    const later = await receipt(f, "r");
+    expect(await f.service.markDisplayed(a, { receipts: [later] })).toEqual({ marked: 1, accepted: 1 });
+    expect(f.store.states.get(f.store.key(a, "sales"))!.lastSummary).toEqual({ count: 1, available: true, children: { orders: 0, outbound: 1 } });
+    f.source.failList.add("sales");
+    expect((await f.service.summary(a)).modules.sales).toEqual({ count: 1, available: false, lastKnown: true, reason: "temporary", children: { orders: 0, outbound: 1 } });
+  });
+
+  it("recomputes conversation counts instead of subtracting physical fact or receipt count", async () => {
+    const f = fixture();
+    f.source.set("reception", [inquiryFact("inquiry:1", "created:1"), inquiryFact("inquiry:1", "message:2"), inquiryFact("inquiry:2", "created:1")]);
+    await f.service.summary(a);
+    const token = (await readInquiry(f)).items[0].receipt!;
+    expect(await f.service.markDisplayed(a, { receipts: [token, token] })).toEqual({ marked: 2, accepted: 2 });
+    expect(f.store.states.get(f.store.key(a, "reception"))!.lastSummary).toEqual({ count: 1, available: true, children: { messages: 1 } });
+    expect(await f.service.markDisplayed(a, { receipts: [token] })).toEqual({ marked: 0, accepted: 1 });
+    expect(f.store.states.get(f.store.key(a, "reception"))!.lastSummary.count).toBe(1);
+  });
+
+  it("fresh source failure in another module rolls back every seen/count update and remains retryable", async () => {
+    const f = fixture();
+    f.source.set("customers", [event("c", "v1", { historical: false })]);
+    f.source.set("sales", [event("s", "v1", { historical: false })]);
+    await f.service.summary(a);
+    const customer = (await f.service.inspect(a, { module: "customers", refs: ["c"] })).items[0].receipt!;
+    const sales = await receipt(f, "s");
+    const beforeCustomer = f.store.states.get(f.store.key(a, "customers"));
+    const beforeSales = f.store.states.get(f.store.key(a, "sales"));
+    f.source.failList.add("sales");
+    await expect(f.service.markDisplayed(a, { receipts: [customer, sales] })).rejects.toMatchObject({ code: "SERVICE_UNAVAILABLE" });
+    expect(f.store.states.get(f.store.key(a, "customers"))).toBe(beforeCustomer);
+    expect(f.store.states.get(f.store.key(a, "sales"))).toBe(beforeSales);
+    expect(beforeCustomer!.seen.size).toBe(0); expect(beforeSales!.lastSummary.count).toBe(1);
+    f.source.failList.delete("sales");
+    expect(await f.service.markDisplayed(a, { receipts: [customer, sales] })).toEqual({ marked: 2, accepted: 2 });
+    expect(f.store.states.get(f.store.key(a, "customers"))!.lastSummary.count).toBe(0);
+    expect(f.store.states.get(f.store.key(a, "sales"))!.lastSummary.count).toBe(0);
+  });
+
+  it.each(["expiry", "fingerprint", "exact fact"])("rejects %s changing during fresh scan before any seen/summary commit", async reason => {
+    const f = fixture();
+    f.source.set("sales", [event("r", "v1", { historical: false })]);
+    await f.service.summary(a);
+    const token = await receipt(f, "r");
+    const before = f.store.states.get(f.store.key(a, "sales"));
+    if (reason === "exact fact") f.source.onLookup = () => { f.source.set("sales", [event("r", "later:2", { historical: false })]); };
+    // Lookup captures its reply after onLookup; changing in list itself emulates IO after live exact check.
+    if (reason === "exact fact") {
+      f.source.onLookup = undefined;
+      const list = f.source.list.bind(f.source);
+      vi.spyOn(f.source, "list").mockImplementation(input => {
+        f.source.set("sales", [event("r", "later:2", { historical: false })]);
+        return list(input);
+      });
+    } else f.source.onPage = module => {
+      if (module === "sales") {
+        if (reason === "expiry") f.advance(120001);
+        else f.source.scope.version = "grants:new";
+      }
+    };
+    await expect(f.service.markDisplayed(a, { receipts: [token] })).rejects.toMatchObject({ code: "SERVICE_UNAVAILABLE" });
+    expect(f.store.states.get(f.store.key(a, "sales"))).toBe(before);
+    expect(before!.seen.size).toBe(0); expect(before!.lastSummary.count).toBe(1);
+  });
+});

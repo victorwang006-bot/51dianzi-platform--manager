@@ -160,8 +160,11 @@ export const customerListScopeSchema = z.object({
   teamId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),
 }).refine(validCustomerTeamScope, customerTeamScopeRefinement);
 
+/** A narrowing list predicate only; undefined preserves the original query, [] matches none. */
+export const customerListIdsSchema = z.array(z.number().int().positive().max(Number.MAX_SAFE_INTEGER)).max(2000).optional();
 export const customerListSchema = customerUpdatedRangeSchema.safeExtend({
   keyword: optionalText(128), grade: z.enum(CUSTOMER_GRADES).optional(), stage: z.enum(CUSTOMER_STAGES).optional(),
+  customerIds: customerListIdsSchema,
   // Existing list API, not a new CRM store. Omission preserves native workbench behavior.
   salesOrderPicker: z.enum(["current_team", "enterprise"]).optional(),
   ...customerListScopeSchema.shape, assignedUserId: z.number().int().positive().optional(),

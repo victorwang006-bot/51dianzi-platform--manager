@@ -31,6 +31,13 @@ export type AdminNewInformationModuleSummary = {
 export type AdminNewInformationSummary = {
   modules: Record<AdminNewInformationModule, AdminNewInformationModuleSummary>;
 };
+/** Complete unread physical refs, never a first-page approximation. Overflow fails unavailable. */
+export const ADMIN_NEW_INFORMATION_MAX_UNREAD_REFS = 2000;
+export const adminNewInformationUnreadRefsSchema = z.object({
+  module: adminNewInformationModuleSchema,
+  scope: z.string().max(180).optional(),
+});
+export type AdminNewInformationUnreadRefs = { refs: string[]; available: true };
 export const adminNewInformationInspectSchema = z.object({
   module: adminNewInformationModuleSchema,
   refs: z.array(z.string().min(1).max(180)).max(100),

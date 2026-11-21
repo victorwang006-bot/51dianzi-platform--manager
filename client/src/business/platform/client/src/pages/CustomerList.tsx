@@ -27,7 +27,7 @@ import { trpc } from "../../../../api/business-trpc";
 import { customerWorkbenchLocation } from "../components/customers/customerWorkbench";
 import { AdminPage, AdminDataPanel } from "@/components/admin/UnifiedAdminPage";
 import { CompactListToolbar } from "@/business/platform/client/src/components/ui/CompactListToolbar";
-import { useAdminNewInformationContextRows } from "../../../../../lib/adminNewInformation";
+import { useAdminNewInformationContextRows, useAdminNewInformationContextUnreadRefs } from "../../../../../lib/adminNewInformation";
 import { AdminNewInformationRowBadge } from "../../../../../components/admin/AdminNewInformationBadge";
 import { useBusinessScope } from "../../../../BusinessScope";
 import { Button } from "../components/ui/button";
@@ -157,6 +157,8 @@ export default function CustomerList() {
   const filterConfirmationRequired = customerFiltersRequireConfirmation();
   const [filterDateError, setFilterDateError] = useState<string | null>(null);
   const [page, setPage] = useRememberedState("page", 1);
+  // Existing UI-only memory slot: remember the filter, NEVER persist read facts/IDs.
+  const [unreadOnly, setUnreadOnly] = useRememberedState("view", false);
   // The old canReadAll includes delegated reachability, not enterprise authority.
   // Never promote it (or write/manage authority) into an enterprise read range.
   const [verifiedRangeIdentity, setVerifiedRangeIdentity] = useState<string | null>(null);
@@ -253,6 +255,17 @@ export default function CustomerList() {
   const dateFilterNotice = appliedDateError
     ? `${filterDateError ?? appliedDateError}查询已暂停，请重置筛选或调整日期后重新查询。`
     : filterDateError;
+  const unreadAuthorityReady = d51Ready && rangeIdentityReady && contactScope.ready
+    && contextQuery.isSuccess && !contextQuery.isError && !contextQuery.isFetching && !contextQuery.isPlaceholderData
+    && businessScope.contextVerification.state === "verified"
+    && businessScope.contextVerification.identity === businessScope.storageScope
+    && businessScope.staffPrincipal.enterpriseId === contactScope.scope?.enterpriseId
+    && businessScope.frontUser.id === contactScope.scope?.actorUserId;
+  const unreadCustomers = useAdminNewInformationContextUnreadRefs({ module: "customers",
+    scope: String(businessScope.merchantId), enabled: unreadOnly, listReady: unreadAuthorityReady,
+    expectedAccountKey: businessScope.staffPrincipal?.adminAccountId });
+  const unreadEmpty = unreadOnly && unreadCustomers.available && unreadCustomers.customerIds?.length === 0;
+  const unreadCanQuery = !unreadOnly || (unreadCustomers.available && Boolean(unreadCustomers.customerIds?.length));
   const listInput = useMemo(() => {
     const scope = appliedFilters.scope;
     const assignedUserId = appliedFilters.assignedUserId === "me"
@@ -276,17 +289,20 @@ export default function CustomerList() {
       archived: appliedFilters.archived,
       due: appliedFilters.due,
       starredOnly: appliedFilters.starredOnly === true,
+      ...(unreadOnly ? { customerIds: unreadCustomers.customerIds ?? [] } : {}),
       page,
       pageSize: PAGE_SIZE,
     };
-  }, [appliedFilters, page, contactScope.identityKey]);
-  const canQueryList = !filterConfirmationRequired && rangeIdentityReady && !appliedRangeError && !appliedDateError && contactScope.ready && !contextQuery.isPending && !contextQuery.isError && Boolean(contextQuery.data) && (appliedFilters.starredOnly !== true || stars.ready) && d51Ready;
+  }, [appliedFilters, page, contactScope.identityKey, unreadOnly, unreadCustomers.customerIds]);
+  const canQueryList = unreadCanQuery && !filterConfirmationRequired && rangeIdentityReady && !appliedRangeError && !appliedDateError && contactScope.ready && !contextQuery.isPending && !contextQuery.isError && Boolean(contextQuery.data) && (appliedFilters.starredOnly !== true || stars.ready) && d51Ready;
   const listQuery = trpc.customer.list.useQuery(listInput, freshListOptions({
     enabled: canQueryList,
     placeholderData: undefined,
   }, d51Ready));
   // Never render a previous identity/enterprise page, including its old total.
-  const result = !filterConfirmationRequired && rangeIdentityReady && !appliedRangeError && !appliedDateError && d51Ready && contactScope.ready && !contextQuery.isPending && !contextQuery.isError
+  const unreadNarrowingFailed = unreadOnly && unreadCanQuery && listQuery.isSuccess && !listQuery.isFetching
+    && listQuery.data?.items.some(customer => !unreadCustomers.customerIds?.includes(customer.id));
+  const result = unreadCanQuery && !unreadNarrowingFailed && !filterConfirmationRequired && rangeIdentityReady && !appliedRangeError && !appliedDateError && d51Ready && contactScope.ready && !contextQuery.isPending && !contextQuery.isError
     && !listQuery.isError && listQuery.isFetchedAfterMount !== false && !listQuery.isPlaceholderData && (appliedFilters.starredOnly !== true || stars.ready)
     && listQuery.data?.items.every(customer => customer.enterpriseId === contactScope.scope?.enterpriseId
       && (customer.starUserId === undefined || customer.starUserId === null || customer.starUserId === customer.assignedUserId))
@@ -303,10 +319,11 @@ export default function CustomerList() {
     && businessScope.frontUser.id === contactScope.scope?.actorUserId;
   const newInformationRows = useAdminNewInformationContextRows({ module: "customers",
     refs: pageRows.map(customer => `customer:${customer.id}`),
-    scope: String(businessScope.merchantId), listReady: newInformationListReady });
-  // Stable page-local promotion; filters, server pagination and equal-priority star order stay intact.
-  const displayedCustomerRows = [...pageRows].sort((a, b) =>
-    Number(newInformationRows.getRow(`customer:${b.id}`).isNew) - Number(newInformationRows.getRow(`customer:${a.id}`).isNew));
+    scope: String(businessScope.merchantId), listReady: newInformationListReady,
+    acknowledgeOnVisible: false, retainUnreadWhileVisible: false,
+    expectedAccountKey: businessScope.staffPrincipal?.adminAccountId });
+  // Keep the server's star order and authoritative pagination untouched.
+  const displayedCustomerRows = pageRows;
   stars.observeRows(result?.items ?? []);
   const pageCustomerIds = useMemo(() => result?.items.map(customer => customer.id) ?? [], [result?.items]);
   const supplyRequestKey = JSON.stringify([supplyAuthority.identity?.key, listInput, pageCustomerIds]);
@@ -479,6 +496,7 @@ export default function CustomerList() {
     setFilterScopeError(null);
     setDraftFilters(next);
     setAppliedFilters(next);
+    setUnreadOnly(false);
     confirmCustomerFilters();
     setPage(1);
   };
@@ -514,7 +532,7 @@ export default function CustomerList() {
   };
 
   const canResetFilters = Boolean(
-    filterConfirmationRequired || updatedDateError(draftFilters) || appliedDateError || draftFilters.keyword ||
+    unreadOnly || filterConfirmationRequired || updatedDateError(draftFilters) || appliedDateError || draftFilters.keyword ||
       draftFilters.grade ||
       draftFilters.stage ||
       draftFilters.assignedUserId ||
@@ -534,7 +552,7 @@ export default function CustomerList() {
       appliedFilters.updatedTo
   );
 
-  const emptyMessage = appliedFilters.archived
+  const emptyMessage = unreadEmpty ? "没有未读客户" : unreadOnly ? "没有符合当前筛选的未读客户" : appliedFilters.archived
     ? "暂无已归档客户"
     : "暂无匹配客户";
 
@@ -788,6 +806,19 @@ export default function CustomerList() {
           </div>
       </CompactListToolbar>
 
+      <div className="customer-list-unread-controls">
+        <label className="customer-list-unread-filter">
+          <input type="checkbox" checked={unreadOnly} onChange={event => { setUnreadOnly(event.target.checked); setPage(1); }} />
+          <span>只看未读</span>
+        </label>
+        <span className="customer-list-caption">打开客户详情后确认已读，列表浏览不会清除</span>
+      </div>
+
+      {newInformationRows.query.isError && newInformationListReady ? <div role="alert" className="customer-list-error mb-2">
+        未读标识核验失败，未读提醒不会被清除。
+        <CustomerSupplyAction onClick={() => void newInformationRows.query.refetch()}>重试未读核验</CustomerSupplyAction>
+      </div> : null}
+
       {dateFilterNotice ? (
         <p id="customer-list-date-error" role="alert" className="customer-list-error customer-list-date-error">
           {dateFilterNotice}
@@ -823,6 +854,9 @@ export default function CustomerList() {
           message={`无法读取客户权限：${errorMessage(contextQuery.error)}`}
           onRetry={() => contextQuery.refetch()}
         />
+      ) : unreadOnly && (unreadCustomers.error || unreadNarrowingFailed) ? (
+        <ErrorPanel message={unreadNarrowingFailed ? "后台未正确限定未读客户，筛选暂不可用，请更新服务后重试" : errorMessage(unreadCustomers.error)}
+          onRetry={() => { void unreadCustomers.retry(); if (unreadNarrowingFailed && canQueryList) void listQuery.refetch(); }} />
       ) : listQuery.isError && canQueryList ? (
         <ErrorPanel
           message={errorMessage(listQuery.error)}
@@ -838,6 +872,10 @@ export default function CustomerList() {
           </div> : null}
           {filterConfirmationRequired || appliedDateError || appliedRangeError ? (
             <div className="customer-list-empty"><p className="customer-list-caption">请调整筛选后查询。</p></div>
+          ) : unreadOnly && !unreadCustomers.available ? (
+            <div className="customer-list-empty" role="status"><p className="customer-list-caption">正在核验未读客户…</p></div>
+          ) : unreadEmpty ? (
+            <div className="customer-list-empty"><p className="admin-cell-primary font-medium">没有未读客户</p></div>
           ) : listQuery.isPending ? (
             <div className="flex justify-center p-12">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -913,7 +951,8 @@ export default function CustomerList() {
                   const rowStarred = customer.starUserId === customer.assignedUserId && customer.isStarred === true;
                   const newInformationRow = newInformationRows.getRow(`customer:${customer.id}`);
                   return (
-                    <TableRow key={customer.id} ref={newInformationRow.ref} data-page-memory-row={String(customer.id)}>
+                    <TableRow key={customer.id} ref={newInformationRow.ref} data-page-memory-row={String(customer.id)}
+                      data-customer-unread={newInformationRow.isNew ? "true" : undefined}>
                       <TableCell>
                         <div className="customer-list-name-line">
                         <button
@@ -939,7 +978,8 @@ export default function CustomerList() {
                         </button>
                         </div>
                         <div className="mt-0.5 flex items-center gap-1.5">
-                          <AdminNewInformationRowBadge isNew={newInformationRow.isNew} />
+                          <AdminNewInformationRowBadge isNew={newInformationRow.isNew} label="未读" className="customer-list-unread-label"
+                            ariaLabel="未读客户，打开详情成功后确认已读；列表浏览不会清除" />
                           {incomplete ? (
                             <span className="customer-list-status rounded bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700">
                               待补全

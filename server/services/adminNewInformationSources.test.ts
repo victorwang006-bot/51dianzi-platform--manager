@@ -560,3 +560,40 @@ describe("registry and notification core integration, no business writes", () =>
     expect((await f.service.summary(viewer)).modules.sales.count).toBe(0);
   });
 });
+
+describe("complete unread refs real authorized merchant source integration", () => {
+  it("returns global unread refs and scoped complete merchant intersection with <=100 ref RPCs and no seen writes", async () => {
+    const f = integration();
+    f.set(11, methods.customers, Array.from({ length: 105 }, (_, i) => event(`customer:${i + 1}`)));
+    f.set(12, methods.customers, Array.from({ length: 100 }, (_, i) => event(`customer:${i + 106}`)));
+    expect((await f.service.unreadRefs(viewer, { module: "customers" })).refs).toHaveLength(205);
+    f.reads.readBusinessFacts.mockClear();
+    const selected = await f.service.unreadRefs(viewer, { module: "customers", scope: "11" });
+    expect(selected.available).toBe(true); expect(selected.refs).toHaveLength(105);
+    expect(new Set(selected.refs)).toEqual(new Set(Array.from({ length: 105 }, (_, i) => `customer:${i + 1}`)));
+    const lookups = f.reads.readBusinessFacts.mock.calls.filter(call => call[3].refs !== undefined);
+    expect(lookups).toHaveLength(6);
+    expect(lookups.every(call => call[3].refs!.length <= 100)).toBe(true);
+    expect(f.store.states.get("customers")!.seen.size).toBe(0);
+    expect(f.store.states.get("customers")!.initialized).toBe(false);
+    expect(await f.service.unreadRefs(viewer, { module: "customers", scope: "merchant:999" })).toEqual({ refs: [], available: true });
+  });
+
+  it("does not borrow another merchant grant or bypass active local admin/account/session/module read", async () => {
+    for (const mutate of [
+      (f: ReturnType<typeof integration>) => { f.account.sessionVersion++; },
+      (f: ReturnType<typeof integration>) => { f.account.status = "disabled"; },
+      (f: ReturnType<typeof integration>) => { f.context.user!.openId = "oauth:7"; },
+      (f: ReturnType<typeof integration>) => { for (const scope of f.scopes.values()) scope.modulePermissions = []; },
+    ]) {
+      const f = integration(); f.set(11, methods.customers, [event("customer:1")]); mutate(f);
+      await expect(f.service.unreadRefs(viewer, { module: "customers", scope: "11" })).rejects.toMatchObject({ code: "SERVICE_UNAVAILABLE" });
+      expect(f.reads.readBusinessFacts).not.toHaveBeenCalled(); expect(f.store.states.size).toBe(0);
+    }
+    const f = integration();
+    f.set(11, methods.customers, [event("customer:1")]); f.set(12, methods.customers, [event("customer:2")]);
+    f.scopes.get(11)!.modulePermissions = [];
+    expect(await f.service.unreadRefs(viewer, { module: "customers", scope: "11" })).toEqual({ refs: [], available: true });
+    expect(await f.service.unreadRefs(viewer, { module: "customers" })).toEqual({ refs: ["customer:2"], available: true });
+  });
+});

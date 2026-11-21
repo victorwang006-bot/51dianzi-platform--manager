@@ -1,0 +1,1086 @@
+{
+  "method": "directed Chromium DOM/CSS fixtures; not a live authenticated app test",
+  "boundary": {
+    "client/src/components/DashboardLayout.css": "PASS: original bytes unchanged; one exact candidate appended",
+    "client/src/components/admin/AdminWorkspaceNavigation.css": "PASS: unchanged",
+    "client/src/components/admin/AdminNewInformationBadge.css": "PASS: unchanged",
+    "client/src/components/Logo.tsx": "PASS: unchanged since CSS baseline",
+    "client/src/components/DashboardLayout.tsx": "CHANGED since baseline by concurrent work; this CSS script does not write TSX",
+    "client/src/components/admin/AdminWorkspaceNavigation.tsx": "PASS: unchanged since CSS baseline",
+    "client/src/components/admin/AdminNewInformationBadge.tsx": "CHANGED since baseline by concurrent work; this CSS script does not write TSX",
+    "client/src/lib/adminNewInformation.tsx": "CHANGED since baseline by concurrent work; this CSS script does not write TSX"
+  },
+  "geometry": [
+    {
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 52,
+        "bottom": 52,
+        "right": 1440
+      },
+      "navigation": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 52,
+        "bottom": 52,
+        "right": 1440
+      },
+      "logo": {
+        "x": 18,
+        "y": 11.5,
+        "width": 34.953125,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 52.953125
+      },
+      "brand": [
+        "14px",
+        "10px"
+      ],
+      "account": [
+        "12px",
+        "10px"
+      ],
+      "avatar": {
+        "x": 1336,
+        "y": 11.5,
+        "width": 28,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 1364
+      },
+      "navFont": "14px",
+      "navGap": "14px",
+      "navOverflow": "auto",
+      "navScrollWidth": 1163,
+      "navClientWidth": 1163,
+      "badge": {
+        "height": 15,
+        "font": "10px",
+        "position": "static",
+        "shadow": "none",
+        "centered": true,
+        "notClipped": true
+      },
+      "controls": [
+        34,
+        34,
+        34
+      ],
+      "checkbox": 13,
+      "th": 32,
+      "thFont": "12px",
+      "bodyFont": "13px",
+      "companyFont": "13px",
+      "companyHeight": 40,
+      "companyWhiteSpace": "normal",
+      "scroll": {
+        "client": 1402,
+        "total": 1402,
+        "overflow": "auto"
+      },
+      "documentWidth": 1440,
+      "viewport": 1440,
+      "checkboxExcludedFromNewRules": true,
+      "nativeDropdownGeometry": {
+        "position": "fixed",
+        "zIndex": "52",
+        "pointerEvents": "auto",
+        "x": 18,
+        "right": 135.171875,
+        "height": 52,
+        "badgeHeight": 16,
+        "badgePosition": "static"
+      },
+      "width": 1440,
+      "family": "stock",
+      "cssLoad": "repo candidate before lazy page CSS"
+    },
+    {
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 52,
+        "bottom": 52,
+        "right": 1440
+      },
+      "navigation": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 52,
+        "bottom": 52,
+        "right": 1440
+      },
+      "logo": {
+        "x": 18,
+        "y": 11.5,
+        "width": 34.953125,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 52.953125
+      },
+      "brand": [
+        "14px",
+        "10px"
+      ],
+      "account": [
+        "12px",
+        "10px"
+      ],
+      "avatar": {
+        "x": 1336,
+        "y": 11.5,
+        "width": 28,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 1364
+      },
+      "navFont": "14px",
+      "navGap": "14px",
+      "navOverflow": "auto",
+      "navScrollWidth": 1163,
+      "navClientWidth": 1163,
+      "badge": {
+        "height": 15,
+        "font": "10px",
+        "position": "static",
+        "shadow": "none",
+        "centered": true,
+        "notClipped": true
+      },
+      "controls": [
+        34,
+        34,
+        34
+      ],
+      "checkbox": 13,
+      "th": 32,
+      "thFont": "12px",
+      "bodyFont": "13px",
+      "companyFont": "13px",
+      "companyHeight": 40,
+      "companyWhiteSpace": "normal",
+      "scroll": {
+        "client": 1402,
+        "total": 1402,
+        "overflow": "auto"
+      },
+      "documentWidth": 1440,
+      "viewport": 1440,
+      "checkboxExcludedFromNewRules": true,
+      "nativeDropdownGeometry": {
+        "position": "fixed",
+        "zIndex": "52",
+        "pointerEvents": "auto",
+        "x": 18,
+        "right": 135.171875,
+        "height": 52,
+        "badgeHeight": 16,
+        "badgePosition": "static"
+      },
+      "width": 1440,
+      "family": "stock",
+      "cssLoad": "production candidate last"
+    },
+    {
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 52,
+        "bottom": 52,
+        "right": 1440
+      },
+      "navigation": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 52,
+        "bottom": 52,
+        "right": 1440
+      },
+      "logo": {
+        "x": 18,
+        "y": 11.5,
+        "width": 34.953125,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 52.953125
+      },
+      "brand": [
+        "14px",
+        "10px"
+      ],
+      "account": [
+        "12px",
+        "10px"
+      ],
+      "avatar": {
+        "x": 1336,
+        "y": 11.5,
+        "width": 28,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 1364
+      },
+      "navFont": "14px",
+      "navGap": "14px",
+      "navOverflow": "auto",
+      "navScrollWidth": 1163,
+      "navClientWidth": 1163,
+      "badge": {
+        "height": 15,
+        "font": "10px",
+        "position": "static",
+        "shadow": "none",
+        "centered": true,
+        "notClipped": true
+      },
+      "controls": [
+        34,
+        34,
+        34
+      ],
+      "checkbox": 36,
+      "th": 32,
+      "thFont": "12px",
+      "bodyFont": "13px",
+      "companyFont": "13px",
+      "companyHeight": 46,
+      "companyWhiteSpace": "normal",
+      "scroll": {
+        "client": 1404,
+        "total": 1404,
+        "overflow": "auto"
+      },
+      "documentWidth": 1440,
+      "viewport": 1440,
+      "checkboxExcludedFromNewRules": true,
+      "nativeDropdownGeometry": {
+        "position": "fixed",
+        "zIndex": "52",
+        "pointerEvents": "auto",
+        "x": 18,
+        "right": 135.171875,
+        "height": 52,
+        "badgeHeight": 16,
+        "badgePosition": "static"
+      },
+      "width": 1440,
+      "family": "customer",
+      "cssLoad": "repo candidate before lazy page CSS"
+    },
+    {
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 52,
+        "bottom": 52,
+        "right": 1440
+      },
+      "navigation": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 52,
+        "bottom": 52,
+        "right": 1440
+      },
+      "logo": {
+        "x": 18,
+        "y": 11.5,
+        "width": 34.953125,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 52.953125
+      },
+      "brand": [
+        "14px",
+        "10px"
+      ],
+      "account": [
+        "12px",
+        "10px"
+      ],
+      "avatar": {
+        "x": 1336,
+        "y": 11.5,
+        "width": 28,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 1364
+      },
+      "navFont": "14px",
+      "navGap": "14px",
+      "navOverflow": "auto",
+      "navScrollWidth": 1163,
+      "navClientWidth": 1163,
+      "badge": {
+        "height": 15,
+        "font": "10px",
+        "position": "static",
+        "shadow": "none",
+        "centered": true,
+        "notClipped": true
+      },
+      "controls": [
+        34,
+        34,
+        34
+      ],
+      "checkbox": 36,
+      "th": 32,
+      "thFont": "12px",
+      "bodyFont": "13px",
+      "companyFont": "13px",
+      "companyHeight": 46,
+      "companyWhiteSpace": "normal",
+      "scroll": {
+        "client": 1404,
+        "total": 1404,
+        "overflow": "auto"
+      },
+      "documentWidth": 1440,
+      "viewport": 1440,
+      "checkboxExcludedFromNewRules": true,
+      "nativeDropdownGeometry": {
+        "position": "fixed",
+        "zIndex": "52",
+        "pointerEvents": "auto",
+        "x": 18,
+        "right": 135.171875,
+        "height": 52,
+        "badgeHeight": 16,
+        "badgePosition": "static"
+      },
+      "width": 1440,
+      "family": "customer",
+      "cssLoad": "production candidate last"
+    },
+    {
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 52,
+        "bottom": 52,
+        "right": 1280
+      },
+      "navigation": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 52,
+        "bottom": 52,
+        "right": 1280
+      },
+      "logo": {
+        "x": 18,
+        "y": 11.5,
+        "width": 34.953125,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 52.953125
+      },
+      "brand": [
+        "14px",
+        "10px"
+      ],
+      "account": [
+        "12px",
+        "10px"
+      ],
+      "avatar": {
+        "x": 1176,
+        "y": 11.5,
+        "width": 28,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 1204
+      },
+      "navFont": "14px",
+      "navGap": "14px",
+      "navOverflow": "auto",
+      "navScrollWidth": 1003,
+      "navClientWidth": 1003,
+      "badge": {
+        "height": 15,
+        "font": "10px",
+        "position": "static",
+        "shadow": "none",
+        "centered": true,
+        "notClipped": true
+      },
+      "controls": [
+        34,
+        34,
+        34
+      ],
+      "checkbox": 13,
+      "th": 32,
+      "thFont": "12px",
+      "bodyFont": "13px",
+      "companyFont": "13px",
+      "companyHeight": 40,
+      "companyWhiteSpace": "normal",
+      "scroll": {
+        "client": 1242,
+        "total": 1242,
+        "overflow": "auto"
+      },
+      "documentWidth": 1280,
+      "viewport": 1280,
+      "checkboxExcludedFromNewRules": true,
+      "nativeDropdownGeometry": {
+        "position": "fixed",
+        "zIndex": "52",
+        "pointerEvents": "auto",
+        "x": 18,
+        "right": 135.171875,
+        "height": 52,
+        "badgeHeight": 16,
+        "badgePosition": "static"
+      },
+      "width": 1280,
+      "family": "stock",
+      "cssLoad": "repo candidate before lazy page CSS"
+    },
+    {
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 52,
+        "bottom": 52,
+        "right": 1280
+      },
+      "navigation": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 52,
+        "bottom": 52,
+        "right": 1280
+      },
+      "logo": {
+        "x": 18,
+        "y": 11.5,
+        "width": 34.953125,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 52.953125
+      },
+      "brand": [
+        "14px",
+        "10px"
+      ],
+      "account": [
+        "12px",
+        "10px"
+      ],
+      "avatar": {
+        "x": 1176,
+        "y": 11.5,
+        "width": 28,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 1204
+      },
+      "navFont": "14px",
+      "navGap": "14px",
+      "navOverflow": "auto",
+      "navScrollWidth": 1003,
+      "navClientWidth": 1003,
+      "badge": {
+        "height": 15,
+        "font": "10px",
+        "position": "static",
+        "shadow": "none",
+        "centered": true,
+        "notClipped": true
+      },
+      "controls": [
+        34,
+        34,
+        34
+      ],
+      "checkbox": 13,
+      "th": 32,
+      "thFont": "12px",
+      "bodyFont": "13px",
+      "companyFont": "13px",
+      "companyHeight": 40,
+      "companyWhiteSpace": "normal",
+      "scroll": {
+        "client": 1242,
+        "total": 1242,
+        "overflow": "auto"
+      },
+      "documentWidth": 1280,
+      "viewport": 1280,
+      "checkboxExcludedFromNewRules": true,
+      "nativeDropdownGeometry": {
+        "position": "fixed",
+        "zIndex": "52",
+        "pointerEvents": "auto",
+        "x": 18,
+        "right": 135.171875,
+        "height": 52,
+        "badgeHeight": 16,
+        "badgePosition": "static"
+      },
+      "width": 1280,
+      "family": "stock",
+      "cssLoad": "production candidate last"
+    },
+    {
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 52,
+        "bottom": 52,
+        "right": 1280
+      },
+      "navigation": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 52,
+        "bottom": 52,
+        "right": 1280
+      },
+      "logo": {
+        "x": 18,
+        "y": 11.5,
+        "width": 34.953125,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 52.953125
+      },
+      "brand": [
+        "14px",
+        "10px"
+      ],
+      "account": [
+        "12px",
+        "10px"
+      ],
+      "avatar": {
+        "x": 1176,
+        "y": 11.5,
+        "width": 28,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 1204
+      },
+      "navFont": "14px",
+      "navGap": "14px",
+      "navOverflow": "auto",
+      "navScrollWidth": 1003,
+      "navClientWidth": 1003,
+      "badge": {
+        "height": 15,
+        "font": "10px",
+        "position": "static",
+        "shadow": "none",
+        "centered": true,
+        "notClipped": true
+      },
+      "controls": [
+        34,
+        34,
+        34
+      ],
+      "checkbox": 36,
+      "th": 32,
+      "thFont": "12px",
+      "bodyFont": "13px",
+      "companyFont": "13px",
+      "companyHeight": 46,
+      "companyWhiteSpace": "normal",
+      "scroll": {
+        "client": 1244,
+        "total": 1312,
+        "overflow": "auto"
+      },
+      "documentWidth": 1280,
+      "viewport": 1280,
+      "checkboxExcludedFromNewRules": true,
+      "nativeDropdownGeometry": {
+        "position": "fixed",
+        "zIndex": "52",
+        "pointerEvents": "auto",
+        "x": 18,
+        "right": 135.171875,
+        "height": 52,
+        "badgeHeight": 16,
+        "badgePosition": "static"
+      },
+      "width": 1280,
+      "family": "customer",
+      "cssLoad": "repo candidate before lazy page CSS"
+    },
+    {
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 52,
+        "bottom": 52,
+        "right": 1280
+      },
+      "navigation": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 52,
+        "bottom": 52,
+        "right": 1280
+      },
+      "logo": {
+        "x": 18,
+        "y": 11.5,
+        "width": 34.953125,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 52.953125
+      },
+      "brand": [
+        "14px",
+        "10px"
+      ],
+      "account": [
+        "12px",
+        "10px"
+      ],
+      "avatar": {
+        "x": 1176,
+        "y": 11.5,
+        "width": 28,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 1204
+      },
+      "navFont": "14px",
+      "navGap": "14px",
+      "navOverflow": "auto",
+      "navScrollWidth": 1003,
+      "navClientWidth": 1003,
+      "badge": {
+        "height": 15,
+        "font": "10px",
+        "position": "static",
+        "shadow": "none",
+        "centered": true,
+        "notClipped": true
+      },
+      "controls": [
+        34,
+        34,
+        34
+      ],
+      "checkbox": 36,
+      "th": 32,
+      "thFont": "12px",
+      "bodyFont": "13px",
+      "companyFont": "13px",
+      "companyHeight": 46,
+      "companyWhiteSpace": "normal",
+      "scroll": {
+        "client": 1244,
+        "total": 1312,
+        "overflow": "auto"
+      },
+      "documentWidth": 1280,
+      "viewport": 1280,
+      "checkboxExcludedFromNewRules": true,
+      "nativeDropdownGeometry": {
+        "position": "fixed",
+        "zIndex": "52",
+        "pointerEvents": "auto",
+        "x": 18,
+        "right": 135.171875,
+        "height": 52,
+        "badgeHeight": 16,
+        "badgePosition": "static"
+      },
+      "width": 1280,
+      "family": "customer",
+      "cssLoad": "production candidate last"
+    },
+    {
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52,
+        "bottom": 52,
+        "right": 390
+      },
+      "navigation": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52,
+        "bottom": 52,
+        "right": 390
+      },
+      "logo": {
+        "x": 18,
+        "y": 11.5,
+        "width": 34.953125,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 52.953125
+      },
+      "brand": [
+        "14px",
+        "10px"
+      ],
+      "account": [
+        "12px",
+        "10px"
+      ],
+      "avatar": {
+        "x": 344,
+        "y": 11.5,
+        "width": 28,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 372
+      },
+      "navFont": "14px",
+      "navGap": "14px",
+      "navOverflow": "auto",
+      "navScrollWidth": 790,
+      "navClientWidth": 267,
+      "badge": {
+        "height": 15,
+        "font": "10px",
+        "position": "static",
+        "shadow": "none",
+        "centered": true,
+        "notClipped": true
+      },
+      "controls": [
+        34,
+        34,
+        34
+      ],
+      "checkbox": 13,
+      "th": 32,
+      "thFont": "12px",
+      "bodyFont": "13px",
+      "companyFont": "13px",
+      "companyHeight": 40,
+      "companyWhiteSpace": "normal",
+      "scroll": {
+        "client": 352,
+        "total": 1160,
+        "overflow": "auto"
+      },
+      "documentWidth": 390,
+      "viewport": 390,
+      "checkboxExcludedFromNewRules": true,
+      "mobileLastMenuReachable": true,
+      "nativeDropdownGeometry": {
+        "position": "fixed",
+        "zIndex": "52",
+        "pointerEvents": "auto",
+        "x": 30,
+        "right": 390,
+        "height": 900,
+        "badgeHeight": 16,
+        "badgePosition": "static"
+      },
+      "width": 390,
+      "family": "stock",
+      "cssLoad": "repo candidate before lazy page CSS"
+    },
+    {
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52,
+        "bottom": 52,
+        "right": 390
+      },
+      "navigation": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52,
+        "bottom": 52,
+        "right": 390
+      },
+      "logo": {
+        "x": 18,
+        "y": 11.5,
+        "width": 34.953125,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 52.953125
+      },
+      "brand": [
+        "14px",
+        "10px"
+      ],
+      "account": [
+        "12px",
+        "10px"
+      ],
+      "avatar": {
+        "x": 344,
+        "y": 11.5,
+        "width": 28,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 372
+      },
+      "navFont": "14px",
+      "navGap": "14px",
+      "navOverflow": "auto",
+      "navScrollWidth": 790,
+      "navClientWidth": 267,
+      "badge": {
+        "height": 15,
+        "font": "10px",
+        "position": "static",
+        "shadow": "none",
+        "centered": true,
+        "notClipped": true
+      },
+      "controls": [
+        34,
+        34,
+        34
+      ],
+      "checkbox": 13,
+      "th": 32,
+      "thFont": "12px",
+      "bodyFont": "13px",
+      "companyFont": "13px",
+      "companyHeight": 40,
+      "companyWhiteSpace": "normal",
+      "scroll": {
+        "client": 352,
+        "total": 1160,
+        "overflow": "auto"
+      },
+      "documentWidth": 390,
+      "viewport": 390,
+      "checkboxExcludedFromNewRules": true,
+      "mobileLastMenuReachable": true,
+      "nativeDropdownGeometry": {
+        "position": "fixed",
+        "zIndex": "52",
+        "pointerEvents": "auto",
+        "x": 30,
+        "right": 390,
+        "height": 900,
+        "badgeHeight": 16,
+        "badgePosition": "static"
+      },
+      "width": 390,
+      "family": "stock",
+      "cssLoad": "production candidate last"
+    },
+    {
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52,
+        "bottom": 52,
+        "right": 390
+      },
+      "navigation": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52,
+        "bottom": 52,
+        "right": 390
+      },
+      "logo": {
+        "x": 18,
+        "y": 11.5,
+        "width": 34.953125,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 52.953125
+      },
+      "brand": [
+        "14px",
+        "10px"
+      ],
+      "account": [
+        "12px",
+        "10px"
+      ],
+      "avatar": {
+        "x": 344,
+        "y": 11.5,
+        "width": 28,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 372
+      },
+      "navFont": "14px",
+      "navGap": "14px",
+      "navOverflow": "auto",
+      "navScrollWidth": 790,
+      "navClientWidth": 267,
+      "badge": {
+        "height": 15,
+        "font": "10px",
+        "position": "static",
+        "shadow": "none",
+        "centered": true,
+        "notClipped": true
+      },
+      "controls": [
+        34,
+        34,
+        34
+      ],
+      "checkbox": 40,
+      "th": 32,
+      "thFont": "12px",
+      "bodyFont": "13px",
+      "companyFont": "13px",
+      "companyHeight": 46,
+      "companyWhiteSpace": "normal",
+      "scroll": {
+        "client": 354,
+        "total": 1312,
+        "overflow": "auto"
+      },
+      "documentWidth": 390,
+      "viewport": 390,
+      "checkboxExcludedFromNewRules": true,
+      "mobileLastMenuReachable": true,
+      "nativeDropdownGeometry": {
+        "position": "fixed",
+        "zIndex": "52",
+        "pointerEvents": "auto",
+        "x": 30,
+        "right": 390,
+        "height": 900,
+        "badgeHeight": 16,
+        "badgePosition": "static"
+      },
+      "width": 390,
+      "family": "customer",
+      "cssLoad": "repo candidate before lazy page CSS"
+    },
+    {
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52,
+        "bottom": 52,
+        "right": 390
+      },
+      "navigation": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52,
+        "bottom": 52,
+        "right": 390
+      },
+      "logo": {
+        "x": 18,
+        "y": 11.5,
+        "width": 34.953125,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 52.953125
+      },
+      "brand": [
+        "14px",
+        "10px"
+      ],
+      "account": [
+        "12px",
+        "10px"
+      ],
+      "avatar": {
+        "x": 344,
+        "y": 11.5,
+        "width": 28,
+        "height": 28,
+        "bottom": 39.5,
+        "right": 372
+      },
+      "navFont": "14px",
+      "navGap": "14px",
+      "navOverflow": "auto",
+      "navScrollWidth": 790,
+      "navClientWidth": 267,
+      "badge": {
+        "height": 15,
+        "font": "10px",
+        "position": "static",
+        "shadow": "none",
+        "centered": true,
+        "notClipped": true
+      },
+      "controls": [
+        34,
+        34,
+        34
+      ],
+      "checkbox": 40,
+      "th": 32,
+      "thFont": "12px",
+      "bodyFont": "13px",
+      "companyFont": "13px",
+      "companyHeight": 46,
+      "companyWhiteSpace": "normal",
+      "scroll": {
+        "client": 354,
+        "total": 1312,
+        "overflow": "auto"
+      },
+      "documentWidth": 390,
+      "viewport": 390,
+      "checkboxExcludedFromNewRules": true,
+      "mobileLastMenuReachable": true,
+      "nativeDropdownGeometry": {
+        "position": "fixed",
+        "zIndex": "52",
+        "pointerEvents": "auto",
+        "x": 30,
+        "right": 390,
+        "height": 900,
+        "badgeHeight": 16,
+        "badgePosition": "static"
+      },
+      "width": 390,
+      "family": "customer",
+      "cssLoad": "production candidate last"
+    }
+  ],
+  "scope": {
+    "rules": 34,
+    "all_scoped": true,
+    "global_zoom_or_root_type_changes": false,
+    "candidate_sha256": "a5bc156984b12ec091fb8bb9e7e4da2e648a486dc556d1f0ec875309c6785130"
+  },
+  "status": "PASS",
+  "limitations": [
+    "Fixtures check real DOM/CSS contracts and both CSS load orders, not authenticated application navigation, permissions, API unread updates or stock publishing.",
+    "No full build, application server, Git, SSH or production operation was performed."
+  ]
+}

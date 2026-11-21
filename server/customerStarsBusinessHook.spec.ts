@@ -183,3 +183,24 @@ describe("personal stars fixed BFF preference surface", () => {
     expect(retry.requestId).toBe(setInput.requestId);
   });
 });
+
+describe("customerIds narrowing list BFF contract", () => {
+  it("preserves optional/empty/full IDs through embedded schema and native customer.list input", async () => {
+    const client = createBusinessTrpcClient(51);
+    for (const customerIds of [undefined, [], [11, 12, 12], Array.from({ length: 2000 }, (_, i) => i + 1)]) {
+      const input: Inputs["list"] = { ...listInput, customerIds };
+      await client.customer.list.query(input);
+      expect(state.forwarded.at(-1)?.params).toEqual(customerListSchema.parse(input));
+      expect(state.forwarded.at(-1)?.params.customerIds).toEqual(customerIds);
+    }
+  });
+  it("rejects malformed/overflow IDs before upstream and empty IDs cannot bypass revoked customer read", async () => {
+    const client = createBusinessTrpcClient(51);
+    for (const customerIds of [[0], [1.5], ["11"], Array(2001).fill(1)]) {
+      await expect(client.customer.list.query({ ...listInput, customerIds } as never)).rejects.toMatchObject({ data: { code: "BAD_REQUEST" } });
+    }
+    state.read = false;
+    await expect(client.customer.list.query({ ...listInput, customerIds: [] })).rejects.toMatchObject({ data: { code: "FORBIDDEN" } });
+    expect(state.forwarded).toEqual([]);
+  });
+});

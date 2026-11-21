@@ -43,6 +43,7 @@ import {
 } from "../components/customers/customerUtils";
 import { trpc } from "../../../../api/business-trpc";
 import { useBusinessScope } from "../../../../BusinessScope";
+import { useAdminNewInformationContextRows } from "../../../../../lib/adminNewInformation";
 import type { CustomerFieldErrors } from "../components/customers/customerValidation";
 import {
   contactErrorMessage,
@@ -93,6 +94,7 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
   const search = useSearch();
   const tab = customerWorkbenchTab(search);
   const utils = trpc.useUtils();
+  const businessScope = useBusinessScope();
   const contextQuery = trpc.customer.context.useQuery(undefined, freshListOptions({}, d51Ready));
   const contactScope = useCustomerContactScope(contextQuery.data);
   // Retained successful cache is not proof for this mount. Once verified, an
@@ -110,6 +112,24 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
   else if (detailQuery.isFetchedAfterMount === true && !detailQuery.isFetching && !detailQuery.isPending) detailVerified.current = true;
   const detail = detailValid && detailVerified.current ? detailQuery.data : undefined;
   const customer: CustomerRecord | undefined = detail?.customer;
+  const newInformationDetailReady = Boolean(customer) && validId && authorityReady
+    && detailQuery.isSuccess && detailQuery.isFetchedAfterMount === true
+    && !detailQuery.isError && !detailQuery.isFetching && !detailQuery.isPlaceholderData
+    && contextQuery.isSuccess && contextQuery.isFetchedAfterMount === true
+    && !contextQuery.isError && !contextQuery.isFetching && !contextQuery.isPlaceholderData
+    && businessScope.contextVerification.state === "verified"
+    && businessScope.contextVerification.identity === businessScope.storageScope
+    && businessScope.staffPrincipal.enterpriseId === contactScope.scope?.enterpriseId
+    && businessScope.frontUser.id === contactScope.scope?.actorUserId;
+  const newInformationRows = useAdminNewInformationContextRows({ module: "customers",
+    refs: customer ? [`customer:${customer.id}`] : [], scope: String(businessScope.merchantId),
+    listReady: newInformationDetailReady, acknowledgeOnVisible: true, retainUnreadWhileVisible: false,
+    expectedAccountKey: businessScope.staffPrincipal?.adminAccountId });
+  const newInformationRow = newInformationRows.getRow(`customer:${id}`);
+  const inspectedCustomer = newInformationRows.query.data?.items.find(item => item.id === `customer:${id}`);
+  const readAcknowledged = newInformationDetailReady && (newInformationRow.markState === "seen" ||
+    (newInformationRows.query.isSuccess && !newInformationRows.query.isError && !newInformationRows.query.isFetching && inspectedCustomer?.isNew === false));
+  const newInformationError = newInformationRow.markError || newInformationRows.query.error;
   const summaryInput = contactScope.scope
     ? withCustomerContactScope(contactScope.scope, { customerIds: [id] })
     : { customerIds: [id], expectedActorUserId: 0, expectedEnterpriseId: 0 };
@@ -552,10 +572,15 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
   const isCurrentChildReceipt = captureReceiptGuard();
 
   return <PlatformLayout>
-    <main className="erp-ui customer-detail-compact customer-detail-readable customer-workbench customer-profile-tight">
+    <main ref={newInformationRow.ref} className="erp-ui customer-detail-compact customer-detail-readable customer-workbench customer-profile-tight">
       <div className="customer-detail-top-actions mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2"><h1 className="admin-page-title customer-detail-name">{customer.name}</h1><span className={`crm-badge ${customer.grade === "A" ? "bg-[#FCEBEB] text-[#A32D2D]" : customer.grade === "B" ? "bg-[#FFF7E6] text-[#B8741A]" : "bg-[#e8f0fe] text-[#185FA5]"}`}>{customer.grade}级</span>{isArchived && <span className="crm-badge bg-slate-100 text-slate-500">已归档</span>}</div>
+          {newInformationDetailReady && newInformationError ? <div className="customer-detail-read-status" role="alert">
+            已读确认失败，未读提醒未清除。
+            <button type="button" onClick={() => void newInformationRows.retryDisplayed()}>重试确认</button>
+          </div> : readAcknowledged ? <span className="customer-detail-read-status" role="status">已读</span>
+            : newInformationRow.isNew ? <span className="customer-detail-read-status" role="status">{newInformationRow.markState === "pending" ? "正在确认已读…" : "未读 · 待确认"}</span> : null}
         </div>
         <div className="customer-workbench-top-buttons">
           <button type="button" className="crm-btn" title="回到进入详情前的页面，保留筛选、页码与位置" onClick={requestBack}>返回上一页</button>

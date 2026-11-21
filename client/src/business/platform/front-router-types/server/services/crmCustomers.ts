@@ -64,7 +64,7 @@ export async function syncCrmCustomerAssignmentOwner(tx: CrmSqlExecutor, enterpr
 }
 import { customerOwnershipQuerySchema, type CustomerOwnershipQuery, type CustomerOwnershipResult } from "../../../shared/customerOwnership";
 import { consumeCustomerOwnershipQuota } from "../customerOwnershipQuota";
-import { customerDataSchema, customerListScopeSchema, customerUpdatedRangeSchema, customerUpdatedSqlBounds } from "../../../shared/crmCustomers";
+import { customerDataSchema, customerListIdsSchema, customerListScopeSchema, customerUpdatedRangeSchema, customerUpdatedSqlBounds } from "../../../shared/crmCustomers";
 import { businessIndustryCodeSchema, getBusinessIndustryLabel } from "../../../shared/businessIndustry";
 function validateWriteData(data: CustomerData): CustomerData {
   const checked = customerDataSchema.safeParse(data);
@@ -706,6 +706,7 @@ export async function listCustomers(scope: CustomerServerScope, input: {
   expectedEnterpriseId?: number; expectedActorUserId?: number;
   updatedFrom?: string; updatedTo?: string;
   salesOrderPicker?: "current_team" | "enterprise";
+  customerIds?: number[];
 }) {
   if ((input.expectedEnterpriseId !== undefined && input.expectedEnterpriseId !== scope.enterpriseId)
     || (input.expectedActorUserId !== undefined && input.expectedActorUserId !== scope.actorUserId)) {
@@ -716,6 +717,8 @@ export async function listCustomers(scope: CustomerServerScope, input: {
   const updatedRange = customerUpdatedRangeSchema.safeParse({ updatedFrom: input.updatedFrom, updatedTo: input.updatedTo });
   if (!updatedRange.success) throw new TRPCError({ code: "BAD_REQUEST", message: updatedRange.error.issues[0]?.message ?? "更新日期范围无效", cause: updatedRange.error });
   const updatedBounds = customerUpdatedSqlBounds(updatedRange.data);
+  const checkedIds = customerListIdsSchema.safeParse(input.customerIds);
+  if (!checkedIds.success) throw new TRPCError({ code: "BAD_REQUEST", message: "客户ID筛选无效", cause: checkedIds.error });
   if (input.starMode === "assignee" && input.starUserId !== undefined) throw new TRPCError({ code: "BAD_REQUEST", message: "负责人口径不能同时选择星标归属" });
   const starUserId = input.starUserId ?? scope.actorUserId;
   const assigneeMode = input.starMode === "assignee";
@@ -777,6 +780,10 @@ export async function listCustomers(scope: CustomerServerScope, input: {
        AND star_filter.enterpriseId = c.enterpriseId
        ${access.assigneeAllowed ? sql`AND ${access.assigneeAllowed}` : sql``}
   )`);
+  if (checkedIds.data !== undefined) {
+    const ids = Array.from(new Set(checkedIds.data));
+    conditions.push(ids.length ? sql`c.id IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})` : sql`FALSE`);
+  }
   const where = sql.join(conditions, sql` AND `);
   const offset = (input.page - 1) * input.pageSize;
   const count = resultRows<{ total: number | string }>(await db.execute(sql`

@@ -1,0 +1,34 @@
+{
+  "client/src/components/DashboardLayout.css": {
+    "bytes": 149230,
+    "sha256": "a0d92e9c00de9535bb98c65cc7eaaeadb0770d6c7c718b846689706bfe019c2d"
+  },
+  "client/src/components/admin/AdminWorkspaceNavigation.css": {
+    "bytes": 12490,
+    "sha256": "5d72fb7d941b34c6329d5b8274d002ed393ddd70bfe4d563e7688b232f5e895b"
+  },
+  "client/src/components/admin/AdminNewInformationBadge.css": {
+    "bytes": 1055,
+    "sha256": "c8221d0aac2ce80743bba6beece81026f83361257215c8490f8adb8b2e9813d0"
+  },
+  "client/src/components/Logo.tsx": {
+    "bytes": 2671,
+    "sha256": "f397ce4387e9db4df0070847b2864096629e03add46a07499c4906e571a63679"
+  },
+  "client/src/components/DashboardLayout.tsx": {
+    "bytes": 25513,
+    "sha256": "68c7ef80d9730ec94b1c9e19c583cd30d93b2888820f75758180214d2797eed1"
+  },
+  "client/src/components/admin/AdminWorkspaceNavigation.tsx": {
+    "bytes": 49415,
+    "sha256": "1670ab0b10da1baba5d24f109f426e7d046e47348bd1657a7bf098b18909c29f"
+  },
+  "client/src/components/admin/AdminNewInformationBadge.tsx": {
+    "bytes": 3369,
+    "sha256": "e027f7a8ab6ae506fd0af372ab566605e08f0804844fc6d585219e62de97bb5d"
+  },
+  "client/src/lib/adminNewInformation.tsx": {
+    "bytes": 41468,
+    "sha256": "73b77676e985f40bb7e61af1d90aa2090f519bf852a17ecfd264e21836440744"
+  }
+}

@@ -115,3 +115,28 @@
   font-size: var(--admin-content-font-caption, 13px);
   line-height: var(--admin-content-line-height, 1.6);
 }
+
+.erp-ui.customer-detail-compact.customer-detail-readable .customer-detail-read-status {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 20px;
+}
+.erp-ui.customer-detail-compact.customer-detail-readable .customer-detail-read-status[role="alert"] { color: #a32d2d; }
+.erp-ui.customer-detail-compact.customer-detail-readable .customer-detail-read-status button {
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: #185fa5;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.erp-ui.customer-detail-compact.customer-detail-readable .customer-detail-read-status button:focus-visible {
+  outline: 2px solid #185fa5;
+  outline-offset: 2px;
+}

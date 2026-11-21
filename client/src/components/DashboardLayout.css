@@ -2442,3 +2442,222 @@
   }
 }
 /* admin-list-outer-location-v1 END */
+/* admin-polish-20261121-v1 BEGIN — append only, scoped to the real admin shell.
+ * Compact Demo geometry only. No menu order, permissions, data, portals or Logo
+ * replacement. Load after the existing admin CSS; keep all preceding CSS bytes.
+ */
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] > .admin-workspace-shell__navigation {
+  border-bottom: 0;
+}
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__header {
+  box-sizing: border-box;
+  height: 52px;
+  min-height: 52px;
+  gap: 22px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__brand {
+  gap: 8px;
+}
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__brand > svg {
+  width: auto;
+  height: 28px;
+}
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__brand > div {
+  gap: 2px;
+}
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__brand > div > span:first-child {
+  font-size: 14px;
+  line-height: 17px;
+}
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__brand > div > span:last-child {
+  font-size: 10px !important;
+  line-height: 13px;
+}
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__account {
+  padding: 0 0 0 8px;
+  gap: 8px;
+}
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__account > [data-slot="avatar"] {
+  width: 28px;
+  height: 28px;
+}
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__account [data-slot="avatar-fallback"] {
+  font-size: 12px !important;
+  line-height: 15px;
+}
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__account > div > p:first-child {
+  font-size: 12px;
+  line-height: 15px;
+}
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__account > div > p:last-child {
+  margin-top: 2px;
+  font-size: 10px !important;
+  line-height: 13px;
+}
+
+/* The existing horizontal menu scroller remains the sole scroll owner. Fixed
+ * desktop layers and mobile drawer/backdrop geometry are deliberately untouched. */
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__header > .admin-workspace-nav__tabs--workspaces {
+  flex: 1 1 0%;
+  align-self: stretch;
+  min-height: 0;
+  gap: 14px;
+  padding: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  scroll-padding-inline: 4px;
+}
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__header > .admin-workspace-nav__tabs--workspaces::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-nav__workspace {
+  gap: 5px;
+  padding-inline: 1px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-nav__workspace[data-active="true"] {
+  font-weight: 500;
+}
+
+/* All three existing unread presentations stay inline in navigation only.
+ * Row badges and absolute badges outside navigation retain their old contract. */
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-nav__tab > :is([data-admin-new-information="count"], .inquiry-reception-nav-badge, span[aria-label$="条未读"]) {
+  position: static;
+  inset: auto;
+  transform: none;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0 4px;
+  border-radius: 9px;
+  font-size: 10px !important;
+  line-height: 16px;
+  box-shadow: none !important;
+  white-space: nowrap;
+}
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-nav__workspace > :is([data-admin-new-information="count"], .inquiry-reception-nav-badge, span[aria-label$="条未读"]) {
+  min-width: 15px;
+  height: 15px;
+  line-height: 15px;
+}
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content {
+  padding-inline: 18px;
+}
+
+/* Only the marked list/filter toolbars, not checkboxes, row actions, dialogs,
+ * publish forms or file upload widgets. The first rule beats the historical
+ * 36/40px !important marked-root override without changing its visibility. */
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content:has(> nav[data-admin-navigation="current-location"]:is([data-admin-list-location-layout="root-hidden"], [data-admin-list-location-layout="list-breadcrumb"])) .d51-compact-list-toolbar :is(input:not(:where([type="checkbox"], [type="radio"], [type="range"], [type="hidden"], [type="file"])), select, button, [data-slot="select-trigger"]),
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content :is(.d51-compact-list-toolbar, .inventory-filterbar, .ci-toolbar) :is(input:not(:where([type="checkbox"], [type="radio"], [type="range"], [type="hidden"], [type="file"])), select, button, [data-slot="select-trigger"]) {
+  box-sizing: border-box;
+  height: 34px !important;
+  min-height: 34px !important;
+}
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .d51-compact-list-toolbar {
+  --admin-control-height: 34px;
+  --admin-content-control-height: 34px;
+}
+
+/* Exact native list tables only; keep their column widths, sticky actions,
+ * selection controls, reference widgets and existing 13px body roles. */
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content :is(.ci-host .ci-table, .my-inventory-page .inventory-table, .customer-list-page .customer-list-table, .official-channel-inventory__table) th {
+  box-sizing: border-box;
+  height: 32px !important;
+  padding-block: 5px;
+  font-size: 12px !important;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content :is(.ci-host .ci-table, .my-inventory-page .inventory-table, .customer-list-page .customer-list-table, .official-channel-inventory__table) td {
+  height: auto;
+  padding-block: 10px;
+  line-height: 20px;
+}
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .my-inventory-page .inventory-table .inventory-data-row {
+  height: auto;
+}
+
+/* Long real company names wrap instead of shrinking or truncating. */
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .customer-list-page .customer-list-name-line .customer-list-name,
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .ci-host :is(.ci-customer-source-name, .ci-material-source-col .ci-source-link) {
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+/* Reinforce only the existing local scroll wrappers. Do not create an inner
+ * customer table scroller or hide page overflow to mask a layout regression. */
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] > main.admin-workspace-shell__main.admin-unified-content :is(.ci-host .ci-tablewrap, .my-inventory-page .inventory-table-scroll, .customer-list-page .customer-list-table-scroll) {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+@media (min-width: 1550px) {
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__header {
+    gap: 28px;
+  }
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__header > .admin-workspace-nav__tabs--workspaces {
+    gap: 20px;
+  }
+}
+
+@media (max-width: 1250px) {
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__header {
+    gap: 16px;
+  }
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__header > .admin-workspace-nav__tabs--workspaces {
+    gap: 11px;
+  }
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__account > div {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__header {
+    gap: 12px;
+  }
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__account {
+    padding-left: 0;
+  }
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__header > .admin-workspace-nav__tabs--workspaces {
+    gap: 14px;
+  }
+}
+/* admin-polish-20261121-v1 END */

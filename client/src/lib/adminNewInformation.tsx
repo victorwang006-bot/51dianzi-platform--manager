@@ -46,6 +46,11 @@ export interface AdminNewInformationClient {
     input: { receipts: string[] },
     options?: AdminNewInformationRequestOptions
   ): Promise<unknown>;
+  /** Optional capability; absence is unavailable, NEVER an empty unread set. */
+  unreadRefs?(
+    input: { module: "customers"; scope?: string },
+    options?: AdminNewInformationRequestOptions
+  ): Promise<{ refs: string[]; available: true }>;
 }
 export interface AdminNewInformationAccess {
   accountKey: AdminNewInformationAccountKey;
@@ -62,6 +67,12 @@ export interface AdminNewInformationRowsOptions
    * Never supply IDs from pending/error/placeholder data. Existing list actions stay unchanged.
    */
   listReady: boolean;
+  /** Default true for legacy modules; customer lists only inspect. */
+  acknowledgeOnVisible?: boolean;
+  /** Default true for legacy lists; detail removes its marker on native acceptance. */
+  retainUnreadWhileVisible?: boolean;
+  /** Business binding must match the ORIGINAL admin provider, never a front actor. */
+  expectedAccountKey?: AdminNewInformationAccountKey;
 }
 function accountToken(account: AdminNewInformationAccountKey): string | null {
   return account === null || account === undefined || account === ""
@@ -85,6 +96,8 @@ export const adminNewInformationKeys = {
       module,
       scope || "",
     ] as const,
+  unreadRefs: (account: AdminNewInformationAccountKey, module: "customers", scope?: string) =>
+    [...adminNewInformationKeys.account(account), "unreadRefs", module, scope || ""] as const,
   inspect: (
     account: AdminNewInformationAccountKey,
     module: AdminNewInformationModule,
@@ -254,12 +267,13 @@ export function useAdminNewInformationPageVisible(): boolean {
 
 function useAccessBoundary(
   options: AdminNewInformationAccess,
-  module?: AdminNewInformationModule
+  module?: AdminNewInformationModule,
+  scope?: string
 ) {
   const queryClient = useQueryClient();
   const token = accountToken(options.accountKey);
   const allowed = token !== null && options.canRead;
-  const identity = JSON.stringify([token, allowed, module]);
+  const identity = JSON.stringify([token, allowed, module, scope || ""]);
   const current = useRef({ identity, generation: 0, allowed });
   if (current.current.identity !== identity)
     current.current = {
@@ -284,10 +298,11 @@ function useAccessBoundary(
     const previous = prior.current;
     const purge = (target: string, onlyModule?: AdminNewInformationModule) => {
       const key = onlyModule
-        ? ["adminNewInformation", target, "inspect", onlyModule]
+        ? ["adminNewInformation", target]
         : ["adminNewInformation", target];
-      void queryClient.cancelQueries({ queryKey: key });
-      queryClient.removeQueries({ queryKey: key });
+      const predicate = onlyModule ? (query: { queryKey: readonly unknown[] }) => query.queryKey[3] === onlyModule : undefined;
+      void queryClient.cancelQueries({ queryKey: key, predicate });
+      queryClient.removeQueries({ queryKey: key, predicate });
       purgeEvents(runtimeFor(queryClient), target, onlyModule);
     };
     // A logout can unmount the entire layout rather than update the same hook.
@@ -511,6 +526,7 @@ export interface AdminNewInformationRowPresentation {
   /** Attach to the ACTUAL existing row, not an invisible sentinel. */
   ref: RefCallback<HTMLElement>;
   markError: unknown;
+  markState?: EventRecord["state"];
 }
 
 export function useAdminNewInformationRows(
@@ -518,7 +534,7 @@ export function useAdminNewInformationRows(
     client: AdminNewInformationClient;
   }
 ) {
-  const access = useAccessBoundary(options, options.module);
+  const access = useAccessBoundary(options, options.module, options.scope);
   const visible = useAdminNewInformationPageVisible();
   const normalizedRefs = normalizeAdminNewInformationRefs(options.refs);
   const refsKey = JSON.stringify(normalizedRefs);
@@ -585,6 +601,8 @@ export function useAdminNewInformationRows(
   const latched = useRef(new Set<string>());
   const observer = useRef<IntersectionObserver | null>(null);
   const scheduled = useRef<number | null>(null);
+  const retrying = useRef(false);
+  const ownedMarks = useRef(new Set<AbortController>());
   const items = new Map(
     query.data?.items
       .filter(item => normalizedRefs.includes(item.id))
@@ -601,6 +619,39 @@ export function useAdminNewInformationRows(
     latched.current.clear();
     identityRef.current = rowIdentity;
   }
+  useEffect(() => () => {
+    // This hook may unmount while another rows hook remains subscribed. Abort
+    // only our queued/in-flight receipts, not the other page's legitimate work.
+    const controllers = ownedMarks.current;
+    controllers.forEach(controller => controller.abort());
+    for (const events of Array.from(runtime.events.values()))
+      for (const [key, event] of Array.from(events))
+        if (event.controller && controllers.has(event.controller)) events.delete(key);
+    controllers.clear();
+    notify(runtime);
+  }, [rowIdentity, runtime]);
+  const priorScope = useRef({ token: access.token, module: options.module, scope });
+  useEffect(() => {
+    const previous = priorScope.current;
+    if (previous.token && (previous.token !== access.token || previous.module !== options.module || previous.scope !== scope)) {
+      const key = adminNewInformationKeys.rows(options.accountKey, previous.module, previous.scope);
+      // Account-wide cleanup is owned by useAccessBoundary; scope swaps must
+      // also forget inspection/seen evidence before returning to an old merchant.
+      if (previous.token === access.token) {
+        void access.queryClient.cancelQueries({ queryKey: key });
+        access.queryClient.removeQueries({ queryKey: key });
+      }
+      const events = runtime.events.get(previous.token);
+      for (const [key, event] of Array.from(events ?? [])) {
+        const [module, eventScope] = JSON.parse(key) as string[];
+        if (module === previous.module && eventScope === (previous.scope || "")) {
+          event.controller?.abort(); events?.delete(key);
+        }
+      }
+      notify(runtime);
+    }
+    priorScope.current = { token: access.token, module: options.module, scope };
+  }, [access.token, options.accountKey, options.module, scope, runtime, access.queryClient]);
   const latest = useRef({
     access,
     options,
@@ -651,6 +702,8 @@ export function useAdminNewInformationRows(
       !state.query.isSuccess ||
       state.query.isFetching ||
       state.query.isError ||
+      state.options.acknowledgeOnVisible === false ||
+      retrying.current ||
       document.visibilityState === "hidden"
     )
       return;
@@ -672,6 +725,7 @@ export function useAdminNewInformationRows(
       const batch = pending.slice(start, start + 100);
       const receipts = Array.from(new Set(batch.map(item => item.receipt)));
       const controller = new AbortController();
+      ownedMarks.current.add(controller);
       batch.forEach(item =>
         events.set(item.key, { state: "pending", controller })
       );
@@ -699,6 +753,7 @@ export function useAdminNewInformationRows(
             !current.query.isSuccess ||
             current.query.isFetching ||
             current.query.isError ||
+            current.options.acknowledgeOnVisible === false ||
             !stillVisible ||
             document.visibilityState === "hidden"
           )
@@ -711,8 +766,14 @@ export function useAdminNewInformationRows(
         .then(result => {
           if (rejectedMark(result, receipts.length))
             throw new Error("服务器拒绝新信息展示确认");
-          if (!state.access.valid() || controller.signal.aborted) return;
+          if (!state.access.valid() || controller.signal.aborted ||
+              latest.current.rowIdentity !== state.rowIdentity) {
+            batch.forEach(item => { if (events.get(item.key)?.controller === controller) events.delete(item.key); });
+            return;
+          }
           batch.forEach(item => events.set(item.key, { state: "seen" }));
+          if (state.options.retainUnreadWhileVisible === false)
+            batch.forEach(item => latched.current.delete(item.key));
           invalidateDisplayed(state.access.queryClient, state.access.token!);
         })
         .catch((error: unknown) => {
@@ -726,7 +787,7 @@ export function useAdminNewInformationRows(
             if (authorizationError(error)) state.access.deny();
           }
         })
-        .finally(() => notify(runtime));
+        .finally(() => { ownedMarks.current.delete(controller); notify(runtime); });
     }
   }, [runtime, redraw]);
   const schedule = useCallback(() => {
@@ -787,6 +848,7 @@ export function useAdminNewInformationRows(
     query.status,
     visible,
     options.listReady,
+    options.acknowledgeOnVisible,
     access.permitted,
     rowIdentity,
     schedule,
@@ -853,10 +915,11 @@ export function useAdminNewInformationRows(
           !revoked &&
           options.listReady &&
           key &&
-          (latched.current.has(key) ||
+          ((options.retainUnreadWhileVisible !== false && latched.current.has(key)) ||
             (item?.isNew && record?.state !== "seen"))
       ),
-      markError: record?.state === "failed" ? record.error : undefined,
+      markError: record?.state === "failed" && item?.isNew ? record.error : undefined,
+      markState: record?.state,
     };
   };
   return {
@@ -867,20 +930,32 @@ export function useAdminNewInformationRows(
     /** Explicit retry only. Current inspection must again be successful and the
      * row still visible; only fresh server receipts are submitted. No toast/UI.
      */
-    retryDisplayed: () => {
-      if (!access.permitted || !access.token) return;
-      const events = runtime.events.get(access.token);
-      for (const item of Array.from(items.values())) {
-        const key = adminNewInformationRefKey(
-          options.module,
-          item.id,
-          item.version,
-          scope
-        );
-        if (events?.get(key)?.state === "failed") events.delete(key);
+    retryDisplayed: async () => {
+      const state = latest.current;
+      if (!state.access.permitted || !state.access.token || !state.access.valid() ||
+          !state.options.listReady || state.options.acknowledgeOnVisible === false || retrying.current) return;
+      retrying.current = true;
+      try {
+        // A failed/expired signed token is never replayed. Keep failure locks
+        // until a NEW successful inspection proves the current receipt/state.
+        const fresh = await state.query.refetch({ cancelRefetch: true });
+        const current = latest.current;
+        if (!state.access.valid() || current.rowIdentity !== state.rowIdentity ||
+            !current.options.listReady || fresh.isError || !fresh.isSuccess) return;
+        const events = runtime.events.get(state.access.token);
+        for (const [key, event] of Array.from(events ?? [])) {
+          const [module, eventScope, sourceId] = JSON.parse(key) as string[];
+          if (event.state === "failed" && module === state.options.module &&
+              eventScope === (state.scope || "") && state.options.refs.includes(sourceId)) {
+            events?.delete(key);
+            latched.current.delete(key);
+          }
+        }
+      } finally {
+        retrying.current = false;
+        notify(runtime);
+        schedule();
       }
-      notify(runtime);
-      schedule();
     },
   };
 }
@@ -972,9 +1047,74 @@ export function useAdminNewInformationContextRows(
     client: context?.client ?? disabledAdminNewInformationClient,
     accountKey: context?.accountKey ?? null,
     canRead: Boolean(
-      context?.canRead && (context.moduleCanRead?.[options.module] ?? true)
+      context?.canRead && (context.moduleCanRead?.[options.module] ?? true) &&
+      (options.expectedAccountKey === undefined || accountToken(options.expectedAccountKey) === accountToken(context.accountKey))
     ),
   });
+}
+
+/** Entire authorized unread set, not a filter over one already-paginated page. */
+export function customerIdsFromAdminUnreadRefs(refs: readonly string[]): number[] {
+  if (refs.length > 2000) throw new Error("未读客户筛选暂不可用：超过2000条，请稍后重试");
+  const ids = refs.map(ref => {
+    const match = /^customer:([1-9]\d*)$/.exec(ref);
+    const id = match ? Number(match[1]) : NaN;
+    if (!Number.isSafeInteger(id) || id <= 0) throw new Error("未读客户编号核验失败，请重试");
+    return id;
+  });
+  return Array.from(new Set(ids)).sort((a, b) => a - b);
+}
+
+export function useAdminNewInformationContextUnreadRefs(options: {
+  module: "customers";
+  scope?: string;
+  enabled: boolean;
+  listReady: boolean;
+  expectedAccountKey?: AdminNewInformationAccountKey;
+}) {
+  const context = useContext(AdminNewInformationContext);
+  const client = context?.client ?? disabledAdminNewInformationClient;
+  const capability = client.unreadRefs;
+  const accountKey = context?.accountKey ?? null;
+  const access = useAccessBoundary({ accountKey, canRead: Boolean(context?.canRead &&
+    (context.moduleCanRead?.customers ?? true) && (options.expectedAccountKey === undefined ||
+      accountToken(options.expectedAccountKey) === accountToken(accountKey))) }, "customers", options.scope);
+  const visible = useAdminNewInformationPageVisible();
+  const enabled = options.enabled && options.listReady && access.permitted;
+  const key = adminNewInformationKeys.unreadRefs(accountKey, options.module, options.scope);
+  const keyText = JSON.stringify(key);
+  const prior = useRef({ key, keyText, enabled });
+  useEffect(() => {
+    const previous = prior.current;
+    if (previous.keyText !== keyText || !enabled) {
+      void access.queryClient.cancelQueries({ queryKey: previous.key, exact: true });
+      access.queryClient.removeQueries({ queryKey: previous.key, exact: true });
+    }
+    prior.current = { key, keyText, enabled };
+  }, [keyText, enabled, access.queryClient]);
+  const query = useQuery({
+    queryKey: key,
+    enabled: enabled && visible,
+    queryFn: async ({ signal }) => {
+      if (!capability) throw new Error("当前后台未支持未读客户筛选，请更新服务后重试");
+      const data = await capability({ module: options.module, scope: options.scope }, { signal });
+      if (signal.aborted || !access.valid()) throw new CancelledError({ silent: true });
+      if (!isRecord(data) || data.available !== true || !Array.isArray(data.refs) ||
+          data.refs.some(ref => typeof ref !== "string")) throw new Error("未读客户筛选暂不可用，请重试");
+      return { refs: data.refs, customerIds: customerIdsFromAdminUnreadRefs(data.refs), available: true as const };
+    },
+    retry: false, staleTime: 0, placeholderData: undefined,
+    refetchOnMount: "always", refetchOnWindowFocus: "always",
+    refetchInterval: enabled && visible ? ADMIN_NEW_INFORMATION_REFRESH_MS : false,
+    refetchIntervalInBackground: false,
+  });
+  const revoked = authorizationError(query.error);
+  useEffect(() => { if (revoked) access.deny(); }, [revoked, access.deny]);
+  const available = enabled && !query.isError && query.isSuccess && !query.isFetching;
+  const error = options.enabled && options.listReady && !access.permitted
+    ? new Error("未读客户权限或后台账号核验失败，请重新核验后重试") : query.error;
+  return { query, available, error, customerIds: available ? query.data?.customerIds : undefined,
+    refs: available ? query.data?.refs : undefined, retry: () => query.refetch() };
 }
 type RowsContextValue = {
   module: AdminNewInformationModule;

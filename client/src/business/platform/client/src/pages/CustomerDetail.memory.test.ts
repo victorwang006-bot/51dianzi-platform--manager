@@ -18,9 +18,19 @@ const runtime = vi.hoisted(() => ({
   canReadOrders: false, ordersDirty: false, demandsDirty: false, demandProps: null as any, orderProps: null as any,
   supplyProps: null as any,
   workbenchContactsProps: null as any, fieldsProps: null as any,
+  unreadOptions: [] as any[], unreadState: undefined as string | undefined, unreadError: null as Error | null,
+  unreadRetry: vi.fn(), unreadRef: vi.fn(),
 }));
 vi.mock("../hooks/usePageIdentity", () => ({ usePageIdentity: () => runtime.identity }));
-vi.mock("../../../../BusinessScope", () => ({ useBusinessScope: () => ({ contextVerification: { authorizationVersion: runtime.authorizationVersion } }) }));
+vi.mock("../../../../BusinessScope", () => ({ useBusinessScope: () => ({ merchantId: 30061,
+  storageScope: runtime.identity, staffPrincipal: { enterpriseId: runtime.enterpriseId, adminAccountId: 101 }, frontUser: { id: 7 },
+  contextVerification: { state: "verified", identity: runtime.identity, authorizationVersion: runtime.authorizationVersion } }) }));
+vi.mock("../../../../../lib/adminNewInformation", () => ({ useAdminNewInformationContextRows: (options: any) => {
+  runtime.unreadOptions.push(options);
+  return { query: { data: undefined, error: null, isSuccess: false, isError: false, isFetching: false },
+    getRow: () => ({ ref: runtime.unreadRef, isNew: Boolean(runtime.unreadState && runtime.unreadState !== "seen"), markState: runtime.unreadState, markError: runtime.unreadError }),
+    retryDisplayed: runtime.unreadRetry };
+} }));
 vi.mock("../../../../BusinessContentFrame", () => ({ default: ({ children }: any) => children }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock("../components/customers/CustomerContactsManager", () => ({ CustomerContactsManager: (props: any) => {
@@ -71,8 +81,8 @@ vi.mock("../components/customers/customerContacts", () => ({
 vi.mock("../../../../api/business-trpc", () => ({ trpc: {
   useUtils: () => ({ customer: { get: { invalidate: runtime.getInvalidate }, list: { invalidate: runtime.listInvalidate } }, crmSalesOrder: { customerSummary: { invalidate: runtime.orderSummaryInvalidate }, customerMaterials: { invalidate: runtime.orderMaterialsInvalidate } } }),
   customer: {
-    context: { useQuery: () => ({ data: { actorUserId: 7, canManageAll: runtime.canManageAll, members: [{ userId: 7, name: "synthetic seller" }] }, isPending: false, isError: runtime.contextError, isFetchedAfterMount: runtime.contextFetched, isFetching: runtime.contextFetching, isPlaceholderData: runtime.contextPlaceholder, error: new Error("授权已撤销"), refetch: vi.fn() }) },
-    get: { useQuery: (_input: unknown, options: any) => { runtime.getOptions.push(options); return { data: runtime.detail, isPending: false, isError: runtime.detailError, isFetchedAfterMount: runtime.detailFetched, isFetching: runtime.detailFetching, isPlaceholderData: runtime.detailPlaceholder, error: new Error("客户访问已撤销"), refetch: vi.fn() }; } },
+    context: { useQuery: () => ({ data: { actorUserId: 7, canManageAll: runtime.canManageAll, members: [{ userId: 7, name: "synthetic seller" }] }, isSuccess: !runtime.contextError, isPending: false, isError: runtime.contextError, isFetchedAfterMount: runtime.contextFetched, isFetching: runtime.contextFetching, isPlaceholderData: runtime.contextPlaceholder, error: new Error("授权已撤销"), refetch: vi.fn() }) },
+    get: { useQuery: (_input: unknown, options: any) => { runtime.getOptions.push(options); return { data: runtime.detail, isSuccess: !runtime.detailError, isPending: false, isError: runtime.detailError, isFetchedAfterMount: runtime.detailFetched, isFetching: runtime.detailFetching, isPlaceholderData: runtime.detailPlaceholder, error: new Error("客户访问已撤销"), refetch: vi.fn() }; } },
     contactsSummary: { useQuery: (input: any, options: any) => {
       runtime.contactSummaryRequests.push({ input, options });
       return runtime.contactSummaryResult ?? { isSuccess: true, isFetchedAfterMount: true, isPending: false, isFetching: false, isError: false, isPlaceholderData: false,
@@ -125,6 +135,7 @@ beforeEach(() => {
   runtime.canReadOrders = false; runtime.ordersDirty = false; runtime.demandsDirty = false; runtime.demandProps = null; runtime.orderProps = null;
   runtime.supplyProps = null;
   runtime.workbenchContactsProps = null; runtime.fieldsProps = null;
+  runtime.unreadOptions = []; runtime.unreadState = undefined; runtime.unreadError = null;
   memory.setPageMemoryScope(null); nativeReplace.call(history, {}, "", "/workbench/customers/801?merchantId=30061");
   vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => window.setTimeout(() => callback(0), 0));
   vi.stubGlobal("cancelAnimationFrame", (frame: number) => window.clearTimeout(frame));
@@ -857,5 +868,28 @@ describe.sequential("CustomerDetail contact completeness", () => {
     runtime.authorizationVersion = "auth-new"; runtime.contactSummaryResult = result(null, { isFetchedAfterMount: false });
     await render(); expect(host.textContent).not.toContain("待补全");
     runtime.contactSummaryResult = result(primary); await render(); expect(host.textContent).not.toContain("待补全");
+  });
+});
+
+describe("CustomerDetail exact unread acknowledgement integration", () => {
+  it("opens with current admin+merchant single refs only after fresh context AND detail proof", async () => {
+    runtime.contextFetched = false; runtime.detailFetched = false; await render();
+    expect(runtime.unreadOptions.at(-1).listReady).toBe(false);
+    runtime.contextFetched = true; await render(); expect(runtime.unreadOptions.at(-1).listReady).toBe(false);
+    runtime.detailFetched = true; await render();
+    expect(runtime.unreadOptions.at(-1)).toMatchObject({ module: "customers", refs: ["customer:801"], scope: "30061",
+      listReady: true, acknowledgeOnVisible: true, retainUnreadWhileVisible: false, expectedAccountKey: 101 });
+    expect(runtime.unreadRef).toHaveBeenCalledWith(host.querySelector("main.customer-detail-readable"));
+    expect(host.querySelectorAll('[role="tab"]')).toHaveLength(4);
+    runtime.detailFetching = true; await render(); expect(runtime.unreadOptions.at(-1).listReady).toBe(false);
+    runtime.detailFetching = false; runtime.enterpriseId = 32; await render(); expect(runtime.unreadOptions.at(-1).listReady).toBe(false);
+  });
+  it("keeps confirmation failure small and retryable without business success toast, then uses actual accepted state", async () => {
+    runtime.unreadState = "failed"; runtime.unreadError = new Error("native mark failed"); await render();
+    expect(host.querySelector('.customer-detail-read-status[role="alert"]')?.textContent).toContain("未读提醒未清除");
+    await click("重试确认"); expect(runtime.unreadRetry).toHaveBeenCalledOnce(); expect(toast.success).not.toHaveBeenCalled();
+    runtime.unreadError = null; runtime.unreadState = "pending"; await render(); expect(host.querySelector('.customer-detail-read-status')?.textContent).toBe("正在确认已读…");
+    runtime.unreadState = "seen"; await render(); expect(host.querySelector('.customer-detail-read-status')?.textContent).toBe("已读");
+    expect(toast.success).not.toHaveBeenCalled();
   });
 });

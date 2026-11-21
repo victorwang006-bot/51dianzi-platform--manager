@@ -437,3 +437,41 @@
     grid-column: 1;
   }
 }
+
+/* Customer unread policy: browsing never acknowledges; sticky cells match rows. */
+.customer-list-page .customer-list-unread-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 8px 0;
+}
+.customer-list-page .customer-list-unread-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #475569;
+  font-size: var(--admin-content-font-body, 12px);
+  cursor: pointer;
+}
+.customer-list-page .customer-list-unread-filter input { accent-color: #185fa5; }
+.customer-list-page .customer-list-table tbody tr[data-customer-unread="true"],
+.customer-list-page .customer-list-table tbody tr[data-customer-unread="true"] :is(.customer-list-demand-column, .customer-list-actions-column) {
+  background: #f7faff;
+}
+.customer-list-page .customer-list-table tbody tr[data-customer-unread="true"]:hover,
+.customer-list-page .customer-list-table tbody tr[data-customer-unread="true"]:hover :is(.customer-list-demand-column, .customer-list-actions-column) {
+  background: #edf5fd;
+}
+.customer-list-page .customer-list-unread-label {
+  height: 16px;
+  padding: 0 5px;
+  border: 1px solid #f7d9d6;
+  border-radius: 3px;
+  background: #fff0ee;
+  color: #b64b45;
+  box-shadow: none;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 15px;
+}

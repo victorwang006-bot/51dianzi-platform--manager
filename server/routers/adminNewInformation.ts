@@ -4,6 +4,7 @@ import { adminProcedure, router } from "../_core/trpc";
 import {
   adminNewInformationInspectSchema,
   adminNewInformationMarkSchema,
+  adminNewInformationUnreadRefsSchema,
 } from "../../shared/adminNewInformation";
 import {
   createAdminNewInformationService,
@@ -78,6 +79,11 @@ export function createAdminNewInformationRouter(
     summary: localProcedure.query(({ ctx }) =>
       safe(() => resolve(ctx).summary(ctx.newInformationViewer))
     ),
+    unreadRefs: localProcedure
+      .input(adminNewInformationUnreadRefsSchema)
+      .query(({ ctx, input }) =>
+        safe(() => resolve(ctx).unreadRefs(ctx.newInformationViewer, input))
+      ),
     inspect: localProcedure
       .input(adminNewInformationInspectSchema)
       .query(({ ctx, input }) =>

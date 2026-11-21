@@ -90,6 +90,7 @@ type AdminNewInformationRPC = {
     summary: { query(input: undefined, options?: AdminNewInformationRequestOptions): Promise<AdminNewInformationSummary> };
     inspect: { query(input: {module: AdminNewInformationModule; refs: string[]; scope?: string}, options?: AdminNewInformationRequestOptions): Promise<AdminNewInformationInspection> };
     markDisplayed: { mutate(input: {receipts: string[]}, options?: AdminNewInformationRequestOptions): Promise<unknown> };
+    unreadRefs: { query(input: {module: "customers"; scope?: string}, options?: AdminNewInformationRequestOptions): Promise<{refs: string[]; available: true}> };
   };
 };
 
@@ -454,6 +455,7 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
     summary: options => newInformationRPC.newInformation.summary.query(undefined, options),
     inspect: (input, options) => newInformationRPC.newInformation.inspect.query(input, options),
     markDisplayed: (input, options) => newInformationRPC.newInformation.markDisplayed.mutate(input, options),
+    unreadRefs: (input, options) => newInformationRPC.newInformation.unreadRefs.query(input, options),
   }), [newInformationRPC]);
   const accountId = user?.id;
   const hasCurrentAccount = accountId !== undefined && accountId !== null;

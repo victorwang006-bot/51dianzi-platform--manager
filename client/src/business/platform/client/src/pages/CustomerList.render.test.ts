@@ -22,6 +22,8 @@ const runtime = vi.hoisted(() => ({
   teams: null as { teamId: number; name: string; members: { userId: number; name: string }[] }[] | null,
   defaultTeamId: null as number | null,
   identityReady: true, restoreCalls: [] as boolean[],
+  unreadIds: [] as number[], unreadAvailable: true, unreadError: null as Error | null,
+  unreadOptions: [] as any[], rowsOptions: [] as any[], unreadRowIds: [] as number[], unreadRetry: vi.fn(),
 }));
 vi.mock("wouter", () => ({ useLocation: () => ["/customers", runtime.navigate], useSearch: () => "" }));
 vi.mock("sonner", () => ({ toast: { info: vi.fn(), warning: vi.fn() } }));
@@ -40,14 +42,24 @@ vi.mock("../hooks/useCustomerCreateDraft", () => ({
 vi.mock("../components/customers/CustomerCreateForm", () => ({ CustomerCreateForm: (props: any) => { runtime.createFormProps = props; return null; } }));
 vi.mock("../components/customerDemands/CustomerDemandDialog", () => ({ CustomerDemandDialog: ({ customer }: any) => React.createElement("div", { "data-testid": "synthetic-demand-open" }, customer.name) }));
 vi.mock("../../../../../lib/adminNewInformation", () => ({
-  useAdminNewInformationContextRows: () => ({ getRow: () => ({ isNew: false, ref: () => undefined }) }),
+  useAdminNewInformationContextRows: (options: any) => {
+    runtime.rowsOptions.push(options);
+    return { query: { isError: false, refetch: vi.fn() }, getRow: (ref: string) => ({ isNew: runtime.unreadRowIds.includes(Number(ref.split(":")[1])), ref: () => undefined }) };
+  },
+  useAdminNewInformationContextUnreadRefs: (options: any) => {
+    runtime.unreadOptions.push(options);
+    const available = options.enabled && options.listReady && runtime.unreadAvailable && !runtime.unreadError;
+    return { available, customerIds: available ? runtime.unreadIds : undefined, error: runtime.unreadError,
+      query: { isError: Boolean(runtime.unreadError) }, retry: runtime.unreadRetry };
+  },
   useAdminNewInformationRowContext: () => undefined,
 }));
 vi.mock("../../../../api/business-auth", () => ({ useAuth: () => ({ user: { id: runtime.actorId }, loading: false, isAuthenticated: true }) }));
 vi.mock("../../../../api/business-enterprise-session", () => ({ useOptionalEnterpriseSession: () => ({ activeEnterprise: { enterpriseId: runtime.enterpriseId, memberStatus: "active", accessStatus: "enabled" } }) }));
 vi.mock("../../../../BusinessScope", () => ({ useBusinessScope: () => ({
   storageScope: `synthetic:${runtime.actorId}:${runtime.enterpriseId}`,
-  contextVerification: { identity: `synthetic:${runtime.actorId}:${runtime.enterpriseId}`, authorizationVersion: runtime.authVersion, readVersion: runtime.authVersion },
+  merchantId: 30061, staffPrincipal: { enterpriseId: runtime.enterpriseId, adminAccountId: 101 }, frontUser: { id: runtime.actorId },
+  contextVerification: { state: "verified", identity: `synthetic:${runtime.actorId}:${runtime.enterpriseId}`, authorizationVersion: runtime.authVersion, readVersion: runtime.authVersion },
   officialInventoryPermissions: { read: true, write: true, note: true, authorizationVersion: runtime.authVersion },
   onAuthorizationError: runtime.authorizationError,
 }) }));
@@ -60,9 +72,11 @@ vi.mock("../../../../api/business-trpc", () => ({ trpc: {
       const data = { actorUserId: runtime.actorId, canManageAll: runtime.canManageAll, canReadAll: runtime.canReadAll || runtime.canManageAll,
         canReadEnterprise: runtime.canReadEnterprise ?? runtime.canManageAll, canReadTeam: runtime.canReadTeam ?? (runtime.canReadAll && !runtime.canManageAll),
         teams: runtime.teams ?? [{ teamId: 173, name: "合成团队", members: runtime.targets }], defaultTeamId: runtime.defaultTeamId ?? 173, members: runtime.members };
-      return { data, isPending: false, isLoading: false, isError: runtime.customerContextError, refetch: vi.fn().mockResolvedValue({ data, isError: runtime.customerContextError }) };
+      return { data, isSuccess: !runtime.customerContextError, isPending: false, isLoading: false, isError: runtime.customerContextError, refetch: vi.fn().mockResolvedValue({ data, isError: runtime.customerContextError }) };
     } },
-    list: { useQuery: (input: any, options: any) => { runtime.listInputs.push(input); runtime.listOptions.push(options); return { data: { items: input.page === 1 ? runtime.rows : [{ ...runtime.rows[0], id: 804 }], total: 40 }, isPending: runtime.listPending, isFetching: runtime.listFetching, isError: runtime.listError, error: new Error("synthetic list error"), refetch: runtime.listRefetch }; } },
+    list: { useQuery: (input: any, options: any) => { runtime.listInputs.push(input); runtime.listOptions.push(options);
+      const narrowed = input.customerIds ? runtime.rows.filter(row => input.customerIds.includes(row.id)) : undefined;
+      return { data: { items: narrowed ?? (input.page === 1 ? runtime.rows : [{ ...runtime.rows[0], id: 804 }]), total: narrowed?.length ?? 40 }, isSuccess: !runtime.listPending && !runtime.listError, isPending: runtime.listPending, isFetching: runtime.listFetching, isError: runtime.listError, error: new Error("synthetic list error"), refetch: runtime.listRefetch }; } },
     contactsSummary: { useQuery: (input: any, options: any) => {
       runtime.contactSummaryRequests.push({ input, options });
       return runtime.contactSummaryResult ?? { isSuccess: true, isFetchedAfterMount: true, isPending: false, isFetching: false, isError: false, isPlaceholderData: false,
@@ -114,6 +128,8 @@ beforeEach(() => {
   runtime.canManageAll = false; runtime.canReadAll = false; runtime.members = [];
   runtime.canReadEnterprise = undefined; runtime.canReadTeam = undefined; runtime.teams = null; runtime.defaultTeamId = null;
   runtime.identityReady = true; runtime.restoreCalls = [];
+  runtime.unreadIds = []; runtime.unreadAvailable = true; runtime.unreadError = null;
+  runtime.unreadOptions = []; runtime.rowsOptions = []; runtime.unreadRowIds = []; runtime.unreadRetry.mockReset();
   runtime.delegatedRows = {};
   runtime.starContext.mockReset().mockImplementation(async () => ({ enterpriseId: runtime.enterpriseId, actorUserId: runtime.actorId, targets: runtime.targets }));
   runtime.setStar.mockReset().mockImplementation(async (input: any) => {
@@ -888,5 +904,42 @@ describe("CustomerList contact completeness badges", () => {
   it("can establish missing customer name without a ready contacts summary", async () => {
     runtime.rows = [row(801, { name: " " })]; runtime.contactSummaryResult = result(null, { isPending: true });
     await render(); expect(tableRows()[0].textContent).toContain("待补全");
+  });
+});
+
+describe("CustomerList authorized unread filter", () => {
+  function unreadToggle() { return host.querySelector<HTMLInputElement>('.customer-list-unread-filter input')!; }
+  it("preserves server order, shows explicit unread and light-row flag, and never enables visible acknowledgement", async () => {
+    runtime.unreadRowIds = [802]; await render();
+    expect(tableRows().map(row => row.dataset.pageMemoryRow)).toEqual(["801", "802", "803"]);
+    expect(tableRows()[1].dataset.customerUnread).toBe("true");
+    expect(tableRows()[1].querySelector('[data-admin-new-information="row"]')?.textContent).toBe("未读");
+    expect(runtime.rowsOptions.at(-1)).toMatchObject({ module: "customers", scope: "30061", acknowledgeOnVisible: false, retainUnreadWhileVisible: false, expectedAccountKey: 101 });
+    expect(runtime.unreadOptions.at(-1).enabled).toBe(false);
+  });
+  it("sends the FULL unread set before business pagination and intersects only applied search/grade/owner/star/date filters", async () => {
+    runtime.canManageAll = true; runtime.members = [{ userId: 7, name: "合成负责人" }];
+    runtime.unreadIds = [801, 802, 803, 804, 805];
+    const filters = { keyword: " 已应用 ", grade: "B", stage: "following", scope: "all", assignedUserId: "7", due: "today", archived: false, starredOnly: true, updatedFrom: "2026-11-01", updatedTo: "2026-11-20" };
+    runtime.remembered = { appliedFilters: filters, draftFilters: { ...filters, keyword: "未应用草稿" }, page: 2 };
+    await render(); await click(unreadToggle());
+    expect(runtime.listInputs.at(-1)).toMatchObject({ customerIds: [801, 802, 803, 804, 805], page: 1, pageSize: 20,
+      keyword: "已应用", grade: "B", stage: "following", scope: "all", assignedUserId: 7, due: "today", starredOnly: true,
+      updatedFrom: "2026-11-01", updatedTo: "2026-11-20" });
+    expect(runtime.listOptions.at(-1).enabled).toBe(true); expect(runtime.unreadOptions.at(-1)).toMatchObject({ enabled: true, listReady: true });
+    expect(host.querySelector<HTMLInputElement>(".customer-list-search")!.value).toBe("未应用草稿");
+    await click(button("搜索")); expect(runtime.listInputs.at(-1).customerIds).toEqual(runtime.unreadIds);
+    await click(button("重置")); expect(unreadToggle().checked).toBe(false); expect(runtime.listInputs.at(-1)).not.toHaveProperty("customerIds");
+  });
+  it("a verified empty unread set disables business list and shows explicit no-unread, not retained broad rows/total", async () => {
+    runtime.remembered = { view: true }; await render();
+    expect(runtime.listInputs.at(-1).customerIds).toEqual([]); expect(runtime.listOptions.at(-1).enabled).toBe(false);
+    expect(host.textContent).toContain("没有未读客户"); expect(tableRows()).toHaveLength(0); expect(host.textContent).not.toMatch(/共\s*40\s*条/);
+  });
+  it("unknown/failed unread capability never queries all customers or displays fake empty; exposes retry", async () => {
+    runtime.remembered = { view: true }; runtime.unreadAvailable = false; runtime.unreadError = new Error("未读筛选暂不可用"); await render();
+    expect(runtime.listOptions.at(-1).enabled).toBe(false); expect(tableRows()).toHaveLength(0);
+    expect(host.textContent).toContain("未读筛选暂不可用"); expect(host.textContent).not.toContain("没有未读客户");
+    await click(button("重试")); expect(runtime.unreadRetry).toHaveBeenCalledOnce();
   });
 });
