@@ -1,0 +1,9 @@
+{
+  "base": "deploy/customer-batch-actions-20261119/build-upload-file-fix.mjs",
+  "baseSha256": "783991dc08481817e0b4756d1cd9be307b75a660ff5761f356cf2db7704d2581",
+  "new": "deploy/customer-batch-actions-20261119/build-upload-header-mapping.mjs",
+  "newSha256": "e0c11b205d5ea2fe4bfde3f35bec6ea11466fdb57275b3f0bed5e7c316162ec9",
+  "changedOnly": "CSS extraction marker literal",
+  "inverseVerified": true,
+  "allOtherBytesExact": true
+}

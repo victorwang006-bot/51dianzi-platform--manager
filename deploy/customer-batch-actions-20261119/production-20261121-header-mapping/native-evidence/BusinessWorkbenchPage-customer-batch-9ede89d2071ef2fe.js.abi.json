@@ -1,0 +1,157 @@
+{
+  "React": {
+    "native": "Ct",
+    "sha256": "8ef6ddb5789e603dbf60c3545735979f6f0bcb880063d7e0fda6a6517f049d47",
+    "head": "Ct=__customerLive.React"
+  },
+  "useEffect": {
+    "native": "Oe",
+    "sha256": "1a6ba6c9a9dc6de1630a1e02211aead29a5d247a581a801b3fc9154b3138e9c5",
+    "head": "Oe=Ct.useEffect"
+  },
+  "useRef": {
+    "native": "fe",
+    "sha256": "e8eac88043e573ea5d69b62af8ae8e65bb8c982d071a5321ae5e85fc1ad46b77",
+    "head": "fe=Ct.useRef"
+  },
+  "useState": {
+    "native": "X",
+    "sha256": "556a30c2ce30d02d196fb1a87a9d7383ecee6c6f83052a37b687327b037fb4ff",
+    "head": "X=Ct.useState"
+  },
+  "jsx": {
+    "native": "m",
+    "sha256": "eb5261b6559915a537ea8eb73adeac1f75f8201714c6de75c8c83811a998db91",
+    "head": "m=__customerLive.jsx.jsx"
+  },
+  "jsxs": {
+    "native": "_",
+    "sha256": "2991d7f65b09e41b917f364d8f15345cd93bd30844aed9598cc42ca922d7edcb",
+    "head": "_=__customerLive.jsx.jsxs"
+  },
+  "Fragment": {
+    "native": "Nt",
+    "sha256": "70d2f16ff958faccf2c857ceb1d7d0cca892d5a32db8b5a5a1a2424c91605728",
+    "head": "Nt=__customerLive.jsx.Fragment"
+  },
+  "Dialog": {
+    "native": "Ka",
+    "sha256": "a7e55a677cacc9758d3027ae7a9dbd5d3b70f3f42c4f2726afad93be4820a81b",
+    "head": "Ka=__customerLive.bridge_15_Dialog"
+  },
+  "DialogContent": {
+    "native": "Xa",
+    "sha256": "623586a7a7d6202e4f13ee1f166f8ffbf0e254fcfa63cbad8132afa4182b92dc",
+    "head": "Xa=__customerLive.bridge_15_DialogContent"
+  },
+  "DialogHeader": {
+    "native": "Ya",
+    "sha256": "e18f12304d55657f0da1ea7643687dd6a493e4caae7e32c160144c72cd222d06",
+    "head": "Ya=__customerLive.bridge_15_DialogHeader"
+  },
+  "DialogTitle": {
+    "native": "Ja",
+    "sha256": "099a9c5e3f80d5909c35f1bfff52aaf7efa08f1c02c99d4001b77d8e9526d38e",
+    "head": "Ja=__customerLive.bridge_15_DialogTitle"
+  },
+  "Button": {
+    "native": "xt",
+    "sha256": "76f9912310dfaaa9e706d2d760c448d21d5979fbd47b7558f65c69df7310e8d4",
+    "head": "xt=__customerLive.bridge_21_Button"
+  },
+  "batchUploadDialogStyle": {
+    "native": "ac",
+    "sha256": "9380b43632161047ce70e7190688c45254ddb9b37c1217af9a5c9fb9619d785f",
+    "head": "ac={width:\"min(880px, calc(100vw - 24px))\",maxWidth:\"880px\",height:\"min(85dvh, 680px)\",maxHeight:\"85dvh\",display:\"flex\",flexDirection:\"column\",gap:\"12px\",overfl"
+  },
+  "useImperativeHandle": {
+    "native": "Sv",
+    "sha256": "b27544c8c2b1babb9888ca0142de27b0b817f57e25e7efeb553cf8bad40748e9",
+    "head": "Sv=Ct.useImperativeHandle"
+  },
+  "storageKey": {
+    "native": "F0",
+    "sha256": "177280c157c6d5f6062ca44e630df99d0f796230f73a27974caac8fd7b98c687",
+    "head": "F0=e=>`d51-channel-inventory-batch-v1:${e.actorUserId}:${e.enterpriseId}${e.storageKeySuffix?`:${e.storageKeySuffix}`:\"\"}`"
+  },
+  "readSavedBatch": {
+    "native": "C6",
+    "sha256": "52881dc1408aadec45aeb09741414c86d29a21afcdf61c678bd465fd122dd53e",
+    "head": "function C6(e){let t={saved:null,error:\"\",blocked:!1};try{let r=sessionStorage.getItem(F0(e));if(!r)return e.initialRecovery?{saved:e.initialRecovery,error:\"\",b"
+  },
+  "Icon": {
+    "native": "Zi",
+    "sha256": "1a5740da376b3cae6f265b34c9041c135ad7ceff11cad71864e77ac583958463",
+    "head": "function Zi({kind:e,size:t=18}){return m(\"svg\",{width:t,height:t,viewBox:\"0 0 24 24\",fill:\"none\",stroke:\"currentColor\",strokeWidth:\"1.6\",strokeLinecap:\"round\",s"
+  },
+  "uuid": {
+    "native": "fu",
+    "sha256": "635873720a7875ad90acaf4fbf10d9122b02ed17f764166fd688db375167290a",
+    "head": "fu=Dn"
+  },
+  "inventoryRequestId": {
+    "native": "Dn",
+    "sha256": "6580273853f8c12fcec4e9e54cb5933f86bbd3028eff6dc6cd83970497ee2898",
+    "head": "function Dn(){return typeof crypto<\"u\"&&typeof crypto.randomUUID==\"function\"?crypto.randomUUID():\"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx\".replace(/[xy]/g,e=>{let "
+  },
+  "fields": {
+    "native": "on",
+    "sha256": "d05d8ef9b52a2df42f6f23d162e51d2d2abca68a3e9f9ce31401db121aafedd8",
+    "head": "on=[{key:\"partNumber\",label:\"\\u578B\\u53F7\",required:!0},{key:\"brand\",label:\"\\u54C1\\u724C\",required:!0},{key:\"qty\",label:\"\\u53EF\\u4F9B\\u6570\\u91CF\",required:!1},"
+  },
+  "mapGrid": {
+    "native": "Tl",
+    "sha256": "b5a89c037c665e2b3b0c27f84f123d474e1c86a2553a710443e418e934864eec",
+    "head": "function Tl(e,t,r){let a=[];for(let n=1;n<e.length;n+=1){let i=e[n]??[];if(k2(i))continue;let o={...Cl};for(let c of Sl){let u=t[c];if(Number.isInteger(u)&&u>=0"
+  },
+  "suggestMapping": {
+    "native": "vs",
+    "sha256": "71934725a976f20a6c82f2202faa14e1b2f4a966a6e768981f8ed002bb9257ec",
+    "head": "function vs(e){let t=e.map(_2),r=Object.fromEntries(Sl.map(a=>[a,-1]));for(let a of Sl){let n=t.findIndex(i=>w2[a].includes(i));n>=0&&(r[a]=n)}return r}"
+  },
+  "templateGrid": {
+    "native": "Xv",
+    "sha256": "70ea0a0cac5100041d22b7d60125b53c8dd630799e94e8a95796adc216368d71",
+    "head": "function Xv(){return[on.map(e=>e.label)]}"
+  },
+  "validateDraft": {
+    "native": "ua",
+    "sha256": "98a690a6bb6c6af8e176f9e97792ad706d772c74f3e8448ca2a758c955ee7950",
+    "head": "function ua(e){let t=gs(e),r=[];return t.sourceIssue&&r.push(t.sourceIssue),t.partNumber.length===0?r.push(\"\\u578B\\u53F7\\u4E0D\\u80FD\\u4E3A\\u7A7A\"):t.partNumber."
+  },
+  "validateMapping": {
+    "native": "Kv",
+    "sha256": "68906bf0bddb04efe7e09450c28529109c8b9df26d62a7b02688f6a6b5c45bd9",
+    "head": "function Kv(e){let t=[],r=new Map;for(let a of on){let n=e[a.key];if(!Number.isInteger(n)||n<-1){t.push(`${a.label}\\u7684\\u5217\\u6620\\u5C04\\u65E0\\u6548`);contin"
+  },
+  "toPayload": {
+    "native": "dd",
+    "sha256": "2d4cb33d1a7963b6c6fbfd879bfbd9aad59f06f15c0b83d3aa6f7aa998241aeb",
+    "head": "function dd(e,t){let r=gs(e),a=ua(r);if(a.length)throw new Error(a.join(\"\\uFF1B\"));if(!Number.isSafeInteger(t)||t<=0)throw new Error(\"\\u8BF7\\u9009\\u62E9\\u6709\\u"
+  },
+  "runBatch": {
+    "native": "Yv",
+    "sha256": "81ed0f4871e36914b56d7393214fe22188b006707be82126aee4dd30bfb3b45e",
+    "head": "async function Yv(e,t){let r=xs(e);for(let a=0;a<r.length;a+=1){let n=r[a];if(n.status===\"success\")continue;if(!t.isCurrent())return vo(r,!1,\"context-changed\");"
+  },
+  "nativeSheetInit": {
+    "native": "nc",
+    "sha256": "77c13db0c6c4e8d171fa1aa6cdfb63d15d1d5aa9f6dd975cddfaa4601b59fce1",
+    "head": "nc=n2(()=>{Ds={};Ds.version=\"0.18.5\";Sn=1200,Fi=1252,S2=[874,932,936,949,950,1250,1251,1252,1253,1254,1255,1256,1257,1258,1e4],Ld={0:1252,1:65001,2:65001,77:1e4"
+  },
+  "nativeSheetExports": {
+    "native": "rc",
+    "sha256": "87684668d89e2a70eeba0785187b125d395cb70795ee285e513df2cf86e883a3",
+    "head": "rc={}"
+  },
+  "nc": {
+    "native": "nc",
+    "sha256": "77c13db0c6c4e8d171fa1aa6cdfb63d15d1d5aa9f6dd975cddfaa4601b59fce1",
+    "head": "nc=n2(()=>{Ds={};Ds.version=\"0.18.5\";Sn=1200,Fi=1252,S2=[874,932,936,949,950,1250,1251,1252,1253,1254,1255,1256,1257,1258,1e4],Ld={0:1252,1:65001,2:65001,77:1e4"
+  },
+  "rc": {
+    "native": "rc",
+    "sha256": "87684668d89e2a70eeba0785187b125d395cb70795ee285e513df2cf86e883a3",
+    "head": "rc={}"
+  }
+}

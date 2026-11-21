@@ -272,4 +272,105 @@ describe("customer compact upload", () => {
     expect(document.querySelector('[aria-label="明确确认本次核对币种为CNY"]')).toBeNull(); expect(button("取消")).toBeTruthy();
     click(button("确认上传 1 条")); await settle(); expect(createCustomer).not.toHaveBeenCalled(); expect(create.mock.calls[0][0]).toMatchObject({ channelId: 11, currency: "CNY" });
   });
+
+  it("exposes all nine manual mapping selectors directly in the table header, even for recognized columns", async () => {
+    render(); await upload([["型号", "品牌", "数量", "币种", "自定义价格"], ["ONE", "TI", "4", "CNY", "2.500"]]);
+    expect(document.querySelectorAll("thead .ci-batch-header-mapping select")).toHaveLength(9);
+    const control = required(document.querySelector<HTMLSelectElement>('[aria-label="表头匹配报价（CNY）"]'));
+    expect(control.closest("th")).not.toBeNull(); expect(isCollapsed(control)).toBe(false);
+    expect(Array.from(control.options).map(option => option.textContent)).toContain("第5列 · 自定义价格");
+    select("表头匹配报价（CNY）", "4");
+    expect(document.querySelector<HTMLInputElement>('[aria-label="核对第2行报价（CNY）"]')?.value).toBe("2.500");
+    expect(control.closest("th")?.textContent).toContain("示例：2.500");
+    click(button("导入1条")); await settle(); expect(confirmation().confirmedDrafts[0].draft.price).toBe("2.500");
+  });
+
+  it("rereads only the remapped field, preserves unrelated manual edits and reuses the original file evidence", async () => {
+    render(); const file = fileFor([["型号", "品牌", "报价", "币种", "实际价格"], ["ONE", "TI", "10", "CNY", "20"]]); await uploadFile(file);
+    input("核对第2行型号", "MANUAL-PART"); input("核对第2行品牌", "NXP"); input("核对第2行报价（CNY）", "99");
+    select("表头匹配报价（CNY）", "4");
+    expect(document.querySelector<HTMLInputElement>('[aria-label="核对第2行型号"]')?.value).toBe("MANUAL-PART");
+    expect(document.querySelector<HTMLInputElement>('[aria-label="核对第2行品牌"]')?.value).toBe("NXP");
+    click(button("导入1条")); await settle();
+    expect(confirmation().confirmedDrafts[0]).toMatchObject({ row: 2, metadata: metadata(2), draft: { partNumber: "MANUAL-PART", brand: "NXP", price: "20", currency: "CNY" } });
+    expect(persistOriginal).toHaveBeenCalledTimes(1); expect(persistOriginal).toHaveBeenCalledWith(file);
+    expect(create.mock.calls[0][1]).toBe(confirmation().confirmedDrafts[0].rowRequestId);
+  });
+
+  it("does not reset edits when selecting the same source column and can explicitly omit an optional column", async () => {
+    render(); await upload([["型号", "品牌", "报价", "币种"], ["ONE", "TI", "10", "CNY"]]);
+    input("核对第2行报价（CNY）", "99"); select("表头匹配报价（CNY）", "2");
+    expect(document.querySelector<HTMLInputElement>('[aria-label="核对第2行报价（CNY）"]')?.value).toBe("99");
+    select("表头匹配报价（CNY）", "-1");
+    expect(document.querySelector<HTMLInputElement>('[aria-label="核对第2行报价（CNY）"]')?.value).toBe("");
+    click(button("导入1条")); await settle(); expect(confirmation().confirmedDrafts[0].draft.price).toBe("");
+  });
+
+  it("distinguishes duplicate original header names by their column number and keeps duplicate mapping blocked", async () => {
+    render(); await upload([["型号", "品牌", "报价", "报价", "币种"], ["ONE", "TI", "10", "20", "CNY"]]);
+    const control = required(document.querySelector<HTMLSelectElement>('[aria-label="表头匹配报价（CNY）"]'));
+    expect(Array.from(control.options).map(option => option.textContent)).toEqual(["不导入 / 留空", "第1列 · 型号", "第2列 · 品牌", "第3列 · 报价", "第4列 · 报价", "第5列 · 币种"]);
+    select("表头匹配报价（CNY）", "0"); expect(button("导入0条").disabled).toBe(true);
+    expect(document.querySelector('[role="alert"]')?.textContent).toContain("重复映射");
+    select("表头匹配报价（CNY）", "3"); expect(button("导入1条").disabled).toBe(false);
+    click(button("导入1条")); await settle(); expect(confirmation().confirmedDrafts[0].draft.price).toBe("20");
+  });
+
+  it("requires fresh explicit confirmation after changing a currency column, retaining price and model edits without conversion", async () => {
+    render(); await upload([["型号", "品牌", "报价", "币种", "原币种"], ["ONE", "TI", "12.345", "USD", "EUR"]]);
+    select("明确确认本次核对币种为CNY", "CNY"); input("核对第2行型号", "MANUAL-PART"); input("核对第2行报价（CNY）", "25.678");
+    select("表头匹配币种", "4"); expect(button("导入0条").disabled).toBe(true);
+    expect(document.querySelector<HTMLSelectElement>('[aria-label="明确确认本次核对币种为CNY"]')?.value).toBe("");
+    expect(document.querySelector<HTMLInputElement>('[aria-label="核对第2行报价（CNY）"]')?.value).toBe("25.678");
+    select("明确确认本次核对币种为CNY", "CNY"); select("表头匹配币种", "-1"); expect(button("导入0条").disabled).toBe(true);
+    select("明确确认本次核对币种为CNY", "CNY"); click(button("导入1条")); await settle();
+    expect(confirmation().confirmedDrafts[0].draft).toMatchObject({ partNumber: "MANUAL-PART", price: "25.678", currency: "CNY" });
+  });
+
+  it("keeps removed rows and exact row metadata after mapping changes instead of restoring excluded rows", async () => {
+    render(); await upload([["型号", "品牌", "币种", "自定义价格"], ["ONE", "TI", "CNY", "10"], ["TWO", "ADI", "CNY", "20"]]);
+    click(required(document.querySelector('[aria-label="移除原表第2行"]'))); select("表头匹配报价（CNY）", "3");
+    expect(document.querySelector('[aria-label="核对第2行型号"]')).toBeNull();
+    click(button("导入1条")); await settle(); expect(confirmation().confirmedDrafts).toHaveLength(1);
+    expect(confirmation().confirmedDrafts[0]).toMatchObject({ row: 3, metadata: metadata(3), draft: { partNumber: "TWO", price: "20" } });
+    expect(confirmation().excludedRows[0]).toMatchObject({ row: 2, reason: "用户移除", metadata: metadata(2) });
+  });
+
+  it("does not let a header selector import the failure-reason column or erase the required model mapping", async () => {
+    render(); await upload([["型号", "品牌", "币种", "失败原因"], ["ONE", "TI", "CNY", "禁止作为业务值"]]);
+    const control = required(document.querySelector<HTMLSelectElement>('[aria-label="表头匹配型号"]'));
+    expect(control.options[4].disabled).toBe(true); select("表头匹配型号", "3"); expect(control.value).toBe("0");
+    select("表头匹配型号", "-1"); expect(button("导入0条").disabled).toBe(true);
+    expect(document.querySelector('[role="alert"]')?.textContent).toContain("型号为必填字段"); expect(createCustomer).not.toHaveBeenCalled();
+  });
+
+  it("locks header mapping during batch preparation and retains the same prepared request", async () => {
+    let finish!: (result: { id: number; channelId: number }) => void;
+    createCustomer.mockReturnValue(new Promise(resolve => { finish = resolve; })); render();
+    await upload([["型号", "品牌", "币种", "替代型号"], ["ONE", "TI", "CNY", "TWO"]]); click(button("导入1条"));
+    const before = JSON.parse(required(sessionStorage.getItem(key)));
+    // Submission transitions to results immediately: no mutable header survives.
+    expect(document.querySelector('[aria-label="表头匹配型号"]')).toBeNull();
+    expect(document.querySelector('[aria-label="匹配型号"]')).toBeNull();
+    await act(async () => { finish({ id: 81, channelId: 11 }); }); await settle();
+    expect(createCustomer).toHaveBeenCalledTimes(1); expect(createCustomer.mock.calls[0][0].requestId).toBe(before.preparation.requestId);
+    expect(create.mock.calls[0][0].partNumber).toBe("ONE");
+  });
+
+  it("revalidates numeric model precision when changing source columns, without keeping stale sourceIssue", async () => {
+    render(); await upload([["型号", "品牌", "币种", "数值型号"], ["ONE", "TI", "CNY", 1234567890123456]]);
+    input("核对第2行品牌", "NXP"); select("表头匹配型号", "3");
+    expect(button("导入0条").disabled).toBe(true); expect(document.body.textContent).toContain("数值型型号超过15位或不可靠");
+    select("表头匹配型号", "0"); expect(button("导入1条").disabled).toBe(false);
+    click(button("导入1条")); await settle(); expect(confirmation().confirmedDrafts[0].draft).toMatchObject({ partNumber: "ONE", brand: "NXP" });
+    expect(confirmation().confirmedDrafts[0].draft.sourceIssue).toBeUndefined();
+  });
+
+  it("ignores a stale header change after customer or authorization identity becomes invalid", async () => {
+    let valid = true; render({ isCurrent: () => valid });
+    await upload([["型号", "品牌", "币种", "替代型号"], ["ONE", "TI", "CNY", "TWO"]]);
+    valid = false; select("表头匹配型号", "3");
+    expect(document.querySelector<HTMLInputElement>('[aria-label="核对第2行型号"]')?.value).toBe("ONE");
+    expect(createCustomer).not.toHaveBeenCalled(); expect(create).not.toHaveBeenCalled();
+  });
 });

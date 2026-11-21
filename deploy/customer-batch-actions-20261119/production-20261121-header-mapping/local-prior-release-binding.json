@@ -1,0 +1,18 @@
+{
+  "status": "LOCAL_PREVIOUS_ACTUAL_RELEASE_BYTES_REUSED_NOT_FRESH_PRODUCTION_CAPTURE",
+  "htmlSha256": "18efeb2b44b55d81a69f0d8dbaedcafa3f5d43ec2a8c7236929c578672c6a744",
+  "assets": [
+    {
+      "name": "BusinessWorkbenchPage-customer-batch-44bea9fd29f2afaa.js",
+      "sha256": "44bea9fd29f2afaad69527009dafb1a8177fb5ecd8243ea268387cef6ad2519a",
+      "size": 5515700
+    },
+    {
+      "name": "BusinessWorkbenchPage-customer-batch-9ede89d2071ef2fe.js",
+      "sha256": "9ede89d2071ef2fea38a9c9f85a389baeaafbb060021c7baab7ea4812a1913f2",
+      "size": 6413486
+    }
+  ],
+  "businessApiChanges": 0,
+  "productionOperations": 0
+}

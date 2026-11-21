@@ -1,0 +1,10 @@
+{
+  "beforeSha256": "18efeb2b44b55d81a69f0d8dbaedcafa3f5d43ec2a8c7236929c578672c6a744",
+  "afterSha256": "98385a66faa8e1820df54a2a2dcb8c4a22ce488e7e2e4623cf745c65c6538bf5",
+  "counts": {
+    "/assets/BusinessWorkbenchPage-customer-batch-44bea9fd29f2afaa.js": 32,
+    "/assets/BusinessWorkbenchPage-customer-batch-9ede89d2071ef2fe.js": 53
+  },
+  "link": "<link rel=\"stylesheet\" href=\"/assets/customer-batch-actions-af6b970e3a2e2e06.css\">\n",
+  "inverseVerified": true
+}

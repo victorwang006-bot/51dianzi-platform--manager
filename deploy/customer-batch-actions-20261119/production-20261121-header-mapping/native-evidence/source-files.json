@@ -1,0 +1,11 @@
+{
+  "sourceHashes": {
+    "client/src/business/platform/client/src/components/channelInventory/BatchUpload.tsx": "8fc788201d2541ffa7f84a41d4408c8e7cb059cb3ed76d43f07a6a2284b6c1a5",
+    "client/src/business/platform/client/src/components/channelInventory/batch.css": "6166e8f392cc68b86cd335239206e61ccbcec8c051cde847db643ec077f271e7"
+  },
+  "sourceStableDuringBuild": true,
+  "embeddedFailuresIncluded": true,
+  "compiler": "esbuild.transform",
+  "esbuildVersion": "0.25.10",
+  "builderSha256": "e0c11b205d5ea2fe4bfde3f35bec6ea11466fdb57275b3f0bed5e7c316162ec9"
+}

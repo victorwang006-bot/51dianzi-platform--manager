@@ -704,3 +704,51 @@
     flex-wrap: wrap;
   }
 }
+
+/* Manual source-column mapping stays inside the customer upload table. */
+.customer-supply-dialog .ci-batch-header-hint {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 19px;
+}
+.customer-supply-dialog .ci-batch-review th .ci-batch-header-mapping {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 7px;
+  min-width: 140px;
+  max-width: 280px;
+  font-weight: 400;
+}
+.customer-supply-dialog .ci-batch-header-mapping select.ci-batch-control {
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #334155;
+  font-size: 12px;
+  cursor: pointer;
+}
+.customer-supply-dialog .ci-batch-header-mapping select.ci-batch-control:hover:not(:disabled) {
+  border-color: #3b82f6;
+}
+.customer-supply-dialog .ci-batch-header-mapping select.ci-batch-control:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+.customer-supply-dialog .ci-batch-header-mapping select.ci-batch-control:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.customer-supply-dialog .ci-batch-header-mapping small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 16px;
+}

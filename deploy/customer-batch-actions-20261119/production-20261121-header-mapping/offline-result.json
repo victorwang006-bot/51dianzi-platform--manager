@@ -1,0 +1,44 @@
+{
+  "status": "OFFLINE_HEADER_MAPPING_READY_NOT_DEPLOYED",
+  "productionConnections": 0,
+  "productionReads": 0,
+  "productionWrites": 0,
+  "businessWrites": 0,
+  "apiDiff": 0,
+  "reload": 0,
+  "timerPause": false,
+  "tests": {
+    "compactPassed": 35,
+    "otherFiveFilesPassed": 64,
+    "uniqueTotalPassed": 99,
+    "newHeaderCases": 10,
+    "preservedInitialAssertionFailures": 2
+  },
+  "typecheckExit": 0,
+  "nativeSingleLeafInverseVerified": true,
+  "allOtherNativeBytesUnchanged": true,
+  "freshProductionCapture": false,
+  "productionWindowOwnerTask": "qp4e5jVmsAp0UHKwymyD5X",
+  "sourceHashes": {
+    "client/src/business/platform/client/src/components/channelInventory/BatchUpload.tsx": "8fc788201d2541ffa7f84a41d4408c8e7cb059cb3ed76d43f07a6a2284b6c1a5",
+    "client/src/business/platform/client/src/components/channelInventory/batch.css": "6166e8f392cc68b86cd335239206e61ccbcec8c051cde847db643ec077f271e7",
+    "client/src/business/platform/client/src/components/channelInventory/BatchUpload.compact.test.ts": "6c8abfc1718b9cd41312cb18bf6cb5062240eecffaadcc9b1bbc7cd214f4c73b"
+  },
+  "assets": [
+    {
+      "relative": "assets/BusinessWorkbenchPage-customer-batch-71b35fe0ad458e6b.js",
+      "sha256": "71b35fe0ad458e6bd7777dfee1cbab87fcbc2e529d5ab135ed652d779673b5f7",
+      "size": 5518798
+    },
+    {
+      "relative": "assets/BusinessWorkbenchPage-customer-batch-2d17aff3e6b3e646.js",
+      "sha256": "2d17aff3e6b3e646231c544c7461764852b98696fe32b88e166d180cac28fcaf",
+      "size": 6416584
+    },
+    {
+      "relative": "assets/customer-batch-actions-af6b970e3a2e2e06.css",
+      "sha256": "af6b970e3a2e2e06ede82b8ea6e2f4f16596b8171072c9d6aea2b761d377f3c0",
+      "size": 1259
+    }
+  ]
+}

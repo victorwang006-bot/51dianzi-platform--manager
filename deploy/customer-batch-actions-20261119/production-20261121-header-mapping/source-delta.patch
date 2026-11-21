@@ -1,0 +1,238 @@
+[1mdiff --git a/client/src/business/platform/client/src/components/channelInventory/BatchUpload.compact.test.ts b/client/src/business/platform/client/src/components/channelInventory/BatchUpload.compact.test.ts[m
+[1mindex 4f23533..b5fccf2 100644[m
+[1m--- a/client/src/business/platform/client/src/components/channelInventory/BatchUpload.compact.test.ts[m
+[1m+++ b/client/src/business/platform/client/src/components/channelInventory/BatchUpload.compact.test.ts[m
+[36m@@ -272,4 +272,105 @@[m [mdescribe("customer compact upload", () => {[m
+     expect(document.querySelector('[aria-label="明确确认本次核对币种为CNY"]')).toBeNull(); expect(button("取消")).toBeTruthy();[m
+     click(button("确认上传 1 条")); await settle(); expect(createCustomer).not.toHaveBeenCalled(); expect(create.mock.calls[0][0]).toMatchObject({ channelId: 11, currency: "CNY" });[m
+   });[m
+[32m+[m
+[32m+[m[32m  it("exposes all nine manual mapping selectors directly in the table header, even for recognized columns", async () => {[m
+[32m+[m[32m    render(); await upload([["型号", "品牌", "数量", "币种", "自定义价格"], ["ONE", "TI", "4", "CNY", "2.500"]]);[m
+[32m+[m[32m    expect(document.querySelectorAll("thead .ci-batch-header-mapping select")).toHaveLength(9);[m
+[32m+[m[32m    const control = required(document.querySelector<HTMLSelectElement>('[aria-label="表头匹配报价（CNY）"]'));[m
+[32m+[m[32m    expect(control.closest("th")).not.toBeNull(); expect(isCollapsed(control)).toBe(false);[m
+[32m+[m[32m    expect(Array.from(control.options).map(option => option.textContent)).toContain("第5列 · 自定义价格");[m
+[32m+[m[32m    select("表头匹配报价（CNY）", "4");[m
+[32m+[m[32m    expect(document.querySelector<HTMLInputElement>('[aria-label="核对第2行报价（CNY）"]')?.value).toBe("2.500");[m
+[32m+[m[32m    expect(control.closest("th")?.textContent).toContain("示例：2.500");[m
+[32m+[m[32m    click(button("导入1条")); await settle(); expect(confirmation().confirmedDrafts[0].draft.price).toBe("2.500");[m
+[32m+[m[32m  });[m
+[32m+[m
+[32m+[m[32m  it("rereads only the remapped field, preserves unrelated manual edits and reuses the original file evidence", async () => {[m
+[32m+[m[32m    render(); const file = fileFor([["型号", "品牌", "报价", "币种", "实际价格"], ["ONE", "TI", "10", "CNY", "20"]]); await uploadFile(file);[m
+[32m+[m[32m    input("核对第2行型号", "MANUAL-PART"); input("核对第2行品牌", "NXP"); input("核对第2行报价（CNY）", "99");[m
+[32m+[m[32m    select("表头匹配报价（CNY）", "4");[m
+[32m+[m[32m    expect(document.querySelector<HTMLInputElement>('[aria-label="核对第2行型号"]')?.value).toBe("MANUAL-PART");[m
+[32m+[m[32m    expect(document.querySelector<HTMLInputElement>('[aria-label="核对第2行品牌"]')?.value).toBe("NXP");[m
+[32m+[m[32m    click(button("导入1条")); await settle();[m
+[32m+[m[32m    expect(confirmation().confirmedDrafts[0]).toMatchObject({ row: 2, metadata: metadata(2), draft: { partNumber: "MANUAL-PART", brand: "NXP", price: "20", currency: "CNY" } });[m
+[32m+[m[32m    expect(persistOriginal).toHaveBeenCalledTimes(1); expect(persistOriginal).toHaveBeenCalledWith(file);[m
+[32m+[m[32m    expect(create.mock.calls[0][1]).toBe(confirmation().confirmedDrafts[0].rowRequestId);[m
+[32m+[m[32m  });[m
+[32m+[m
+[32m+[m[32m  it("does not reset edits when selecting the same source column and can explicitly omit an optional column", async () => {[m
+[32m+[m[32m    render(); await upload([["型号", "品牌", "报价", "币种"], ["ONE", "TI", "10", "CNY"]]);[m
+[32m+[m[32m    input("核对第2行报价（CNY）", "99"); select("表头匹配报价（CNY）", "2");[m
+[32m+[m[32m    expect(document.querySelector<HTMLInputElement>('[aria-label="核对第2行报价（CNY）"]')?.value).toBe("99");[m
+[32m+[m[32m    select("表头匹配报价（CNY）", "-1");[m
+[32m+[m[32m    expect(document.querySelector<HTMLInputElement>('[aria-label="核对第2行报价（CNY）"]')?.value).toBe("");[m
+[32m+[m[32m    click(button("导入1条")); await settle(); expect(confirmation().confirmedDrafts[0].draft.price).toBe("");[m
+[32m+[m[32m  });[m
+[32m+[m
+[32m+[m[32m  it("distinguishes duplicate original header names by their column number and keeps duplicate mapping blocked", async () => {[m
+[32m+[m[32m    render(); await upload([["型号", "品牌", "报价", "报价", "币种"], ["ONE", "TI", "10", "20", "CNY"]]);[m
+[32m+[m[32m    const control = required(document.querySelector<HTMLSelectElement>('[aria-label="表头匹配报价（CNY）"]'));[m
+[32m+[m[32m    expect(Array.from(control.options).map(option => option.textContent)).toEqual(["不导入 / 留空", "第1列 · 型号", "第2列 · 品牌", "第3列 · 报价", "第4列 · 报价", "第5列 · 币种"]);[m
+[32m+[m[32m    select("表头匹配报价（CNY）", "0"); expect(button("导入0条").disabled).toBe(true);[m
+[32m+[m[32m    expect(document.querySelector('[role="alert"]')?.textContent).toContain("重复映射");[m
+[32m+[m[32m    select("表头匹配报价（CNY）", "3"); expect(button("导入1条").disabled).toBe(false);[m
+[32m+[m[32m    click(button("导入1条")); await settle(); expect(confirmation().confirmedDrafts[0].draft.price).toBe("20");[m
+[32m+[m[32m  });[m
+[32m+[m
+[32m+[m[32m  it("requires fresh explicit confirmation after changing a currency column, retaining price and model edits without conversion", async () => {[m
+[32m+[m[32m    render(); await upload([["型号", "品牌", "报价", "币种", "原币种"], ["ONE", "TI", "12.345", "USD", "EUR"]]);[m
+[32m+[m[32m    select("明确确认本次核对币种为CNY", "CNY"); input("核对第2行型号", "MANUAL-PART"); input("核对第2行报价（CNY）", "25.678");[m
+[32m+[m[32m    select("表头匹配币种", "4"); expect(button("导入0条").disabled).toBe(true);[m
+[32m+[m[32m    expect(document.querySelector<HTMLSelectElement>('[aria-label="明确确认本次核对币种为CNY"]')?.value).toBe("");[m
+[32m+[m[32m    expect(document.querySelector<HTMLInputElement>('[aria-label="核对第2行报价（CNY）"]')?.value).toBe("25.678");[m
+[32m+[m[32m    select("明确确认本次核对币种为CNY", "CNY"); select("表头匹配币种", "-1"); expect(button("导入0条").disabled).toBe(true);[m
+[32m+[m[32m    select("明确确认本次核对币种为CNY", "CNY"); click(button("导入1条")); await settle();[m
+[32m+[m[32m    expect(confirmation().confirmedDrafts[0].draft).toMatchObject({ partNumber: "MANUAL-PART", price: "25.678", currency: "CNY" });[m
+[32m+[m[32m  });[m
+[32m+[m
+[32m+[m[32m  it("keeps removed rows and exact row metadata after mapping changes instead of restoring excluded rows", async () => {[m
+[32m+[m[32m    render(); await upload([["型号", "品牌", "币种", "自定义价格"], ["ONE", "TI", "CNY", "10"], ["TWO", "ADI", "CNY", "20"]]);[m
+[32m+[m[32m    click(required(document.querySelector('[aria-label="移除原表第2行"]'))); select("表头匹配报价（CNY）", "3");[m
+[32m+[m[32m    expect(document.querySelector('[aria-label="核对第2行型号"]')).toBeNull();[m
+[32m+[m[32m    click(button("导入1条")); await settle(); expect(confirmation().confirmedDrafts).toHaveLength(1);[m
+[32m+[m[32m    expect(confirmation().confirmedDrafts[0]).toMatchObject({ row: 3, metadata: metadata(3), draft: { partNumber: "TWO", price: "20" } });[m
+[32m+[m[32m    expect(confirmation().excludedRows[0]).toMatchObject({ row: 2, reason: "用户移除", metadata: metadata(2) });[m
+[32m+[m[32m  });[m
+[32m+[m
+[32m+[m[32m  it("does not let a header selector import the failure-reason column or erase the required model mapping", async () => {[m
+[32m+[m[32m    render(); await upload([["型号", "品牌", "币种", "失败原因"], ["ONE", "TI", "CNY", "禁止作为业务值"]]);[m
+[32m+[m[32m    const control = required(document.querySelector<HTMLSelectElement>('[aria-label="表头匹配型号"]'));[m
+[32m+[m[32m    expect(control.options[4].disabled).toBe(true); select("表头匹配型号", "3"); expect(control.value).toBe("0");[m
+[32m+[m[32m    select("表头匹配型号", "-1"); expect(button("导入0条").disabled).toBe(true);[m
+[32m+[m[32m    expect(document.querySelector('[role="alert"]')?.textContent).toContain("型号为必填字段"); expect(createCustomer).not.toHaveBeenCalled();[m
+[32m+[m[32m  });[m
+[32m+[m
+[32m+[m[32m  it("locks header mapping during batch preparation and retains the same prepared request", async () => {[m
+[32m+[m[32m    let finish!: (result: { id: number; channelId: number }) => void;[m
+[32m+[m[32m    createCustomer.mockReturnValue(new Promise(resolve => { finish = resolve; })); render();[m
+[32m+[m[32m    await upload([["型号", "品牌", "币种", "替代型号"], ["ONE", "TI", "CNY", "TWO"]]); click(button("导入1条"));[m
+[32m+[m[32m    const before = JSON.parse(required(sessionStorage.getItem(key)));[m
+[32m+[m[32m    // Submission transitions to results immediately: no mutable header survives.[m
+[32m+[m[32m    expect(document.querySelector('[aria-label="表头匹配型号"]')).toBeNull();[m
+[32m+[m[32m    expect(document.querySelector('[aria-label="匹配型号"]')).toBeNull();[m
+[32m+[m[32m    await act(async () => { finish({ id: 81, channelId: 11 }); }); await settle();[m
+[32m+[m[32m    expect(createCustomer).toHaveBeenCalledTimes(1); expect(createCustomer.mock.calls[0][0].requestId).toBe(before.preparation.requestId);[m
+[32m+[m[32m    expect(create.mock.calls[0][0].partNumber).toBe("ONE");[m
+[32m+[m[32m  });[m
+[32m+[m
+[32m+[m[32m  it("revalidates numeric model precision when changing source columns, without keeping stale sourceIssue", async () => {[m
+[32m+[m[32m    render(); await upload([["型号", "品牌", "币种", "数值型号"], ["ONE", "TI", "CNY", 1234567890123456]]);[m
+[32m+[m[32m    input("核对第2行品牌", "NXP"); select("表头匹配型号", "3");[m
+[32m+[m[32m    expect(button("导入0条").disabled).toBe(true); expect(document.body.textContent).toContain("数值型型号超过15位或不可靠");[m
+[32m+[m[32m    select("表头匹配型号", "0"); expect(button("导入1条").disabled).toBe(false);[m
+[32m+[m[32m    click(button("导入1条")); await settle(); expect(confirmation().confirmedDrafts[0].draft).toMatchObject({ partNumber: "ONE", brand: "NXP" });[m
+[32m+[m[32m    expect(confirmation().confirmedDrafts[0].draft.sourceIssue).toBeUndefined();[m
+[32m+[m[32m  });[m
+[32m+[m
+[32m+[m[32m  it("ignores a stale header change after customer or authorization identity becomes invalid", async () => {[m
+[32m+[m[32m    let valid = true; render({ isCurrent: () => valid });[m
+[32m+[m[32m    await upload([["型号", "品牌", "币种", "替代型号"], ["ONE", "TI", "CNY", "TWO"]]);[m
+[32m+[m[32m    valid = false; select("表头匹配型号", "3");[m
+[32m+[m[32m    expect(document.querySelector<HTMLInputElement>('[aria-label="核对第2行型号"]')?.value).toBe("ONE");[m
+[32m+[m[32m    expect(createCustomer).not.toHaveBeenCalled(); expect(create).not.toHaveBeenCalled();[m
+[32m+[m[32m  });[m
+ });[m
+[1mdiff --git a/client/src/business/platform/client/src/components/channelInventory/BatchUpload.tsx b/client/src/business/platform/client/src/components/channelInventory/BatchUpload.tsx[m
+[1mindex ed02ebe..46d63e1 100644[m
+[1m--- a/client/src/business/platform/client/src/components/channelInventory/BatchUpload.tsx[m
+[1m+++ b/client/src/business/platform/client/src/components/channelInventory/BatchUpload.tsx[m
+[36m@@ -539,16 +539,34 @@[m [mfunction BatchUploadSession(props: Props) {[m
+   const confirmDisabledReason = !current() ? "客户或授权已变化，请重新核验" : modeLocked ? "请先完成或恢复原批次" : !sourceReady ? props.customerSourceDisabledReason || (selected && !selected.active ? "所选来源不可写或已停用，请核实上传权限" : "请选择有权访问且启用的已加载渠道") : mappingErrors.length ? mappingErrors.join("；") : !importRows.length ? (bad.length ? `没有可导入的行：${bad[0].errors.join("；")}` : "没有可导入的行") : !skipIssues && bad.length ? `还有 ${bad.length} 条需要核对：${bad[0].errors.join("；")}` : "";[m
+   const changeMapping = (field: keyof Draft, column: number) => {[m
+     if (modeLocked || !current()) return;[m
+[32m+[m[32m    if (!fields.some(item => item.key === field) || !Number.isInteger(column) || column < -1 || column >= (grid[0]?.length ?? 0)) return;[m
+     if (column >= 0 && isFailureReasonHeader(grid[0]?.[column])) return;[m
+[31m-    setMapping(value => ({ ...value, [field]: column }));[m
+     setReviewedMapping(value => [...value, field]);[m
+[31m-    setEdits({}); setCurrencyConfirmed(false); rowCurrencyConfirmed.current.clear();[m
+[32m+[m[32m    if (mapping[field] === column) return;[m
+[32m+[m[32m    const nextMapping = { ...mapping, [field]: column };[m
+[32m+[m[32m    setMapping(nextMapping);[m
+[32m+[m[32m    if (customerMode) {[m
+[32m+[m[32m      const remapped = new Map(mapGrid(grid, nextMapping, rawGrid).map(row => [row.row, row.draft]));[m
+[32m+[m[32m      setEdits(value => Object.fromEntries(Object.entries(value).map(([row, draft]) => {[m
+[32m+[m[32m        const source = remapped.get(Number(row));[m
+[32m+[m[32m        if (!source) return [row, draft];[m
+[32m+[m[32m        const updated = { ...draft, [field]: field === "currency" && column < 0 ? "" : source[field] };[m
+[32m+[m[32m        if (field === "partNumber") {[m
+[32m+[m[32m          delete updated.sourceIssue;[m
+[32m+[m[32m          if (source.sourceIssue) updated.sourceIssue = source.sourceIssue;[m
+[32m+[m[32m        }[m
+[32m+[m[32m        return [row, updated];[m
+[32m+[m[32m      })));[m
+[32m+[m[32m      if (field === "currency") { setCurrencyConfirmed(false); rowCurrencyConfirmed.current.clear(); }[m
+[32m+[m[32m    } else {[m
+[32m+[m[32m      setEdits({}); setCurrencyConfirmed(false); rowCurrencyConfirmed.current.clear();[m
+[32m+[m[32m    }[m
+     reviewOrder.current = []; setReviewPage(1);[m
+   };[m
+   const renderMapping = (items: typeof fields) => <div className="ci-batch-mapping">{items.map(field => <label className="ci-field" key={field.key}>[m
+     <span>{field.label}{field.required ? " *" : ""}</span>[m
+[31m-    <select aria-label={`匹配${field.label}`} className="ci-batch-control" value={mapping[field.key]} onChange={event => changeMapping(field.key, Number(event.target.value))}>[m
+[31m-      <option value={-1}>不导入 / 留空</option>{(grid[0] ?? []).map((header, index) => <option key={index} value={index} disabled={isFailureReasonHeader(header)}>{String(header || `第${index + 1}列`)}</option>)}[m
+[32m+[m[32m    <select aria-label={`匹配${field.label}`} className="ci-batch-control" disabled={modeLocked || !current()} value={mapping[field.key]} onChange={event => changeMapping(field.key, Number(event.target.value))}>[m
+[32m+[m[32m      <option value={-1}>不导入 / 留空</option>{(grid[0] ?? []).map((header, index) => <option key={index} value={index} disabled={isFailureReasonHeader(header)}>{`第${index + 1}列 · ${String(header || "空白表头")}`}</option>)}[m
+     </select>{mapping[field.key] >= 0 ? <small>示例：{String(grid[1]?.[mapping[field.key]] ?? "") || "空白"}</small> : null}[m
+   </label>)}</div>;[m
+   const changeMode = (mode: "table" | "single" | "parse") => {[m
+[36m@@ -1110,7 +1128,9 @@[m [mfunction BatchUploadSession(props: Props) {[m
+             {customerMode && entryMode === "table" ? <>[m
+               <div className="ci-batch-file"><Icon kind="file" /><div><strong>{name}</strong></div></div>[m
+               {mappingNeedsReview.length ? <section aria-label="需要调整的列匹配"><p className="ci-error">以下列无法识别或存在歧义，请调整匹配；缺品牌也可批量补齐空白。</p>{renderMapping(mappingNeedsReview)}</section> : null}[m
+[31m-              <details className="ci-batch-note"><summary>调整列匹配</summary>{renderMapping(fields.filter(field => !mappingNeedsReview.some(item => item.key === field.key)))}<p>未匹配列不会导入。调整匹配将重新生成候选，请重新核对币种和编辑值。</p></details>[m
+[32m+[m[32m              <p className="ci-batch-header-hint" id="ci-customer-header-hint">自动识别仅供参考，可直接使用表头下拉框调整原表列。调整只重读该字段（覆盖该字段编辑），其他编辑保留；原文件不变。</p>[m
+[32m+[m[32m              <details className="ci-batch-note"><summary>调整列匹配</summary>{renderMapping(fields.filter(field => !mappingNeedsReview.some(item => item.key === field.key)))}<p>未匹配列不会导入。同一原表列不能重复匹配；调整币种列后须重新确认币种。</p></details>[m
+[32m+[m[32m              {mappingErrors.length ? <div className="ci-error" role="alert">{mappingErrors.join("；")}</div> : null}[m
+             </> : null}[m
+             <div className="ci-batch-summary">[m
+               {skipIssues ? <span>可导入 <b>{goodRows.length}</b> 条 · 问题 <b>{bad.length}</b> 条</span> : <><span>[m
+[36m@@ -1172,7 +1192,16 @@[m [mfunction BatchUploadSession(props: Props) {[m
+                 <thead>[m
+                   <tr>[m
+                     <th>原表行号</th>[m
+[31m-                    {customerMode ? fields.map(field => <th key={field.key}>{field.label}</th>) : <>[m
+[32m+[m[32m                    {customerMode ? fields.map(field => <th key={field.key} scope="col">[m
+[32m+[m[32m                      <span>{field.label}{field.required ? " *" : ""}</span>[m
+[32m+[m[32m                      {entryMode === "table" ? <div className="ci-batch-header-mapping">[m
+[32m+[m[32m                        <select aria-label={`表头匹配${field.label}`} aria-describedby="ci-customer-header-hint" className="ci-batch-control" disabled={modeLocked || !current()} value={mapping[field.key]} onChange={event => changeMapping(field.key, Number(event.target.value))}>[m
+[32m+[m[32m                          <option value={-1}>不导入 / 留空</option>[m
+[32m+[m[32m                          {(grid[0] ?? []).map((header, index) => <option key={index} value={index} disabled={isFailureReasonHeader(header)}>{`第${index + 1}列 · ${String(header || "空白表头")}`}</option>)}[m
+[32m+[m[32m                        </select>[m
+[32m+[m[32m                        <small title={mapping[field.key] >= 0 ? String(grid[1]?.[mapping[field.key]] ?? "") : undefined}>{mapping[field.key] >= 0 ? `示例：${String(grid[1]?.[mapping[field.key]] ?? "") || "空白"}` : field.required ? "待匹配或手工补齐" : "未匹配"}</small>[m
+[32m+[m[32m                      </div> : null}[m
+[32m+[m[32m                    </th>) : <>[m
+                     <th>料号 / 品牌</th>[m
+                     <th>可供数量</th>[m
+                     <th>报价 CNY</th>[m
+[1mdiff --git a/client/src/business/platform/client/src/components/channelInventory/batch.css b/client/src/business/platform/client/src/components/channelInventory/batch.css[m
+[1mindex c277e33..6054b71 100644[m
+[1m--- a/client/src/business/platform/client/src/components/channelInventory/batch.css[m
+[1m+++ b/client/src/business/platform/client/src/components/channelInventory/batch.css[m
+[36m@@ -704,3 +704,51 @@[m
+     flex-wrap: wrap;[m
+   }[m
+ }[m
+[32m+[m
+[32m+[m[32m/* Manual source-column mapping stays inside the customer upload table. */[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-header-hint {[m
+[32m+[m[32m  margin: 0;[m
+[32m+[m[32m  color: #64748b;[m
+[32m+[m[32m  font-size: 12px;[m
+[32m+[m[32m  line-height: 19px;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-review th .ci-batch-header-mapping {[m
+[32m+[m[32m  display: flex;[m
+[32m+[m[32m  flex-direction: column;[m
+[32m+[m[32m  gap: 5px;[m
+[32m+[m[32m  margin-top: 7px;[m
+[32m+[m[32m  min-width: 140px;[m
+[32m+[m[32m  max-width: 280px;[m
+[32m+[m[32m  font-weight: 400;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-header-mapping select.ci-batch-control {[m
+[32m+[m[32m  width: 100%;[m
+[32m+[m[32m  min-height: 32px;[m
+[32m+[m[32m  padding: 4px 8px;[m
+[32m+[m[32m  border: 1px solid #cbd5e1;[m
+[32m+[m[32m  border-radius: 6px;[m
+[32m+[m[32m  background: #fff;[m
+[32m+[m[32m  color: #334155;[m
+[32m+[m[32m  font-size: 12px;[m
+[32m+[m[32m  cursor: pointer;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-header-mapping select.ci-batch-control:hover:not(:disabled) {[m
+[32m+[m[32m  border-color: #3b82f6;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-header-mapping select.ci-batch-control:focus-visible {[m
+[32m+[m[32m  outline: 2px solid #3b82f6;[m
+[32m+[m[32m  outline-offset: 2px;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-header-mapping select.ci-batch-control:disabled {[m
+[32m+[m[32m  cursor: not-allowed;[m
+[32m+[m[32m  opacity: 0.6;[m
+[32m+[m[32m}[m
+[32m+[m[32m.customer-supply-dialog .ci-batch-header-mapping small {[m
+[32m+[m[32m  display: block;[m
+[32m+[m[32m  overflow: hidden;[m
+[32m+[m[32m  text-overflow: ellipsis;[m
+[32m+[m[32m  white-space: nowrap;[m
+[32m+[m[32m  color: #64748b;[m
+[32m+[m[32m  font-size: 11px;[m
+[32m+[m[32m  line-height: 16px;[m
+[32m+[m[32m}[m

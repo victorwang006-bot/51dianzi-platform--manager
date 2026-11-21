@@ -539,16 +539,34 @@ function BatchUploadSession(props: Props) {
   const confirmDisabledReason = !current() ? "客户或授权已变化，请重新核验" : modeLocked ? "请先完成或恢复原批次" : !sourceReady ? props.customerSourceDisabledReason || (selected && !selected.active ? "所选来源不可写或已停用，请核实上传权限" : "请选择有权访问且启用的已加载渠道") : mappingErrors.length ? mappingErrors.join("；") : !importRows.length ? (bad.length ? `没有可导入的行：${bad[0].errors.join("；")}` : "没有可导入的行") : !skipIssues && bad.length ? `还有 ${bad.length} 条需要核对：${bad[0].errors.join("；")}` : "";
   const changeMapping = (field: keyof Draft, column: number) => {
     if (modeLocked || !current()) return;
+    if (!fields.some(item => item.key === field) || !Number.isInteger(column) || column < -1 || column >= (grid[0]?.length ?? 0)) return;
     if (column >= 0 && isFailureReasonHeader(grid[0]?.[column])) return;
-    setMapping(value => ({ ...value, [field]: column }));
     setReviewedMapping(value => [...value, field]);
-    setEdits({}); setCurrencyConfirmed(false); rowCurrencyConfirmed.current.clear();
+    if (mapping[field] === column) return;
+    const nextMapping = { ...mapping, [field]: column };
+    setMapping(nextMapping);
+    if (customerMode) {
+      const remapped = new Map(mapGrid(grid, nextMapping, rawGrid).map(row => [row.row, row.draft]));
+      setEdits(value => Object.fromEntries(Object.entries(value).map(([row, draft]) => {
+        const source = remapped.get(Number(row));
+        if (!source) return [row, draft];
+        const updated = { ...draft, [field]: field === "currency" && column < 0 ? "" : source[field] };
+        if (field === "partNumber") {
+          delete updated.sourceIssue;
+          if (source.sourceIssue) updated.sourceIssue = source.sourceIssue;
+        }
+        return [row, updated];
+      })));
+      if (field === "currency") { setCurrencyConfirmed(false); rowCurrencyConfirmed.current.clear(); }
+    } else {
+      setEdits({}); setCurrencyConfirmed(false); rowCurrencyConfirmed.current.clear();
+    }
     reviewOrder.current = []; setReviewPage(1);
   };
   const renderMapping = (items: typeof fields) => <div className="ci-batch-mapping">{items.map(field => <label className="ci-field" key={field.key}>
     <span>{field.label}{field.required ? " *" : ""}</span>
-    <select aria-label={`匹配${field.label}`} className="ci-batch-control" value={mapping[field.key]} onChange={event => changeMapping(field.key, Number(event.target.value))}>
-      <option value={-1}>不导入 / 留空</option>{(grid[0] ?? []).map((header, index) => <option key={index} value={index} disabled={isFailureReasonHeader(header)}>{String(header || `第${index + 1}列`)}</option>)}
+    <select aria-label={`匹配${field.label}`} className="ci-batch-control" disabled={modeLocked || !current()} value={mapping[field.key]} onChange={event => changeMapping(field.key, Number(event.target.value))}>
+      <option value={-1}>不导入 / 留空</option>{(grid[0] ?? []).map((header, index) => <option key={index} value={index} disabled={isFailureReasonHeader(header)}>{`第${index + 1}列 · ${String(header || "空白表头")}`}</option>)}
     </select>{mapping[field.key] >= 0 ? <small>示例：{String(grid[1]?.[mapping[field.key]] ?? "") || "空白"}</small> : null}
   </label>)}</div>;
   const changeMode = (mode: "table" | "single" | "parse") => {
@@ -1110,7 +1128,9 @@ function BatchUploadSession(props: Props) {
             {customerMode && entryMode === "table" ? <>
               <div className="ci-batch-file"><Icon kind="file" /><div><strong>{name}</strong></div></div>
               {mappingNeedsReview.length ? <section aria-label="需要调整的列匹配"><p className="ci-error">以下列无法识别或存在歧义，请调整匹配；缺品牌也可批量补齐空白。</p>{renderMapping(mappingNeedsReview)}</section> : null}
-              <details className="ci-batch-note"><summary>调整列匹配</summary>{renderMapping(fields.filter(field => !mappingNeedsReview.some(item => item.key === field.key)))}<p>未匹配列不会导入。调整匹配将重新生成候选，请重新核对币种和编辑值。</p></details>
+              <p className="ci-batch-header-hint" id="ci-customer-header-hint">自动识别仅供参考，可直接使用表头下拉框调整原表列。调整只重读该字段（覆盖该字段编辑），其他编辑保留；原文件不变。</p>
+              <details className="ci-batch-note"><summary>调整列匹配</summary>{renderMapping(fields.filter(field => !mappingNeedsReview.some(item => item.key === field.key)))}<p>未匹配列不会导入。同一原表列不能重复匹配；调整币种列后须重新确认币种。</p></details>
+              {mappingErrors.length ? <div className="ci-error" role="alert">{mappingErrors.join("；")}</div> : null}
             </> : null}
             <div className="ci-batch-summary">
               {skipIssues ? <span>可导入 <b>{goodRows.length}</b> 条 · 问题 <b>{bad.length}</b> 条</span> : <><span>
@@ -1172,7 +1192,16 @@ function BatchUploadSession(props: Props) {
                 <thead>
                   <tr>
                     <th>原表行号</th>
-                    {customerMode ? fields.map(field => <th key={field.key}>{field.label}</th>) : <>
+                    {customerMode ? fields.map(field => <th key={field.key} scope="col">
+                      <span>{field.label}{field.required ? " *" : ""}</span>
+                      {entryMode === "table" ? <div className="ci-batch-header-mapping">
+                        <select aria-label={`表头匹配${field.label}`} aria-describedby="ci-customer-header-hint" className="ci-batch-control" disabled={modeLocked || !current()} value={mapping[field.key]} onChange={event => changeMapping(field.key, Number(event.target.value))}>
+                          <option value={-1}>不导入 / 留空</option>
+                          {(grid[0] ?? []).map((header, index) => <option key={index} value={index} disabled={isFailureReasonHeader(header)}>{`第${index + 1}列 · ${String(header || "空白表头")}`}</option>)}
+                        </select>
+                        <small title={mapping[field.key] >= 0 ? String(grid[1]?.[mapping[field.key]] ?? "") : undefined}>{mapping[field.key] >= 0 ? `示例：${String(grid[1]?.[mapping[field.key]] ?? "") || "空白"}` : field.required ? "待匹配或手工补齐" : "未匹配"}</small>
+                      </div> : null}
+                    </th>) : <>
                     <th>料号 / 品牌</th>
                     <th>可供数量</th>
                     <th>报价 CNY</th>
