@@ -1,0 +1,39 @@
+{
+  "sourceCommit": "822babd163195c82d95e4a769b924a4334ef52b7",
+  "repository": "https://github.com/victorwang006-bot/51dianzi-platform--manager",
+  "sourcePins": {
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminNewInformation.tsx": "b2063fcc851cce2e2bbd57037fb50be6ba61c0422c4e91ddf91c576ce55908cd",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminNewInformationBadge.tsx": "9f7508c625e3f273b3c7195a5110e9695eff7531f9022b8d220fa43c7837a29c",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminNewInformationMenuBadge.tsx": "069e624af72c9243f7faa01731cd795b3653a6f45f0fc45f84d13c57747c66ae",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/CustomerDetail.tsx": "2888e137aa2a6ca99e055df36c985d85e647c5a303244c79a72ca36aad576e31",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/CustomerList.tsx": "a96ea86bedb3ea211c85ccd748a97e79e8f5b2c3e49899d2c6203794a73099bb",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/CustomerList.css": "8a8fd4992e64b336079dde967cb16d758420d2cd2cd178534d8b4a1610babab7",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customers/CustomerSupplyCell.tsx": "eeed147e523516e3998a4a76fa712a7fe17ab390e94339d4ef64e5456fbc455f",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/adminNewInformation.ts": "48f8502b0a1157845cb50777db0c02eb2bf9c374c1974cc85fce002b18f4be8a"
+  },
+  "htmlAfterSHA": "319ed68fdf73704daefd944ca28fce11a970ca4e041dc56f5ef171670600b22f",
+  "assets": [
+    {
+      "url": "/assets/BusinessWorkbenchPage-customer-consistency-d2d15dd34c5cdf0d.js",
+      "sha256": "d2d15dd34c5cdf0df1644318ddf499d38e3ea6656656b2d6e70ff4d27655e339",
+      "size": 5547583
+    },
+    {
+      "url": "/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js",
+      "sha256": "a24dc29e7d929523007e9f701a970e25c75e63bfcb2b7bbe43db9d48c3e7746c",
+      "size": 6445209
+    },
+    {
+      "url": "/assets/AdminNewInformation-customer-consistency-runtime-cff8bad8c4d94617.js",
+      "sha256": "cff8bad8c4d94617cb9b77e0280ab4713cee5a844bec551dc3c1d1a7b4ebc9fd",
+      "size": 302044
+    },
+    {
+      "url": "/assets/customer-consistency-cf40aaf6c37f2fa5.css",
+      "sha256": "cf40aaf6c37f2fa53c09fb2844dfd8e221c6330b50c7eb8a4af2a77c96d09b76",
+      "size": 26054
+    }
+  ],
+  "sourceBlobsMatchCommittedVersion": true,
+  "notAProductionReceipt": true
+}
