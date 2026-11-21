@@ -1,0 +1,41 @@
+{
+  "schema": "integrated-front-review-v1",
+  "status": "APPROVED",
+  "reviewer": "independent-integrated-review",
+  "reviewerTask": "qp4e5jVmsAp0UHKwymyD5X",
+  "reviewerScope": "本人本轮admin表头手工列映射的唯一窄实际差量、完整54原件、静态工具全字节逆向及最终manifest/current机械绑定；非前台兼容审批、非登录上传验收，0生产连接/读取/写，0子代理，0重build/业务重测。",
+  "scope": "customer-upload-header-mapping-20261121-6Lfttf6o-1156",
+  "ownerTask": "6Lfttf6oVWJ8YS69o5FkXQ",
+  "manifestSHA": "c0afae724fac744854f701f3b6f5366d5f72e7513df663ebc10cafa46cc875d3",
+  "releaseSHA": "4a28d6a509a29944ce39c3d559fdfa5ecf416af29d5ddb333719a5f506c912dc",
+  "helperSHA": "463d5822c057df2fc0e6f2277c6eb14dd630e5fa71eb2b714b3bdebd38eee01e",
+  "transportToolPins": {
+    "applyAndConfirmSHA": "3c7e448b0fdf85dae9e938578fca8436f2ba0c9df9c4da22f2690fad093cc42d",
+    "confirmPagesSHA": "8e8835355446c1fc9c8810c79a72328526164f642ac88b9ec5cc6304d0955c40",
+    "finishToolsSHA": "46c793337a98373c995405007ce49b77d856b38dd27d77e64fe8d9c879c51b00",
+    "helperSHA": "463d5822c057df2fc0e6f2277c6eb14dd630e5fa71eb2b714b3bdebd38eee01e",
+    "landPackageSHA": "18e446a10dd8f7a238618da680e865e373f5b5ff1aaebe4a0fdb680a9f477f65",
+    "nativeDependencyBindingSHA": "bdc5eefcc1b7b9c542958ebf126d42e0dcbfe9e66c861d142ff8494f8d7adf33",
+    "preparePackageSHA": "cf2b726beac8962d66f72f585ebd260a42e0ad5909c3da65d974db9007e69898",
+    "releaseSHA": "4a28d6a509a29944ce39c3d559fdfa5ecf416af29d5ddb333719a5f506c912dc"
+  },
+  "reviewerHash": "581c91f6425c37b96f7f9df3998136fda1876855974d18657437561fa5898eef",
+  "reviewedAtUtc": "2026-11-21T04:09:54.940222+00:00",
+  "blockers": [],
+  "findings": [
+    "归档12880242B及SHA48b90468…42e17f exact；54索引原件全部完整SHA/size exact。",
+    "两JS仅同一个T6/BatchUploadSession替换；各全字节正逆实际重建exact，同一wrapper及三xlsx原nc/rc继承关系；原其他字节保持。",
+    "三源码差量逆向恢复原git blob4f23533/ed02ebe/c277e33 exact；手动映射只重读该字段，其他编辑/原表metadata、移除行、UUID、权限/提交锁及币种重新确认保留；99相关tests/tsc仅复用。",
+    "三候选/差量tar完整SHA/size exact；HTML18ef→98385准确32/53引用替换+单域CSSlink，全文逆向exact；CSS仅customer-supply-dialog追加原源码准确字节。",
+    "真实初始50admin依赖+39补充=89，80native imports经实际HTML importmap scope解析一致；684保护对象记录exact对应current；初始04:02:40与补充04:04:56时间分开，无fresh伪装。",
+    "release全差量逆向至本人11:55原件exact；safety_core原字节exact；land/apply两入口有限适配逆向exact；实际owner/root/URL/ACK为admin，双锁/CAS/备份/noReplay/回退/失败hold/900guard保留。",
+    "实际匿名静态确认协议仅真实GET与完整H/size、HTML引用；fullLoggedInUploadClaimed=false，0业务写/非GET；不是真实登录上传验收。",
+    "865秒全流程算术准确，包含240恢复余量；900 guard从apply真正current绑定起，准备/审核不冒充生产窗口；时效/即时CAS须由原apply实际执行，不承诺必定通过。"
+  ],
+  "limitations": {
+    "fullLoggedInUploadClaimed": false,
+    "compatFixedDialogClaimed": false,
+    "productionReceipt": false
+  },
+  "localMechanicalEvidenceSHA": "581c91f6425c37b96f7f9df3998136fda1876855974d18657437561fa5898eef"
+}

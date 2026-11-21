@@ -1,0 +1,31 @@
+--- original/land-package.py
++++ header/land-package.py
+@@ -1,8 +1,8 @@
+ #!/usr/bin/env python3
+ import base64,hashlib,json,shlex,time
+ from pathlib import Path
+-import paramiko
+-O=Path('/home/ubuntu/work/browser-compat-release-20261121-1131');STAGE='/opt/ops/browser-compat-release-20261121-1131';H=lambda b:hashlib.sha256(b).hexdigest()
++import sys;sys.path.insert(0,'/home/ubuntu/.cache/backend-sftp-lib');import paramiko
++O=Path('/home/ubuntu/work/customer-upload-header-mapping-20261121-1058/static-release');STAGE='/opt/ops/customer-upload-header-mapping-20261121-6Lfttf6o-1156';H=lambda b:hashlib.sha256(b).hexdigest()
+ mr=(O/'package/manifest.json').read_bytes();m=json.loads(mr);rr=(O/'independent-review.json').read_bytes();review=json.loads(rr)
+ assert review['status']=='APPROVED' and review['manifestSHA']==H(mr)
+ assert review['releaseSHA']==H((O/'release.py').read_bytes()) and review['helperSHA']==H((O/'safety_core.py').read_bytes())
+@@ -14,7 +14,7 @@
+ code='''import sys,os,json,base64,hashlib,io,tarfile
+ from pathlib import Path
+ sys.dont_write_bytecode=True
+-p=json.loads(sys.stdin.buffer.read());STAGE=Path('''+repr(STAGE)+''');front=Path('/opt/releases/20261031-homepage-banner-v39/front/dist/public')
++p=json.loads(sys.stdin.buffer.read());STAGE=Path('''+repr(STAGE)+''');front=Path('/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public')
+ for q in (STAGE,*STAGE.parents):assert not q.is_symlink(),('STAGE_LINK',str(q))
+ assert not STAGE.exists(),'NEW_STAGE_ABSENT_REQUIRED'
+ H=lambda b:hashlib.sha256(b).hexdigest()
+@@ -52,7 +52,7 @@
+ print(json.dumps({'event':'PRIVATE_APPROVED_PACKAGE_LANDED','stage':str(STAGE),'manifestSHA':p['pins']['candidate/manifest.json'],'reviewSHA':p['pins']['review.json'],'releaseSHA':p['pins']['release.py'],'helperSHA':p['pins']['safety_core.py'],'assetCount':len(m['assets']),'copiedExistingAssets':copied,'transferredAssets':transferred,'archiveSHA':p['archiveSHA'],'activeWrites':0,'oldAttemptReplay':False}),flush=True)
+ '''
+ client=paramiko.SSHClient();client.load_system_host_keys('/home/ubuntu/.ssh/known_hosts');client.set_missing_host_key_policy(paramiko.RejectPolicy());start=time.monotonic()
+-client.connect('47.97.108.147',username='root',key_filename='/home/ubuntu/.secrets/frontend-deploy.pem',allow_agent=False,look_for_keys=False,compress=True,timeout=15,banner_timeout=15,auth_timeout=15)
++client.connect('47.97.108.147',username='root',key_filename='/home/ubuntu/.cache/backend-ssh.pem',allow_agent=False,look_for_keys=False,compress=True,timeout=15,banner_timeout=15,auth_timeout=15)
+ try:
+  i,o,e=client.exec_command('python3 -B -u -c '+shlex.quote(code),timeout=360)
+  for offset in range(0,len(payload),65536):

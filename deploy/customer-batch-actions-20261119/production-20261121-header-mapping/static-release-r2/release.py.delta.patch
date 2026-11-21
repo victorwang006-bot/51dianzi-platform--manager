@@ -1,0 +1,11 @@
+--- old/release.py
++++ r2/release.py
+@@ -11,7 +11,7 @@
+  coord=Path('/opt/ops/51-project-release-coordination-20261027.json')
+  locks=(Path('/var/lock/dianzi51-public-deploy.lock'),Path('/var/lock/dianzi51-production-code.lock'))
+  fixture_root=None
+-C=Config();OWNER='6Lfttf6oVWJ8YS69o5FkXQ';SCOPE='customer-upload-header-mapping-20261121-6Lfttf6o-1156'
++C=Config();OWNER='6Lfttf6oVWJ8YS69o5FkXQ';SCOPE='customer-upload-header-mapping-20261121-6Lfttf6o-r2-1216'
+ def emit(event,**kw): print(json.dumps(dict(event=event,**kw),ensure_ascii=False),flush=True)
+ def identity(r): return {k:v for k,v in r.items() if k!='atimeNs'}
+ class Guard:

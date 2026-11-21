@@ -1,0 +1,101 @@
+{
+  "status": "ACTUAL_HEADER_MAPPING_VERIFIED_DURABLE_CLOSED",
+  "confirmedAtBeijing": "2026-11-21T12:23:42.411185+08:00",
+  "scope": "customer-upload-header-mapping-20261121-6Lfttf6o-r2-1216",
+  "manifestSHA": "8a23128e039e7a5437b786437d48baac0be9122d5eadcd758376f24b54a05134",
+  "reviewSHA": "a6033df61478c70d27a8efe9d95eda056a166dc48285a1ad1a74fb6b3ad55d7c",
+  "releaseSHA": "3fbc7198647cccadd352341195c7ea9b2c2ace9bf6bfaa22d326fd9a68c61f67",
+  "helperSHA": "463d5822c057df2fc0e6f2277c6eb14dd630e5fa71eb2b714b3bdebd38eee01e",
+  "receiptSHA": "fdff20c622308293a69a3dc11022f01c70710e60f682ef3dfcd33c19e73ed7bb",
+  "closedCoordWholeSHA": "0873db37de69cb5b490b0f860991861ad216512c7510c1b17e87745c68d6ce5f",
+  "adminHTMLSHA": "98385a66faa8e1820df54a2a2dcb8c4a22ce488e7e2e4623cf745c65c6538bf5",
+  "assets": [
+    {
+      "sha256": "71b35fe0ad458e6bd7777dfee1cbab87fcbc2e529d5ab135ed652d779673b5f7",
+      "size": 5518798,
+      "url": "/assets/BusinessWorkbenchPage-customer-batch-71b35fe0ad458e6b.js"
+    },
+    {
+      "sha256": "2d17aff3e6b3e646231c544c7461764852b98696fe32b88e166d180cac28fcaf",
+      "size": 6416584,
+      "url": "/assets/BusinessWorkbenchPage-customer-batch-2d17aff3e6b3e646.js"
+    },
+    {
+      "sha256": "af6b970e3a2e2e06ede82b8ea6e2f4f16596b8171072c9d6aea2b761d377f3c0",
+      "size": 1259,
+      "url": "/assets/customer-batch-actions-af6b970e3a2e2e06.css"
+    }
+  ],
+  "sourceCommit": "0ff3ee1a5c4bf0da82fff4c7661869e940e8f4ec",
+  "testsPassedReused": 99,
+  "actualPublicHTTPSGET": [
+    {
+      "cookieSent": false,
+      "elapsedSeconds": 1.6033334112726152,
+      "method": "GET",
+      "observedAtUtc": "2026-11-21T04:23:02.304019+00:00",
+      "sha256": "98385a66faa8e1820df54a2a2dcb8c4a22ce488e7e2e4623cf745c65c6538bf5",
+      "size": 845059,
+      "status": 200,
+      "url": "/"
+    },
+    {
+      "cookieSent": false,
+      "elapsedSeconds": 14.747371883131564,
+      "method": "GET",
+      "observedAtUtc": "2026-11-21T04:23:17.053231+00:00",
+      "sha256": "71b35fe0ad458e6bd7777dfee1cbab87fcbc2e529d5ab135ed652d779673b5f7",
+      "size": 5518798,
+      "status": 200,
+      "url": "/assets/BusinessWorkbenchPage-customer-batch-71b35fe0ad458e6b.js"
+    },
+    {
+      "cookieSent": false,
+      "elapsedSeconds": 25.07188518019393,
+      "method": "GET",
+      "observedAtUtc": "2026-11-21T04:23:42.125571+00:00",
+      "sha256": "2d17aff3e6b3e646231c544c7461764852b98696fe32b88e166d180cac28fcaf",
+      "size": 6416584,
+      "status": 200,
+      "url": "/assets/BusinessWorkbenchPage-customer-batch-2d17aff3e6b3e646.js"
+    },
+    {
+      "cookieSent": false,
+      "elapsedSeconds": 0.008141418918967247,
+      "method": "GET",
+      "observedAtUtc": "2026-11-21T04:23:42.134447+00:00",
+      "sha256": "af6b970e3a2e2e06ede82b8ea6e2f4f16596b8171072c9d6aea2b761d377f3c0",
+      "size": 1259,
+      "status": 200,
+      "url": "/assets/customer-batch-actions-af6b970e3a2e2e06.css"
+    }
+  ],
+  "actualApplyBindingToConfirmedSeconds": 77.483841,
+  "privateTransportSeconds": 32.2332704779983,
+  "apiWrites": 0,
+  "databaseWrites": 0,
+  "envWrites": 0,
+  "reloads": 0,
+  "timerPauses": 0,
+  "fullLoggedInUploadClaimed": false,
+  "originalSSHExecExited": true,
+  "originalWrapperExit": 0,
+  "locksReleased": true,
+  "clientClosed": true,
+  "currentProductionOccupancy": {
+    "ssh": 0,
+    "locks": 0,
+    "window": 0,
+    "runningProductionJobs": 0
+  },
+  "firstAttempt": {
+    "scope": "customer-upload-header-mapping-20261121-6Lfttf6o-1156",
+    "remoteSSHExitCode": 0,
+    "outerWrapperExitCode": 1,
+    "result": "PRECISE_ROLLBACK_CLOSED",
+    "reason": "Sandbox HTTPS HTML body read timeout in independent confirmer",
+    "receiptSHA": "bfb3e2df21b450fc37624ef7bc987aead0059608e44adef2da1886d30dc95868",
+    "replayed": false,
+    "originalRecordsPreserved": true
+  }
+}

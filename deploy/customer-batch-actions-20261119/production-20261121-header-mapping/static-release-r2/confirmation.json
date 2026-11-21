@@ -1,0 +1,63 @@
+{
+  "status": "ACTUAL_HEADER_MAPPING_STATIC_CONFIRMED",
+  "transportedNonGET": 0,
+  "anonymousNoCookies": true,
+  "fullLoggedInUploadClaimed": false,
+  "observer": "ECS-public-HTTPS-real-GET-body-hashed-not-Sandbox-body-transport",
+  "htmlSHA": "98385a66faa8e1820df54a2a2dcb8c4a22ce488e7e2e4623cf745c65c6538bf5",
+  "actualBothNativeUploadLeavesPinned": true,
+  "actualHeaderMappingCssPinned": true,
+  "actualHtmlReferencesPinned": true,
+  "nativeSourceCommit": "0ff3ee1a5c4bf0da82fff4c7661869e940e8f4ec",
+  "sourceHashes": {
+    "client/src/business/platform/client/src/components/channelInventory/BatchUpload.compact.test.ts": "6c8abfc1718b9cd41312cb18bf6cb5062240eecffaadcc9b1bbc7cd214f4c73b",
+    "client/src/business/platform/client/src/components/channelInventory/BatchUpload.tsx": "8fc788201d2541ffa7f84a41d4408c8e7cb059cb3ed76d43f07a6a2284b6c1a5",
+    "client/src/business/platform/client/src/components/channelInventory/batch.css": "6166e8f392cc68b86cd335239206e61ccbcec8c051cde847db643ec077f271e7"
+  },
+  "offlineBehaviorTestsReused": 99,
+  "actualStaticGETLedger": [
+    {
+      "url": "/",
+      "method": "GET",
+      "status": 200,
+      "size": 845059,
+      "sha256": "98385a66faa8e1820df54a2a2dcb8c4a22ce488e7e2e4623cf745c65c6538bf5",
+      "elapsedSeconds": 1.6033334112726152,
+      "cookieSent": false,
+      "observedAtUtc": "2026-11-21T04:23:02.304019+00:00"
+    },
+    {
+      "url": "/assets/BusinessWorkbenchPage-customer-batch-71b35fe0ad458e6b.js",
+      "method": "GET",
+      "status": 200,
+      "size": 5518798,
+      "sha256": "71b35fe0ad458e6bd7777dfee1cbab87fcbc2e529d5ab135ed652d779673b5f7",
+      "elapsedSeconds": 14.747371883131564,
+      "cookieSent": false,
+      "observedAtUtc": "2026-11-21T04:23:17.053231+00:00"
+    },
+    {
+      "url": "/assets/BusinessWorkbenchPage-customer-batch-2d17aff3e6b3e646.js",
+      "method": "GET",
+      "status": 200,
+      "size": 6416584,
+      "sha256": "2d17aff3e6b3e646231c544c7461764852b98696fe32b88e166d180cac28fcaf",
+      "elapsedSeconds": 25.07188518019393,
+      "cookieSent": false,
+      "observedAtUtc": "2026-11-21T04:23:42.125571+00:00"
+    },
+    {
+      "url": "/assets/customer-batch-actions-af6b970e3a2e2e06.css",
+      "method": "GET",
+      "status": 200,
+      "size": 1259,
+      "sha256": "af6b970e3a2e2e06ede82b8ea6e2f4f16596b8171072c9d6aea2b761d377f3c0",
+      "elapsedSeconds": 0.008141418918967247,
+      "cookieSent": false,
+      "observedAtUtc": "2026-11-21T04:23:42.134447+00:00"
+    }
+  ],
+  "fullLoggedInEnterpriseBusinessAcceptanceClaimed": false,
+  "confirmedAtUtc": "2026-11-21T04:23:42.135216+00:00",
+  "observerSSHClosed": true
+}

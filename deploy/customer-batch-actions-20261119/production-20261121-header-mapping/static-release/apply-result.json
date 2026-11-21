@@ -1,0 +1,41 @@
+{
+  "sshExitCode": 0,
+  "terminal": {
+    "event": "PRECISE_ROLLBACK_CLOSED",
+    "receiptSHA": "bfb3e2df21b450fc37624ef7bc987aead0059608e44adef2da1886d30dc95868",
+    "locksReleased": true
+  },
+  "events": [
+    {
+      "event": "CURRENT_TARGET_BINDING_COMPLETE",
+      "assets": 3,
+      "reuse": 0,
+      "capturedAtUtc": "2026-11-21T04:13:51.249239+00:00",
+      "deadlineSeconds": 900
+    },
+    {
+      "event": "IMMUTABLE_ASSET_PROGRESS",
+      "completed": 1,
+      "total": 3
+    },
+    {
+      "event": "INSTALLED_AWAITING_ACTUAL_PAGE_CONFIRMATION",
+      "htmlSHA": "98385a66faa8e1820df54a2a2dcb8c4a22ce488e7e2e4623cf745c65c6538bf5",
+      "confirmBudgetSeconds": 240
+    },
+    {
+      "event": "RELEASE_ERROR",
+      "error": "ACTUAL_HEADER_MAPPING_CONFIRMATION_FAILED:ACTUAL_CONFIRMATION_FAILED",
+      "installed": true,
+      "opened": true
+    },
+    {
+      "event": "PRECISE_ROLLBACK_CLOSED",
+      "receiptSHA": "bfb3e2df21b450fc37624ef7bc987aead0059608e44adef2da1886d30dc95868",
+      "locksReleased": true
+    }
+  ],
+  "actualACKSent": true,
+  "durableReceiptRetrieved": false,
+  "connectionClosed": true
+}

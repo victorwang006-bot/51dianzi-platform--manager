@@ -1,0 +1,58 @@
+{
+  "originalReleaseSHA": "de4b67857b79885a6ad341388e7bf5480e6403ca6f03f5cb4b2f4503528eb501",
+  "releaseSHA": "4a28d6a509a29944ce39c3d559fdfa5ecf416af29d5ddb333719a5f506c912dc",
+  "helperSHA": "463d5822c057df2fc0e6f2277c6eb14dd630e5fa71eb2b714b3bdebd38eee01e",
+  "safetyCoreBytesExact": true,
+  "fullReleaseInverseVerified": true,
+  "changes": [
+    {
+      "before": "front=Path('/opt/releases/20261031-homepage-banner-v39/front/dist/public')",
+      "after": "front=Path('/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public')"
+    },
+    {
+      "before": "C=Config();OWNER='qp4e5jVmsAp0UHKwymyD5X';SCOPE='browser-compat-release-20261121-1131'",
+      "after": "C=Config();OWNER='6Lfttf6oVWJ8YS69o5FkXQ';SCOPE='customer-upload-header-mapping-20261121-6Lfttf6o-1156'"
+    },
+    {
+      "before": "  alias=Path('/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/public')\n  h.need(alias.is_symlink() and os.readlink(alias)==str(C.front),'SERVING_ALIAS_DRIFT')",
+      "after": "  alias=Path('/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/public')\n  h.need(alias.is_symlink() and os.readlink(alias)==str(C.front),'SERVING_ALIAS_DRIFT')"
+    },
+    {
+      "before": "urllib.request.Request('https://51dianzi.com'+url",
+      "after": "urllib.request.Request('https://admin.51dianzi.com'+url"
+    },
+    {
+      "before": " def __init__(self,locks,records,dirs,absent,sourcepins):",
+      "after": " def __init__(self,locks,records,dirs,absent,sourcepins,servingAlias):"
+    },
+    {
+      "before": "  self.cache=copy.deepcopy(records);self.absent=set(absent);self.sourcepins=sourcepins;self.started=time.time();self.atime={}",
+      "after": "  self.cache=copy.deepcopy(records);self.absent=set(absent);self.sourcepins=sourcepins;self.started=time.time();self.atime={};self.servingAlias=servingAlias"
+    },
+    {
+      "before": "  h.need(alias.is_symlink() and os.readlink(alias)==str(C.front),'SERVING_ALIAS_DRIFT')",
+      "after": "  h.need(alias.is_symlink() and os.readlink(alias)==str(C.front),'SERVING_ALIAS_DRIFT')\n  h.need(str(alias)==self.servingAlias['path'] and h.metadata(alias)==self.servingAlias['metadata'],'SERVING_ALIAS_FULL_IDENTITY_DRIFT')"
+    },
+    {
+      "before": "  before=h.regular(C.html);br=h.describe(C.html);h.need(h.H(before)==beforeSHA,'CURRENT_FRONT_CHANGED')",
+      "after": "  h.need(h.H(coordraw)==m['expectedCoordSHA'],'CURRENT_CLOSED_COORD_BINDING')\n  before=h.regular(C.html);br=h.describe(C.html);h.need(h.H(before)==beforeSHA,'CURRENT_ADMIN_CHANGED')"
+    },
+    {
+      "before": "  for row in assets:\n   p=C.front/row['url'][1:];h.no_symlink(p)",
+      "after": "  for row in m['protectedFiles']:\n   p=Path(row['path']);r=h.describe(p);h.need(identity(r)==identity(row['record']),'CURRENT_PROTECTED_FILE_CHANGED:'+row['path']);records[str(p)]=r\n  for row in assets:\n   p=C.front/row['url'][1:];h.no_symlink(p)"
+    },
+    {
+      "before": "  guard=Guard(locks,records,dirs,absent,sourcepins);guard.check();writer=h.Writer(C,locks,guard)",
+      "after": "  guard=Guard(locks,records,dirs,absent,sourcepins,m['servingAlias']);guard.check();writer=h.Writer(C,locks,guard)"
+    },
+    {
+      "before": "  h.need(ack.get('status')=='ACTUAL_BROWSER_COMPAT_CONFIRMED' and ack.get('htmlSHA')==m['htmlAfterSHA'] and ack.get('transportedNonGET')==0 and ack.get('transportedGuestGrantPOSTs')==0 and ack.get('transportedGuestSearchGETs')==0 and ack.get('anonymousNoCookies') is True and ack.get('personalWorkspaceDOMConfirmed') is True and ack.get('mallWorkbenchEntryDOMConfirmed') is True and ack.get('enterpriseAnonymousGateConfirmed') is True and ack.get('actualOldEngineCompatCSSAndLayoutConfirmed') is True and ack.get('actualModernEngineOriginalCSSConfirmed') is True,'ACTUAL_BROWSER_COMPAT_CONFIRMATION_FAILED:'+str(ack.get('status')))",
+      "after": "  h.need(ack.get('status')=='ACTUAL_HEADER_MAPPING_STATIC_CONFIRMED' and ack.get('htmlSHA')==m['htmlAfterSHA'] and ack.get('transportedNonGET')==0 and ack.get('anonymousNoCookies') is True and ack.get('actualBothNativeUploadLeavesPinned') is True and ack.get('actualHeaderMappingCssPinned') is True and ack.get('actualHtmlReferencesPinned') is True and ack.get('fullLoggedInUploadClaimed') is False,'ACTUAL_HEADER_MAPPING_CONFIRMATION_FAILED:'+str(ack.get('status')))"
+    }
+  ],
+  "originalSource": "/home/ubuntu/work/customer-upload-header-mapping-20261121-1058/static-tools-handoff/browser-compat-static-tools-handoff/source/release.py",
+  "scope": "customer-upload-header-mapping-20261121-6Lfttf6o-1156",
+  "apiWrites": 0,
+  "reloads": 0,
+  "timerPause": false
+}

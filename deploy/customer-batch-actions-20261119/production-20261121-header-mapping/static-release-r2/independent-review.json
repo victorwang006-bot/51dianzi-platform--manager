@@ -1,0 +1,50 @@
+{
+  "schema": "integrated-front-review-v1",
+  "status": "APPROVED",
+  "reviewer": "independent-integrated-review",
+  "reviewerTask": "qp4e5jVmsAp0UHKwymyD5X",
+  "reviewerScope": "本人唯一r2窄实际确认通道差量、24原件fullH/size、原工具scope/私有路径逆向与恢复后新scope/current/M机械核对；复用已审c0af的业务候选/T6/ABI/99tests，不追加前台自查或登录业务门槛。",
+  "manifestSHA": "8a23128e039e7a5437b786437d48baac0be9122d5eadcd758376f24b54a05134",
+  "releaseSHA": "3fbc7198647cccadd352341195c7ea9b2c2ace9bf6bfaa22d326fd9a68c61f67",
+  "helperSHA": "463d5822c057df2fc0e6f2277c6eb14dd630e5fa71eb2b714b3bdebd38eee01e",
+  "transportToolPins": {
+    "applyAndConfirmSHA": "331f61fe6334a118004e7a5dfada2d77aa50ce0b6dd53d8137c0e70d570d318d",
+    "confirmPagesSHA": "784048b8b365ddf47201e6e9af16eba497aa479a0204b1fbb177666820443898",
+    "finishToolsSHA": "46c793337a98373c995405007ce49b77d856b38dd27d77e64fe8d9c879c51b00",
+    "helperSHA": "463d5822c057df2fc0e6f2277c6eb14dd630e5fa71eb2b714b3bdebd38eee01e",
+    "landPackageSHA": "bcdcd18e9b3d0554c33456e5c33b0742d0e6f8d2dbbcfb28150bd1a49f5efa0c",
+    "nativeDependencyBindingSHA": "bdc5eefcc1b7b9c542958ebf126d42e0dcbfe9e66c861d142ff8494f8d7adf33",
+    "preparePackageSHA": "cf2b726beac8962d66f72f585ebd260a42e0ad5909c3da65d974db9007e69898",
+    "r2PreparerSHA": "453350a57a40187d2808d0a8d9fa8457021749e52050957fdfe520b18aa04064",
+    "releaseSHA": "3fbc7198647cccadd352341195c7ea9b2c2ace9bf6bfaa22d326fd9a68c61f67",
+    "restoredReadSHA": "23f653374b4675b562994707c33173f266bbf5574d1559f9ef27b81c7c22b8b6"
+  },
+  "scope": "customer-upload-header-mapping-20261121-6Lfttf6o-r2-1216",
+  "ownerTask": "6Lfttf6oVWJ8YS69o5FkXQ",
+  "reviewerHash": "6399c5de7d64891a7b961a5ef112be74639cae08bfc3624c83a57368ee31aff2",
+  "reviewedAtUtc": "2026-11-21T04:21:16.736789+00:00",
+  "blockers": [],
+  "findings": [
+    "476235B归档及9ffc…44ff完整H；24索引原件全部H/size exact；old-approved M/review/confirm全字节对应本人已审原件。",
+    "原release/safety_core/land/apply差量仅新scope/私有本地路径，实际逆向前轮原件exact；Guard/Locks/Writer/CAS/noReplay/backup/rollback/900均不改；新旧attempt隔离。",
+    "唯一实际确认通道改为ECS真实公开admin HTTPS GET四资源，完整响应正文实际H/size、200/redirect、HTML准确32/53及CSS单link核对，仅小ledger/ACK回传；不读文件冒充HTTP、不candidate injection/响应回放、不登录/业务写。",
+    "新工具七pins实际fullH核对，其余finish/prepare/nativeBinding pins明确为历史继承；r2Preparer/restoredRead新pin独立绑定。",
+    "恢复后target binding04:16:09、coordWhole4d7bd2…3e5b1、beforeHTML18ef的当前META、三retained完整H/nlink/uid/mode和reuse准确对应恢复原件；原89deps/684保护及04:02/04:04原时间字节保持，不伪称全部fresh。",
+    "旧attempt确为确认器HTML正文read timeout→PRECISE_ROLLBACK_CLOSED/bfb3receipt。注意原remote sshExitCode=0、外层apply wrapper退出1的层次不同；均保留，绝不称旧发布通过。",
+    "r2三候选/HTML/业务源与99tests继承原c0af全H；0新assets、空delta62B、新current/missing[]精确；未重传native/重build/tests。",
+    "686秒预算求和正确，含240恢复；900从原apply实际current绑定起，不新增维护/延时。"
+  ],
+  "limitations": {
+    "productionReceipt": false,
+    "fullLoggedInUploadClaimed": false,
+    "frontendCompatibilityApproval": false
+  },
+  "reviewOperations": {
+    "productionConnections": 0,
+    "productionReads": 0,
+    "productionWrites": 0,
+    "subagents": 0,
+    "rebuilds": 0,
+    "businessTestReruns": 0
+  }
+}

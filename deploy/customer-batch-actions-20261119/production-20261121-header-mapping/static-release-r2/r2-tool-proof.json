@@ -1,0 +1,54 @@
+{
+  "release.py": {
+    "previousSHA": "4a28d6a509a29944ce39c3d559fdfa5ecf416af29d5ddb333719a5f506c912dc",
+    "newSHA": "3fbc7198647cccadd352341195c7ea9b2c2ace9bf6bfaa22d326fd9a68c61f67",
+    "fullInverseExact": true,
+    "changes": [
+      {
+        "before": "customer-upload-header-mapping-20261121-6Lfttf6o-1156",
+        "after": "customer-upload-header-mapping-20261121-6Lfttf6o-r2-1216",
+        "count": 1
+      }
+    ]
+  },
+  "safety_core.py": {
+    "previousSHA": "463d5822c057df2fc0e6f2277c6eb14dd630e5fa71eb2b714b3bdebd38eee01e",
+    "newSHA": "463d5822c057df2fc0e6f2277c6eb14dd630e5fa71eb2b714b3bdebd38eee01e",
+    "fullInverseExact": true,
+    "changes": []
+  },
+  "land-package.py": {
+    "previousSHA": "18e446a10dd8f7a238618da680e865e373f5b5ff1aaebe4a0fdb680a9f477f65",
+    "newSHA": "bcdcd18e9b3d0554c33456e5c33b0742d0e6f8d2dbbcfb28150bd1a49f5efa0c",
+    "fullInverseExact": true,
+    "changes": [
+      {
+        "before": "customer-upload-header-mapping-20261121-6Lfttf6o-1156",
+        "after": "customer-upload-header-mapping-20261121-6Lfttf6o-r2-1216",
+        "count": 1
+      },
+      {
+        "before": "/home/ubuntu/work/customer-upload-header-mapping-20261121-1058/static-release",
+        "after": "/home/ubuntu/work/customer-upload-header-mapping-20261121-1058/static-release-r2",
+        "count": 1
+      }
+    ]
+  },
+  "apply-and-confirm.py": {
+    "previousSHA": "3c7e448b0fdf85dae9e938578fca8436f2ba0c9df9c4da22f2690fad093cc42d",
+    "newSHA": "331f61fe6334a118004e7a5dfada2d77aa50ce0b6dd53d8137c0e70d570d318d",
+    "fullInverseExact": true,
+    "changes": [
+      {
+        "before": "customer-upload-header-mapping-20261121-6Lfttf6o-1156",
+        "after": "customer-upload-header-mapping-20261121-6Lfttf6o-r2-1216",
+        "count": 2
+      },
+      {
+        "before": "/home/ubuntu/work/customer-upload-header-mapping-20261121-1058/static-release",
+        "after": "/home/ubuntu/work/customer-upload-header-mapping-20261121-1058/static-release-r2",
+        "count": 1
+      }
+    ]
+  }
+}

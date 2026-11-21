@@ -1,0 +1,21 @@
+{
+  "manifestSHA": "c0afae724fac744854f701f3b6f5366d5f72e7513df663ebc10cafa46cc875d3",
+  "htmlBeforeSHA": "18efeb2b44b55d81a69f0d8dbaedcafa3f5d43ec2a8c7236929c578672c6a744",
+  "htmlAfterSHA": "98385a66faa8e1820df54a2a2dcb8c4a22ce488e7e2e4623cf745c65c6538bf5",
+  "assetCount": 3,
+  "newAssetCount": 3,
+  "reusedAssetsCount": 0,
+  "existingDependencyCount": 89,
+  "protectedFileCount": 684,
+  "archiveSHA": "66b40a2c66d2c3acdde565edc8bd92d134874bdabc831056f1af922813212cac",
+  "deltaArchiveBytes": 2899322,
+  "baselineElapsedSeconds": 0.12113237380981445,
+  "productionWrites": 0,
+  "baselineLocksReleased": true,
+  "baselineSSHClosed": true,
+  "nativeImports": 80,
+  "nativeImportUniqueAdditional": 39,
+  "nativeDependencySupplementSeconds": 0.027283191680908203,
+  "releaseSHA": "4a28d6a509a29944ce39c3d559fdfa5ecf416af29d5ddb333719a5f506c912dc",
+  "helperSHA": "463d5822c057df2fc0e6f2277c6eb14dd630e5fa71eb2b714b3bdebd38eee01e"
+}

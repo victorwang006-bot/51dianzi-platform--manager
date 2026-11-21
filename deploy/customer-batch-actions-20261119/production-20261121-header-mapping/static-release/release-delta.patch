@@ -1,0 +1,78 @@
+--- original/release.py
++++ header/release.py
+@@ -6,18 +6,18 @@
+ HERE=Path(__file__).resolve().parent
+ class Config:
+  stage=HERE
+- front=Path('/opt/releases/20261031-homepage-banner-v39/front/dist/public')
++ front=Path('/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public')
+  assets=front/'assets';html=front/'index.html'
+  coord=Path('/opt/ops/51-project-release-coordination-20261027.json')
+  locks=(Path('/var/lock/dianzi51-public-deploy.lock'),Path('/var/lock/dianzi51-production-code.lock'))
+  fixture_root=None
+-C=Config();OWNER='qp4e5jVmsAp0UHKwymyD5X';SCOPE='browser-compat-release-20261121-1131'
++C=Config();OWNER='6Lfttf6oVWJ8YS69o5FkXQ';SCOPE='customer-upload-header-mapping-20261121-6Lfttf6o-1156'
+ def emit(event,**kw): print(json.dumps(dict(event=event,**kw),ensure_ascii=False),flush=True)
+ def identity(r): return {k:v for k,v in r.items() if k!='atimeNs'}
+ class Guard:
+- def __init__(self,locks,records,dirs,absent,sourcepins):
++ def __init__(self,locks,records,dirs,absent,sourcepins,servingAlias):
+   self.locks=locks;self.expected={'protectedFiles':copy.deepcopy(records),'protectedDirectories':copy.deepcopy(dirs)}
+-  self.cache=copy.deepcopy(records);self.absent=set(absent);self.sourcepins=sourcepins;self.started=time.time();self.atime={}
++  self.cache=copy.deepcopy(records);self.absent=set(absent);self.sourcepins=sourcepins;self.started=time.time();self.atime={};self.servingAlias=servingAlias
+  def read(self,path):
+   key=str(path);meta=h.metadata(path);old=self.cache.get(key)
+   # Full bytes already hashed; exact non-atime inode/size/mtime/ctime/owner/mode/link identity binds reuse.
+@@ -29,8 +29,9 @@
+   self.locks.check();h.need(time.time()-self.started<900,'CURRENT_TARGET_BUDGET_EXPIRED')
+   for key,pin in self.sourcepins.items():
+    h.need(h.H(h.regular(HERE/key))==pin,'TOOL_OR_MANIFEST_DRIFT:'+key)
+-  alias=Path('/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/public')
++  alias=Path('/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/public')
+   h.need(alias.is_symlink() and os.readlink(alias)==str(C.front),'SERVING_ALIAS_DRIFT')
++  h.need(str(alias)==self.servingAlias['path'] and h.metadata(alias)==self.servingAlias['metadata'],'SERVING_ALIAS_FULL_IDENTITY_DRIFT')
+   for key,expected in self.expected['protectedFiles'].items():
+    actual=self.read(Path(key))
+    if identity(actual)!=identity(expected):
+@@ -56,7 +57,7 @@
+ 
+ def get(url):
+  import urllib.request
+- request=urllib.request.Request('https://51dianzi.com'+url,headers={'Cache-Control':'no-cache','Accept-Encoding':'identity'})
++ request=urllib.request.Request('https://admin.51dianzi.com'+url,headers={'Cache-Control':'no-cache','Accept-Encoding':'identity'})
+  with urllib.request.urlopen(request,timeout=15) as response:
+   h.need(response.status==200,'PUBLIC_HTTP_STATUS:'+url);return response.read()
+ 
+@@ -81,18 +82,21 @@
+    h.need(not (HERE/name).exists(),'NO_REPLAY:'+name)
+   coordraw=h.regular(C.coord);coord=h.decode(coordraw);w=coord.get('window',{})
+   h.need(coord.get('shared_release_active') is False and coord.get('needsOperatorRecovery',False) is False and w.get('status') in ('closed','verified') and w.get('needsOperatorRecovery') is False,'COORD_NOT_CLOSED')
+-  before=h.regular(C.html);br=h.describe(C.html);h.need(h.H(before)==beforeSHA,'CURRENT_FRONT_CHANGED')
++  h.need(h.H(coordraw)==m['expectedCoordSHA'],'CURRENT_CLOSED_COORD_BINDING')
++  before=h.regular(C.html);br=h.describe(C.html);h.need(h.H(before)==beforeSHA,'CURRENT_ADMIN_CHANGED')
+   h.need(identity(br)==identity(m['expectedBaselineHtmlRecord']),'CURRENT_HTML_IDENTITY_CHANGED')
+   records={str(C.coord):h.describe(C.coord),str(C.html):br};dirs={str(p):h.metadata(h.no_symlink(p)) for p in (C.front,C.assets,C.coord.parent,HERE)};absent=[];reuse=[]
+   for row in m['existingDependencies']:
+    p=C.front/row['url'][1:];r=h.describe(p);h.need(identity(r)==identity(row['record']),'CURRENT_EXISTING_DEPENDENCY_CHANGED:'+row['url']);records[str(p)]=r
++  for row in m['protectedFiles']:
++   p=Path(row['path']);r=h.describe(p);h.need(identity(r)==identity(row['record']),'CURRENT_PROTECTED_FILE_CHANGED:'+row['path']);records[str(p)]=r
+   for row in assets:
+    p=C.front/row['url'][1:];h.no_symlink(p)
+    if p.exists():
+     r=h.describe(p);h.need(r['sha256']==row['sha256'] and r['size']==row['size'] and r['nlink']==1 and r['uid']==0 and (r['statmode']&0o022)==0,'EXISTING_ASSET_COLLISION:'+row['url']);records[str(p)]=r;reuse.append(row['url'])
+    else:absent.append(str(p))
+   sourcepins={'release.py':review['releaseSHA'],'safety_core.py':review['helperSHA'],'candidate/manifest.json':sys.argv[1],'review.json':sys.argv[2]}
+-  guard=Guard(locks,records,dirs,absent,sourcepins);guard.check();writer=h.Writer(C,locks,guard)
++  guard=Guard(locks,records,dirs,absent,sourcepins,m['servingAlias']);guard.check();writer=h.Writer(C,locks,guard)
+   captured=h.now();emit('CURRENT_TARGET_BINDING_COMPLETE',assets=len(assets),reuse=len(reuse),capturedAtUtc=captured,deadlineSeconds=900)
+   opening=copy.deepcopy(coord);opening['shared_release_active']=True;opening['needsOperatorRecovery']=False;opening['window']={'status':'opening','owner_task':OWNER,'scope':SCOPE,'openedAtUtc':h.now(),'manifestSHA':sys.argv[1],'needsOperatorRecovery':False}
+   openingraw=h.encode(opening)
+@@ -117,7 +121,7 @@
+    row=next(r for r in assets if r['url']==url);h.need(h.H(get(url))==row['sha256'],'PUBLIC_ENTRY_HASH:'+url)
+   guard.check();emit('INSTALLED_AWAITING_ACTUAL_PAGE_CONFIRMATION',htmlSHA=m['htmlAfterSHA'],confirmBudgetSeconds=240)
+   ready=select.select([sys.stdin],[],[],240)[0];ack=h.decode(sys.stdin.buffer.readline()) if ready else {'status':'TIMEOUT'}
+-  h.need(ack.get('status')=='ACTUAL_BROWSER_COMPAT_CONFIRMED' and ack.get('htmlSHA')==m['htmlAfterSHA'] and ack.get('transportedNonGET')==0 and ack.get('transportedGuestGrantPOSTs')==0 and ack.get('transportedGuestSearchGETs')==0 and ack.get('anonymousNoCookies') is True and ack.get('personalWorkspaceDOMConfirmed') is True and ack.get('mallWorkbenchEntryDOMConfirmed') is True and ack.get('enterpriseAnonymousGateConfirmed') is True and ack.get('actualOldEngineCompatCSSAndLayoutConfirmed') is True and ack.get('actualModernEngineOriginalCSSConfirmed') is True,'ACTUAL_BROWSER_COMPAT_CONFIRMATION_FAILED:'+str(ack.get('status')))
++  h.need(ack.get('status')=='ACTUAL_HEADER_MAPPING_STATIC_CONFIRMED' and ack.get('htmlSHA')==m['htmlAfterSHA'] and ack.get('transportedNonGET')==0 and ack.get('anonymousNoCookies') is True and ack.get('actualBothNativeUploadLeavesPinned') is True and ack.get('actualHeaderMappingCssPinned') is True and ack.get('actualHtmlReferencesPinned') is True and ack.get('fullLoggedInUploadClaimed') is False,'ACTUAL_HEADER_MAPPING_CONFIRMATION_FAILED:'+str(ack.get('status')))
+   guard.check();receipt={'schema':'integrated-front-release-receipt-v1','status':'verified','ownerTask':OWNER,'scope':SCOPE,'manifestSHA':sys.argv[1],'htmlBeforeSHA':beforeSHA,'htmlAfterSHA':m['htmlAfterSHA'],'assetCount':len(assets),'reusedAssets':reuse,'observedAtimeChanges':guard.atime,'pageConfirmation':ack,'acceptanceGuestQueryLedgerWritesAuthorized':False,'acceptanceGuestBeginCount':0,'acceptanceGuestPrimaryQueryCount':0,'fullLoggedInEnterpriseBusinessAcceptanceClaimed':False,'deploymentBusinessDataWrites':0,'confirmedAtUtc':h.now(),'apiWrites':0,'databaseWrites':0,'reloads':0,'timerPauses':0}
+   receiptRaw=h.encode(receipt);writer.exclusive(HERE/'confirmed.json',receiptRaw)
+   closing=copy.deepcopy(opening);closing['shared_release_active']=False;closing['window'].update(status='closed',closedAtUtc=h.now(),receiptSHA=h.H(receiptRaw),needsOperatorRecovery=False)

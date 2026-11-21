@@ -1,0 +1,8 @@
+{
+  "status": "ACTUAL_CONFIRMATION_FAILED",
+  "transportedNonGET": 0,
+  "anonymousNoCookies": true,
+  "fullLoggedInUploadClaimed": false,
+  "error": "The read operation timed out",
+  "actualStaticGETLedger": []
+}

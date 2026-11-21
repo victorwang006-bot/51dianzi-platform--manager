@@ -1,0 +1,98 @@
+{
+  "release.py": {
+    "sha256": "3fbc7198647cccadd352341195c7ea9b2c2ace9bf6bfaa22d326fd9a68c61f67",
+    "size": 13009
+  },
+  "release.py.delta.patch": {
+    "sha256": "d787ad1bd58fcdcf2e824c9d9a8d35e51cd98039d3e190cea11e622a76c136b4",
+    "size": 640
+  },
+  "safety_core.py": {
+    "sha256": "463d5822c057df2fc0e6f2277c6eb14dd630e5fa71eb2b714b3bdebd38eee01e",
+    "size": 11553
+  },
+  "safety_core.py.delta.patch": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "size": 0
+  },
+  "land-package.py": {
+    "sha256": "bcdcd18e9b3d0554c33456e5c33b0742d0e6f8d2dbbcfb28150bd1a49f5efa0c",
+    "size": 5609
+  },
+  "land-package.py.delta.patch": {
+    "sha256": "3ed82d20adef75a0e9d62263df914aace81c7389c47e9a1a36b920e57a3e863e",
+    "size": 947
+  },
+  "apply-and-confirm.py": {
+    "sha256": "331f61fe6334a118004e7a5dfada2d77aa50ce0b6dd53d8137c0e70d570d318d",
+    "size": 6458
+  },
+  "apply-and-confirm.py.delta.patch": {
+    "sha256": "c9d0ad870c917708f75c9111ab22093fa7a52d1ec18017e596830724b927f88b",
+    "size": 1899
+  },
+  "confirm-pages.py": {
+    "sha256": "784048b8b365ddf47201e6e9af16eba497aa479a0204b1fbb177666820443898",
+    "size": 4769
+  },
+  "confirm-pages.delta.patch": {
+    "sha256": "31b3d2a974d9b417d9e36184ecdefaa35baf61ac28c30af0078ec569d901adf8",
+    "size": 7550
+  },
+  "current-static.private.json": {
+    "sha256": "ee23b29229396208cedb7907de608eb3aa0630b2d25d1852e31e1ae625210999",
+    "size": 1471966
+  },
+  "delta-assets.tar.gz": {
+    "sha256": "ddbea127eddbf2220a37012b333ca03bfd609a2b78d1a26638ffb711ed62c490",
+    "size": 62
+  },
+  "r2-tool-proof.json": {
+    "sha256": "c0265289b317bdcd8cde978dce6063dac6a5cbb534cdbfcf795a3d707c8a9d82",
+    "size": 2030
+  },
+  "restored-durable-current.json": {
+    "sha256": "8aad0c9d5394bd30e92f471214d2b84cd3ebc7606af2a4049d4502c9387b9ddc",
+    "size": 183357
+  },
+  "package-summary.json": {
+    "sha256": "a7edd1921a9ddc39876e989af4bd8674c4409da1204897aaef6699514a69a4c8",
+    "size": 784
+  },
+  "package/manifest.json": {
+    "sha256": "8a23128e039e7a5437b786437d48baac0be9122d5eadcd758376f24b54a05134",
+    "size": 327940
+  },
+  "old-approved/manifest.json": {
+    "sha256": "c0afae724fac744854f701f3b6f5366d5f72e7513df663ebc10cafa46cc875d3",
+    "size": 326502
+  },
+  "old-approved/independent-review.json": {
+    "sha256": "f5d1014cf6cec6e6695822f2f7ea4143f74f6bafc11647c4e3541976525742c3",
+    "size": 3478
+  },
+  "old-approved/confirm-pages.py": {
+    "sha256": "8e8835355446c1fc9c8810c79a72328526164f642ac88b9ec5cc6304d0955c40",
+    "size": 3081
+  },
+  "old-attempt/apply-result.json": {
+    "sha256": "6912228fee9b1c9e66eb49dba4b7f37753e5fcd7484518e09eacb232cb965830",
+    "size": 1129
+  },
+  "old-attempt/apply-live.log": {
+    "sha256": "92d94fe50bc595a8ab593ec37d34aea9691f0a1e5fb72499e0fdebc2339fbcd8",
+    "size": 2366
+  },
+  "actual-source/prepare-header-static-r2.py": {
+    "sha256": "453350a57a40187d2808d0a8d9fa8457021749e52050957fdfe520b18aa04064",
+    "size": 6533
+  },
+  "actual-source/read-header-restored-once.py": {
+    "sha256": "23f653374b4675b562994707c33173f266bbf5574d1559f9ef27b81c7c22b8b6",
+    "size": 3312
+  },
+  "actual-source/confirm-header-via-ecs-template.py": {
+    "sha256": "784048b8b365ddf47201e6e9af16eba497aa479a0204b1fbb177666820443898",
+    "size": 4769
+  }
+}

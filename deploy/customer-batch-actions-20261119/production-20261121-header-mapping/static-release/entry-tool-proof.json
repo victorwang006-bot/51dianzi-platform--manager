@@ -1,0 +1,52 @@
+{
+  "land-package.py": {
+    "originalSHA": "fc1bfc5c5a43063d800c24957044248b43157bc43e613565031026e8a1c367d1",
+    "actualSHA": "18e446a10dd8f7a238618da680e865e373f5b5ff1aaebe4a0fdb680a9f477f65",
+    "wholeInverseExact": true,
+    "changes": [
+      {
+        "before": "O=Path('/home/ubuntu/work/browser-compat-release-20261121-1131');STAGE='/opt/ops/browser-compat-release-20261121-1131';H=lambda b:hashlib.sha256(b).hexdigest()",
+        "after": "O=Path('/home/ubuntu/work/customer-upload-header-mapping-20261121-1058/static-release');STAGE='/opt/ops/customer-upload-header-mapping-20261121-6Lfttf6o-1156';H=lambda b:hashlib.sha256(b).hexdigest()"
+      },
+      {
+        "before": "front=Path('/opt/releases/20261031-homepage-banner-v39/front/dist/public')",
+        "after": "front=Path('/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public')"
+      },
+      {
+        "before": "import paramiko",
+        "after": "import sys;sys.path.insert(0,'/home/ubuntu/.cache/backend-sftp-lib');import paramiko"
+      },
+      {
+        "before": "key_filename='/home/ubuntu/.secrets/frontend-deploy.pem'",
+        "after": "key_filename='/home/ubuntu/.cache/backend-ssh.pem'"
+      }
+    ]
+  },
+  "apply-and-confirm.py": {
+    "originalSHA": "852e7de4781479a01b16a0406dfdf69707e38cd9fc3b598e746b6b7fe07e16d4",
+    "actualSHA": "3c7e448b0fdf85dae9e938578fca8436f2ba0c9df9c4da22f2690fad093cc42d",
+    "wholeInverseExact": true,
+    "changes": [
+      {
+        "before": "O=Path('/home/ubuntu/work/browser-compat-release-20261121-1131');STAGE='/opt/ops/browser-compat-release-20261121-1131'",
+        "after": "O=Path('/home/ubuntu/work/customer-upload-header-mapping-20261121-1058/static-release');STAGE='/opt/ops/customer-upload-header-mapping-20261121-6Lfttf6o-1156'"
+      },
+      {
+        "before": "'scope':'browser-compat-release-20261121-1131'",
+        "after": "'scope':'customer-upload-header-mapping-20261121-6Lfttf6o-1156'"
+      },
+      {
+        "before": "Path('/opt/releases/20261031-homepage-banner-v39/front/dist/public/index.html')",
+        "after": "Path('/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/index.html')"
+      },
+      {
+        "before": "import paramiko",
+        "after": "import sys;sys.path.insert(0,'/home/ubuntu/.cache/backend-sftp-lib');import paramiko"
+      },
+      {
+        "before": "key_filename='/home/ubuntu/.secrets/frontend-deploy.pem'",
+        "after": "key_filename='/home/ubuntu/.cache/backend-ssh.pem'"
+      }
+    ]
+  }
+}

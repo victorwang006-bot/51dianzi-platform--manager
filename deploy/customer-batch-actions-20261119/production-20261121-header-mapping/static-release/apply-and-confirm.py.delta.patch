@@ -1,0 +1,39 @@
+--- original/apply-and-confirm.py
++++ header/apply-and-confirm.py
+@@ -2,15 +2,15 @@
+ """One exec of reviewed release, real anonymous GET DOM ACK, no blind replay."""
+ import hashlib,json,queue,shlex,subprocess,sys,threading,time
+ from pathlib import Path
+-import paramiko
+-O=Path('/home/ubuntu/work/browser-compat-release-20261121-1131');STAGE='/opt/ops/browser-compat-release-20261121-1131'
++import sys;sys.path.insert(0,'/home/ubuntu/.cache/backend-sftp-lib');import paramiko
++O=Path('/home/ubuntu/work/customer-upload-header-mapping-20261121-1058/static-release');STAGE='/opt/ops/customer-upload-header-mapping-20261121-6Lfttf6o-1156'
+ H=lambda b:hashlib.sha256(b).hexdigest()
+ u=json.loads((O/'upload-result.json').read_text());binding=json.loads((O/'approved-bundle-binding.json').read_text())
+ assert u['event']=='PRIVATE_APPROVED_PACKAGE_LANDED' and u['manifestSHA']==binding['manifestSHA'] and u['reviewSHA']==binding['reviewSHA']
+ assert not (O/'apply-started.json').exists(),'LOCAL_NO_REPLAY'
+ review=json.loads((O/'independent-review.json').read_text());assert H((O/'confirm-pages.py').read_bytes())==review['transportToolPins']['confirmPagesSHA'],'PARENT_ACTUAL_CONFIRM_SOURCE_PIN'
+ client=paramiko.SSHClient();client.load_system_host_keys('/home/ubuntu/.ssh/known_hosts');client.set_missing_host_key_policy(paramiko.RejectPolicy())
+-client.connect('47.97.108.147',username='root',key_filename='/home/ubuntu/.secrets/frontend-deploy.pem',allow_agent=False,look_for_keys=False,timeout=15,banner_timeout=15,auth_timeout=15)
++client.connect('47.97.108.147',username='root',key_filename='/home/ubuntu/.cache/backend-ssh.pem',allow_agent=False,look_for_keys=False,timeout=15,banner_timeout=15,auth_timeout=15)
+ # Bound tool hashes checked remotely before exec; reviewed main independently checks them before locks.
+ bootstrap='''import os,hashlib
+ from pathlib import Path
+@@ -29,7 +29,7 @@
+  assert hashlib.sha256(b''.join(chunks)).hexdigest()==pin,('EXEC_SOURCE_PIN',name)
+ os.execv('/usr/bin/python3',['python3','-u',str(p/'release.py'),'''+repr(binding['manifestSHA'])+','+repr(binding['reviewSHA'])+'''])
+ '''
+-(O/'apply-started.json').write_text(json.dumps({'scope':'browser-compat-release-20261121-1131','manifestSHA':binding['manifestSHA'],'reviewSHA':binding['reviewSHA'],'startedAtUtc':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'oneExecRequested':True},indent=2)+'\n')
++(O/'apply-started.json').write_text(json.dumps({'scope':'customer-upload-header-mapping-20261121-6Lfttf6o-1156','manifestSHA':binding['manifestSHA'],'reviewSHA':binding['reviewSHA'],'startedAtUtc':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'oneExecRequested':True},indent=2)+'\n')
+ stdin,stdout,stderr=client.exec_command('python3 -u -c '+shlex.quote(bootstrap),timeout=None)
+ q=queue.Queue();logfile=open(O/'apply-live.log','x',buffering=1);events=[];ackSent=False;terminal=None
+ 
+@@ -66,7 +66,7 @@
+ exitcode=stdout.channel.recv_exit_status();logfile.close()
+ durable=None
+ if exitcode==0 and terminal and terminal.get('event')=='VERIFIED_DURABLE_CLOSED':
+- code="import sys,json;sys.dont_write_bytecode=True;sys.path.insert(0,"+repr(STAGE)+");import safety_core as h;from pathlib import Path;p=Path("+repr(STAGE)+");r=h.regular(p/'confirmed.json');d=h.decode(r);coordraw=h.regular(Path('/opt/ops/51-project-release-coordination-20261027.json'));c=h.decode(coordraw);w=c['window'];assert h.H(r)=="+repr(terminal['receiptSHA'])+";assert c['shared_release_active'] is False and w['status']=='closed' and w['owner_task']==d['ownerTask'] and w['scope']==d['scope'] and w['receiptSHA']==h.H(r);assert h.H(h.regular(Path('/opt/releases/20261031-homepage-banner-v39/front/dist/public/index.html')))==d['htmlAfterSHA'];print(json.dumps(dict(receipt=d,receiptSHA=h.H(r),coordStatus=w['status'],coordOwner=w['owner_task'],coordScope=w['scope'],coordReceiptSHA=w['receiptSHA'],sharedReleaseActive=c['shared_release_active'],coordWholeSHA=h.H(coordraw),currentHTMLSHA=d['htmlAfterSHA'],originalSSHExecExited=True)))"
++ code="import sys,json;sys.dont_write_bytecode=True;sys.path.insert(0,"+repr(STAGE)+");import safety_core as h;from pathlib import Path;p=Path("+repr(STAGE)+");r=h.regular(p/'confirmed.json');d=h.decode(r);coordraw=h.regular(Path('/opt/ops/51-project-release-coordination-20261027.json'));c=h.decode(coordraw);w=c['window'];assert h.H(r)=="+repr(terminal['receiptSHA'])+";assert c['shared_release_active'] is False and w['status']=='closed' and w['owner_task']==d['ownerTask'] and w['scope']==d['scope'] and w['receiptSHA']==h.H(r);assert h.H(h.regular(Path('/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/index.html')))==d['htmlAfterSHA'];print(json.dumps(dict(receipt=d,receiptSHA=h.H(r),coordStatus=w['status'],coordOwner=w['owner_task'],coordScope=w['scope'],coordReceiptSHA=w['receiptSHA'],sharedReleaseActive=c['shared_release_active'],coordWholeSHA=h.H(coordraw),currentHTMLSHA=d['htmlAfterSHA'],originalSSHExecExited=True)))"
+  ri,ro,re=client.exec_command('python3 -B -c '+shlex.quote(code),timeout=30);ri.close();raw=ro.read();err=re.read().decode();rc=ro.channel.recv_exit_status()
+  if rc==0:
+   durable=json.loads(raw);(O/'durable-closed-receipt.json').write_text(json.dumps(durable,ensure_ascii=False,indent=2)+'\n');print('DURABLE_RECEIPT_CLOSED_FIELDS_RETRIEVED',durable['receiptSHA'],flush=True)

@@ -1,0 +1,11 @@
+--- old/land-package.py
++++ r2/land-package.py
+@@ -2,7 +2,7 @@
+ import base64,hashlib,json,shlex,time
+ from pathlib import Path
+ import sys;sys.path.insert(0,'/home/ubuntu/.cache/backend-sftp-lib');import paramiko
+-O=Path('/home/ubuntu/work/customer-upload-header-mapping-20261121-1058/static-release');STAGE='/opt/ops/customer-upload-header-mapping-20261121-6Lfttf6o-1156';H=lambda b:hashlib.sha256(b).hexdigest()
++O=Path('/home/ubuntu/work/customer-upload-header-mapping-20261121-1058/static-release-r2');STAGE='/opt/ops/customer-upload-header-mapping-20261121-6Lfttf6o-r2-1216';H=lambda b:hashlib.sha256(b).hexdigest()
+ mr=(O/'package/manifest.json').read_bytes();m=json.loads(mr);rr=(O/'independent-review.json').read_bytes();review=json.loads(rr)
+ assert review['status']=='APPROVED' and review['manifestSHA']==H(mr)
+ assert review['releaseSHA']==H((O/'release.py').read_bytes()) and review['helperSHA']==H((O/'safety_core.py').read_bytes())

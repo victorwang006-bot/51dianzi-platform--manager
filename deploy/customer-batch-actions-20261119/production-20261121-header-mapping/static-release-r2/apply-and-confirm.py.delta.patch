@@ -1,0 +1,20 @@
+--- old/apply-and-confirm.py
++++ r2/apply-and-confirm.py
+@@ -3,7 +3,7 @@
+ import hashlib,json,queue,shlex,subprocess,sys,threading,time
+ from pathlib import Path
+ import sys;sys.path.insert(0,'/home/ubuntu/.cache/backend-sftp-lib');import paramiko
+-O=Path('/home/ubuntu/work/customer-upload-header-mapping-20261121-1058/static-release');STAGE='/opt/ops/customer-upload-header-mapping-20261121-6Lfttf6o-1156'
++O=Path('/home/ubuntu/work/customer-upload-header-mapping-20261121-1058/static-release-r2');STAGE='/opt/ops/customer-upload-header-mapping-20261121-6Lfttf6o-r2-1216'
+ H=lambda b:hashlib.sha256(b).hexdigest()
+ u=json.loads((O/'upload-result.json').read_text());binding=json.loads((O/'approved-bundle-binding.json').read_text())
+ assert u['event']=='PRIVATE_APPROVED_PACKAGE_LANDED' and u['manifestSHA']==binding['manifestSHA'] and u['reviewSHA']==binding['reviewSHA']
+@@ -29,7 +29,7 @@
+  assert hashlib.sha256(b''.join(chunks)).hexdigest()==pin,('EXEC_SOURCE_PIN',name)
+ os.execv('/usr/bin/python3',['python3','-u',str(p/'release.py'),'''+repr(binding['manifestSHA'])+','+repr(binding['reviewSHA'])+'''])
+ '''
+-(O/'apply-started.json').write_text(json.dumps({'scope':'customer-upload-header-mapping-20261121-6Lfttf6o-1156','manifestSHA':binding['manifestSHA'],'reviewSHA':binding['reviewSHA'],'startedAtUtc':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'oneExecRequested':True},indent=2)+'\n')
++(O/'apply-started.json').write_text(json.dumps({'scope':'customer-upload-header-mapping-20261121-6Lfttf6o-r2-1216','manifestSHA':binding['manifestSHA'],'reviewSHA':binding['reviewSHA'],'startedAtUtc':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'oneExecRequested':True},indent=2)+'\n')
+ stdin,stdout,stderr=client.exec_command('python3 -u -c '+shlex.quote(bootstrap),timeout=None)
+ q=queue.Queue();logfile=open(O/'apply-live.log','x',buffering=1);events=[];ackSent=False;terminal=None
+ 

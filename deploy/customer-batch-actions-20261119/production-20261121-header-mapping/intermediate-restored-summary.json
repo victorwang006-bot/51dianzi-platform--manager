@@ -1,0 +1,15 @@
+{
+  "status": "FIRST_ATTEMPT_PRECISELY_RESTORED_CLOSED_R2_TRANSPORT_REVIEW_PENDING",
+  "firstAttemptReceiptSHA": "bfb3e2df21b450fc37624ef7bc987aead0059608e44adef2da1886d30dc95868",
+  "currentRestoredCoordSHA": "4d7bd2cb124673b8dde789fd57a5ccbba2fca5b93e76ca6272d9be1a8c93e5b1",
+  "originalFailurePreserved": true,
+  "currentAdminHTMLSHA": "18efeb2b44b55d81a69f0d8dbaedcafa3f5d43ec2a8c7236929c578672c6a744",
+  "currentConnectionsLocks": 0,
+  "r2NotAppliedYet": true,
+  "timerPauses": 0,
+  "apiWrites": 0,
+  "dbWrites": 0,
+  "reloads": 0,
+  "firstRemoteSSHExitCode": 0,
+  "firstOuterWrapperExitCode": 1
+}

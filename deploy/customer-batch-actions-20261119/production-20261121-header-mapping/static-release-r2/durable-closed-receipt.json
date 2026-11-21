@@ -1,0 +1,106 @@
+{
+  "receipt": {
+    "acceptanceGuestBeginCount": 0,
+    "acceptanceGuestPrimaryQueryCount": 0,
+    "acceptanceGuestQueryLedgerWritesAuthorized": false,
+    "apiWrites": 0,
+    "assetCount": 3,
+    "confirmedAtUtc": "2026-11-21T04:23:42.411185+00:00",
+    "databaseWrites": 0,
+    "deploymentBusinessDataWrites": 0,
+    "fullLoggedInEnterpriseBusinessAcceptanceClaimed": false,
+    "htmlAfterSHA": "98385a66faa8e1820df54a2a2dcb8c4a22ce488e7e2e4623cf745c65c6538bf5",
+    "htmlBeforeSHA": "18efeb2b44b55d81a69f0d8dbaedcafa3f5d43ec2a8c7236929c578672c6a744",
+    "manifestSHA": "8a23128e039e7a5437b786437d48baac0be9122d5eadcd758376f24b54a05134",
+    "observedAtimeChanges": {
+      "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/index.html": {
+        "baseline": 1795234506024387181,
+        "observed": 1795234945228374181,
+        "otherFieldsExact": true
+      }
+    },
+    "ownerTask": "6Lfttf6oVWJ8YS69o5FkXQ",
+    "pageConfirmation": {
+      "actualBothNativeUploadLeavesPinned": true,
+      "actualHeaderMappingCssPinned": true,
+      "actualHtmlReferencesPinned": true,
+      "actualStaticGETLedger": [
+        {
+          "cookieSent": false,
+          "elapsedSeconds": 1.6033334112726152,
+          "method": "GET",
+          "observedAtUtc": "2026-11-21T04:23:02.304019+00:00",
+          "sha256": "98385a66faa8e1820df54a2a2dcb8c4a22ce488e7e2e4623cf745c65c6538bf5",
+          "size": 845059,
+          "status": 200,
+          "url": "/"
+        },
+        {
+          "cookieSent": false,
+          "elapsedSeconds": 14.747371883131564,
+          "method": "GET",
+          "observedAtUtc": "2026-11-21T04:23:17.053231+00:00",
+          "sha256": "71b35fe0ad458e6bd7777dfee1cbab87fcbc2e529d5ab135ed652d779673b5f7",
+          "size": 5518798,
+          "status": 200,
+          "url": "/assets/BusinessWorkbenchPage-customer-batch-71b35fe0ad458e6b.js"
+        },
+        {
+          "cookieSent": false,
+          "elapsedSeconds": 25.07188518019393,
+          "method": "GET",
+          "observedAtUtc": "2026-11-21T04:23:42.125571+00:00",
+          "sha256": "2d17aff3e6b3e646231c544c7461764852b98696fe32b88e166d180cac28fcaf",
+          "size": 6416584,
+          "status": 200,
+          "url": "/assets/BusinessWorkbenchPage-customer-batch-2d17aff3e6b3e646.js"
+        },
+        {
+          "cookieSent": false,
+          "elapsedSeconds": 0.008141418918967247,
+          "method": "GET",
+          "observedAtUtc": "2026-11-21T04:23:42.134447+00:00",
+          "sha256": "af6b970e3a2e2e06ede82b8ea6e2f4f16596b8171072c9d6aea2b761d377f3c0",
+          "size": 1259,
+          "status": 200,
+          "url": "/assets/customer-batch-actions-af6b970e3a2e2e06.css"
+        }
+      ],
+      "anonymousNoCookies": true,
+      "confirmedAtUtc": "2026-11-21T04:23:42.135216+00:00",
+      "fullLoggedInEnterpriseBusinessAcceptanceClaimed": false,
+      "fullLoggedInUploadClaimed": false,
+      "htmlSHA": "98385a66faa8e1820df54a2a2dcb8c4a22ce488e7e2e4623cf745c65c6538bf5",
+      "nativeSourceCommit": "0ff3ee1a5c4bf0da82fff4c7661869e940e8f4ec",
+      "observer": "ECS-public-HTTPS-real-GET-body-hashed-not-Sandbox-body-transport",
+      "observerSSHClosed": true,
+      "offlineBehaviorTestsReused": 99,
+      "sourceHashes": {
+        "client/src/business/platform/client/src/components/channelInventory/BatchUpload.compact.test.ts": "6c8abfc1718b9cd41312cb18bf6cb5062240eecffaadcc9b1bbc7cd214f4c73b",
+        "client/src/business/platform/client/src/components/channelInventory/BatchUpload.tsx": "8fc788201d2541ffa7f84a41d4408c8e7cb059cb3ed76d43f07a6a2284b6c1a5",
+        "client/src/business/platform/client/src/components/channelInventory/batch.css": "6166e8f392cc68b86cd335239206e61ccbcec8c051cde847db643ec077f271e7"
+      },
+      "status": "ACTUAL_HEADER_MAPPING_STATIC_CONFIRMED",
+      "transportedNonGET": 0
+    },
+    "reloads": 0,
+    "reusedAssets": [
+      "/assets/BusinessWorkbenchPage-customer-batch-71b35fe0ad458e6b.js",
+      "/assets/BusinessWorkbenchPage-customer-batch-2d17aff3e6b3e646.js",
+      "/assets/customer-batch-actions-af6b970e3a2e2e06.css"
+    ],
+    "schema": "integrated-front-release-receipt-v1",
+    "scope": "customer-upload-header-mapping-20261121-6Lfttf6o-r2-1216",
+    "status": "verified",
+    "timerPauses": 0
+  },
+  "receiptSHA": "fdff20c622308293a69a3dc11022f01c70710e60f682ef3dfcd33c19e73ed7bb",
+  "coordStatus": "closed",
+  "coordOwner": "6Lfttf6oVWJ8YS69o5FkXQ",
+  "coordScope": "customer-upload-header-mapping-20261121-6Lfttf6o-r2-1216",
+  "coordReceiptSHA": "fdff20c622308293a69a3dc11022f01c70710e60f682ef3dfcd33c19e73ed7bb",
+  "sharedReleaseActive": false,
+  "coordWholeSHA": "0873db37de69cb5b490b0f860991861ad216512c7510c1b17e87745c68d6ce5f",
+  "currentHTMLSHA": "98385a66faa8e1820df54a2a2dcb8c4a22ce488e7e2e4623cf745c65c6538bf5",
+  "originalSSHExecExited": true
+}
