@@ -123,3 +123,9 @@ receipt 和事件使用 `businessTestWrites: 0`，receipt 另有 `zeroBusinessTe
 ## 7. 对旧脚本的主要差异
 
 输入由 stdin EOF 改为固定私有 SFTP staged 文件参数；固定新身份；新增 initial `beforeStat`+SHA 检查、精确 side/kind/map 验证；新增独立内容寻址 runtime 与远端语法检查；原始 bytes 相同则不换 inode；按实际 API 变化选择 reload；回退不要求全部 PID 变化；所有未完成候选移入私有同设备 stage；保留并强化双锁、写前完整 CAS、原始 bytes 备份、替换 inode witness、fsync、精确回退与 durable closed receipt/failurehold；公网 full hash 与原只读 list 保留；仅增加 unreadRefs 未鉴权只读 gate 验证；输出只声称零业务测试写，不承诺启动全局数据库零写。
+
+## 8. 本轮执行实录
+
+2026-11-21 23:35:02北京时间真实发布VERIFIED，最终协调文件已持久closed，双锁释放和SSH关闭均核验。首次尝试在开窗前拒绝Ubuntu标准锁目录别名，未替换任何目标；核验`/var/lock -> ../run/lock`及原锁inode后，仅为两条固定锁路径允许该标准别名，最终锁文件仍使用O_NOFOLLOW及fstat/inode保护，其他目标继续严格拒绝别名。续跑复用已完整SFTP上传且hash核验的载荷，未重复传输大包。
+
+实际未鉴权GET使用有效输入`{"json":{"module":"customers"}}`，返回403。此处更新前文示意输入；没有登录或执行markDisplayed业务测试。前台HTML原bytes与inode完整保留。成功回执和原bytes备份持久保存。

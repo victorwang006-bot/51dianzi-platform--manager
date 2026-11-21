@@ -98,6 +98,13 @@ def stat_record(st):
 
 
 def safe_path(path):
+    # Ubuntu's verified /var/lock -> ../run/lock directory alias is the only
+    # exception. Final lock files remain O_NOFOLLOW and fstat/inode protected.
+    if path in LOCKS:
+        need(os.path.realpath('/var/lock') == '/run/lock' and
+             os.path.realpath(path) == '/run/lock/' + os.path.basename(path),
+             'SYSTEM_LOCK_ALIAS_DRIFT ' + path)
+        return
     need(isinstance(path, str) and path.startswith('/') and
          os.path.normpath(path) == path and os.path.realpath(path) == path,
          'PATH_ALIAS_OR_NONCANONICAL ' + str(path))

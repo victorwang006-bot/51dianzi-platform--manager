@@ -1,0 +1,378 @@
+{
+  "scope": "admin-polish-20261121-2257",
+  "ownerTask": "ebvPYDkJVIW0yJK27DsOEU",
+  "result": "VERIFIED",
+  "error": null,
+  "targets": [
+    {
+      "path": "/opt/releases/20261031-homepage-banner-v39/front/dist/public/index.html",
+      "side": "front",
+      "kind": "html",
+      "beforeSHA": "c2313f91eeb4a8d696d3cab4f0884cb4028553be9aed12fd725294bbef90028e",
+      "afterSHA": "c2313f91eeb4a8d696d3cab4f0884cb4028553be9aed12fd725294bbef90028e",
+      "size": 705585,
+      "beforeStat": {
+        "st_dev": 66309,
+        "st_ino": 3284095,
+        "st_mode": 33188,
+        "st_uid": 0,
+        "st_gid": 0,
+        "st_nlink": 1,
+        "st_size": 705585,
+        "st_atime_ns": 1795267421384066384,
+        "st_mtime_ns": 1795255611471584514,
+        "st_ctime_ns": 1795267421372066331
+      }
+    },
+    {
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/index.html",
+      "side": "admin",
+      "kind": "html",
+      "beforeSHA": "d9df9c5dfc1a5a1f0823278b0e56b988f0d504528a534175f0b2476da2ef938f",
+      "afterSHA": "937b3d0fdc5e220b094617704b14668ed84fc70e71b0ed456c36f679b1ab8dfa",
+      "size": 857197,
+      "beforeStat": {
+        "st_dev": 66309,
+        "st_ino": 6276165,
+        "st_mode": 33188,
+        "st_uid": 0,
+        "st_gid": 0,
+        "st_nlink": 1,
+        "st_size": 844891,
+        "st_atime_ns": 1795259652036325299,
+        "st_mtime_ns": 1795229478651589523,
+        "st_ctime_ns": 1795259649274313313
+      }
+    },
+    {
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+      "side": "front",
+      "kind": "api",
+      "beforeSHA": "e9ef886f8e67e8b47ed4949d77b1d96cf13e19f628a10402c5288de05fe7be1d",
+      "afterSHA": "65850e0660fcee0db86f2b8bf959f30b5450576f971599347c0cf69ef617776d",
+      "size": 5997347,
+      "beforeStat": {
+        "st_dev": 66309,
+        "st_ino": 9794928,
+        "st_mode": 33188,
+        "st_uid": 0,
+        "st_gid": 0,
+        "st_nlink": 1,
+        "st_size": 5996705,
+        "st_atime_ns": 1795259638805267885,
+        "st_mtime_ns": 1795229365477081787,
+        "st_ctime_ns": 1795259638418266206
+      }
+    },
+    {
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+      "side": "admin",
+      "kind": "api",
+      "beforeSHA": "bf4f50ae028d4f5ef634f84cf93059b795ae944421e8c222a8d130b110bfb2f1",
+      "afterSHA": "84bb6eed50d466e54209311d5ec0d70a1cf734b650a00b8d6f658287a5cfa1b9",
+      "size": 1634297,
+      "beforeStat": {
+        "st_dev": 66309,
+        "st_ino": 9794930,
+        "st_mode": 33188,
+        "st_uid": 0,
+        "st_gid": 0,
+        "st_nlink": 1,
+        "st_size": 1634192,
+        "st_atime_ns": 1795259646549301489,
+        "st_mtime_ns": 1795172283970699538,
+        "st_ctime_ns": 1795259638423266227
+      }
+    }
+  ],
+  "assets": [
+    {
+      "side": "admin",
+      "url": "/assets/AdminNewInformation-admin-polish-runtime-67feeba8e334ea18.js",
+      "sha256": "67feeba8e334ea189caa1ec9c4302d105b5f78265a2fe95cddce5ca8c51134f9",
+      "size": 298839
+    },
+    {
+      "side": "admin",
+      "url": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "sha256": "6614aeb7b2a8f529f13f215055973acb7c3e52c16431fcc5fbb54638a3ad1e45",
+      "size": 99347
+    },
+    {
+      "side": "admin",
+      "url": "/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "sha256": "30effd9ea32def6273e25ec4e557527a0d1932fb1d1e09303739f75768d918dc",
+      "size": 5546009
+    },
+    {
+      "side": "admin",
+      "url": "/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "sha256": "53fe6b444a4b67757285e705468dd452439a5394784a80b53454da4189e6d0ce",
+      "size": 6443627
+    },
+    {
+      "side": "admin",
+      "url": "/assets/admin-polish-26ff8393db557184.css",
+      "sha256": "26ff8393db557184ce834df9c3da93aa471b5a9cae2656c5f14c07c9d3a9a063",
+      "size": 10783
+    }
+  ],
+  "runtimes": [
+    {
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/runtime/newInformation.admin.df1b13f2d03cf6832c75f2219884fc37f6a28777edf9647b077564dd026307a1.runtime.mjs",
+      "sha256": "df1b13f2d03cf6832c75f2219884fc37f6a28777edf9647b077564dd026307a1",
+      "size": 100047
+    }
+  ],
+  "input": {
+    "path": "/opt/ops/.admin-polish-input-fa9dfbcb45b60b786a17e0003a2a24e0.json",
+    "sha256": "d688a0f119cd97450b7f55d9fff2677aa26693335c8d8f175e27290ae00a9e2d",
+    "size": 28929998,
+    "stat": {
+      "st_dev": 66309,
+      "st_ino": 2812206,
+      "st_mode": 33152,
+      "st_uid": 0,
+      "st_gid": 0,
+      "st_nlink": 1,
+      "st_size": 28929998,
+      "st_atime_ns": 1795274331618707246,
+      "st_mtime_ns": 1795275145540298778,
+      "st_ctime_ns": 1795275145949300580
+    },
+    "source": "pre-staged SFTP file; not stdin"
+  },
+  "publicGETLedger": [
+    {
+      "url": "https://51dianzi.com/api/trpc/factoryChannel.list?input=%7B%22json%22%3A%7B%22query%22%3A%22STM32%22%2C%22pricedOnly%22%3Afalse%2C%22sort%22%3A%22recent%22%2C%22limit%22%3A1%2C%22offset%22%3A0%7D%7D",
+      "method": "GET",
+      "status": 200,
+      "sha256": "5ca2877ec6b369c33a7d90c1704b40a76b897f066396fce116d7ad780612faf2",
+      "size": 77,
+      "authenticated": false,
+      "check": "factoryChannel.list read-only"
+    },
+    {
+      "url": "https://51dianzi.com/api/trpc/factoryChannel.list?input=%7B%22json%22%3A%7B%22query%22%3A%22STM32%22%2C%22pricedOnly%22%3Afalse%2C%22sort%22%3A%22recent%22%2C%22limit%22%3A1%2C%22offset%22%3A0%7D%7D",
+      "method": "GET",
+      "status": 200,
+      "sha256": "5ca2877ec6b369c33a7d90c1704b40a76b897f066396fce116d7ad780612faf2",
+      "size": 77,
+      "authenticated": false,
+      "check": "factoryChannel.list read-only"
+    },
+    {
+      "url": "https://51dianzi.com/api/trpc/factoryChannel.list?input=%7B%22json%22%3A%7B%22query%22%3A%22STM32%22%2C%22pricedOnly%22%3Afalse%2C%22sort%22%3A%22recent%22%2C%22limit%22%3A1%2C%22offset%22%3A0%7D%7D",
+      "method": "GET",
+      "status": 200,
+      "sha256": "5ca2877ec6b369c33a7d90c1704b40a76b897f066396fce116d7ad780612faf2",
+      "size": 77,
+      "authenticated": false,
+      "check": "factoryChannel.list read-only"
+    },
+    {
+      "url": "https://51dianzi.com/",
+      "method": "GET",
+      "status": 200,
+      "sha256": "c2313f91eeb4a8d696d3cab4f0884cb4028553be9aed12fd725294bbef90028e",
+      "size": 705585,
+      "authenticated": false
+    },
+    {
+      "url": "https://51dianzi.com/search",
+      "method": "GET",
+      "status": 200,
+      "sha256": "c2313f91eeb4a8d696d3cab4f0884cb4028553be9aed12fd725294bbef90028e",
+      "size": 705585,
+      "authenticated": false
+    },
+    {
+      "url": "https://admin.51dianzi.com/",
+      "method": "GET",
+      "status": 200,
+      "sha256": "937b3d0fdc5e220b094617704b14668ed84fc70e71b0ed456c36f679b1ab8dfa",
+      "size": 857197,
+      "authenticated": false
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/AdminNewInformation-admin-polish-runtime-67feeba8e334ea18.js",
+      "method": "GET",
+      "status": 200,
+      "sha256": "67feeba8e334ea189caa1ec9c4302d105b5f78265a2fe95cddce5ca8c51134f9",
+      "size": 298839,
+      "authenticated": false
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "method": "GET",
+      "status": 200,
+      "sha256": "6614aeb7b2a8f529f13f215055973acb7c3e52c16431fcc5fbb54638a3ad1e45",
+      "size": 99347,
+      "authenticated": false
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "method": "GET",
+      "status": 200,
+      "sha256": "30effd9ea32def6273e25ec4e557527a0d1932fb1d1e09303739f75768d918dc",
+      "size": 5546009,
+      "authenticated": false
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "method": "GET",
+      "status": 200,
+      "sha256": "53fe6b444a4b67757285e705468dd452439a5394784a80b53454da4189e6d0ce",
+      "size": 6443627,
+      "authenticated": false
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/admin-polish-26ff8393db557184.css",
+      "method": "GET",
+      "status": 200,
+      "sha256": "26ff8393db557184ce834df9c3da93aa471b5a9cae2656c5f14c07c9d3a9a063",
+      "size": 10783,
+      "authenticated": false
+    },
+    {
+      "url": "https://admin.51dianzi.com/api/trpc/newInformation.unreadRefs?input=%7B%22json%22%3A%7B%22module%22%3A%22customers%22%7D%7D",
+      "method": "GET",
+      "status": 403,
+      "sha256": "c2ab95388e0cd0b3bdfc5fef91a7e3b84c92bb274cc12d45470708f595926409",
+      "size": 218,
+      "authenticated": false,
+      "check": "newInformation.unreadRefs unauthenticated read-only auth gate only",
+      "notFunctionalUnreadValidation": true
+    }
+  ],
+  "immutableLedger": [
+    {
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/AdminNewInformation-admin-polish-runtime-67feeba8e334ea18.js",
+      "kind": "asset",
+      "sha256": "67feeba8e334ea189caa1ec9c4302d105b5f78265a2fe95cddce5ca8c51134f9",
+      "created": true
+    },
+    {
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "kind": "asset",
+      "sha256": "6614aeb7b2a8f529f13f215055973acb7c3e52c16431fcc5fbb54638a3ad1e45",
+      "created": true
+    },
+    {
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/BusinessWorkbenchPage-admin-polish-30effd9ea32def62.js",
+      "kind": "asset",
+      "sha256": "30effd9ea32def6273e25ec4e557527a0d1932fb1d1e09303739f75768d918dc",
+      "created": true
+    },
+    {
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/BusinessWorkbenchPage-admin-polish-53fe6b444a4b6775.js",
+      "kind": "asset",
+      "sha256": "53fe6b444a4b67757285e705468dd452439a5394784a80b53454da4189e6d0ce",
+      "created": true
+    },
+    {
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/assets/admin-polish-26ff8393db557184.css",
+      "kind": "asset",
+      "sha256": "26ff8393db557184ce834df9c3da93aa471b5a9cae2656c5f14c07c9d3a9a063",
+      "created": true
+    },
+    {
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/runtime/newInformation.admin.df1b13f2d03cf6832c75f2219884fc37f6a28777edf9647b077564dd026307a1.runtime.mjs",
+      "kind": "runtime",
+      "sha256": "df1b13f2d03cf6832c75f2219884fc37f6a28777edf9647b077564dd026307a1",
+      "created": true
+    }
+  ],
+  "processLedger": [
+    {
+      "phase": "apply",
+      "processes": [
+        {
+          "name": "dianzi51",
+          "pid": 2146861,
+          "id": 190,
+          "status": "online",
+          "entry": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js"
+        },
+        {
+          "name": "dianzi51-admin",
+          "pid": 2146928,
+          "id": 191,
+          "status": "online",
+          "entry": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js"
+        },
+        {
+          "name": "dianzi51-admin",
+          "pid": 2146942,
+          "id": 192,
+          "status": "online",
+          "entry": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js"
+        },
+        {
+          "name": "dianzi51",
+          "pid": 2146862,
+          "id": 193,
+          "status": "online",
+          "entry": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js"
+        },
+        {
+          "name": "dianzi51",
+          "pid": 2146892,
+          "id": 194,
+          "status": "online",
+          "entry": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js"
+        },
+        {
+          "name": "dianzi51",
+          "pid": 2146893,
+          "id": 200,
+          "status": "online",
+          "entry": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js"
+        }
+      ]
+    }
+  ],
+  "businessTestWrites": 0,
+  "zeroBusinessTestWrites": true,
+  "databaseWriteGuarantee": "NOT_ASSERTED: application startup/reload may perform database writes",
+  "verificationLimitations": "unreadRefs is unauthenticated auth-gate GET only; no authenticated unread/markDisplayed tests",
+  "changedTargets": [
+    "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/index.html",
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js"
+  ],
+  "attemptedTargets": [
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/dist/index.js",
+    "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+    "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/index.html"
+  ],
+  "unchangedTargets": [
+    "/opt/releases/20261031-homepage-banner-v39/front/dist/public/index.html"
+  ],
+  "apiReloadGroups": [
+    "dianzi51",
+    "dianzi51-admin"
+  ],
+  "apiReloadLedger": [
+    {
+      "name": "dianzi51",
+      "phase": "apply",
+      "startedAtUtc": "2026-11-21T15:34:10.550670+00:00",
+      "completed": true,
+      "completedAtUtc": "2026-11-21T15:34:19.911289+00:00"
+    },
+    {
+      "name": "dianzi51-admin",
+      "phase": "apply",
+      "startedAtUtc": "2026-11-21T15:34:19.911352+00:00",
+      "completed": true,
+      "completedAtUtc": "2026-11-21T15:34:23.191716+00:00"
+    }
+  ],
+  "rollbackVerified": false,
+  "backupDirectory": "/opt/ops/admin-polish-20261121-2257",
+  "windowOpened": true,
+  "closed": true,
+  "coordFinalSHA": "6ee46e9c162eb1587025c1e5856f04984533ac0c02ddeef76aa6bf1fb54d3fbe",
+  "finishedAtUtc": "2026-11-21T15:35:02.088923+00:00"
+}
