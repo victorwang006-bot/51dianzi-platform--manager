@@ -1,0 +1,94 @@
+{
+  "status": "VERIFIED_DURABLE_CLOSED",
+  "scope": "customer-profile-refined-20261121-6Lfttf6o-1250",
+  "confirmedAtUtc": "2026-11-21T05:15:27.158571+00:00",
+  "receiptSHA": "d4fd3a673072f88d1649d09ae161d9c61bcc3d6611eccc4c20debd9a26863fa3",
+  "closedCoordWholeSHA": "e8e125f13fb089bfe78da88a195189cb00cd4f94155613a610df5f4de7628944",
+  "manifestSHA": "ee45aa287bb71ce5483bb2b9e090e841a8b4f2b0c1cdd9529ca3e8b4893ba30c",
+  "adminHTMLSHA": "e1b61ecb859fe5e03c7e71927f810fee6f18a5d44d214b8f0acf51b7897be7c6",
+  "adminAssets": [
+    {
+      "sha256": "ef17492d140dfc9945634510a0001178a1ecb65885220070262988c5624a0316",
+      "size": 6416568,
+      "url": "/assets/BusinessWorkbenchPage-customer-batch-ef17492d140dfc99.js"
+    },
+    {
+      "sha256": "fcccecb6cb4ac4edfd821e3898cc3ff96d8824664feb24d90f7528773c04af51",
+      "size": 5518782,
+      "url": "/assets/BusinessWorkbenchPage-customer-batch-fcccecb6cb4ac4ed.js"
+    },
+    {
+      "sha256": "f8d5bedee4c9c8a76aae5a4c6dd9906e18a1f89301f9526e5b6ecc99343f7072",
+      "size": 9298,
+      "url": "/assets/customer-profile-refined-f8d5bedee4c9c8a7.css"
+    }
+  ],
+  "adminActualStaticGETLedger": [
+    {
+      "cookieSent": false,
+      "elapsedSeconds": 1.1089848252013326,
+      "method": "GET",
+      "observedAtUtc": "2026-11-21T05:14:54.905045+00:00",
+      "sha256": "e1b61ecb859fe5e03c7e71927f810fee6f18a5d44d214b8f0acf51b7897be7c6",
+      "size": 845144,
+      "status": 200,
+      "url": "/"
+    },
+    {
+      "cookieSent": false,
+      "elapsedSeconds": 17.230614461004734,
+      "method": "GET",
+      "observedAtUtc": "2026-11-21T05:15:12.137060+00:00",
+      "sha256": "ef17492d140dfc9945634510a0001178a1ecb65885220070262988c5624a0316",
+      "size": 6416568,
+      "status": 200,
+      "url": "/assets/BusinessWorkbenchPage-customer-batch-ef17492d140dfc99.js"
+    },
+    {
+      "cookieSent": false,
+      "elapsedSeconds": 14.736700942274183,
+      "method": "GET",
+      "observedAtUtc": "2026-11-21T05:15:26.874174+00:00",
+      "sha256": "fcccecb6cb4ac4edfd821e3898cc3ff96d8824664feb24d90f7528773c04af51",
+      "size": 5518782,
+      "status": 200,
+      "url": "/assets/BusinessWorkbenchPage-customer-batch-fcccecb6cb4ac4ed.js"
+    },
+    {
+      "cookieSent": false,
+      "elapsedSeconds": 0.00770934484899044,
+      "method": "GET",
+      "observedAtUtc": "2026-11-21T05:15:26.882562+00:00",
+      "sha256": "f8d5bedee4c9c8a76aae5a4c6dd9906e18a1f89301f9526e5b6ecc99343f7072",
+      "size": 9298,
+      "status": 200,
+      "url": "/assets/customer-profile-refined-f8d5bedee4c9c8a7.css"
+    }
+  ],
+  "existingAdminDependencyCount": 90,
+  "frontHTMLSHA": "e761719c4e5812cd4f7de1d8eacdff5070829f9ed7d0ea42dd594f3d88c659c3",
+  "adminAPISHA": "14034473467f2b22f3dcf2f11624b961c4c7831d69e41bb21ac401f9bb85a120",
+  "frontAPISHA": "28ba370e600dcd89047200ec55e545edafe9890314bd49e334bdfa2ff7f77757",
+  "applicationSourceArchiveCommit": "7f1bd179ff107904c130055b83b366feef2fd2d9",
+  "sourceHashes": {
+    "client/src/business/platform/client/src/pages/CustomerDetail.tsx": "01074a2e3a1ccf7d67387f2b4da7437e46a0db7b09801cca5f45fcc1d7d7d93b",
+    "client/src/business/platform/client/src/pages/CustomerProfileCompact.css": "86f3ace54526ab0f0437b87e9113be46f8fd660e25fac7d8244612299cada9ec",
+    "client/src/business/platform/client/src/pages/CustomerProfileRefined.test.ts": "b457ea182b5d4d3cd0775359968537aa21969b98e1c0d8a3162d8eaa992cd118"
+  },
+  "reviewSHA": "820ca9bd5677baa0b2ab71264b314be405c491b3f0c56b88838eb78aa7f92847",
+  "coreSHA": "463d5822c057df2fc0e6f2277c6eb14dd630e5fa71eb2b714b3bdebd38eee01e",
+  "releaseSHA": "26e7ab534bb444f748a8aa8e58d0ae96def26582afe18fe228d6b296920fb086",
+  "privateTransportSeconds": 182.69058896399656,
+  "apiWrites": 0,
+  "databaseWrites": 0,
+  "envWrites": 0,
+  "reloads": 0,
+  "timerPauses": 0,
+  "locksReleased": true,
+  "connectionClosed": true,
+  "ownedProductionWindowReleased": true,
+  "runningProductionJobs": 0,
+  "fullLoggedInCustomerBusinessAcceptanceClaimed": false,
+  "demoFixedDataDeployed": false,
+  "handoffGeneratedFromExistingReceiptsOnly": true
+}
