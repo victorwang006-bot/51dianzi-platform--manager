@@ -1,0 +1,24 @@
+--- apply_exact_once.py
++++ apply_exact_after_private_init_once.py
+@@ -3,7 +3,7 @@
+ import base64,hashlib,json,os,select,sys,time,zlib
+ from pathlib import Path
+ sys.path.insert(0,'/home/ubuntu/.cache/backend-sftp-lib');import paramiko
+-W=Path('/home/ubuntu/work/customer-stock-live-20261121');C=W/'exact-current-fixed-once';OUT=W/'exact-once-apply';assert not OUT.exists();os.umask(0o077)
++W=Path('/home/ubuntu/work/customer-stock-live-20261121');C=W/'exact-current-fixed-once';OUT=W/'exact-after-private-init-apply';assert not OUT.exists();os.umask(0o077)
+ mb=(C/'manifest.json').read_bytes();rb=(C/'review.json').read_bytes();m=json.loads(mb);r=json.loads(rb);sm=json.loads((C/'summary.json').read_text());auth=json.loads((W/'minimal-guard-authorization.json').read_text());assert auth['approved'] and auth['pauseTimer'] is False
+ H=lambda b:hashlib.sha256(b).hexdigest();assert r['releaseApproved'] is True and r['bindings']=={'manifestSha256':H(mb),'manifest':m}
+ samples=[]
+@@ -19,8 +19,10 @@
+ s=importlib.util.spec_from_file_location('exact_scope_once_original_core',source);n=importlib.util.module_from_spec(s);sys.modules[s.name]=n;s.loader.exec_module(n)
+ package=n.Config().package;assert n.H(n.regular(package/'manifest.json'))==MH
+ review=base64.b64decode(REVIEW,validate=True);n.validate_review(review,n.decode(n.regular(package/'manifest.json')),MH)
+-assert not (package/'review.json').exists() and not n.Config().receipt.exists(),'EXACT_CURRENT_ONE_REVIEW_ONE_APPLY'
+-assert DEADLINE-time.time()>MINIMUM,'NEW_REAL_BINDING_REMAINING_RECOVERY_BUDGET';n.exclusive(package/'review.json',review)
++assert not n.Config().receipt.exists(),'EXACT_ZERO_ATTEMPT_NO_RECEIPT_CONTINUATION'
++assert n.regular(package/'review.json')==review and (n.meta(package/'review.json')['statmode']&0o777)==0o600 and n.meta(package/'review.json')['nlink']==1,'EXACT_INSTALLED_REVIEW_BYTES_MODE_NLINK'
++repair=n.decode(n.regular(Path(STAGE)/'private-directory-initialization-repair.json'));assert repair['status']=='OWN_PRIVATE_PACKAGE_INITIALIZATION_FIXED_NO_ATTEMPT' and repair['attempts']==repair['publicWrites']==repair['reloads']==0 and repair['manifestSha256']==MH and repair['reviewSha256']==RH and repair['controllerSha256']==PIN and repair['timerPaused'] is False,'EXACT_OWN_PRIVATE_INITIALIZATION_REPAIR_ZERO_ATTEMPT'
++assert DEADLINE-time.time()>MINIMUM,'NEW_REAL_BINDING_REMAINING_RECOVERY_BUDGET'
+ c=n.Controller();done=threading.Event()
+ def heartbeat():
+  while not done.wait(30):

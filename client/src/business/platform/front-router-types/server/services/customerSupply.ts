@@ -70,6 +70,22 @@ async function ownEmptyUploadChannel(tx: SqlExecutor, scope: ChannelInventorySco
       AND NOT EXISTS (SELECT 1 FROM channel_inventory_materials upload_material WHERE upload_material.channel_id = c.id FOR UPDATE)
     LIMIT 1 FOR UPDATE`))[0] ?? null;
 }
+/** Own bound-channel upload preparation only; raw history never grants source/material reads.
+ * Called only after current CRM write/completion checks and an unsuccessful empty proof. */
+async function ownBoundUploadChannel(tx: SqlExecutor, scope: ChannelInventoryScope, customerId: number, channelId: number) {
+  if (scope.officialActor && (scope.officialActor.inventoryPermissions?.read !== true
+    || scope.officialActor.inventoryPermissions.write !== true || scope.officialActor.inventoryPermissions.inventoryScopeWrite !== true))
+    fail("FORBIDDEN", "未获当前库存写入权限");
+  await writeFence(tx, scope, channelId);
+  return rows(await tx.execute(sql`SELECT c.id, c.channel_type AS type, c.active, c.revision
+    FROM channel_inventory_channels c INNER JOIN crm_customer_supply_channels upload_link
+      ON upload_link.enterpriseId = c.enterprise_id AND upload_link.dataOwnerUserId = c.data_owner_user_id
+        AND upload_link.channelId = c.id AND upload_link.inventoryResponsibleUserId = c.responsible_user_id
+    WHERE c.id = ${channelId} AND c.enterprise_id = ${scope.enterpriseId} AND c.data_owner_user_id = ${scope.dataOwnerUserId}
+      AND c.responsible_user_id = ${scope.actorUserId} AND c.active = 1 AND c.revision >= 1
+      AND upload_link.customerId = ${customerId} AND upload_link.inventoryResponsibleUserId = ${scope.actorUserId}
+    LIMIT 1 FOR UPDATE`))[0] ?? null;
+}
 export function createCustomerSupplyService(deps: ChannelInventoryServiceDependencies) {
   async function database(): Promise<SqlDatabase> { const db = await deps.getDb(); if (!db) return fail("SERVICE_UNAVAILABLE", "客户供应库存结构尚未就绪"); return db; }
   async function guarded<T>(fn: () => Promise<T>): Promise<T> {
@@ -99,7 +115,7 @@ export function createCustomerSupplyService(deps: ChannelInventoryServiceDepende
         await resolveCrmCustomerPolicy(currentReadExecutor(tx), scope, true), true);
       await writeFence(tx, scope, link ? Number(link.channelId) : undefined);
       if (link && channel === null && completion(c) === null) {
-        const empty = await ownEmptyUploadChannel(tx, scope, input.customerId, Number(link.channelId));
+        const empty = await ownEmptyUploadChannel(tx, scope, input.customerId, Number(link.channelId)) ?? await ownBoundUploadChannel(tx, scope, input.customerId, Number(link.channelId));
         if (empty) {
           channel = { id: Number(empty.id), name: String(c.name), type: String(empty.type), industryCode: c.industryCode == null ? null : String(c.industryCode), active: empty.active === 1 || empty.active === true || empty.active === "1", revision: Number(empty.revision) };
           if (disabledReason === "暂无权限读取关联库存来源，请联系有权人员确认") disabledReason = null;

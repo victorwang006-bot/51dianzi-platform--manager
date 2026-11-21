@@ -1,0 +1,35 @@
+{
+  "status": "EXACT_SCOPE_NEW_REAL_BINDING_SEALED_NOT_APPLIED",
+  "scope": "customer-stock-compact-20261121-6Lfttf6o-exact-fixed",
+  "controllerSha256": "6ff5f1677bc0352d3f989b4720d3ca268b97da8f7620a4ea3afd65ea657b5b9e",
+  "policySha256": "60310e7ca8b03362913ca781650a5f3b722a654930b9d35b9730e7ffa495fe5e",
+  "manifestSha256": "7826bae011cb8b07571d4c6eabfb568c1a81648bdce584b39c9efeb54b1d4618",
+  "captureSha256": "0c43a67b1502d4b58f08584098626c50ef02c8555292bf4ebf3d88fe83993ce8",
+  "capturedAtUtc": "2026-11-21T01:42:21.683995+00:00",
+  "ttlSeconds": 5400,
+  "protectedRecords": 2353,
+  "packageFiles": 101,
+  "sourceFiles": 42,
+  "oldManifestSha256": "3abf013bc465e348d035196d869e5bb9a5b46d473ae2992518676159d5ba9f00",
+  "unchangedOldPayloadFiles": 92,
+  "onlyOldPayloadChanged": [
+    "capture.json"
+  ],
+  "sixReloadReady": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+  ],
+  "coordSha256": "f9d88aa7127c1168d417b05f984da610dacca0772092a4b1a952dbe3f6dc96ea",
+  "frontendHtmlSha256": "e061db79da177a4a9d8cf486fc0bbf665491e6d15704ade78f14e6ce06de1f87",
+  "lastSnapshotSeconds": 2.203351926058531,
+  "timerPause": false,
+  "newMaintenanceWindow": false,
+  "businessWrites": 0,
+  "publicWrites": 0,
+  "currentBindingCapturesNotOldTimestampRewritten": true,
+  "all42SourcePinsUnchanged": true
+}

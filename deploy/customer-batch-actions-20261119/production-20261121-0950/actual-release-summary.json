@@ -1,0 +1,111 @@
+{
+  "status": "EXACT_SCOPE_ACTUAL_APPLY_READ_ONLY_VERIFY_PASSED_CLOSED",
+  "controllerSha256": "6ff5f1677bc0352d3f989b4720d3ca268b97da8f7620a4ea3afd65ea657b5b9e",
+  "manifestSha256": "7826bae011cb8b07571d4c6eabfb568c1a81648bdce584b39c9efeb54b1d4618",
+  "reviewSha256": "61cee1f2e21de0f05de688ea5ff85dfc974d651319d6679a1dcd9ce857c39641",
+  "receiptSha256": "f3e540773ed54bf034b5f0e0274e7efd3b25d0c5b420232187b38653766fdebb",
+  "closedCoordSha256": "b08daf33611260fa1379c0353aee96b11cd093aaffe84343de938e62fdaccac2",
+  "closedAtUtc": "2026-11-21T01:50:08.097268+00:00",
+  "readOnlyVerify": {
+    "status": "verified-live-matching-own-receipt",
+    "stateSha256": "ff42356f59ad6e3e0d674cb4313034ee3832f7ed463bcda2c56940c2480b3e62",
+    "receiptSha256": "f3e540773ed54bf034b5f0e0274e7efd3b25d0c5b420232187b38653766fdebb",
+    "productionWrites": 0,
+    "processCount": 12
+  },
+  "adminApiPhysicalWrites": 0,
+  "frontApiPhysicalWrites": 1,
+  "reloadScope": [
+    190,
+    193,
+    194,
+    200,
+    191,
+    192
+  ],
+  "actualReloadEvents": 6,
+  "frontStaticWrites": 0,
+  "businessWrites": 0,
+  "envWrites": 0,
+  "timerPaused": false,
+  "newMaintenanceWindow": false,
+  "elapsedSeconds": 179.36,
+  "scope": "customer-stock-compact-20261121-6Lfttf6o-exact-fixed",
+  "victorReadOnlyAcceptance": {
+    "status": "ACTUAL_VICTOR_NATIVE_CONTEXT_CAN_UPLOAD_READONLY_PASSED",
+    "observedAtUtc": "2026-11-21T01:55:01.814Z",
+    "frontApiSha256": "81ed910a32f95c2a647eb48fe57ff63646d23c5b677f8fc8816b0b80abea0fd8",
+    "adminApiSha256": "14034473467f2b22f3dcf2f11624b961c4c7831d69e41bb21ac401f9bb85a120",
+    "nativeContextSha256": "dc578ad0f40ead65c9793cc69d6836c3e0bb1c2e8f812b9fe0d56e2709859e12",
+    "nativeClosureSha256": "2cdf98599d0a91fa38762a57aecdfc4d0c4e891dd240e746a39f1837575c89bc",
+    "nativeContextFunctionsStubbed": false,
+    "officialPermissionsFromActualAccountAndBusinessScope": true,
+    "officialPermissions": {
+      "read": true,
+      "write": true,
+      "customerScopeRead": true,
+      "inventoryScopeWrite": true
+    },
+    "actualAdminAccountId": 30004,
+    "actualFrontUserId": 397751,
+    "customerId": 1354,
+    "channelId": 30,
+    "canUpload": true,
+    "disabledReason": null,
+    "materialCountsBefore": {
+      "rawCount": 275,
+      "notDeletedCount": "0"
+    },
+    "materialCountsAfter": {
+      "rawCount": 275,
+      "notDeletedCount": "0"
+    },
+    "selectQueries": 131,
+    "bothTransactionsRolledBack": true,
+    "productionBusinessWrites": 0,
+    "reloads": 0,
+    "timerOperations": 0,
+    "realUserUploadPerformed": false,
+    "fullAuthenticatedHttpRouteTested": false,
+    "scopeEvidence": {
+      "actualBusinessScopeId": 1,
+      "actualBusinessScopeVersion": 3,
+      "actualEnterpriseOwner": true
+    },
+    "boundPmId": 190,
+    "boundPid": 2110270
+  },
+  "apiTargetSha256": {
+    "frontBefore": "f469759300751d17ef20ae244efd272ae1f8c200d84dde4ec9ba6a9b50ebde8f",
+    "frontAfter": "81ed910a32f95c2a647eb48fe57ff63646d23c5b677f8fc8816b0b80abea0fd8",
+    "adminUnchanged": "14034473467f2b22f3dcf2f11624b961c4c7831d69e41bb21ac401f9bb85a120"
+  },
+  "acceptedOfflineEvidence": {
+    "backendTests": 158,
+    "affectedUiTests": 130,
+    "tscExitCode": 0,
+    "businessEvidenceReusedByHash": true,
+    "nonTargetFrontBytesExactlyUnchanged": 5992384
+  },
+  "privateInitializationCorrection": {
+    "status": "OWN_PRIVATE_PACKAGE_INITIALIZATION_FIXED_NO_ATTEMPT",
+    "exactOwnDirectoryModeCorrections": 12,
+    "productionWrites": 0,
+    "attemptsBeforeCorrection": 0,
+    "sourceOrManifestOrReviewOrCaptureModified": false
+  },
+  "historicalFailuresPreserved": [
+    "old-45min-budget-zero-attempt-refusal-restored",
+    "first-exact-21a-double-root-projection-capture-refusal",
+    "private-package-0755-zero-attempt-admission-refusal",
+    "readonly-script-preapply-coordClosed-misuse",
+    "readonly-script-frontUserId-vs-merchantId-mapping",
+    "readonly-closure-missing-esbuild-static-initialization"
+  ],
+  "productionConnectionsExited": true,
+  "cooperativeDualLocksReleasedByContexts": true,
+  "forcedUnlock": false,
+  "maintenanceTimerState": "Not paused in this run; prior actual active/enabled restoration retained",
+  "fullAuthenticatedHttpRouteTested": false,
+  "realProductionUploadPerformed": false
+}

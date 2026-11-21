@@ -31,3 +31,52 @@
   .customer-channel-inventory .ci-filter-count { width: 100%; margin-left: 0; }
   .customer-channel-inventory .ci-customer-edit-fields { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
 }
+
+/* Confirmed compact customer stock treatment; no global shell or other modules. */
+.erp-ui.customer-workbench .customer-stock-workbench { padding: 12px 14px; }
+.customer-stock-workbench .customer-stock-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; }
+.customer-stock-workbench .customer-stock-heading-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.customer-stock-workbench .customer-stock-heading h2 { font-size: 15px; font-weight: 600; }
+.customer-stock-workbench .crm-btn,
+.erp-ui.customer-workbench .customer-workbench-top-buttons .crm-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box; height: 34px !important; min-height: 34px !important; padding: 0 12px; border: 1px solid #d9e1ec; border-radius: 6px; background: #fff; color: #334155; font-size: 13px; line-height: 20px; font-weight: 500; cursor: pointer; box-shadow: 0 1px 2px rgb(15 23 42 / 4%); transition: background-color 120ms, border-color 120ms; }
+.customer-stock-workbench .crm-btn-primary,
+.erp-ui.customer-workbench .customer-workbench-top-buttons .crm-btn-primary { background: #185fa5; border-color: #185fa5; color: #fff; }
+.customer-stock-workbench .crm-btn:not([aria-disabled="true"]):hover,
+.erp-ui.customer-workbench .customer-workbench-top-buttons .crm-btn:not(:disabled):hover { border-color: #185fa5; background: #f4f8fd; }
+.customer-stock-workbench .crm-btn-primary:not([aria-disabled="true"]):hover,
+.erp-ui.customer-workbench .customer-workbench-top-buttons .crm-btn-primary:not(:disabled):hover { background: #124d88; color: #fff; }
+.customer-stock-workbench .crm-btn[aria-disabled="true"],
+.erp-ui.customer-workbench .customer-workbench-top-buttons .crm-btn:disabled { color: #98a2b3; border-color: #e2e8f0; background: #f8fafc; cursor: not-allowed; box-shadow: none; }
+.customer-stock-workbench .crm-btn:focus-visible,
+.erp-ui.customer-workbench .customer-workbench-top-buttons .crm-btn:focus-visible { outline: 2px solid #185fa5; outline-offset: 2px; }
+.customer-stock-workbench .crm-btn svg { width: 15px; height: 15px; flex: 0 0 auto; }
+.customer-stock-workbench > .customer-detail-meta { margin: 8px 0 0; font-size: 12px; }
+.customer-stock-workbench .customer-channel-inventory { margin-top: 10px; }
+.customer-channel-inventory > .ci-toolbar { gap: 8px; margin-bottom: 10px; padding: 10px 12px; border: 1px solid #e7edf4; border-radius: 6px; background: #f8fafc; }
+.customer-channel-inventory > .ci-toolbar input,
+.customer-channel-inventory > .ci-toolbar select,
+.customer-channel-inventory > .ci-toolbar .ci-button { box-sizing: border-box; height: 34px !important; min-height: 34px !important; font-size: 13px; }
+.customer-channel-inventory > .ci-toolbar .ci-toolbar-search { flex: 1 1 190px; max-width: 280px; }
+.customer-channel-inventory > .ci-toolbar .ci-brand-input { flex: 1 1 130px; max-width: 190px; }
+.customer-channel-inventory > .ci-toolbar .ci-customer-batch-filter { width: min(250px, 100%); }
+.customer-channel-inventory .ci-filter-count { font-size: 12px; white-space: nowrap; color: #64748b; }
+.customer-channel-inventory .ci-tablewrap { border: 1px solid #e2e8f0; border-radius: 6px; }
+.customer-channel-inventory .ci-table thead th { height: 38px; padding-top: 8px; padding-bottom: 8px; background: #f5f7fa; color: #475569; font-size: 12px; }
+.customer-channel-inventory .ci-table tbody > tr:not(.ci-customer-edit-row) > td:not(.ci-empty) { padding-top: 10px; padding-bottom: 10px; }
+.customer-channel-inventory .ci-row-actions > .ci-inline-link { display: inline-flex; align-items: center; justify-content: center; min-height: 28px; padding: 2px 7px; border: 1px solid #dbe3ed; border-radius: 5px; background: #fff; font-size: 12px; cursor: pointer; text-decoration: none; }
+.customer-channel-inventory .ci-row-actions > .ci-inline-link:not(:disabled):hover { border-color: #185fa5; background: #f4f8fd; }
+.customer-channel-inventory .ci-row-actions > .ci-inline-link:disabled { cursor: not-allowed; background: #f8fafc; }
+.customer-channel-inventory .customer-stock-empty-cell { padding: 0 !important; height: 112px; }
+.customer-channel-inventory .customer-stock-empty { display: flex; align-items: center; justify-content: center; gap: 14px; box-sizing: border-box; min-height: 112px; padding: 16px 20px; text-align: left; color: #64748b; }
+.customer-channel-inventory .customer-stock-empty svg { width: 44px; height: 44px; flex: 0 0 auto; color: #7697bb; background: #eef4fb; padding: 8px; border-radius: 10px; box-sizing: border-box; }
+.customer-channel-inventory .customer-stock-empty strong { display: block; color: #334155; font-size: 14px; line-height: 22px; font-weight: 600; }
+.customer-channel-inventory .customer-stock-empty p { margin: 4px 0 0; font-size: 12px; line-height: 20px; }
+.customer-channel-inventory .ci-pagination { margin-top: 10px; gap: 8px; font-size: 12px; color: #64748b; }
+@media (max-width: 680px) {
+  .erp-ui.customer-workbench .customer-stock-workbench { padding: 10px; }
+  .customer-stock-workbench .customer-stock-heading-actions { margin-left: auto; }
+  .customer-channel-inventory > .ci-toolbar { padding: 8px; }
+  .customer-channel-inventory > .ci-toolbar .ci-toolbar-search,
+  .customer-channel-inventory > .ci-toolbar .ci-brand-input { max-width: none; }
+  .customer-channel-inventory .customer-stock-empty { justify-content: flex-start; padding: 16px; }
+}

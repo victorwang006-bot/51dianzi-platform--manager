@@ -152,22 +152,23 @@ describe("customer-bound channel inventory", () => {
     expect(host.textContent).not.toContain("SAME-MODEL"); await click("刷新库存");
     expect(host.textContent).toContain("SAME-MODEL"); expect(runtime.query.mock.calls.every(([input]) => input.customerId === 801 && !input.channelId)).toBe(true);
   });
-  it("renders no explanation or placeholder for zero bindings and retains bound-channel no-results after refresh", async () => {
+  it("renders a compact empty row only for confirmed empty results and retains scoped refresh", async () => {
     runtime.query.mockImplementation(input => Promise.resolve(result(input, [], 0, 0))); await render();
     expect(host.textContent).not.toContain("当前没有可读取的已确认渠道库存。可能尚未绑定、暂无活动库存或当前来源权限不足；请核对权限和库存表，在渠道设置中人工选择并确认供货渠道。不能按公司名或需求型号自动关联。");
     expect(host.textContent).not.toContain("人工选择并确认"); expect(host.textContent).not.toContain("不能按公司名或需求型号自动关联");
     expect(host.textContent).not.toContain("暂无活动库存或当前来源权限不足");
     expect(host.textContent).not.toContain("尚无已确认的供货渠道绑定");
     expect(host.textContent).not.toContain("SAME-MODEL"); expect(host.textContent).not.toContain("暂无库存");
-    expect(host.querySelector("tbody")?.children).toHaveLength(0);
-    expect(host.querySelector("tbody")?.textContent).toBe(""); expect(host.querySelector("tbody .ci-empty")).toBeNull();
+    expect(host.querySelector("tbody")?.children).toHaveLength(1);
+    expect(host.querySelector("tbody .customer-stock-empty")?.textContent).toContain("暂无客户库存");
+    expect(host.querySelector("tbody .customer-stock-empty")?.getAttribute("role")).toBe("status");
     expect(host.textContent).toContain("共 0 条");
     expect(host.querySelectorAll("th")).toHaveLength(10);
     expect(button("搜索").disabled).toBe(false); expect(button("刷新库存").disabled).toBe(false);
     expect(runtime.query).toHaveBeenCalledTimes(1);
     expect(runtime.query.mock.calls[0][0]).toMatchObject({ customerId: 801, expectedEnterpriseId: 31, expectedActorUserId: 7 });
     runtime.query.mockImplementation(input => Promise.resolve(result(input, [], 0, 2))); await click("刷新库存");
-    expect(host.textContent).toContain("已确认绑定渠道暂无符合筛选条件");
+    expect(host.textContent).toContain("暂无符合当前条件的库存");
     expect(host.textContent).not.toContain("尚无已确认的供货渠道绑定");
     expect(host.textContent).not.toContain("SAME-MODEL"); expect(host.querySelectorAll("tbody tr")).toHaveLength(1);
     expect(host.textContent).toContain("共 0 条");
@@ -226,7 +227,7 @@ it("keeps inventory query/proof guards and all non-zero-binding status branches 
   const source = readFileSync("client/src/business/platform/client/src/components/customers/CustomerChannelInventory.tsx", "utf8");
   expect(source).not.toContain('<p className="ci-readonly">');
   expect(source).not.toContain("当前没有可读取的已确认渠道库存。");
-  expect(source).toContain("result.bindingCount === 0 ? null : !rows.length ? <tr>");
+  expect(source).toContain('!rows.length ? <tr><td colSpan={10} className="ci-empty customer-stock-empty-cell"');
   expect(source).toContain("if (!readable) return;");
   expect(source).toContain("utils.client.channelInventory.listTeamMaterials.query(input, { signal: controller.signal })");
   expect(source).toContain("verifiedCustomerInventory(value, input, props.customerVersion)");
@@ -234,7 +235,7 @@ it("keeps inventory query/proof guards and all non-zero-binding status branches 
   expect(source).toContain("result.bindingCount === 0 && (result.total !== 0 || result.items.length !== 0)");
   expect(source).toContain("正在核验客户库存读取权限…"); expect(source).toContain("正在读取客户渠道库存…");
   expect(source).toContain('className="ci-empty ci-host-error" role="alert">{error}');
-  expect(source).toContain("客户库存范围尚未确认。"); expect(source).toContain("已确认绑定渠道暂无符合筛选条件的库存。");
+  expect(source).toContain("客户库存范围尚未确认。"); expect(source).toContain("暂无符合当前条件的库存");
   expect(source).toContain('disabled={!readable || editBusy || retryLocked || deleteLocked}>搜索');
   expect(source).toContain('disabled={!readable || editBusy || retryLocked || deleteLocked} onClick={() => void refresh()}>刷新库存');
 });

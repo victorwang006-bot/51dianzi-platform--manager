@@ -31,7 +31,8 @@ import { createCustomerSupplyService } from "../client/src/business/platform/fro
 import { createChannelTeamInventoryService } from "../client/src/business/platform/front-router-types/server/services/channelTeamInventory";
 import { createChannelInventorySourceService } from "../client/src/business/platform/front-router-types/server/services/channelInventorySource";
 import { createChannelInventoryCollaborationService } from "../client/src/business/platform/front-router-types/server/services/channelInventoryCollaboration";
-import { ChannelInventoryError, channelInventoryPayloadHash, type ChannelInventoryScope, type SqlDatabase, type SqlExecutor, type RegisterTeamRecord } from "../client/src/business/platform/front-router-types/server/services/channelInventory";
+import { ChannelInventoryError, channelInventoryPayloadHash, resolveChannelInventoryAuthority, type ChannelInventoryScope, type SqlDatabase, type SqlExecutor, type RegisterTeamRecord } from "../client/src/business/platform/front-router-types/server/services/channelInventory";
+import { currentReadExecutor } from "../client/src/business/platform/front-router-types/server/services/customerSupplyCompany";
 
 const { DatabaseSync } = createRequire(import.meta.url)("node:sqlite") as typeof import("node:sqlite");
 const dialect = new MySqlDialect();
@@ -132,7 +133,13 @@ afterEach(() => sqlite.close());
 const prepare = () => service.createCustomerUploadBatch(scope, batchInput);
 const readContext = (s = scope, input = contextInput) => service.customerSupplyContext(s, input);
 const emptyProofs = () => queries.filter(q => q.sql.includes("upload_material.channel_id = c.id"));
+const boundPreparations = () => queries.filter(q => q.sql.includes("FROM channel_inventory_channels c INNER JOIN crm_customer_supply_channels upload_link") && !q.sql.includes("upload_material"));
 const materialInserts = () => queries.filter(q => /^\s*INSERT INTO channel_inventory_materials\s/.test(q.sql));
+const hiddenHistory = async (batchId: number) => {
+  const row = await service.createCustomerMaterial(scope, rowInput(batchId));
+  sqlite.prepare("INSERT INTO channel_inventory_material_management VALUES (1,?, '2026-11-15')").run(row.item.id);
+  return row;
+};
 
 describe("customer supply empty-channel preparation (offline native services)", () => {
   it("first real batch -> empty context -> first real material, same inventory id with no copy", async () => {
@@ -142,6 +149,7 @@ describe("customer supply empty-channel preparation (offline native services)", 
     expect(count("channel_inventory_upload_batches")).toBe(1); expect(count("channel_inventory_materials")).toBe(0);
     const beforeRead = queries.length;
     expect(await readContext()).toMatchObject({ channel: { id: batch.channelId, name: "客户甲（当前CRM）", type: "trade", active: true, revision: 1 }, canUpload: true, disabledReason: null });
+    expect(boundPreparations()).toHaveLength(0); // an empty proof succeeds without the bound-history path
     const summary = await service.customerSupplySummary(scope, { ...expected, customerIds: [1] });
     expect(summary).toEqual({ items: [{ customerId: 1, channelId: null, materialCount: 0, canUpload: true, canViewStock: false, disabledReason: null }], canWrite: true });
     expect(queries.slice(beforeRead).every(q => q.sql.trimStart().startsWith("SELECT"))).toBe(true);
@@ -187,24 +195,78 @@ describe("customer supply empty-channel preparation (offline native services)", 
     expect(await readContext()).toMatchObject({ channel: { id: 55, name: "客户甲（当前CRM）", revision: 4 }, canUpload: true });
     expect(batch.channelId).toBe(55); expect(count("channel_inventory_channels")).toBe(1); expect(materialInserts()).toHaveLength(0);
   });
-  it.each(["source-hidden", "soft-deleted", "foreign-material-owner", "foreign-material-enterprise"])("any raw material prevents empty fallback even if %s", async variant => {
+  it.each(["source-hidden", "soft-deleted", "foreign-material-owner", "foreign-material-enterprise"])("%s raw history fails the empty proof but permits only own bound-channel uploads", async variant => {
     const batch = await prepare();
     const created = await service.createCustomerMaterial(scope, rowInput(batch.id));
     sqlite.exec("UPDATE enterprise_team_record_assignments SET createdByUserId=20 WHERE recordType='channel_material'");
     if (variant === "soft-deleted") sqlite.prepare("INSERT INTO channel_inventory_material_management VALUES (1,?, '2026-11-15')").run(created.item.id);
     if (variant === "foreign-material-owner") sqlite.exec("UPDATE channel_inventory_materials SET responsible_user_id=20");
     if (variant === "foreign-material-enterprise") sqlite.exec("UPDATE channel_inventory_materials SET enterprise_id=2,data_owner_user_id=199");
-    expect(await readContext()).toMatchObject({ channel: null, canUpload: false, disabledReason: sourceReadReason });
+    const beforeMaterial = sqlite.prepare("SELECT * FROM channel_inventory_materials WHERE id=?").get(created.item.id);
+    const beforeSource = sourceRows(); const beforeLink = linkRows(); queries = [];
+    expect(await readContext()).toMatchObject({ channel: { id: batch.channelId, name: "客户甲（当前CRM）", industryCode: "automotive" }, canUpload: true, disabledReason: null });
     const proof = emptyProofs().at(-1)!;
     const rawClause = proof.sql.slice(proof.sql.indexOf("AND NOT EXISTS (SELECT 1 FROM channel_inventory_materials upload_material"));
     expect(rawClause).toContain("upload_material.channel_id = c.id FOR UPDATE");
     expect(rawClause).not.toMatch(/deleted|source|share|responsible|enterprise|data_owner/);
+    expect(sqlite.prepare(proof.sql.replace(/\s+FOR UPDATE\b/g, "")).all(...proof.params as never[])).toEqual([]);
+    expect(boundPreparations()).toHaveLength(1);
+    expect(boundPreparations()[0].sql).not.toMatch(/channel_inventory_materials|contact_name|phone|wechat|qq|notes|c\.name|c\.industryCode/);
+    expect(boundPreparations()[0].sql).toContain("c.revision >= 1");
+    expect(boundPreparations()[0].sql).toContain("FOR UPDATE");
+    expect((await service.customerSupplySummary(scope, { ...expected, customerIds: [1] })).items[0]).toMatchObject({ materialCount: 0, canViewStock: false, canUpload: true });
     if (variant === "source-hidden") {
       const global = await createChannelTeamInventoryService({ getDb: async () => db }).listTeamMaterials(scope, { page: 1, pageSize: 20 });
       expect(global.items).toHaveLength(1); expect(global.items[0]).toMatchObject({ id: created.item.id, canViewSource: false, canEditMaterial: false, company: null });
       await expect(createChannelInventorySourceService({ getDb: async () => db }).getTeamMaterialSource(scope, { materialId: created.item.id })).rejects.toMatchObject({ code: "FORBIDDEN" });
       await expect(createChannelInventoryCollaborationService({ getDb: async () => db }).getTeamMaterialForEdit(scope, { id: created.item.id })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    } else {
+      await expect(createChannelInventorySourceService({ getDb: async () => db }).getTeamMaterialSource(scope, { materialId: created.item.id })).rejects.toMatchObject({ code: expect.stringMatching(/FORBIDDEN|NOT_FOUND/) });
+      await expect(createChannelInventoryCollaborationService({ getDb: async () => db }).getTeamMaterialForEdit(scope, { id: created.item.id })).rejects.toMatchObject({ code: "NOT_FOUND" });
     }
+    const nextBatch = await service.createCustomerUploadBatch(scope, { ...batchInput, requestId: "44444444-4444-4444-8444-444444444444" });
+    const next = await service.createCustomerMaterial(scope, { ...rowInput(nextBatch.id), requestId: "33333333-3333-4333-8333-333333333333" });
+    expect(next.channelId).toBe(batch.channelId); expect(next.item.id).not.toBe(created.item.id);
+    expect(sourceRows()).toEqual(beforeSource); expect(linkRows()).toEqual(beforeLink);
+    expect(sqlite.prepare("SELECT * FROM channel_inventory_materials WHERE id=?").get(created.item.id)).toEqual(beforeMaterial);
+    expect(count("channel_inventory_materials")).toBe(2);
+  });
+  it("275 fully soft-deleted real materials allow a new batch and resumed row UUID without restoring history or changing channel/link", async () => {
+    const oldBatch = await service.createCustomerUploadBatch(scope, { ...batchInput, totalRows: 275 });
+    for (let index = 0; index < 275; index++) {
+      await service.createCustomerMaterial(scope, { ...rowInput(oldBatch.id), requestId: `55555555-5555-4555-8555-${String(index + 1).padStart(12, "0")}` });
+    }
+    sqlite.exec("INSERT INTO channel_inventory_material_management SELECT enterprise_id,id,'2026-11-15' FROM channel_inventory_materials; UPDATE channel_inventory_channels SET name='OLD PRIVATE SOURCE',contact_name='OLD SOURCE CONTACT',phone='OLD SOURCE PHONE',wechat='OLD WECHAT',qq='OLD QQ',notes='OLD NOTES'");
+    const oldMaterials = sqlite.prepare("SELECT * FROM channel_inventory_materials ORDER BY id").all();
+    const oldManagement = sqlite.prepare("SELECT * FROM channel_inventory_material_management ORDER BY material_id").all();
+    const beforeSource = sourceRows(); const beforeLink = linkRows(); queries = [];
+    service = newService();
+    expect(await readContext()).toMatchObject({ channel: { id: oldBatch.channelId, name: "客户甲（当前CRM）", industryCode: "automotive", type: "trade", active: true, revision: 1 }, canUpload: true, disabledReason: null });
+    expect(boundPreparations()).toHaveLength(1);
+    expect(await service.customerSupplySummary(scope, { ...expected, customerIds: [1] })).toEqual({ items: [{ customerId: 1, channelId: null, materialCount: 0, canUpload: true, canViewStock: false, disabledReason: null }], canWrite: true });
+    expect(queries.every(q => q.sql.trimStart().startsWith("SELECT"))).toBe(true);
+    expect(boundPreparations().every(q => !/channel_inventory_materials|contact_name|phone|wechat|qq|notes|c\.name|c\.industryCode/.test(q.sql))).toBe(true);
+    const input = { ...batchInput, requestId: "66666666-6666-4666-8666-666666666666", fileName: "after-275-deleted.xlsx", expectedChannelId: oldBatch.channelId, expectedChannelRevision: 1 };
+    const batch = await service.createCustomerUploadBatch(scope, input);
+    expect(batch.channelId).toBe(oldBatch.channelId); expect(batch.id).not.toBe(oldBatch.id);
+    service = newService(); expect(await service.createCustomerUploadBatch(scope, input)).toEqual(batch);
+    const request = { ...rowInput(batch.id), requestId: "77777777-7777-4777-8777-777777777777" };
+    failSql = /INSERT INTO channel_inventory_upload_batch_materials/;
+    await expect(service.createCustomerMaterial(scope, request)).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+    expect(count("channel_inventory_materials")).toBe(275); expect(rollbacks).toBe(1);
+    failSql = null; service = newService();
+    const created = await service.createCustomerMaterial(scope, request);
+    service = newService(); const replay = await service.createCustomerMaterial(scope, request);
+    expect(replay).toMatchObject({ item: { id: created.item.id }, channelId: oldBatch.channelId, idempotent: true });
+    await expect(service.createCustomerMaterial(scope, { ...request, qty: 1 })).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(count("channel_inventory_materials")).toBe(276); expect(count("channel_inventory_upload_batches")).toBe(2);
+    expect(sqlite.prepare("SELECT * FROM channel_inventory_materials WHERE id<>? ORDER BY id").all(created.item.id)).toEqual(oldMaterials);
+    expect(sqlite.prepare("SELECT * FROM channel_inventory_material_management ORDER BY material_id").all()).toEqual(oldManagement);
+    expect(oldManagement).toHaveLength(275); expect(oldManagement.every(row => row.deleted_at != null)).toBe(true);
+    expect(sourceRows()).toEqual(beforeSource); expect(linkRows()).toEqual(beforeLink); noCustomerOrChannelUpdates();
+    expect(queries.some(q => /^\s*(UPDATE|DELETE)\s+(FROM\s+)?channel_inventory_material(?:s|_management)\b/.test(q.sql))).toBe(false);
+    const listed = await createChannelTeamInventoryService({ getDb: async () => db }).listTeamMaterials(scope, { customerId: 1, page: 1, pageSize: 20 });
+    expect(listed.items.map(row => row.id)).toEqual([created.item.id]);
   });
   it.each([
     ["CRM write", "UPDATE enterprise_member_module_access SET writeAllowed=0 WHERE module='customers'"],
@@ -224,19 +286,22 @@ describe("customer supply empty-channel preparation (offline native services)", 
     ["no team", "DELETE FROM enterprise_team_members WHERE userId=10"],
     ["ambiguous teams", "INSERT INTO enterprise_team_members VALUES (13,1,8,10,'member')"],
     ["invalid channel revision", "UPDATE channel_inventory_channels SET revision=0"],
-  ])("empty binding refuses %s; no source reason or channel is accidentally enabled", async (_name, mutation) => {
-    await prepare(); sqlite.exec(mutation); queries = [];
+  ].flatMap(([name, mutation]) => ["empty", "hidden-history"].map(history => [history, name, mutation])))("%s binding refuses %s; no source reason or channel is accidentally enabled", async (history, _name, mutation) => {
+    const batch = await prepare(); if (history === "hidden-history") await hiddenHistory(batch.id);
+    sqlite.exec(mutation); queries = [];
     expect(await readContext()).toMatchObject({ channel: null, canUpload: false, disabledReason: sourceReadReason });
-    expect(materialInserts()).toHaveLength(0); expect(count("channel_inventory_materials")).toBe(0);
+    expect(materialInserts()).toHaveLength(0); expect(count("channel_inventory_materials")).toBe(history === "hidden-history" ? 1 : 0);
+    expect(boundPreparations()).toHaveLength(_name === "invalid channel revision" ? 1 : 0);
     if (_name !== "invalid channel revision") expect(emptyProofs()).toHaveLength(0);
   });
   it.each([
     ["name", "UPDATE crm_customers SET name=' ' WHERE id=1", "请先在客户档案补全公司名称"],
     ["industry", "UPDATE crm_customers SET industryCode='invalid' WHERE id=1", "请先完善客户所属行业"],
     ["archived", "UPDATE crm_customers SET archivedAt='2026-11-15' WHERE id=1", "客户已归档，不能上传供应库存"],
-  ])("completion %s stays disabled and never reaches the empty proof", async (_name, mutation, reason) => {
-    await prepare(); sqlite.exec(mutation); queries = [];
-    expect(await readContext()).toMatchObject({ channel: null, canUpload: false, disabledReason: reason }); expect(emptyProofs()).toHaveLength(0);
+  ].flatMap(([name, mutation, reason]) => ["empty", "hidden-history"].map(history => [history, name, mutation, reason])))("%s completion %s stays disabled and never reaches either preparation", async (history, _name, mutation, reason) => {
+    const batch = await prepare(); if (history === "hidden-history") await hiddenHistory(batch.id);
+    sqlite.exec(mutation); queries = [];
+    expect(await readContext()).toMatchObject({ channel: null, canUpload: false, disabledReason: reason }); expect(emptyProofs()).toHaveLength(0); expect(boundPreparations()).toHaveLength(0);
   });
   it.each([
     "UPDATE crm_customers SET assignedUserId=20 WHERE id=1",
@@ -245,15 +310,17 @@ describe("customer supply empty-channel preparation (offline native services)", 
     "UPDATE users SET loginDisabled=1 WHERE id=10",
     "UPDATE enterprise_members SET status='suspended' WHERE userId=10",
     "UPDATE enterprises SET crmDataOwnerUserId=199 WHERE id=1",
-  ])("current CRM/actor/dataOwner denial fails closed before preparation: %s", async mutation => {
-    await prepare(); sqlite.exec(mutation); queries = [];
-    await expect(readContext()).rejects.toMatchObject({ code: expect.stringMatching(/FORBIDDEN|NOT_FOUND/) }); expect(emptyProofs()).toHaveLength(0);
+  ].flatMap(mutation => ["empty", "hidden-history"].map(history => [history, mutation])))("%s current CRM/actor/dataOwner denial fails closed before preparation: %s", async (history, mutation) => {
+    const batch = await prepare(); if (history === "hidden-history") await hiddenHistory(batch.id);
+    sqlite.exec(mutation); queries = [];
+    await expect(readContext()).rejects.toMatchObject({ code: expect.stringMatching(/FORBIDDEN|NOT_FOUND/) }); expect(emptyProofs()).toHaveLength(0); expect(boundPreparations()).toHaveLength(0);
   });
-  it.each(["customerId=2", "inventoryResponsibleUserId=20", "enterpriseId=2", "dataOwnerUserId=199"])("another binding %s is not used, treated only as genuinely unbound", async replacement => {
-    const batch = await prepare(); sqlite.exec(`UPDATE crm_customer_supply_channels SET ${replacement}`); queries = [];
-    expect(await readContext()).toMatchObject({ channel: null, canUpload: true }); expect(emptyProofs()).toHaveLength(0);
+  it.each(["customerId=2", "inventoryResponsibleUserId=20", "enterpriseId=2", "dataOwnerUserId=199"].flatMap(replacement => ["empty", "hidden-history"].map(history => [history, replacement])))("%s another binding %s is not used, treated only as genuinely unbound", async (history, replacement) => {
+    const batch = await prepare(); if (history === "hidden-history") await hiddenHistory(batch.id);
+    sqlite.exec(`UPDATE crm_customer_supply_channels SET ${replacement}`); queries = [];
+    expect(await readContext()).toMatchObject({ channel: null, canUpload: true }); expect(emptyProofs()).toHaveLength(0); expect(boundPreparations()).toHaveLength(0);
     await expect(service.createCustomerMaterial(scope, rowInput(batch.id))).rejects.toMatchObject({ code: "FORBIDDEN" });
-    expect(count("channel_inventory_materials")).toBe(0);
+    expect(count("channel_inventory_materials")).toBe(history === "hidden-history" ? 1 : 0);
     expect(count("channel_inventory_channels")).toBe(1); expect(count("crm_customer_supply_channels")).toBe(1);
     expect(rollbacks).toBe(1); // newly attempted other source joins the failed row transaction
   });
@@ -265,6 +332,45 @@ describe("customer supply empty-channel preparation (offline native services)", 
       return execute(q);
     };
     expect(await readContext()).toMatchObject({ channel: null, canUpload: false, disabledReason: sourceReadReason });
+  });
+  it.each([
+    "UPDATE crm_customer_supply_channels SET customerId=2",
+    "UPDATE crm_customer_supply_channels SET inventoryResponsibleUserId=20",
+    "UPDATE crm_customer_supply_channels SET enterpriseId=2",
+    "UPDATE crm_customer_supply_channels SET dataOwnerUserId=199",
+    "UPDATE crm_customer_supply_channels SET channelId=999",
+    "UPDATE channel_inventory_channels SET active=0",
+    "UPDATE channel_inventory_channels SET revision=0",
+    "UPDATE channel_inventory_channels SET enterprise_id=2",
+    "UPDATE channel_inventory_channels SET data_owner_user_id=199",
+    "UPDATE channel_inventory_channels SET responsible_user_id=20",
+  ])("own bound preparation SQL revalidates changed current binding/channel: %s", async mutation => {
+    const batch = await prepare(); await hiddenHistory(batch.id); queries = [];
+    const execute = tx.execute;
+    tx.execute = async q => {
+      const compiled = dialect.sqlToQuery(q);
+      if (compiled.sql.includes("FROM channel_inventory_channels c INNER JOIN crm_customer_supply_channels upload_link") && !compiled.sql.includes("upload_material")) sqlite.exec(mutation);
+      return execute(q);
+    };
+    expect(await readContext()).toMatchObject({ channel: null, canUpload: false, disabledReason: sourceReadReason });
+    expect(emptyProofs()).toHaveLength(1); expect(boundPreparations()).toHaveLength(1); expect(materialInserts()).toHaveLength(0);
+  });
+  it.each([
+    "UPDATE enterprise_member_module_access SET writeAllowed=0 WHERE module='stocks'",
+    "UPDATE enterprise_team_record_assignments SET currentOwnerUserId=20 WHERE recordType='channel'",
+    "UPDATE enterprise_team_record_assignments SET teamId=8 WHERE recordType='channel'",
+    "UPDATE enterprise_team_record_assignments SET revision=0 WHERE recordType='channel'",
+    "DELETE FROM enterprise_team_members WHERE userId=10",
+  ])("own bound preparation repeats the current write fence after an unsuccessful empty proof: %s", async mutation => {
+    const batch = await prepare(); await hiddenHistory(batch.id); queries = [];
+    const execute = tx.execute;
+    tx.execute = async q => {
+      const compiled = dialect.sqlToQuery(q); const result = await execute(q);
+      if (compiled.sql.includes("upload_material.channel_id = c.id")) sqlite.exec(mutation);
+      return result;
+    };
+    expect(await readContext()).toMatchObject({ channel: null, canUpload: false, disabledReason: sourceReadReason });
+    expect(emptyProofs()).toHaveLength(1); expect(boundPreparations()).toHaveLength(0); expect(materialInserts()).toHaveLength(0);
   });
   it.each(["read", "write", "inventoryScopeWrite", "customerScopeRead"])("official %s revoke cannot acquire empty preparation", async permission => {
     await prepare(); queries = [];
@@ -279,8 +385,25 @@ describe("customer supply empty-channel preparation (offline native services)", 
     expect(await readContext(official)).toMatchObject({ channel: { id: batch.channelId }, canUpload: true });
     expect((await service.customerSupplySummary(official, { ...expected, customerIds: [1] })).items[0]).toMatchObject({ channelId: null, materialCount: 0, canViewStock: false, canUpload: true });
   });
-  it("customer CAS, channel assignment revision, expected binding, source type and batch ownership stay original fences", async () => {
-    const batch = await prepare(); const request = rowInput(batch.id);
+  it.each(["read", "write", "inventoryScopeWrite"].flatMap(permission => [false, undefined].map(value => [permission, value] as const)))("native ownBoundUploadChannel rejects official %s=%s before SQL, without emulating nonempty JSON", async (permission, value) => {
+    const batch = await prepare(); await hiddenHistory(batch.id); queries = [];
+    const path = new URL("../client/src/business/platform/front-router-types/server/services/customerSupply.ts", import.meta.url);
+    const source = ts.createSourceFile(path.pathname, readFileSync(path, "utf8"), ts.ScriptTarget.Latest, true);
+    const declarations = source.statements.filter(node =>
+      (ts.isFunctionDeclaration(node) && ["writeFence", "ownBoundUploadChannel"].includes(node.name?.text ?? ""))
+      || (ts.isVariableStatement(node) && node.declarationList.declarations.some(declaration => ["rows", "fail"].includes(declaration.name.getText(source)))));
+    expect(declarations).toHaveLength(4);
+    const code = ts.transpileModule(declarations.map(node => node.getText(source)).join("\n"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+    // Execute checked-in private declarations with their real dependencies. No
+    // replacement policy, fabricated JSON result or end-to-end official claim.
+    const native = new Function("sql", "ChannelInventoryError", "resolveChannelInventoryAuthority", "currentReadExecutor", `${code}; return ownBoundUploadChannel;`)(await import("drizzle-orm").then(module => module.sql), ChannelInventoryError, resolveChannelInventoryAuthority, currentReadExecutor);
+    const official: ChannelInventoryScope = { ...scope, officialActor: { adminAccountId: 303, bindingVersion: 7, requestId: "signed-test-request", inventoryPermissions: { read: true, write: true, note: false, inventoryScopeWrite: true, customerScopeRead: true, authorizationVersion: "offline-v1", [permission]: value } } };
+    await expect(native(tx, official, 1, batch.channelId)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(queries).toHaveLength(0); expect(count("channel_inventory_materials")).toBe(1);
+  });
+  it.each(["empty", "hidden-history"])("%s customer CAS, channel assignment revision, expected binding, source type and batch ownership stay original fences", async history => {
+    const batch = await prepare(); if (history === "hidden-history") await hiddenHistory(batch.id);
+    const request = { ...rowInput(batch.id), ...(history === "hidden-history" ? { requestId: "33333333-3333-4333-8333-333333333333" } : {}) }; queries = [];
     sqlite.exec("UPDATE crm_customers SET version=4 WHERE id=1");
     expect(await readContext()).toMatchObject({ customer: { version: 4 }, canUpload: true });
     await expect(service.createCustomerMaterial(scope, request)).rejects.toMatchObject({ code: "CONFLICT" });
@@ -293,7 +416,7 @@ describe("customer supply empty-channel preparation (offline native services)", 
       await expect(service.createCustomerMaterial(scope, request)).rejects.toMatchObject({ code: expect.stringMatching(/FORBIDDEN|CONFLICT/) });
       sqlite.exec(`UPDATE channel_inventory_upload_batches SET uploaded_by_user_id=10,channel_id=${batch.channelId},team_id=7,owner_membership_id=11,closed=0`);
     }
-    expect(materialInserts()).toHaveLength(0); expect(count("channel_inventory_materials")).toBe(0);
+    expect(materialInserts()).toHaveLength(0); expect(count("channel_inventory_materials")).toBe(history === "hidden-history" ? 1 : 0);
   });
   it("input identity guard and unavailable empty-proof SQL never silently enable upload", async () => {
     await prepare();
@@ -301,9 +424,20 @@ describe("customer supply empty-channel preparation (offline native services)", 
     failSql = /upload_material.channel_id = c.id/;
     await expect(readContext()).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
   });
-  it("minimal source AST contains one helper and one insertion after original policy/writeFence", () => {
+  it("unavailable own bound preparation SQL never silently enables upload", async () => {
+    const batch = await prepare(); await hiddenHistory(batch.id);
+    const execute = tx.execute;
+    tx.execute = q => {
+      const compiled = dialect.sqlToQuery(q);
+      if (compiled.sql.includes("FROM channel_inventory_channels c INNER JOIN crm_customer_supply_channels upload_link") && !compiled.sql.includes("upload_material")) throw new ChannelInventoryError("INTERNAL_SERVER_ERROR", "unavailable own bound preparation");
+      return execute(q);
+    };
+    await expect(readContext()).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+  });
+  it("minimal source AST preserves the empty helper and all original policy/write/source/summary/create paths", async () => {
     const path = new URL("../client/src/business/platform/front-router-types/server/services/customerSupply.ts", import.meta.url);
-    const source = ts.createSourceFile(path.pathname, readFileSync(path, "utf8"), ts.ScriptTarget.Latest, true);
+    const text = readFileSync(path, "utf8");
+    const source = ts.createSourceFile(path.pathname, text, ts.ScriptTarget.Latest, true);
     const owner = source.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === "createCustomerSupplyService") as ts.FunctionDeclaration;
     const context = owner.body!.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === "context") as ts.FunctionDeclaration;
     const originalTry = context.body!.statements.filter(ts.isTryStatement).at(-1)!;
@@ -312,6 +446,15 @@ describe("customer supply empty-channel preparation (offline native services)", 
     expect(originalTry.tryBlock.statements[1].getText(source)).toBe("await writeFence(tx, scope, link ? Number(link.channelId) : undefined);");
     expect(originalTry.tryBlock.statements[2].getText(source)).toContain("ownEmptyUploadChannel");
     expect(source.statements.filter(n => ts.isFunctionDeclaration(n) && n.name?.text === "ownEmptyUploadChannel")).toHaveLength(1);
+    expect(source.statements.filter(n => ts.isFunctionDeclaration(n) && n.name?.text === "ownBoundUploadChannel")).toHaveLength(1);
+    expect(originalTry.tryBlock.statements[2].getText(source)).toContain("link && channel === null && completion(c) === null");
+    expect(originalTry.tryBlock.statements[2].getText(source)).toContain("await ownEmptyUploadChannel(tx, scope, input.customerId, Number(link.channelId)) ?? await ownBoundUploadChannel(tx, scope, input.customerId, Number(link.channelId))");
+    const helper = source.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === "ownBoundUploadChannel")!;
+    const restored = (text.slice(0, helper.getFullStart()) + text.slice(helper.end))
+      .replace(" ?? await ownBoundUploadChannel(tx, scope, input.customerId, Number(link.channelId))", "");
+    // Full-file SHA before this change: stronger than normalized AST comparison.
+    const { createHash } = await import("node:crypto");
+    expect(createHash("sha256").update(restored).digest("hex")).toBe("da51adc27d1e10fd5e12bcac611e3faf5f6e85a15b106aab09f26eee98bdefa2");
     expect(commits).toBe(0);
   });
 });

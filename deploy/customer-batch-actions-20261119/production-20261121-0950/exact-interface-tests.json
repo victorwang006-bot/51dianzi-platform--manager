@@ -1,0 +1,14 @@
+{
+  "status": "FOUR_LOCAL_NEW_SCOPE_CONTRACTS_PASSED",
+  "directorySizeAndTimesProjectionOnly": true,
+  "rawObservedDirectoryRecordsUnmodified": true,
+  "directoryInodeDriftRejected": true,
+  "fileMetadataDriftRejected": true,
+  "symlinkMetadataDriftRejected": true,
+  "explicit598Static82Aliases1050ExactProofReused": true,
+  "businessTestsRerun": false,
+  "productionOperations": 0,
+  "actualPreviousCaptureComposedProjectionPassed": true,
+  "singleRootNoDoubleProjection": true,
+  "allControllerMethodAstStillExact": true
+}

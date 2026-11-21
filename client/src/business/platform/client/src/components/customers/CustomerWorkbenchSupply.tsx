@@ -113,16 +113,18 @@ export function CustomerWorkbenchSupply(props: CustomerWorkbenchSupplyProps) {
   const isSessionCurrent = () => Boolean(session && lifecycle.current.mounted && lifecycle.current.allowed
     && openRef.current && lifecycle.current.key === session.key && lifecycle.current.generation === session.generation
     && (latest.current.isCurrent?.() ?? true));
-  return <section className="customer-workbench-panel">
-    <div className="flex items-center gap-2">
+  return <section className="customer-workbench-panel customer-stock-workbench">
+    <div className="customer-stock-heading">
       <h2 className="admin-section-title" style={{ margin: 0, whiteSpace: "nowrap" }}>客户渠道库存</h2>
+      <div className="customer-stock-heading-actions">
       <button type="button" className="crm-btn crm-btn-primary" aria-disabled={!canUpload} aria-describedby={uploadReason ? descriptionId : undefined}
-        onClick={openUpload}>上传库存表</button>
+        title={uploadReason || "选择库存Excel，核对后导入当前客户"} onClick={openUpload}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 16V3m-5 5 5-5 5 5M4 14v6h16v-6" /></svg>上传库存表</button>
       <button type="button" className="crm-btn" aria-disabled={!identity || !readEnabled} onClick={() => {
         if (!identity || !readEnabled || historyOpenRef.current || openRef.current) return;
         const key = sessionKey;
         act(() => { if (!lifecycle.current.mounted || lifecycle.current.key !== key || !live.current.readEnabled || !(latest.current.isCurrent?.() ?? true)) return; historyOpenRef.current = true; setHistoryKey(key); latest.current.onOpenChange?.(true); });
-      }}>上传历史</button>
+      }}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 11a9 9 0 1 1 2 7M3 4v7h7m2-4v6l4 2" /></svg>上传历史</button>
+      </div>
     </div>
     {uploadReason ? <p id={descriptionId} className="customer-detail-meta">{uploadReason}</p> : null}
     {context?.disabledReason && context.disabledReason !== uploadReason ? <p className="customer-detail-meta">{context.disabledReason}</p> : null}

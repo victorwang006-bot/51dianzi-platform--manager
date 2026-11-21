@@ -100,3 +100,12 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Compact upload chrome; review/failed-row large-table sizing remains native. */
+.customer-supply-dialog .ci-dialog-header { padding-block: 10px; border-bottom: 1px solid #e7edf4; }
+.customer-supply-dialog .ci-button { min-height: 34px !important; border-radius: 6px; font-size: 13px; }
+.customer-supply-dialog .ci-dialog-note { margin-block: 6px; font-size: 12px; line-height: 19px; }
+.customer-supply-dialog .customer-supply-method-controls { gap: 8px; }
+.customer-supply-dialog .customer-supply-single { gap: 10px; }
+.customer-supply-dialog .customer-supply-single-fields { gap: 10px; }
+.customer-supply-dialog .ci-dialog-footer { padding-top: 10px; gap: 8px; border-top: 1px solid #e7edf4; }

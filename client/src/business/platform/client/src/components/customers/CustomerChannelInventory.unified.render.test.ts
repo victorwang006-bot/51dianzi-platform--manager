@@ -159,15 +159,15 @@ describe("customer inventory uses the main Host's compact defaults", () => {
     runtime.rows = [stock({ company: null })]; await render(); expect(sourceCell().textContent).toBe("未关联客户");
     expect(host.innerHTML).not.toContain("LEGACY-CHANNEL");
   });
-  it.each(["unbound", "empty", "error", "loading", "disabled"])("aligns all nine columns for %s states without adding a new design", async state => {
+  it.each(["unbound", "empty", "error", "loading", "disabled"])("retains all native columns and confirmed compact empty states for %s", async state => {
     if (state === "unbound") { runtime.bindingCount = 0; runtime.rows = []; }
     if (state === "empty") runtime.rows = [];
     if (state === "error") runtime.list.mockRejectedValueOnce(new Error("synthetic list failure"));
     if (state === "loading") runtime.list.mockImplementationOnce(() => new Promise(() => undefined));
     await render({ enabled: state !== "disabled" });
     expect(host.querySelectorAll("thead th")).toHaveLength(10); expect(host.querySelectorAll("col")).toHaveLength(10);
-    if (state === "unbound") expect(host.querySelector("tbody")?.children).toHaveLength(0);
-    else expect(host.querySelector<HTMLTableCellElement>("tbody .ci-empty")?.colSpan).toBe(10);
+    expect(host.querySelector<HTMLTableCellElement>("tbody .ci-empty")?.colSpan).toBe(10);
+    expect(Boolean(host.querySelector(".customer-stock-empty"))).toBe(state === "unbound" || state === "empty");
     expect(runtime.lookup).not.toHaveBeenCalled();
     expect(host.querySelector('[aria-label="客户渠道库存分页"]')?.parentElement?.querySelector(".ci-tablewrap nav")).toBeFalsy();
   });

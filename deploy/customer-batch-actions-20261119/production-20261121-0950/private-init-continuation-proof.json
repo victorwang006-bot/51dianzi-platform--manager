@@ -1,0 +1,12 @@
+{
+  "status": "ZERO_ATTEMPT_PRIVATE_INIT_CONTINUATION_ONLY",
+  "originalWrapperSha256": "6dbb49e538f0a216b4fe20bfddcc22f0701218577b1e5d59eecd556ce2a95871",
+  "continuationWrapperSha256": "461b99bdb96260acf3245deb086bc9b4f449e86c610efa3364932036002bf36e",
+  "failedOutputPreserved": true,
+  "sameControllerSource": true,
+  "newReviewOrCaptureOrManifest": false,
+  "installedReviewReusedOnlyExactBytesAndModeNlink": true,
+  "receiptNoReplayUnchanged": true,
+  "originalApplyVerifyCallsUnchanged": true,
+  "timerPause": false
+}

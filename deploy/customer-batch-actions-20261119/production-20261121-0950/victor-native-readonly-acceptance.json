@@ -1,0 +1,44 @@
+{
+  "status": "ACTUAL_VICTOR_NATIVE_CONTEXT_CAN_UPLOAD_READONLY_PASSED",
+  "observedAtUtc": "2026-11-21T01:55:01.814Z",
+  "frontApiSha256": "81ed910a32f95c2a647eb48fe57ff63646d23c5b677f8fc8816b0b80abea0fd8",
+  "adminApiSha256": "14034473467f2b22f3dcf2f11624b961c4c7831d69e41bb21ac401f9bb85a120",
+  "nativeContextSha256": "dc578ad0f40ead65c9793cc69d6836c3e0bb1c2e8f812b9fe0d56e2709859e12",
+  "nativeClosureSha256": "2cdf98599d0a91fa38762a57aecdfc4d0c4e891dd240e746a39f1837575c89bc",
+  "nativeContextFunctionsStubbed": false,
+  "officialPermissionsFromActualAccountAndBusinessScope": true,
+  "officialPermissions": {
+    "read": true,
+    "write": true,
+    "customerScopeRead": true,
+    "inventoryScopeWrite": true
+  },
+  "actualAdminAccountId": 30004,
+  "actualFrontUserId": 397751,
+  "customerId": 1354,
+  "channelId": 30,
+  "canUpload": true,
+  "disabledReason": null,
+  "materialCountsBefore": {
+    "rawCount": 275,
+    "notDeletedCount": "0"
+  },
+  "materialCountsAfter": {
+    "rawCount": 275,
+    "notDeletedCount": "0"
+  },
+  "selectQueries": 131,
+  "bothTransactionsRolledBack": true,
+  "productionBusinessWrites": 0,
+  "reloads": 0,
+  "timerOperations": 0,
+  "realUserUploadPerformed": false,
+  "fullAuthenticatedHttpRouteTested": false,
+  "scopeEvidence": {
+    "actualBusinessScopeId": 1,
+    "actualBusinessScopeVersion": 3,
+    "actualEnterpriseOwner": true
+  },
+  "boundPmId": 190,
+  "boundPid": 2110270
+}

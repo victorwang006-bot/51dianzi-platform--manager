@@ -57,12 +57,13 @@ beforeEach(() => {
 afterEach(async () => { await act(async () => root.unmount()); host.remove(); });
 
 describe("customer supply entry integration without broader API reads", () => {
-  it("places the original title immediately before upload on one row without settings or placeholder actions", async () => {
+  it("keeps the original title and compact real upload/history actions without settings or placeholder actions", async () => {
     await render();
     expect(host.querySelector("h2")?.textContent).toBe("客户渠道库存");
     expect(host.textContent).not.toContain("上传库存自动归属本客户公司；与采购需求、BOM导入分开。");
-    expect(host.querySelector("h2")?.nextElementSibling).toBe(button("上传库存表"));
-    expect(host.querySelector("h2")?.parentElement?.className).toBe("flex items-center gap-2");
+    expect(host.querySelector("h2")?.nextElementSibling).toBe(button("上传库存表").parentElement);
+    expect(host.querySelector("h2")?.parentElement?.className).toBe("customer-stock-heading");
+    expect(button("上传库存表").querySelector('svg[aria-hidden="true"]')).not.toBeNull();
     expect(host.querySelector("h2")?.style.margin).toBe("0px");
     expect(host.querySelectorAll("p")).toHaveLength(0);
     expect(button("上传库存表").getAttribute("aria-disabled")).toBe("false");

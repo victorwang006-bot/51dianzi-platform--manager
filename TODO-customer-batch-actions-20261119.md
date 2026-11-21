@@ -2,7 +2,7 @@
 
 沿用现有后台、蓝色样式和原客户/账号授权。用户批准原方案，不创建新站点。与“前台任务”分工：本任务只改客户库存/上传处理，不改首页与芯片参数；独立工作目录，Git同步保留并发提交；正式发布用共享双锁与最新字节CAS，不全量dist，不覆盖前台API/资产。
 
-前列功能勾选项表示源码实现与隔离验证；最后发布项现已完成。**最新终态：2026-11-20 19:00:19真实发布／六槽reload／verified闭窗，19:08:00附加adapted只读核验，19:08:54恢复／双锁释放证明齐备。**下方较早“未上线／blocked”记录属于历史，原失败不删除。
+前列功能勾选项表示源码实现与隔离验证；最后发布项现已完成。**最新终态：2026-11-21 09:50:08紧凑客户库存工作台与Victor上传修复实际发布／六槽reload／verified持久闭窗，09:50:26原只读verify通过，09:55:01 Victor真实原生上下文canUpload=true。**本轮不暂停定时器、业务数据写入0、双锁及SSH已退出。下方11-20成功、较早“未上线／blocked”及原失败全部保留为历史。
 
 - [x] 库存工具栏新增“全部批次”，选项“11-19 14:30 · 库存.xlsx”。服务器按真实uploadBatchId及customerId同时筛选，型号/品牌继续配合，数量随批次更新。历史无批次记录不猜时间关联。
 - [x] 保留勾选物料“删除所选（N）”，未勾选隐藏；确认“删除选中的 N 条物料？”、按钮“取消｜删除”、成功“已删除”。只移除真实成功回执记录，权限/版本冲突记录保留，未知按原请求核实。
@@ -105,3 +105,20 @@ R9当前controller `2c7047701591af1ee2c21f93fe84593184ff0e6e3ed3d40ad2ee1d0f87de
 timer19:01:38实际恢复，19:01:39守护确认退出；19:08:54最后一次只读证明active/enabled/unitH原态、closed930e及receipt ae28原字节一致、双锁非阻塞取得且FD identity匹配，退出后释放、SSH关闭，本任务无遗留执行作业。后台串行占用正式释放，无追加apply/reload/pause/全机扫描。
 
 当前报告与去敏实际证据：`deploy/customer-batch-actions-20261119/production-20261120-1900/上线完成报告.md`及同目录`actual-release-summary.json`。原strict失败、历史capture/review/源码保持原件；不把原whole-machine门槛称通过，不将Git归档当上线。
+
+## 2026-11-21 客户库存紧凑改造与 Victor 上传修复（本轮已上线）
+
+用户01:18:09明确“按照此建议上线”。落地既有真实后台，不发布独立Demo替代业务后台，不重放19:00的旧apply/审批/维护时效。
+
+- [x] 修复Victor当前本人有效关联渠道在275条历史库存全部软删除后不能再次上传的问题。分离当前渠道写入准备与历史来源读取；保CRM/库存权限、实时团队归属、企业/dataOwner/负责人、active/revision/客户版本/UUID/事务，不恢复或硬删历史，不扩来源读/编辑权限，不改绑。
+- [x] 按已确认紧凑Demo仅调整客户详情顶部按钮、库存工作台及上传区域：清晰32–36px实体按钮、紧凑间距、约112px横向空状态；保真实Logo/导航、四页签、所有库存字段、原20条分页、真实上传/历史/编辑/删除/更多/失败修复，不使用演示模拟数据或handlers。
+- [x] 只验证受影响源码、准入反例和布局差量；按哈希复用未变业务。使用唯一必要独立责任方核本轮实际差量与当前绑定。
+- [x] 完整离线包与真实预算就绪后，按当前目标/实际依赖、互斥/CAS/备份/精确回退/一次apply/真实验收/持久闭窗完成定向上线。任何新timer维护使用本轮明确授权，旧窗口不继承。本轮09:37:40最新授权最小守卫范围且不暂停timer，不新增维护。
+
+01:22接续：原manager main基线165bf60，未新增生产连接/捕获/stage/维护暂停/业务写/reload。本轮已定位真实源码和原安全测试；页面与准入修复正在离线实施。19:00旧成功及strict失败/附加只读核验历史完整保留。
+
+09:55实际完成：新scope `customer-stock-compact-20261121-6Lfttf6o-exact-fixed`，M7826／cap0c43／executor6ff5／policy6031／独立review61cee绑定；原Controller apply与verify通过，receipt f3e54077…fdebb／closedcoord b08daf33…ccac2／state ff42356f…b3e62。六槽190/193/194/200/191/192真实滚动，179.36s；front API一叶81ed新字节、5992384B非目标exact，admin0物理写，frontStatic/业务DB/env写0。已审158+130/tsc/构建/正逆复用。
+
+Victor真实只读native context使用当前账号30004/front397751、实际official/business scope、企业1/客户1354/渠道30，131个SELECT（含必要FOR UPDATE）后双事务rollback；canUpload=true、disabledReason=null，275条raw与0条未删除库存前后不变。未进行生产造库存或真实用户上传，不冒称完整登录HTTP链路验收。原45分钟预算拒及恢复、21a双投影、private0755零attempt拒、验收脚本自身口径失败保留；只修已证对象，无强解锁/重放attempt。
+
+报告及真实去敏回执：`deploy/customer-batch-actions-20261119/production-20261121-0950/上线完成报告.md`及同目录`actual-release-summary.json`／`receipt.json`。定时器本轮保持原态，原双锁上下文与SSH finally均退出，生产串行窗口已释放；后续仅正常Git归档，不再增加生产扫描或审批。

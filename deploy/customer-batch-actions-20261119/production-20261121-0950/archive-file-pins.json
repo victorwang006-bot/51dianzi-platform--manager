@@ -1,0 +1,66 @@
+{
+  "actual-release-summary.json": {
+    "size": 4254,
+    "sha256": "898ea84cb915b589f083e0aed9cf8bf0fbdb0e9db5c6bccea551c70e2027029d"
+  },
+  "current-binding-summary.json": {
+    "size": 1312,
+    "sha256": "e7a65c812143a7c2c3e7fcae8a19d377a2f5dcd23adeb19a03ec50d549bcd561"
+  },
+  "exact-core-ast-proof.json": {
+    "size": 1567,
+    "sha256": "b779d75f1cdaa3634964ce55524ae997295c7b3669137a8fd112f906cf7950ed"
+  },
+  "exact-guard-delta.patch": {
+    "size": 804591,
+    "sha256": "4b9a3478d866fca72441d8d4278c6cd380287a6d235433b691275e6e0816c6c0"
+  },
+  "exact-interface-tests.json": {
+    "size": 527,
+    "sha256": "75208538d2b4c7809960b17f2e66c2c8c6488d9e94cb5621462b82d405d372a1"
+  },
+  "native-api-build-evidence.json": {
+    "size": 9320,
+    "sha256": "e5a48f4ca558d93eb0db2af252f7bcc056b92a649a8ec2f9ccf354702c4a8325"
+  },
+  "native-ui-asset-pins.json": {
+    "size": 569,
+    "sha256": "c1c034fa373b416239486c0cc306beee894cb65c9a519ed42c9698c86530d213"
+  },
+  "own-private-directory-init-repair.json": {
+    "size": 6488,
+    "sha256": "5bd583398983ebbc6aca781411765dd2f00a0e2d997424c4596e41549f6ce5f9"
+  },
+  "private-init-continuation-proof.json": {
+    "size": 525,
+    "sha256": "a30a843b3956cfce950ca9d5f95787e4e2f4c942d02e276533f8bb3779c0dd4c"
+  },
+  "private-init-continuation.patch": {
+    "size": 2484,
+    "sha256": "8ad7df6f7710501cbfbea4f4e52a4c1042f81c02cde63809c18a610085415982"
+  },
+  "receipt.json": {
+    "size": 7454,
+    "sha256": "f3e540773ed54bf034b5f0e0274e7efd3b25d0c5b420232187b38653766fdebb"
+  },
+  "release-exact.py": {
+    "size": 548009,
+    "sha256": "6ff5f1677bc0352d3f989b4720d3ca268b97da8f7620a4ea3afd65ea657b5b9e"
+  },
+  "scope-policy.json": {
+    "size": 414161,
+    "sha256": "60310e7ca8b03362913ca781650a5f3b722a654930b9d35b9730e7ffa495fe5e"
+  },
+  "single-root-projection-fix.patch": {
+    "size": 802080,
+    "sha256": "0866e4a8460b2e1c14d849db9a8985867f813175b304f7f10529f7c58d378139"
+  },
+  "victor-native-readonly-acceptance.json": {
+    "size": 1422,
+    "sha256": "b29454da914b3b667d26cee45d72bb5c69ed5dc361fad7de87f200d542f93cd4"
+  },
+  "上线完成报告.md": {
+    "size": 5171,
+    "sha256": "9e630761b9bf31b8e98c5b15928257424bdf519ffedd1ca8c2eefa6790b02b4f"
+  }
+}

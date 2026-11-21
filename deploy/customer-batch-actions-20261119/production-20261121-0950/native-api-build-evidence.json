@@ -1,0 +1,226 @@
+{
+  "status": "OFFLINE_ONE_CONTEXT_PATCH_NOT_DEPLOYED",
+  "sourceSha256": "235ee1a2d7827cccc9e7d8edc34731879998264d413fa4ba8801a33730e85d3e",
+  "builderSha256": "8638f53518059f16020d927d2c29f2a90a3e20daa4281c150a5bc1c16773bbe8",
+  "originalCompilerAndMapperReused": true,
+  "nativeContextOnly": true,
+  "nestedHelperExactCheckedInDeclaration": true,
+  "adminApiUntouched": true,
+  "inverse": {
+    "byteExact": true,
+    "sha256": "f469759300751d17ef20ae244efd272ae1f8c200d84dde4ec9ba6a9b50ebde8f",
+    "unchangedBytes": 5992384,
+    "allOutsideSlotsByteIdentical": true
+  },
+  "nodeCheck": true,
+  "noRuntimeLoads": true,
+  "bindings": [
+    {
+      "runtimeName": "fail11",
+      "runtimeModule": "server/services/customerSupply.ts",
+      "nativeDeclarationSha256": "bda40e1af71b8a4079e3a16311e82746f57d1f290d1fc7669f21363c4225d713",
+      "nativeStart": 5506604,
+      "nativeEnd": 5506685,
+      "sourceName": "fail",
+      "sourceModule": "server/services/customerSupply.ts",
+      "rule": "exact-native-module-export"
+    },
+    {
+      "runtimeName": "writeFence",
+      "runtimeModule": "server/services/customerSupply.ts",
+      "nativeDeclarationSha256": "af2563644397a4acebde50083070585eca1d7930e179b8fa81f0e4abebb35739",
+      "nativeStart": 5507848,
+      "nativeEnd": 5509862,
+      "sourceName": "writeFence",
+      "sourceModule": "server/services/customerSupply.ts",
+      "rule": "exact-native-module-export"
+    },
+    {
+      "runtimeName": "rows12",
+      "runtimeModule": "server/services/customerSupply.ts",
+      "nativeDeclarationSha256": "33742328b3007fe06c93724467ce2bfe70438f8469826c163d2e1367621d5cf2",
+      "nativeStart": 5506528,
+      "nativeEnd": 5506598,
+      "sourceName": "rows",
+      "sourceModule": "server/services/customerSupply.ts",
+      "rule": "exact-native-module-export"
+    },
+    {
+      "runtimeName": "sql85",
+      "runtimeModule": "server/services/customerSupply.ts",
+      "import": "drizzle-orm",
+      "exported": "sql",
+      "nativeDeclarationSha256": "a1a92756101f4cf15f39908b0ba4e415111d6dae6480329b41091926713f79b3",
+      "nativeStart": 5506432,
+      "nativeEnd": 5506444,
+      "sourceName": "sql",
+      "sourceModule": "server/services/customerSupply.ts",
+      "sourceImport": "drizzle-orm",
+      "rule": "exact-native-package-export"
+    },
+    {
+      "runtimeName": "resolveTeamInventoryVisibility",
+      "runtimeModule": "server/services/channelTeamInventoryAccess.ts",
+      "nativeDeclarationSha256": "249a68936acafb95f843d0ddf48e28c9815456cf4770923378472eb526513a32",
+      "nativeStart": 5410046,
+      "nativeEnd": 5416643,
+      "sourceName": "resolveTeamInventoryVisibility",
+      "sourceModule": "server/services/customerSupply.ts",
+      "sourceImport": "./channelTeamInventoryAccess",
+      "rule": "exact-native-module-export"
+    },
+    {
+      "runtimeName": "businessFailureOf",
+      "runtimeModule": "shared/businessFailure.ts",
+      "nativeDeclarationSha256": "b32dc01ea633c654e7cf187a3e6d5b0749e3cb1af9c0a4b5f1d00e1a35d5c644",
+      "nativeStart": 937687,
+      "nativeEnd": 937988,
+      "sourceName": "businessFailureOf",
+      "sourceModule": "server/services/customerSupply.ts",
+      "sourceImport": "../../../shared/businessFailure",
+      "rule": "exact-native-module-export"
+    },
+    {
+      "runtimeName": "ChannelInventoryError",
+      "runtimeModule": "server/services/channelInventory.ts",
+      "nativeDeclarationSha256": "bf4f0407074c935333276ea314ed9fe5e1e14e15479eec78c862d355863f4a2c",
+      "nativeStart": 5436159,
+      "nativeEnd": 5436393,
+      "sourceName": "ChannelInventoryError",
+      "sourceModule": "server/services/customerSupply.ts",
+      "sourceImport": "./channelInventory",
+      "rule": "exact-native-module-export"
+    },
+    {
+      "runtimeName": "TRPCError73",
+      "runtimeModule": "server/services/customerSupply.ts",
+      "import": "@trpc/server",
+      "exported": "TRPCError",
+      "nativeDeclarationSha256": "65a76c643a1609cdca7ef83560c3beb2fa79bf3b4eec2d97aecf997463ef91c7",
+      "nativeStart": 5506476,
+      "nativeEnd": 5506500,
+      "sourceName": "TRPCError",
+      "sourceModule": "server/services/customerSupply.ts",
+      "sourceImport": "@trpc/server",
+      "rule": "exact-native-package-export"
+    },
+    {
+      "runtimeName": "customer",
+      "runtimeModule": "server/services/customerSupply.ts",
+      "nativeDeclarationSha256": "c21db860efa159387b8b7f1b3f35f77800133bbdfe61ed9bb15f8628ec4d58bb",
+      "nativeStart": 5506965,
+      "nativeEnd": 5507490,
+      "sourceName": "customer",
+      "sourceModule": "server/services/customerSupply.ts",
+      "rule": "exact-native-module-export"
+    },
+    {
+      "runtimeName": "binding",
+      "runtimeModule": "server/services/customerSupply.ts",
+      "nativeDeclarationSha256": "ff601433b47273ebfe926a0ce6cb6715f8fc7a8794207d79eb0df53e6ebf8b54",
+      "nativeStart": 5507491,
+      "nativeEnd": 5507847,
+      "sourceName": "binding",
+      "sourceModule": "server/services/customerSupply.ts",
+      "rule": "exact-native-module-export"
+    },
+    {
+      "runtimeName": "customerSupplyCompletion",
+      "runtimeModule": "server/services/customerSupplyCompany.ts",
+      "nativeDeclarationSha256": "b257fdcffa99b70626523868bd8ab15b44778a2a5e5ed23d95af5b9accd445cc",
+      "nativeStart": 5367248,
+      "nativeEnd": 5367715,
+      "sourceName": "completion",
+      "sourceModule": "server/services/customerSupply.ts",
+      "sourceImport": "./customerSupplyCompany",
+      "rule": "exact-native-module-export"
+    },
+    {
+      "runtimeName": "TEAM_MATERIAL_FROM",
+      "runtimeModule": "server/services/channelTeamInventoryAccess.ts",
+      "nativeDeclarationSha256": "8a8d494c55aafe07091054cf850091b454a835011aafb40097ece3a83b9c04ab",
+      "nativeStart": 5409781,
+      "nativeEnd": 5410044,
+      "sourceName": "TEAM_MATERIAL_FROM",
+      "sourceModule": "server/services/customerSupply.ts",
+      "sourceImport": "./channelTeamInventoryAccess",
+      "rule": "exact-native-module-export"
+    },
+    {
+      "runtimeName": "teamInventoryAll",
+      "runtimeModule": "server/services/channelTeamInventoryAccess.ts",
+      "nativeDeclarationSha256": "927f4421e947eac20e71e3ec4b0543b430f898bbf72dfdbbb325a59618c5b3a7",
+      "nativeStart": 5409704,
+      "nativeEnd": 5409775,
+      "sourceName": "teamInventoryAll",
+      "sourceModule": "server/services/customerSupply.ts",
+      "sourceImport": "./channelTeamInventoryAccess",
+      "rule": "exact-native-module-export"
+    },
+    {
+      "runtimeName": "teamMaterialSourceEligibility",
+      "runtimeModule": "server/services/channelInventorySource.ts",
+      "nativeDeclarationSha256": "05a99908cd651f2213425c65379f13153db8d9d0a3b449a561f3b21d9648d869",
+      "nativeStart": 5429992,
+      "nativeEnd": 5430134,
+      "sourceName": "teamMaterialSourceEligibility",
+      "sourceModule": "server/services/customerSupply.ts",
+      "sourceImport": "./channelInventorySource",
+      "rule": "exact-native-module-export"
+    },
+    {
+      "runtimeName": "linkedCompanyReadGate",
+      "runtimeModule": "server/services/customerSupplyCompany.ts",
+      "nativeDeclarationSha256": "7559563c5ece9c3815988608b718adb38299f567ba95bd1bc0ca5085567b934c",
+      "nativeStart": 5369599,
+      "nativeEnd": 5370468,
+      "sourceName": "linkedCompanyReadGate",
+      "sourceModule": "server/services/customerSupply.ts",
+      "sourceImport": "./customerSupplyCompany",
+      "rule": "exact-native-module-export"
+    },
+    {
+      "runtimeName": "assertCrmCustomerPolicy",
+      "runtimeModule": "server/services/crmCustomers.ts",
+      "nativeDeclarationSha256": "e0120a136b3e4cfdcf428963be6a484b67fea48a0a879d93225279ff8ebf6270",
+      "nativeStart": 4162114,
+      "nativeEnd": 4162509,
+      "sourceName": "assertCrmCustomerPolicy",
+      "sourceModule": "server/services/customerSupply.ts",
+      "sourceImport": "./crmCustomers",
+      "rule": "exact-native-module-export"
+    },
+    {
+      "runtimeName": "currentReadExecutor",
+      "runtimeModule": "server/services/customerSupplyCompany.ts",
+      "nativeDeclarationSha256": "3974c44c7a5c20c9a1338fadc92fba3e2b4880df2031d1492eb224cf7c6999cb",
+      "nativeStart": 5366657,
+      "nativeEnd": 5366818,
+      "sourceName": "currentReadExecutor",
+      "sourceModule": "server/services/customerSupply.ts",
+      "sourceImport": "./customerSupplyCompany",
+      "rule": "exact-native-module-export"
+    },
+    {
+      "runtimeName": "resolveCrmCustomerPolicy",
+      "runtimeModule": "server/services/crmCustomers.ts",
+      "nativeDeclarationSha256": "43a226e3a6dec61784c490c4a68d4e37ef4cb6399d289b486ff8fc1c83503635",
+      "nativeStart": 4160363,
+      "nativeEnd": 4160808,
+      "sourceName": "resolveCrmCustomerPolicy",
+      "sourceModule": "server/services/customerSupply.ts",
+      "sourceImport": "./crmCustomers",
+      "rule": "exact-native-module-export"
+    },
+    {
+      "runtimeName": "ownEmptyUploadChannel",
+      "runtimeModule": "server/services/customerSupply.ts",
+      "nativeDeclarationSha256": "97b5b384b1eb6442800f216120f34f687d1266c6b1e0fa935bf55035d7908e7c",
+      "nativeStart": 5509864,
+      "nativeEnd": 5511144,
+      "sourceName": "ownEmptyUploadChannel",
+      "sourceModule": "server/services/customerSupply.ts",
+      "rule": "exact-native-module-export"
+    }
+  ]
+}
