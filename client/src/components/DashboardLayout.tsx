@@ -82,6 +82,7 @@ import {
   type AdminNewInformationRequestOptions,
 } from "@/lib/adminNewInformation";
 import { AdminNewInformationMenuBadge, adminNewInformationModuleForPath } from "./admin/AdminNewInformationMenuBadge";
+import { AdminNewInformationStatus } from "./admin/AdminNewInformationStatus";
 import { ADMIN_NEW_INFORMATION_MODULES, type AdminNewInformationModule, type AdminNewInformationSummary, type AdminNewInformationInspection } from "@shared/adminNewInformation";
 import "./DashboardLayout.css";
 
@@ -679,6 +680,7 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
             onPreload={preloadItem}
             renderBadge={renderBadge}
           />
+          <AdminNewInformationStatus />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button

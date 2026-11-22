@@ -14,7 +14,9 @@ export type AdminNewInformationBadgeProps = {
   placement?: "absolute" | "inline" | "nav";
   reserveSpace?: boolean;
   lastKnown?: boolean;
-  updateState?: "disabled" | "blocked" | "pending" | "failed" | "synced";
+  /** refreshing is a presentation hint, never a business acknowledgement state. */
+  updateState?: "disabled" | "blocked" | "pending" | "failed" | "synced" | "refreshing";
+  lastSuccessfulAt?: number;
 };
 /** Same 18px visual language as ChatUnreadBadge; never import its chat queries. */
 export function AdminNewInformationBadge({
@@ -25,6 +27,7 @@ export function AdminNewInformationBadge({
   reserveSpace = false,
   lastKnown = false,
   updateState,
+  lastSuccessfulAt,
 }: AdminNewInformationBadgeProps) {
   const state = updateState ?? (lastKnown ? "failed" : "synced");
   const blocked = state === "disabled" || state === "blocked";
@@ -32,8 +35,11 @@ export function AdminNewInformationBadge({
     ? count : undefined;
   const updateLabel = blocked ? "核验阻断"
     : state === "pending" ? (total === undefined ? "核验中" : "待更新")
+    : state === "refreshing" ? "后台刷新中"
     : state === "failed" || lastKnown ? "暂不可用" : undefined;
-  if (!updateLabel && (total === undefined || total === 0)) {
+  // A verified zero stays quiet during ordinary polling. The one global status
+  // explains the in-flight read; an invalidation/unknown/failure is NOT quiet.
+  if ((!updateLabel || state === "refreshing") && (total === undefined || total === 0)) {
     return placement === "inline" && reserveSpace ? (
       <span
         className={`relative ml-1 inline-block h-[18px] min-w-[18px] shrink-0 ${className}`}
@@ -41,8 +47,10 @@ export function AdminNewInformationBadge({
       />
     ) : null;
   }
+  const stale = total !== undefined && (lastKnown || state === "pending" || state === "refreshing" || state === "failed");
+  const time = lastSuccessfulAt === undefined ? "" : `；${stale ? "上次成功更新时间" : "成功核验时间"}：${new Date(lastSuccessfulAt).toLocaleTimeString("zh-CN", { hour12: false })}`;
   const label =
-    `${blocked ? "当前新信息核验受权限或身份限制" : ariaLabel ?? (total === undefined ? "新信息数量尚未核验" : `${total} 条新信息${lastKnown ? "（上次成功核验，非本次实时数量）" : ""}`)}${updateLabel ? `（${updateLabel}）` : ""}`;
+    `${blocked ? "当前新信息核验受权限或身份限制" : ariaLabel ?? (total === undefined ? "新信息数量尚未核验" : `${total} 条新信息`)}${stale ? "（上次成功核验值，非本次实时数量）" : ""}${updateLabel ? `（${updateLabel}）` : ""}${time}`;
   const placementClass =
     placement === "absolute"
       ? "absolute -right-[9px] -top-[7px]"
@@ -60,11 +68,17 @@ export function AdminNewInformationBadge({
       data-placement={placement}
       data-update-state={state}
       data-known-count={total}
+      data-last-successful-at={lastSuccessfulAt}
       aria-label={label}
       title={label}
       role="status"
     >
-      {total !== undefined && total > 0 ? `${formatAdminNewInformationCount(total)} · ` : ""}{updateLabel}
+      {placement === "nav" ? (
+        <>
+          {total !== undefined && total > 0 ? formatAdminNewInformationCount(total) : null}
+          {state !== "refreshing" ? <span aria-hidden="true" className="admin-new-information-nav-symbol">{blocked ? "⊘" : state === "failed" || lastKnown ? "!" : total === undefined ? "?" : "↻"}</span> : null}
+        </>
+      ) : <>{total !== undefined && total > 0 ? `${formatAdminNewInformationCount(total)} · ` : ""}{updateLabel}</>}
     </span>
   );
   return (
@@ -74,6 +88,7 @@ export function AdminNewInformationBadge({
       data-placement={placement}
       data-update-state={state}
       data-known-count={total}
+      data-last-successful-at={lastSuccessfulAt}
       aria-label={label}
       title={label}
       role="status"

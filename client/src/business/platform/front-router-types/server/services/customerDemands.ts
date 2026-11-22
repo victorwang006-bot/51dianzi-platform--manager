@@ -19,6 +19,7 @@ import {
   type CustomerDemandSummary,
   type DemandPage,
   type ProcurementDemandDetail,
+  type ProcurementDemandPage,
   type ProcurementDemandSummary,
   type SalesDemandPage,
   type SalesDemandSummary,
@@ -1156,11 +1157,12 @@ export async function listDemandRevisions(scope: CustomerDemandScope, rawInput: 
 
 export async function listProcurementDemands(
   scope: CustomerDemandScope,
-  rawInput: z.infer<typeof procurementDemandListSchema>,
-): Promise<DemandPage<ProcurementDemandSummary>> {
+  rawInput: z.input<typeof procurementDemandListSchema>,
+): Promise<ProcurementDemandPage> {
   const input = checkedProcurementList(rawInput);
   const db = await requireDb();
   const access = await requireProcurementAccess(db, scope);
+  // Legacy submitted/processing rows remain readable even without a submission time; never invent one.
   const conditions = [crmProcurementDemandWhere(scope, access.policy), sql`d.enterpriseId = ${scope.enterpriseId}`, sql`d.status IN ('submitted', 'processing')`, procurementTenantDemandExists("d")];
   // The queue is a personal quote workflow: old claim aliases remain supported but map to own quote existence.
   if (input.view === "quoted" || input.view === "mine") conditions.push(sql`EXISTS (
@@ -1173,6 +1175,11 @@ export async function listProcurementDemands(
      WHERE mine.enterpriseId = d.enterpriseId AND mine.demandId = d.id AND mine.procurementUserId = ${scope.actorUserId}
        AND mine.demandRevision = d.revision AND mine.status = 'active'
   )`);
+  if (input.view === "reconfirm") conditions.push(sql`EXISTS (
+    SELECT 1 FROM crm_customer_demand_quotes mine
+     WHERE mine.enterpriseId = d.enterpriseId AND mine.demandId = d.id AND mine.procurementUserId = ${scope.actorUserId}
+       AND mine.demandRevision <> d.revision AND mine.status = 'active'
+  )`);
   if (input.keyword) {
     const keyword = `%${input.keyword.trim()}%`;
     conditions.push(sql`(d.demandNo LIKE ${keyword} OR EXISTS (
@@ -1182,16 +1189,78 @@ export async function listProcurementDemands(
   }
   const where = sql.join(conditions, sql` AND `);
   const offset = (input.page - 1) * input.pageSize;
-  const count = resultRows<{ total: number | string }>(await db.execute(sql`
-    SELECT COUNT(*) AS total FROM crm_customer_demands d WHERE ${where}
+  // Preserve fractional precision when validating an external cursor, even though native DATETIME writes use seconds.
+  const since = input.newSince;
+  const sinceSqlDate = since == null ? null : `${toBeijingSqlDate(since.submittedAt)}.${since.submittedAt.slice(20, 23)}`;
+  const newerSubmission = since == null ? sql`d.submittedAt IS NOT NULL` : sql`(
+    d.submittedAt > ${sinceSqlDate} OR (d.submittedAt = ${sinceSqlDate} AND d.id > ${since.id})
+  )`;
+  const newCountSelect = since === undefined ? sql`` : sql`,
+    COALESCE(SUM(CASE WHEN ${newerSubmission} THEN 1 ELSE 0 END), 0) AS newCount`;
+  // A null baseline confirms only the cursor-capable authorized set was empty, not that total was zero.
+  // Counts and the baseline cursor share one statement/snapshot; neither depends on the displayed page or urgent order.
+  const count = resultRows<{
+    total: number | string; newCount?: number | string;
+    latestSubmissionId: number | null; latestSubmittedAt: Date | string | null;
+  }>(await db.execute(sql`
+    SELECT queue_counts.*, latest_submission.id AS latestSubmissionId, latest_submission.submittedAt AS latestSubmittedAt
+      FROM (SELECT COUNT(*) AS total ${newCountSelect} FROM crm_customer_demands d WHERE ${where}) queue_counts
+      LEFT JOIN (
+        SELECT d.id, d.submittedAt FROM crm_customer_demands d
+         WHERE ${where} AND d.submittedAt IS NOT NULL
+         ORDER BY d.submittedAt DESC, d.id DESC LIMIT 1
+      ) latest_submission ON TRUE
   `))[0];
+  const order = input.sort === "urgent"
+    ? sql`(d.priority = 'urgent') DESC, d.submittedAt ASC, d.id ASC`
+    : sql`d.submittedAt DESC, d.id DESC`;
   const rows = resultRows<DemandRow>(await db.execute(sql`
     ${procurementSummarySelect(scope.actorUserId)}
      WHERE ${where}
-     ORDER BY (d.priority = 'urgent') DESC, d.submittedAt ASC, d.id ASC
+     ORDER BY ${order}
      LIMIT ${input.pageSize} OFFSET ${offset}
   `));
-  return { items: rows.map(mapProcurementSummary), total: Number(count?.total ?? 0), page: input.page, pageSize: input.pageSize };
+  const items = rows.map(mapProcurementSummary);
+  if (input.keyword && rows.length) {
+    const keyword = `%${input.keyword}%`;
+    // One bounded batch, not a query per row. Let MySQL's original LIKE/collation semantics select the first legal match.
+    const matches = resultRows<{
+      demandId: number; itemIndex: number | string; partNumber: string; brand: string;
+      qty: number | string | null; qtyUnit: string; deliveryRequirement: string;
+    }>(await db.execute(sql`
+      SELECT matched_item.demandId, matched_item.partNumber, matched_item.brand, matched_item.qty,
+             matched_item.qtyUnit, matched_item.deliveryRequirement,
+             (SELECT COUNT(*) FROM crm_customer_demand_items preceding_item
+               WHERE preceding_item.enterpriseId = matched_item.enterpriseId AND preceding_item.demandId = matched_item.demandId
+                 AND (preceding_item.sortOrder < matched_item.sortOrder
+                   OR (preceding_item.sortOrder = matched_item.sortOrder AND preceding_item.id <= matched_item.id))) AS itemIndex
+        FROM crm_customer_demand_items matched_item
+        INNER JOIN crm_customer_demands d ON d.enterpriseId = matched_item.enterpriseId AND d.id = matched_item.demandId
+       WHERE ${where} AND d.id IN (${sql.join(rows.map(row => sql`${Number(row.id)}`), sql`, `)})
+         AND matched_item.partNumber LIKE ${keyword}
+         AND NOT EXISTS (SELECT 1 FROM crm_customer_demand_items earlier_match
+           WHERE earlier_match.enterpriseId = matched_item.enterpriseId AND earlier_match.demandId = matched_item.demandId
+             AND earlier_match.partNumber LIKE ${keyword}
+             AND (earlier_match.sortOrder < matched_item.sortOrder
+               OR (earlier_match.sortOrder = matched_item.sortOrder AND earlier_match.id < matched_item.id)))
+    `));
+    const byDemand = new Map(matches.map(row => [Number(row.demandId), row]));
+    for (const item of items) {
+      const matched = byDemand.get(item.id);
+      if (matched) item.matchedItem = {
+        index: Number(matched.itemIndex), partNumber: matched.partNumber ?? "", brand: matched.brand ?? "",
+        qty: matched.qty == null ? null : Number(matched.qty), qtyUnit: matched.qtyUnit ?? "",
+        deliveryRequirement: matched.deliveryRequirement ?? "",
+      };
+    }
+  }
+  const latestSubmittedAt = iso(count?.latestSubmittedAt);
+  return {
+    items, total: Number(count?.total ?? 0), page: input.page, pageSize: input.pageSize,
+    latestSubmission: latestSubmittedAt && count?.latestSubmissionId != null
+      ? { submittedAt: latestSubmittedAt, id: Number(count.latestSubmissionId) } : null,
+    ...(since === undefined ? {} : { newCount: Number(count?.newCount ?? 0) }),
+  };
 }
 
 export async function getProcurementDemand(scope: CustomerDemandScope, rawInput: { id: number }): Promise<ProcurementDemandDetail> {

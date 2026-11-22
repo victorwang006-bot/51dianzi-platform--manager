@@ -30,6 +30,7 @@ vi.mock("@/business/platform/client/src/hooks/usePageMemory", async () => {
   };
 });
 
+vi.mock("@/business/BusinessScope", () => ({ useBusinessScope: () => ({ storageScope: "mock:actor:7", contextVerification: { authorizationVersion: "grant:1" } }) }));
 vi.mock("@/business/BusinessContentFrame", () => ({
   default: ({ children }: { children: React.ReactNode }) => children,
 }));
@@ -39,7 +40,7 @@ vi.mock("@/business/api/business-trpc", () => ({
     enterprise: { me: { useQuery: () => ({ data: runtime.enterprise }) } },
     customerDemand: {
       procurementList: { useQuery: runtime.list },
-      procurementGet: { useQuery: () => ({ data: runtime.detail, isLoading: !runtime.detail, error: null }) },
+      procurementGet: { useQuery: () => ({ data: runtime.detail, isLoading: !runtime.detail, isSuccess: true, isFetchedAfterMount: true, error: null }) },
     },
   },
 }));
@@ -49,6 +50,11 @@ vi.mock("@/business/platform/client/src/components/customerDemands/DemandQuoteDi
 }));
 vi.mock("@/business/platform/client/src/components/customerDemands/DemandQuoteList", () => ({
   DemandQuoteList: ({ onCreate }: { onCreate: () => void }) => React.createElement("section", { "aria-label": "我的供应商报价" }, React.createElement("button", { onClick: onCreate }, "新增供应商报价")),
+}));
+
+vi.mock("@/lib/adminNewInformation", () => ({
+  useAdminNewInformationContextRows: () => ({ getRow: () => ({ isNew: false, ref: () => {} }) }),
+  useAdminNewInformationRowContext: () => undefined,
 }));
 
 import ProcurementDemands from "@/business/platform/client/src/pages/ProcurementDemands";
@@ -85,7 +91,7 @@ function change(element: HTMLInputElement | HTMLSelectElement, value: string) {
   });
 }
 function lastInput() {
-  return runtime.list.mock.calls.at(-1)?.[0];
+  return runtime.list.mock.calls.filter(call => call[0].pageSize !== 1).at(-1)?.[0];
 }
 
 beforeEach(() => {
@@ -96,7 +102,8 @@ beforeEach(() => {
   runtime.detail = undefined;
   runtime.refetch.mockReset().mockResolvedValue(undefined);
   runtime.toastError.mockReset();
-  runtime.list.mockReset().mockImplementation((input: { page: number }) => ({
+  vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+  runtime.list.mockReset().mockImplementation((input: { page: number; pageSize: number }) => input.pageSize === 1 ? ({ data: undefined, isSuccess: false }) : ({
     data: {
       page: input.page,
       total: 60,
@@ -109,7 +116,7 @@ beforeEach(() => {
         myQuoteRoundCount: 0, myActiveQuoteCount: 0, currentQuoteCount: 2,
       }],
     },
-    isLoading: false,
+    isLoading: false, isSuccess: true, isFetchedAfterMount: true,
     isFetching: runtime.fetching,
     error: null,
     refetch: runtime.refetch,
@@ -131,32 +138,31 @@ describe("procurement-demands unified page", () => {
     expect(container.querySelector(".aui-data-panel table")).not.toBeNull();
     const select = control<HTMLSelectElement>('select[aria-label="采购报价视图"]');
     expect(Array.from(select.options).map(option => [option.value, option.text])).toEqual([
-      ["all", "全部需求"], ["unquoted", "我未报价"], ["quoted", "我已报价"],
+      ["all", "全部需求"], ["unquoted", "我未报价"], ["quoted", "我已报价"], ["reconfirm", "待重新确认"],
     ]);
     const toolbar = control(".aui-filterbar");
-    for (const name of ["搜索", "重置", "手动刷新"]) expect(toolbar.contains(button(name))).toBe(true);
-    expect(lastInput()).toEqual({ view: "all", keyword: "", page: 1, pageSize: 20 });
-    expect(control("thead th:nth-child(4)").classList.contains("text-right")).toBe(true);
-    expect(control("tbody td:nth-child(4)").classList.contains("text-right")).toBe(true);
+    for (const name of ["搜索", "查看最新", "手动刷新"]) expect(toolbar.contains(button(name))).toBe(true);
+    expect(lastInput()).toEqual({ view: "all", sort: "latest", keyword: "", page: 1, pageSize: 20 });
+    expect(control("thead th:last-child").classList.contains("text-right")).toBe(true);
     expect(control("tbody td:last-child").classList.contains("text-right")).toBe(true);
   });
 
-  it("removes page tabs and duplicate project lines, inserts Beijing createdAt between delivery and sales", () => {
+  it("uses five information groups and Beijing submittedAt, with demand and sales in submission metadata", () => {
     render();
     expect(container.querySelector('nav[aria-label="采购工作台功能"]')).toBeNull();
-    expect(Array.from(container.querySelectorAll("thead th")).map(node => node.textContent)).toEqual(["需求编号", "型号", "品牌", "数量", "交期", "录入时间", "销售", "报价进度", "操作"]);
-    expect(control("tbody td:nth-child(6)").textContent).toBe("2026-11-11 09:02");
+    expect(Array.from(container.querySelectorAll("thead th")).map(node => node.textContent)).toEqual(["物料", "数量 / 交期", "提交信息", "本人报价", "报价"]);
+    expect(control("tbody td:nth-child(3)").textContent).toContain("2026-11-13 09:02");
     expect(control("tbody td:first-child").textContent).not.toContain("原项目");
-    expect(container.textContent).toContain("全部共2份");
-    expect(control("colgroup").children).toHaveLength(9);
-    expect(control("colgroup col:nth-child(2)").getAttribute("class")).toBeNull();
+    expect(container.textContent).toContain("全体当前 2 份");
+    expect(control("colgroup").children).toHaveLength(5);
+    expect(control("colgroup col:nth-child(1)").getAttribute("class")).toBeNull();
     expect(control("tbody td:last-child").classList.contains("procurement-demand-actions")).toBe(true);
   });
 
   it.each([null, "", "   ", "真实需求说明"])("only displays meaningful notes, keeps real project and one quote create button: %j", note => {
     runtime.detail = { id: 41, demandNo: "REQ-41", projectName: "真实项目", salesName: "合成销售", priority: "normal", status: "submitted", createdAt: "2026-11-11T01:02:03Z", updatedAt: "2026-11-12T01:02:03Z", replyDueAt: null, items: [], note };
     render();
-    click(button("查看"));
+    click(control<HTMLButtonElement>('[aria-label="查看需求 REQ-41 详情"]'));
     const dialog = document.querySelector('[role="dialog"]')!;
     expect(dialog.textContent).toContain("真实项目");
     expect(dialog.textContent).toContain("录入时间2026-11-11 09:02");
@@ -175,7 +181,7 @@ describe("procurement-demands unified page", () => {
     runtime.initialState = { view: view === "all" ? "quoted" : "all", keyword: "原型号", page: 3 };
     render();
     change(control<HTMLSelectElement>("select"), view);
-    expect(lastInput()).toEqual({ view, keyword: "原型号", page: 1, pageSize: 20 });
+    expect(lastInput()).toEqual({ view, sort: "latest", keyword: "原型号", page: 1, pageSize: 20 });
   });
 
   it("keeps unapplied keyword input separate and runs the existing search via Enter and button", () => {
@@ -183,25 +189,25 @@ describe("procurement-demands unified page", () => {
     render();
     const input = control<HTMLInputElement>('input[aria-label="搜索需求编号或型号"]');
     change(input, "  LM358  ");
-    expect(lastInput()).toEqual({ view: "quoted", keyword: "", page: 3, pageSize: 20 });
+    expect(lastInput()).toEqual({ view: "quoted", sort: "latest", keyword: "", page: 3, pageSize: 20 });
     act(() => input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
-    expect(lastInput()).toEqual({ view: "quoted", keyword: "LM358", page: 1, pageSize: 20 });
+    expect(lastInput()).toEqual({ view: "quoted", sort: "latest", keyword: "LM358", page: 1, pageSize: 20 });
     change(input, " REQ-41 ");
     click(button("搜索"));
-    expect(lastInput()).toEqual({ view: "quoted", keyword: "REQ-41", page: 1, pageSize: 20 });
+    expect(lastInput()).toEqual({ view: "quoted", sort: "latest", keyword: "REQ-41", page: 1, pageSize: 20 });
   });
 
-  it("resets the native quote filter, both keyword states and page together", () => {
+  it("查看最新 clears both keyword states, quote filter, sort and page together", () => {
     runtime.initialState = { view: "unquoted", keyword: "TI", keywordInput: "待搜索", page: 3 };
     render();
-    click(button("重置"));
-    expect(lastInput()).toEqual({ view: "all", keyword: "", page: 1, pageSize: 20 });
+    click(button("查看最新"));
+    expect(lastInput()).toEqual({ view: "all", sort: "latest", keyword: "", page: 1, pageSize: 20 });
     expect(control<HTMLSelectElement>("select").value).toBe("all");
     expect(control<HTMLInputElement>("input").value).toBe("");
   });
 
   it("refreshes without changing filters and retains refresh failure feedback", async () => {
-    runtime.initialState = { view: "quoted", keyword: "TI", page: 2 };
+    runtime.initialState = { view: "quoted", sort: "latest", keyword: "TI", page: 2 };
     runtime.refetch.mockRejectedValueOnce(new Error("network"));
     render();
     await act(async () => {
@@ -210,14 +216,22 @@ describe("procurement-demands unified page", () => {
     });
     expect(runtime.refetch).toHaveBeenCalledTimes(1);
     expect(runtime.toastError).toHaveBeenCalledWith("刷新失败，请稍后重试");
-    expect(lastInput()).toEqual({ view: "quoted", keyword: "TI", page: 2, pageSize: 20 });
+    expect(lastInput()).toEqual({ view: "quoted", sort: "latest", keyword: "TI", page: 2, pageSize: 20 });
+  });
+
+  it("detects nonthrowing background refetch error results without clearing applied filters", async () => {
+    runtime.initialState = { view: "quoted", sort: "urgent", keyword: "OLD", page: 2 };
+    runtime.refetch.mockResolvedValueOnce({ isError: true, error: new Error("synthetic unavailable") }); render();
+    await act(async () => button("手动刷新").click());
+    expect(runtime.toastError).toHaveBeenCalledWith("刷新失败，请稍后重试");
+    expect(lastInput()).toMatchObject({ view: "quoted", sort: "urgent", keyword: "OLD", page: 2 });
   });
 
   it("preserves original pagination handlers and fetching disabled states", () => {
     render();
     expect(button("上一页").disabled).toBe(true);
     click(button("下一页"));
-    expect(lastInput()).toEqual({ view: "all", keyword: "", page: 2, pageSize: 20 });
+    expect(lastInput()).toEqual({ view: "all", sort: "latest", keyword: "", page: 2, pageSize: 20 });
     click(button("上一页"));
     expect(lastInput().page).toBe(1);
     runtime.fetching = true;
@@ -228,7 +242,7 @@ describe("procurement-demands unified page", () => {
 
   it("keeps independent supplier quotation on the existing demand id", () => {
     render();
-    expect(button("查看")).toBeTruthy();
+    expect(control('[aria-label="查看需求 REQ-41 详情"]')).toBeTruthy();
     click(button("报价"));
     expect(control("[data-test-quote-demand]").getAttribute("data-test-quote-demand")).toBe("41");
     expect(control("[data-test-quote-demand]").hasAttribute("data-test-quote-id")).toBe(false);
@@ -236,7 +250,7 @@ describe("procurement-demands unified page", () => {
 
   it("uses the dialog title role rather than the smaller important section role", () => {
     render();
-    click(button("查看"));
+    click(control<HTMLButtonElement>('[aria-label="查看需求 REQ-41 详情"]'));
     const title = document.querySelector<HTMLElement>('[data-slot="dialog-title"]');
     expect(title?.textContent?.trim()).toBe("采购需求详情");
     expect(title?.classList.contains("admin-section-title")).toBe(false);
@@ -269,11 +283,12 @@ describe("procurement-demands unified page", () => {
     expect(css).toContain("font-size: var(--admin-content-font-caption, 11px)");
     expect(css).toContain("border-radius: 6px");
     expect(css).toMatch(/\.procurement-demands-table-scroll\s*\{[^}]*overflow-x: auto/);
-    expect(css).toContain("min-width: 1320px");
-    ["170px", "auto", "90px", "110px", "100px", "166px", "90px", "174px", "160px"].forEach((width, index) => {
-      expect(css).toContain(`col:nth-child(${index + 1}) { width: ${width}; }`);
+    expect(css).toContain("min-width: 920px");
+    ["auto", "160px", "210px", "170px", "110px"].forEach((width, index) => {
+      expect(css).toMatch(new RegExp(`col:nth-child\\(${index + 1}\\)\\s*\\{\\s*width: ${width};`));
     });
-    expect(css).toMatch(/\.procurement-demand-actions\s*\{[^}]*position: sticky;\s*right: 0/);
+    expect(css).toMatch(/\.procurement-demand-actions\s*\{[^}]*position: static/);
+    expect(css).not.toContain("position: sticky");
     expect(css).not.toMatch(/!important|\bzoom\s*:|\btransform\s*:/);
   });
 });

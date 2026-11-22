@@ -1,0 +1,11 @@
+# 顶部通知呈现改版 · 源码实施，未上线
+
+用户2026-11-22 13:02批准实施。此目录保存本轮新的通知样式后缀，不改写此前客户一致性发布目录或12:24正式回执。
+
+源码为现有adminNewInformation hook、Badge/MenuBadge、新AdminNewInformationStatus及Dashboard Provider内接线。普通15秒后台刷新只在有可信成功证明的模块呈现refreshing，业务syncState仍pending；未变更实际行/详情确认、epoch、freshack或跨QueryClient围栏。数值零保留稳定空槽、未知不伪零、旧成功量标明非实时及成功时间，集中状态只重试summary，不调用inspect/mark。
+
+本轮独立source-derived通知runtime候选SHA-256：b8126b368094f20d64a1570a3f9524a0ef8584825291f79169d0951060d94317。最终styles-suffix.css SHA-256：11734eb7a89027275fe1528b7532abbefde120f9c2bc76b87763f96f063960e9。它们不是已部署回执，也不能以JS语法检查代替真实双仓类型检查。
+
+下一轮获明确上线授权后，必须把通知候选绑定到所有真实解析的NI aliases，并在真实native Dashboard既有Provider的header内接入AdminNewInformationStatus，保留框架与QueryClient单例。只换NI包而不更新Dashboard会缺集中状态和重试入口。后缀须按真实有效CSS链集成并保留Dashboard懒加载基础样式，不重建或覆盖旧客户列表CSS，不整包覆盖历史入口。采购前端还依赖本轮真实platform procurementList合同，不能只发布静态页。
+
+最终源码提交、构建/测试摘要与本轮不发布声明另存本轮实施记录。无生产数据、权限或缓存配置改动。

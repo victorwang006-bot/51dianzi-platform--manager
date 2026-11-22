@@ -1,6 +1,20 @@
-import { usePageMemory, useRememberedState, freshListOptions, useRestoringListQuery, returnToPageSource } from "../hooks/usePageMemory";
+import {
+  usePageMemory,
+  useRememberedState,
+  freshListOptions,
+  useRestoringListQuery,
+} from "../hooks/usePageMemory";
 import { useEffect, useState } from "react";
-import { AdminDataPanel, AdminFilterBar, AdminPage } from "@/components/admin/UnifiedAdminPage";
+import { useBusinessScope } from "../../../../BusinessScope";
+import {
+  useProcurementRead,
+  useProcurementArrivals,
+} from "./procurementDemandReads";
+import {
+  AdminDataPanel,
+  AdminFilterBar,
+  AdminPage,
+} from "@/components/admin/UnifiedAdminPage";
 import { useAdminNewInformationContextRows } from "../../../../../lib/adminNewInformation";
 import { AdminNewInformationRowBadge } from "../../../../../components/admin/AdminNewInformationBadge";
 import {
@@ -12,16 +26,24 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { CUSTOMER_DEMAND_UNITS } from "../../../shared/customerDemands";
 import {
-  CUSTOMER_DEMAND_UNITS,
-} from "../../../shared/customerDemands";
-import { formatBeijingDateTime } from "../../../shared/beijingTime";
+  formatBeijingDateTime,
+  formatBeijingDateTimeWithSeconds,
+} from "../../../shared/beijingTime";
 import PlatformLayout from "../../../../BusinessContentFrame";
 import { DemandQuoteDialog } from "../components/customerDemands/DemandQuoteDialog";
 import { DemandQuoteList } from "../components/customerDemands/DemandQuoteList";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -31,27 +53,40 @@ import {
 import { trpc } from "../../../../api/business-trpc";
 import "./ProcurementDemands.css";
 
-type QuoteView = "all" | "unquoted" | "quoted";
+type QuoteView = "all" | "unquoted" | "quoted" | "reconfirm";
 
 const QUOTE_VIEW_OPTIONS = [
   { value: "all", label: "全部需求" },
   { value: "unquoted", label: "我未报价" },
   { value: "quoted", label: "我已报价" },
+  { value: "reconfirm", label: "待重新确认" },
 ] as const satisfies readonly { value: QuoteView; label: string }[];
 
 const PAGE_SIZE = 20;
 const toolbarClass =
   "procurement-demand-control border-slate-300 bg-white px-3 text-slate-700 shadow-none hover:bg-slate-50 hover:text-slate-900";
 
-function quoteProgress(demand: { mySupplierCount?: number; myQuoteRoundCount?: number; myQuoteNeedsReconfirmation?: boolean }) {
-  if ((demand.mySupplierCount ?? 0) > 0) return `${demand.mySupplierCount}家 · 累计${demand.myQuoteRoundCount ?? 0}轮`;
+function quoteProgress(demand: {
+  mySupplierCount?: number;
+  myQuoteRoundCount?: number;
+  myQuoteNeedsReconfirmation?: boolean;
+}) {
+  if ((demand.mySupplierCount ?? 0) > 0)
+    return `${demand.mySupplierCount}家 · 累计${demand.myQuoteRoundCount ?? 0}轮`;
   return demand.myQuoteNeedsReconfirmation ? "待更新" : "待报价";
 }
 function formatQty(value: number | null | undefined, unit: string | undefined) {
-  return value == null ? "待确认" : `${value.toLocaleString("zh-CN")}${unit || "片"}`;
+  return value == null
+    ? "待确认"
+    : `${value.toLocaleString("zh-CN")}${unit || "片"}`;
 }
 function priorityLabel(priority: "normal" | "urgent") {
   return priority === "urgent" ? "紧急" : "普通";
+}
+
+// Existing UI status eligibility only; quote writes remain server-authorized.
+function quoteable(demand: { status: string }) {
+  return demand.status === "submitted" || demand.status === "processing";
 }
 
 function ProcurementDemandDetailDialog({
@@ -63,8 +98,18 @@ function ProcurementDemandDetailDialog({
   onClose: () => void;
   onQuote: (quoteId?: number) => void;
 }) {
-  const detailQuery = trpc.customerDemand.procurementGet.useQuery({ id });
-  const detail = detailQuery.data;
+  const detailQuery = trpc.customerDemand.procurementGet.useQuery(
+    { id },
+    { placeholderData: undefined, staleTime: 0, refetchOnMount: "always" }
+  );
+  const mismatch = Boolean(detailQuery.data && detailQuery.data.id !== id);
+  const detailRead = useProcurementRead(
+    detailQuery,
+    String(id),
+    true,
+    mismatch
+  );
+  const detail = detailRead.data;
   return (
     <Dialog
       open
@@ -86,9 +131,7 @@ function ProcurementDemandDetailDialog({
       >
         <div className="flex min-w-0 shrink-0 items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
           <div className="min-w-0">
-            <DialogTitle>
-              采购需求详情
-            </DialogTitle>
+            <DialogTitle>采购需求详情</DialogTitle>
             <DialogDescription className="sr-only">
               查看需求基本信息、物料明细与供应商报价
             </DialogDescription>
@@ -102,12 +145,17 @@ function ProcurementDemandDetailDialog({
             <X className="h-4 w-4" />
           </button>
         </div>
-      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-3">
-          {detailQuery.isLoading && (
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-3">
+          {!detail && !detailQuery.error && (
             <div className="admin-cell-secondary flex items-center gap-2 py-8">
               <Loader2 className="h-4 w-4 animate-spin" />
               正在加载需求…
             </div>
+          )}
+          {mismatch && (
+            <p role="alert" className="text-red-600">
+              需求上下文不一致，请关闭后重新打开。
+            </p>
           )}
           {detailQuery.error && (
             <p
@@ -128,21 +176,24 @@ function ProcurementDemandDetailDialog({
                 </div>
                 <div>
                   <p className="admin-cell-secondary">项目</p>
-                  <p className="mt-1">
-                    {detail.projectName || "—"}
+                  <p className="mt-1">{detail.projectName || "—"}</p>
+                </div>
+                <div>
+                  <p className="admin-cell-secondary">提交时间</p>
+                  <p className="mt-1 tabular-nums">
+                    {formatBeijingDateTimeWithSeconds(detail.submittedAt) ||
+                      "—"}
                   </p>
                 </div>
                 <div>
                   <p className="admin-cell-secondary">录入时间</p>
                   <p className="mt-1 tabular-nums">
-                    {formatBeijingDateTime(detail.createdAt) || "—"}
+                    {formatBeijingDateTimeWithSeconds(detail.createdAt) || "—"}
                   </p>
                 </div>
                 <div>
                   <p className="admin-cell-secondary">销售</p>
-                  <p className="mt-1">
-                    {detail.salesName || "—"}
-                  </p>
+                  <p className="mt-1">{detail.salesName || "—"}</p>
                 </div>
                 <div>
                   <p className="admin-cell-secondary">优先级</p>
@@ -197,7 +248,9 @@ function ProcurementDemandDetailDialog({
                           <td className="px-2 py-2">{item.brand || "—"}</td>
                           <td className="px-2 py-2">{item.pkg || "—"}</td>
                           <td className="admin-cell-primary px-2 py-2 text-right tabular-nums">
-                            {item.qty == null ? "待确认" : item.qty.toLocaleString("zh-CN")}
+                            {item.qty == null
+                              ? "待确认"
+                              : item.qty.toLocaleString("zh-CN")}
                           </td>
                           <td className="px-2 py-2">
                             {item.qtyUnit &&
@@ -210,26 +263,38 @@ function ProcurementDemandDetailDialog({
                           <td className="px-2 py-2">
                             {item.deliveryRequirement || "—"}
                           </td>
-                          <td className="whitespace-pre-wrap px-2 py-2">{item.note || "—"}</td>
+                          <td className="whitespace-pre-wrap px-2 py-2">
+                            {item.note || "—"}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               </div>
-              {detail.note?.trim() ? <div className="mt-3">
-                <h3 className="admin-section-title">
-                  需求说明
-                </h3>
-                <p className="mt-1 whitespace-pre-wrap rounded border border-slate-200 bg-slate-50 px-3 py-2 leading-6 text-slate-700">
-                  {detail.note}
-                </p>
-              </div> : null}
-              <DemandQuoteList demandId={id} audience="procurement" onCreate={() => onQuote()} onEdit={onQuote} />
+              {detail.note?.trim() ? (
+                <div className="mt-3">
+                  <h3 className="admin-section-title">需求说明</h3>
+                  <p className="mt-1 whitespace-pre-wrap rounded border border-slate-200 bg-slate-50 px-3 py-2 leading-6 text-slate-700">
+                    {detail.note}
+                  </p>
+                </div>
+              ) : null}
+              <DemandQuoteList
+                demandId={id}
+                audience="procurement"
+                canWrite={quoteable(detail)}
+                onCreate={() => {
+                  if (quoteable(detail)) onQuote();
+                }}
+                onEdit={quoteId => {
+                  if (quoteable(detail)) onQuote(quoteId);
+                }}
+              />
             </>
           )}
         </div>
-      <div className="flex min-w-0 shrink-0 justify-end gap-2 border-t border-slate-200 bg-white px-4 py-3">
+        <div className="flex min-w-0 shrink-0 justify-end gap-2 border-t border-slate-200 bg-white px-4 py-3">
           <Button
             type="button"
             size="default"
@@ -246,282 +311,552 @@ function ProcurementDemandDetailDialog({
 }
 
 export default function ProcurementDemands() {
-  const d51Ready = usePageMemory();
+  const scope = useBusinessScope();
+  // A real authorization generation remounts local receipts, dialogs and arrival baseline.
+  // A normal context revalidation does not interrupt an in-progress quotation.
+  return (
+    <ProcurementDemandsSession
+      key={`${scope.storageScope}|${scope.contextVerification.authorizationVersion}`}
+    />
+  );
+}
 
-  const [view, setView] = useRememberedState<QuoteView>("view", "all");
-  const [keywordInput, setKeywordInput] = useRememberedState("keywordInput", "");
+function ProcurementDemandsSession() {
+  const d51Ready = usePageMemory();
+  const [viewMemory, setView] = useRememberedState<
+    QuoteView | "mine" | "unassigned"
+  >("view", "all");
+  const view: QuoteView =
+    viewMemory === "mine"
+      ? "quoted"
+      : viewMemory === "unassigned"
+        ? "unquoted"
+        : QUOTE_VIEW_OPTIONS.some(option => option.value === viewMemory)
+          ? viewMemory
+          : "all";
+  const [sortMemory, setSort] = useRememberedState<"latest" | "urgent">(
+    "sort",
+    "latest"
+  );
+  const sort: "latest" | "urgent" = sortMemory === "urgent" ? "urgent" : "latest";
+  const [keywordInput, setKeywordInput] = useRememberedState(
+    "keywordInput",
+    ""
+  );
   const [keyword, setKeyword] = useRememberedState("keyword", "");
   const [page, setPage] = useRememberedState("page", 1);
   const [openedId, setOpenedId] = useState<number | null>(null);
-  const [quoteTarget, setQuoteTarget] = useState<{ demandId: number; quoteId?: number } | null>(null);
-  const listQuery = useRestoringListQuery(trpc.customerDemand.procurementList.useQuery({
-    view,
-    keyword,
-    page,
-    pageSize: PAGE_SIZE,
-  }, freshListOptions({}, d51Ready)));
-  const result = listQuery.data;
+  const [quoteTarget, setQuoteTarget] = useState<{
+    demandId: number;
+    quoteId?: number;
+  } | null>(null);
+  const [latestIntent, setLatestIntent] = useState<{
+    requestedAt: number;
+    priorDataUpdatedAt: number;
+  } | null>(null);
+  const listInput = { view, sort, keyword, page, pageSize: PAGE_SIZE };
+  const rawListQuery = trpc.customerDemand.procurementList.useQuery(
+    listInput,
+    freshListOptions({ placeholderData: undefined }, d51Ready)
+  );
+  const mainRead = useProcurementRead(
+    rawListQuery,
+    JSON.stringify(listInput),
+    d51Ready
+  );
+  const arrivals = useProcurementArrivals(
+    d51Ready && mainRead.data !== undefined && !mainRead.denied,
+    mainRead.denied || !d51Ready
+  );
+  const denied = mainRead.denied || arrivals.denied;
+  const result = denied ? undefined : mainRead.data;
+  const listQuery = useRestoringListQuery(
+    rawListQuery,
+    result !== undefined && !denied
+  );
   const items = result?.items ?? [];
   const currentPage = result?.page ?? page;
   const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / PAGE_SIZE));
-  // usePageMemory proves the current BFF-bound identity. Never inspect pending,
-  // stale placeholder, failed or fetching list data; only this displayed page.
-  const listReady = d51Ready && listQuery.isSuccess && !listQuery.isError &&
-    !listQuery.isFetching && !listQuery.isPlaceholderData && listQuery.isFetchedAfterMount !== false;
+  // New-information is a notification witness only. Server sort is never changed here.
+  const listReady =
+    d51Ready && !denied && mainRead.fresh && result !== undefined;
   const newInformationRows = useAdminNewInformationContextRows({
     module: "procurement",
     refs: listReady ? items.map(demand => `demand:${demand.id}`) : [],
     listReady,
   });
-  // Stable page-local partition; do not prefetch/sort the unseen backend queue.
-  const pageRows = [...items].sort((left, right) =>
-    Number(newInformationRows.getRow(`demand:${right.id}`).isNew) -
-    Number(newInformationRows.getRow(`demand:${left.id}`).isNew));
-
   useEffect(() => {
     if (result?.page && result.page !== page) setPage(result.page);
   }, [result?.page, page]);
+  useEffect(() => {
+    if (denied || !d51Ready) {
+      setOpenedId(null);
+      setQuoteTarget(null);
+      setLatestIntent(null);
+    }
+  }, [denied, d51Ready]);
+  useEffect(() => {
+    if (
+      !latestIntent || !listReady || !result ||
+      view !== "all" || sort !== "latest" || keyword !== "" ||
+      page !== 1 || result.page !== 1 ||
+      !("latestSubmission" in result) ||
+      rawListQuery.dataUpdatedAt < latestIntent.requestedAt ||
+      rawListQuery.dataUpdatedAt <= latestIntent.priorDataUpdatedAt
+    ) return;
+    // Confirm the cursor actually displayed by this successful main read,
+    // never the peek cursor and never merely a button click or cached result.
+    arrivals.acknowledge(result.latestSubmission);
+    setLatestIntent(null);
+  }, [latestIntent, listReady, result, view, sort, keyword, page, rawListQuery.dataUpdatedAt]);
   const chooseView = (next: QuoteView) => {
+    setLatestIntent(null);
     setView(next);
     setPage(1);
   };
   const search = () => {
+    setLatestIntent(null);
     setKeyword(keywordInput.trim());
     setPage(1);
   };
+  const latest = () => {
+    const unchanged =
+      view === "all" && sort === "latest" && keyword === "" && page === 1;
+    setLatestIntent({
+      requestedAt: Date.now(),
+      priorDataUpdatedAt: rawListQuery.dataUpdatedAt,
+    });
+    setKeywordInput("");
+    setKeyword("");
+    setView("all");
+    setSort("latest");
+    setPage(1);
+    window.scrollTo?.({ top: 0, left: 0 });
+    if (unchanged) void manualRefresh();
+  };
   const manualRefresh = async () => {
     try {
-      await listQuery.refetch?.();
+      const refreshed = await listQuery.refetch();
+      if (refreshed?.error || refreshed?.isError)
+        toast.error("刷新失败，请稍后重试");
     } catch {
       toast.error("刷新失败，请稍后重试");
     }
   };
-  const quoteable = (demand: (typeof items)[number]) =>
-    demand.status === "submitted" || demand.status === "processing";
+  const ordinaryFailure =
+    !denied && Boolean(listQuery.error) && result !== undefined;
+  const appliedView =
+    QUOTE_VIEW_OPTIONS.find(option => option.value === view)?.label ??
+    "全部需求";
+  const unapplied = keywordInput.trim() !== keyword;
 
   return (
     <PlatformLayout>
-    <AdminPage className="procurement-demands-page" aria-label="采购内部需求">
-    <AdminFilterBar className="mb-3 flex flex-wrap items-center gap-2">
-        <label htmlFor="procurement-demand-view" className="admin-cell-secondary">报价状态</label>
-        <select
-          id="procurement-demand-view"
-          aria-label="采购报价视图"
-          value={view}
-          onChange={event => {
-            const nextView = QUOTE_VIEW_OPTIONS.find(option => option.value === event.target.value)?.value;
-            if (nextView) chooseView(nextView);
-          }}
-          className="procurement-demand-control rounded-md border border-slate-300 bg-white px-3 text-slate-700"
-        >
-          {QUOTE_VIEW_OPTIONS.map(option => (
-            <option key={option.value} value={option.value}>{option.label}</option>
-          ))}
-        </select>
-        <div className="ml-auto flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:flex-1">
-          <Input
-            aria-label="搜索需求编号或型号"
-            value={keywordInput}
-            onChange={event => setKeywordInput(event.target.value)}
-            onKeyDown={event => {
-              if (event.key === "Enter") search();
+      <AdminPage className="procurement-demands-page" aria-label="采购内部需求">
+        <AdminFilterBar className="mb-3 flex flex-wrap items-center gap-2">
+          <label
+            htmlFor="procurement-demand-view"
+            className="admin-cell-secondary"
+          >
+            可报价需求
+          </label>
+          <select
+            id="procurement-demand-view"
+            aria-label="采购报价视图"
+            value={view}
+            onChange={event => {
+              const next = QUOTE_VIEW_OPTIONS.find(
+                option => option.value === event.target.value
+              )?.value;
+              if (next) chooseView(next);
             }}
-            placeholder="搜索需求编号或型号"
-            className="procurement-demand-control min-w-0 flex-1 bg-white sm:max-w-[320px]"
-          />
-          <Button
-            type="button"
-            size="default"
-            variant="outline"
-            onClick={search}
-            className={`${toolbarClass} min-w-[60px]`}
+            className="procurement-demand-control rounded-md border border-slate-300 bg-white px-3 text-slate-700"
           >
-            <Search className="mr-1 h-3.5 w-3.5" />
-            搜索
-          </Button>
-          <Button
-            type="button"
-            size="default"
-            variant="outline"
-            onClick={() => {
-              setKeywordInput("");
-              setKeyword("");
-              chooseView("all");
+            {QUOTE_VIEW_OPTIONS.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <label
+            htmlFor="procurement-demand-sort"
+            className="admin-cell-secondary"
+          >
+            排序
+          </label>
+          <select
+            id="procurement-demand-sort"
+            aria-label="采购需求排序"
+            value={sort}
+            onChange={event => {
+              setSort(event.target.value === "urgent" ? "urgent" : "latest");
+              setPage(1);
             }}
-            className={toolbarClass}
+            className="procurement-demand-control rounded-md border border-slate-300 bg-white px-3 text-slate-700"
           >
-            重置
-          </Button>
-          <Button
-            type="button"
-            size="default"
-            variant="outline"
-            onClick={() => void manualRefresh()}
-            disabled={Boolean(listQuery.isFetching)}
-            className="procurement-demand-control border-[#185FA5]/40 bg-white text-[#185FA5] hover:bg-[#f5f9fd] hover:text-[#185FA5]"
-          >
-            <RefreshCw
-              className={`mr-1.5 h-3.5 w-3.5 ${listQuery.isFetching ? "animate-spin" : ""}`}
+            <option value="latest">最新提交</option>
+            <option value="urgent">紧急优先</option>
+          </select>
+          <div className="ml-auto flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:flex-1">
+            <Input
+              aria-label="搜索需求编号或型号"
+              value={keywordInput}
+              onChange={event => setKeywordInput(event.target.value)}
+              onKeyDown={event => {
+                if (event.key === "Enter") search();
+              }}
+              placeholder="搜索需求编号或型号"
+              className="procurement-demand-control min-w-0 flex-1 bg-white sm:max-w-[320px]"
             />
-            手动刷新
-          </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={search}
+              className={toolbarClass}
+            >
+              <Search className="mr-1 h-3.5 w-3.5" />
+              搜索
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={latest}
+              className={toolbarClass}
+            >
+              查看最新
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void manualRefresh()}
+              disabled={!d51Ready || Boolean(listQuery.isFetching)}
+              className="procurement-demand-control border-[#185FA5]/40 bg-white text-[#185FA5] hover:bg-[#f5f9fd]"
+            >
+              <RefreshCw
+                className={`mr-1.5 h-3.5 w-3.5 ${listQuery.isFetching ? "animate-spin" : ""}`}
+              />
+              手动刷新
+            </Button>
+          </div>
+        </AdminFilterBar>
+        <div
+          className="procurement-demand-conditions mb-3 flex flex-wrap items-center gap-x-4 gap-y-1"
+          aria-label="已应用采购条件"
+        >
+          <span>
+            已应用：{appliedView} ·{" "}
+            {sort === "latest" ? "最新提交" : "紧急优先"} ·{" "}
+            {keyword ? `搜索“${keyword}”` : "未限制关键词"} · 第{page}页
+          </span>
+          {unapplied && (
+            <span className="text-amber-700">
+              输入尚未应用，请按 Enter 或搜索
+            </span>
+          )}
+          <span className="admin-cell-secondary">
+            仅显示当前账号获授权的内部已提交需求；保留本页筛选、页码与返回位置
+          </span>
         </div>
-      </AdminFilterBar>
-      <AdminDataPanel className="gap-0 overflow-hidden p-0">
-        {listQuery.isLoading ? (
-          <div className="admin-cell-secondary flex items-center justify-center gap-2 py-12">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            正在加载采购需求…
+        {!denied && arrivals.count > 0 && (
+          <div
+            className="procurement-demand-arrivals mb-3 flex flex-wrap items-center justify-between gap-2"
+            aria-live="polite"
+          >
+            <span>有 {arrivals.count} 条新需求，列表尚未自动更新</span>
+            <button
+              type="button"
+              className="procurement-demand-text-link"
+              onClick={latest}
+            >
+              查看最新需求
+            </button>
           </div>
-        ) : listQuery.error ? (
-          <div role="alert" className="p-4 text-sm text-red-600">
-            {listQuery.error.message || "采购需求加载失败"}
+        )}
+        {!denied && arrivals.error && (
+          <div className="procurement-demand-conditions mb-3">
+            新需求检查暂未更新 ·{" "}
+            <button
+              type="button"
+              className="procurement-demand-text-link"
+              onClick={() => void arrivals.retry()}
+            >
+              重试检查
+            </button>
           </div>
-        ) : items.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="admin-cell-primary">暂无需求</p>
-            <p className="admin-cell-secondary mt-1">
-              当前筛选条件下没有可报价的内部需求
-            </p>
-          </div>
-        ) : (
-          <Table className="admin-table-readable procurement-demands-table table-fixed" containerClassName="procurement-demands-table-scroll">
-            <colgroup>
-              <col className="w-[170px]" />
-              <col />
-              <col className="w-[90px]" />
-              <col className="w-[110px]" />
-              <col className="w-[100px]" />
-              <col className="w-[166px]" />
-              <col className="w-[90px]" />
-              <col className="w-[174px]" />
-              <col className="w-[160px]" />
-            </colgroup>
-            <TableHeader>
-              <TableRow className="bg-slate-50 hover:bg-slate-50">
-                <TableHead>需求编号</TableHead>
-                <TableHead>型号</TableHead>
-                <TableHead>品牌</TableHead>
-                <TableHead className="text-right">数量</TableHead>
-                <TableHead>交期</TableHead>
-                <TableHead>录入时间</TableHead>
-                <TableHead>销售</TableHead>
-                <TableHead>报价进度</TableHead>
-                <TableHead className="procurement-demand-actions text-right">操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pageRows.map(demand => (
-                <TableRow
-                  key={demand.id}
-                  ref={newInformationRows.getRow(`demand:${demand.id}`).ref}
-                  className="h-[60px]" data-page-memory-row={String(demand.id)}
-                >
-                  <TableCell>
-                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                      <span className="admin-cell-primary procurement-demand-number">{demand.demandNo}</span>
-                      <AdminNewInformationRowBadge isNew={newInformationRows.getRow(`demand:${demand.id}`).isNew} />
-                      {demand.priority === "urgent" ? <span className="procurement-demand-priority font-medium text-red-600">紧急</span> : null}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="admin-cell-primary procurement-demand-model" title={demand.firstPartNumber || undefined}>{demand.firstPartNumber || "—"}</div>
-                    {demand.itemCount > 1 ? <button type="button" className="admin-cell-secondary mt-0.5 text-[#185FA5] hover:underline" aria-label={`查看需求 ${demand.demandNo} 的全部${demand.itemCount}项物料`} onClick={() => setOpenedId(demand.id)}>共{demand.itemCount}项 · 查看全部物料</button> : null}
-                  </TableCell>
-                  <TableCell className="procurement-demand-secondary-data truncate" title={demand.firstBrand || undefined}>{demand.firstBrand || "—"}</TableCell>
-                  <TableCell className="admin-cell-primary whitespace-nowrap text-right tabular-nums">{formatQty(demand.firstQty, demand.firstQtyUnit)}</TableCell>
-                  <TableCell className="procurement-demand-secondary-data truncate" title={demand.firstDeliveryRequirement || undefined}>{demand.firstDeliveryRequirement || "待确认"}</TableCell>
-                  <TableCell className="procurement-demand-secondary-data whitespace-nowrap tabular-nums">{formatBeijingDateTime(demand.createdAt) || "—"}</TableCell>
-                  <TableCell className="procurement-demand-secondary-data truncate" title={demand.salesName || undefined}>{demand.salesName || "—"}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1.5 whitespace-nowrap">
-                      <span aria-hidden="true" className={`text-[10px] ${(demand.mySupplierCount ?? 0) > 0 ? "text-emerald-500" : "text-amber-500"}`}>●</span>
-                      <span className="font-medium">{quoteProgress(demand)}</span>
-                    </div>
-                    {(demand.currentQuoteCount ?? 0) > 0 ? <div className="admin-cell-secondary mt-0.5">全部共{demand.currentQuoteCount}份</div> : null}
-                  </TableCell>
-                  <TableCell className="procurement-demand-actions text-right">
-                    <div className="inline-flex items-center gap-1.5">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setOpenedId(demand.id)}
-                        className="admin-row-action border border-slate-200 bg-white px-2.5 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                      >
-                        查看
-                      </Button>
-                      {quoteable(demand) && (
+        )}
+        <AdminDataPanel className="gap-0 overflow-hidden p-0">
+          {ordinaryFailure && (
+            <div
+              role="alert"
+              className="procurement-demand-update-alert flex flex-wrap items-center gap-2 px-3 py-2"
+            >
+              暂未更新，以下保留上次成功数据 ·{" "}
+              {listQuery.error?.message || "刷新失败"}
+              <button
+                type="button"
+                onClick={() => void manualRefresh()}
+                className="procurement-demand-text-link"
+              >
+                重试刷新
+              </button>
+            </div>
+          )}
+          {denied ? (
+            <div role="alert" className="p-4 text-red-600">
+              当前需求授权已失效，请重新核验权限后重试。
+              <button
+                type="button"
+                className="procurement-demand-text-link ml-2"
+                onClick={() => void manualRefresh()}
+              >
+                重试
+              </button>
+            </div>
+          ) : !d51Ready || (!result && !listQuery.error) ? (
+            <div className="admin-cell-secondary flex items-center justify-center gap-2 py-12">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              正在加载采购需求…
+            </div>
+          ) : !result && listQuery.error ? (
+            <div role="alert" className="p-4 text-red-600">
+              {listQuery.error.message || "采购需求加载失败"}
+              <button
+                type="button"
+                onClick={() => void manualRefresh()}
+                className="procurement-demand-text-link ml-2"
+              >
+                重试刷新
+              </button>
+            </div>
+          ) : items.length === 0 ? (
+            <div className="p-12 text-center">
+              <p className="admin-cell-primary">暂无需求</p>
+              <p className="admin-cell-secondary mt-1">
+                当前筛选条件下没有可报价的内部需求，可点击“查看最新”清除旧条件
+              </p>
+            </div>
+          ) : (
+            <Table
+              className="admin-table-readable procurement-demands-table table-fixed"
+              containerClassName="procurement-demands-table-scroll"
+            >
+              <colgroup>
+                <col />
+                <col className="w-[160px]" />
+                <col className="w-[210px]" />
+                <col className="w-[170px]" />
+                <col className="w-[110px]" />
+              </colgroup>
+              <TableHeader>
+                <TableRow className="bg-slate-50 hover:bg-slate-50">
+                  <TableHead>物料</TableHead>
+                  <TableHead>数量 / 交期</TableHead>
+                  <TableHead>提交信息</TableHead>
+                  <TableHead>本人报价</TableHead>
+                  <TableHead className="text-right">报价</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map(demand => {
+                  const material = demand.matchedItem ?? {
+                    partNumber: demand.firstPartNumber,
+                    brand: demand.firstBrand,
+                    qty: demand.firstQty,
+                    qtyUnit: demand.firstQtyUnit,
+                    deliveryRequirement: demand.firstDeliveryRequirement,
+                  };
+                  const submitted = formatBeijingDateTime(demand.submittedAt);
+                  return (
+                    <TableRow
+                      key={demand.id}
+                      ref={newInformationRows.getRow(`demand:${demand.id}`).ref}
+                      data-page-memory-row={String(demand.id)}
+                    >
+                      <TableCell>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <button
+                            type="button"
+                            onClick={() => setOpenedId(demand.id)}
+                            className="admin-cell-primary procurement-demand-model procurement-demand-text-link"
+                            aria-label={`查看需求 ${demand.demandNo} 的型号详情`}
+                          >
+                            {material.partNumber || "查看物料详情"}
+                          </button>
+                          <AdminNewInformationRowBadge
+                            isNew={
+                              newInformationRows.getRow(`demand:${demand.id}`)
+                                .isNew
+                            }
+                          />
+                          {demand.priority === "urgent" && (
+                            <span className="procurement-demand-priority text-red-600">
+                              紧急
+                            </span>
+                          )}
+                        </div>
+                        <div className="admin-cell-secondary mt-1 procurement-demand-secondary-data">
+                          品牌：{material.brand || "待确认"}
+                        </div>
+                        {demand.itemCount > 1 && (
+                          <button
+                            type="button"
+                            className="admin-cell-secondary procurement-demand-text-link mt-1"
+                            aria-label={`查看需求 ${demand.demandNo} 的全部${demand.itemCount}项物料`}
+                            onClick={() => setOpenedId(demand.id)}
+                          >
+                            {demand.matchedItem
+                              ? `命中第${demand.matchedItem.index}项 / 共${demand.itemCount}项 · 查看全部物料`
+                              : `共${demand.itemCount}项 · 查看全部物料`}
+                          </button>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="admin-cell-primary tabular-nums">
+                          {formatQty(material.qty, material.qtyUnit)}
+                        </div>
+                        <div className="admin-cell-secondary mt-1 procurement-demand-secondary-data">
+                          交期：{material.deliveryRequirement || "待确认"}
+                        </div>
+                        <div
+                          className="admin-cell-secondary mt-1"
+                          title={
+                            formatBeijingDateTime(demand.replyDueAt) ||
+                            undefined
+                          }
+                        >
+                          回复：
+                          {formatBeijingDateTime(demand.replyDueAt) || "待确认"}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div
+                          className="tabular-nums"
+                          title={`提交时间（北京时间）：${formatBeijingDateTimeWithSeconds(demand.submittedAt) || "待确认"}`}
+                        >
+                          {submitted || "提交时间待确认"}
+                        </div>
+                        <button
+                          type="button"
+                          className="procurement-demand-number procurement-demand-text-link mt-1"
+                          aria-label={`查看需求 ${demand.demandNo} 详情`}
+                          onClick={() => setOpenedId(demand.id)}
+                        >
+                          {demand.demandNo}
+                        </button>
+                        <div className="admin-cell-secondary mt-1 procurement-demand-secondary-data">
+                          销售：{demand.salesName || "—"}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">
+                          {quoteProgress(demand)}
+                        </div>
+                        {demand.myQuoteNeedsReconfirmation && (
+                          <div className="procurement-demand-reconfirm mt-1">
+                            旧版报价待重新确认
+                          </div>
+                        )}
+                        {(demand.currentQuoteCount ?? 0) > 0 && (
+                          <div className="admin-cell-secondary mt-1">
+                            全体当前 {demand.currentQuoteCount} 份
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="procurement-demand-actions text-right">
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
-                          onClick={() => setQuoteTarget({ demandId: demand.id })}
-                          className="admin-row-action border border-[#185FA5]/30 bg-white px-2.5 text-[#185FA5] hover:bg-[#f5f9fd] hover:text-[#185FA5]"
+                          disabled={!quoteable(demand) || !listReady}
+                          onClick={() => {
+                            if (!quoteable(demand) || !listReady) return;
+                            // Reconfirmation requires the original controlled personal quote selection/editor.
+                            if (demand.myQuoteNeedsReconfirmation)
+                              setOpenedId(demand.id);
+                            else setQuoteTarget({ demandId: demand.id });
+                          }}
+                          title={
+                            !quoteable(demand)
+                              ? "当前需求不可报价，请查看详情核验"
+                              : !listReady
+                                ? "正在核验当前需求，请稍候"
+                                : undefined
+                          }
+                          className="admin-row-action border-[#185FA5]/30 bg-white px-2.5 text-[#185FA5] hover:bg-[#f5f9fd]"
                         >
-                          {(demand.myActiveQuoteCount ?? 0) > 0 ? "新增报价" : demand.myQuoteNeedsReconfirmation ? "更新报价" : "报价"}
+                          {demand.myQuoteNeedsReconfirmation
+                            ? "更新报价"
+                            : (demand.myActiveQuoteCount ?? 0) > 0
+                              ? "新增报价"
+                              : "报价"}
                         </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+          {result && (result.total ?? 0) > 0 && (
+            <div className="admin-cell-secondary flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-3 py-3">
+              <span>
+                共 {result.total} 条 · 第 {currentPage}/{totalPages} 页
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="admin-row-action bg-white px-2.5"
+                  disabled={currentPage <= 1 || Boolean(listQuery.isFetching)}
+                  onClick={() => setPage(currentPage - 1)}
+                  aria-label="上一页"
+                >
+                  <ChevronLeft className="mr-1 h-3.5 w-3.5" />
+                  上一页
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="admin-row-action bg-white px-2.5"
+                  disabled={
+                    currentPage >= totalPages || Boolean(listQuery.isFetching)
+                  }
+                  onClick={() => setPage(currentPage + 1)}
+                  aria-label="下一页"
+                >
+                  下一页
+                  <ChevronRight className="ml-1 h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </AdminDataPanel>
+        {!denied && d51Ready && openedId !== null && (
+          <ProcurementDemandDetailDialog
+            id={openedId}
+            onClose={() => setOpenedId(null)}
+            onQuote={quoteId => {
+              setOpenedId(null);
+              setQuoteTarget({
+                demandId: openedId,
+                ...(quoteId == null ? {} : { quoteId }),
+              });
+            }}
+          />
         )}
-        {!listQuery.isLoading && !listQuery.error && (result?.total ?? 0) > 0 ? (
-        <div className="admin-cell-secondary flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-3 py-3">
-          <span>共 {result?.total} 条 · 第 {currentPage}/{totalPages} 页</span>
-          <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="admin-row-action bg-white px-2.5"
-            disabled={currentPage <= 1 || Boolean(listQuery.isFetching)}
-            onClick={() => setPage(currentPage - 1)}
-            aria-label="上一页"
-          >
-            <ChevronLeft className="mr-1 h-3.5 w-3.5" />上一页
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="admin-row-action bg-white px-2.5"
-            disabled={
-              currentPage >= totalPages || Boolean(listQuery.isFetching)
-            }
-            onClick={() => setPage(currentPage + 1)}
-            aria-label="下一页"
-          >
-            下一页<ChevronRight className="ml-1 h-3.5 w-3.5" />
-          </Button>
-          </div>
-        </div>
-        ) : null}
-      </AdminDataPanel>
-      {openedId !== null && (
-        <ProcurementDemandDetailDialog
-          id={openedId}
-          onClose={() => setOpenedId(null)}
-          onQuote={quoteId => {
-            setOpenedId(null);
-            setQuoteTarget({ demandId: openedId, ...(quoteId == null ? {} : { quoteId }) });
-          }}
-        />
-      )}
-      {quoteTarget !== null && (
-        <DemandQuoteDialog
-          demandId={quoteTarget.demandId}
-          quoteId={quoteTarget.quoteId}
-          onClose={() => setQuoteTarget(null)}
-          onSaved={() => {
-            void listQuery.refetch?.();
-          }}
-        />
-      )}
-    </AdminPage>
+        {!denied && d51Ready && quoteTarget !== null && (
+          <DemandQuoteDialog
+            demandId={quoteTarget.demandId}
+            quoteId={quoteTarget.quoteId}
+            onClose={() => setQuoteTarget(null)}
+            onSaved={() => {
+              void manualRefresh();
+            }}
+          />
+        )}
+      </AdminPage>
     </PlatformLayout>
   );
 }

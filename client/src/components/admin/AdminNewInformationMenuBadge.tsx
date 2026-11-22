@@ -13,7 +13,7 @@ export function adminNewInformationModuleForPath(path: string): AdminNewInformat
   if (["/workbench/orders", "/workbench/sales-orders", "/workbench/outbound", "/orders"].includes(path)) return "sales";
   return undefined;
 }
-const labels: Record<AdminNewInformationModule, string> = {
+export const adminNewInformationModuleLabels: Record<AdminNewInformationModule, string> = {
   customers: "客户列表", inventory: "库存列表", mall: "商城物料", reception: "询价接待",
   procurement: "采购需求", inbound: "采购入库", sales: "销售订单",
 };
@@ -28,6 +28,9 @@ export function AdminNewInformationMenuBadge({ module, source }: {
   const count = module === "sales" && source && total !== undefined
     ? data?.children?.[source] ?? (data?.available ? 0 : undefined) : total;
   if (summary.syncState(module) === "disabled") return null;
-  return <AdminNewInformationBadge count={count} placement="nav" lastKnown={lastKnown} updateState={summary.syncState(module)}
-    ariaLabel={count === undefined ? undefined : `${labels[module]}${source === "business" ? "·业务订单" : source === "mall" ? "·商城订单" : ""}：${count}条未查看新信息${lastKnown ? "（上次成功查询，当前更新失败）" : ""}`} />;
+  return <span className="admin-new-information-nav-slot" data-admin-new-information-slot={module}>
+    <AdminNewInformationBadge count={count} placement="nav" lastKnown={lastKnown}
+      updateState={summary.presentationState(module)} lastSuccessfulAt={summary.moduleLastSuccessfulAt(module)}
+      ariaLabel={count === undefined ? undefined : `${adminNewInformationModuleLabels[module]}${source === "business" ? "·业务订单" : source === "mall" ? "·商城订单" : ""}：${count}条未查看新信息`} />
+  </span>;
 }

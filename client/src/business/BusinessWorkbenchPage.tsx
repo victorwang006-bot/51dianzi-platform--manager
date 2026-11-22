@@ -67,7 +67,7 @@ import MyInventory from "./platform/client/src/pages/MyInventory";
 import OutboundManagement from "./platform/client/src/pages/OutboundManagement";
 import ProcurementDemands from "./platform/client/src/pages/ProcurementDemands";
 import PublishInventory from "./platform/client/src/pages/PublishInventory";
-
+import { CustomerDemandExactEntry, customerDemandExactId } from "./platform/client/src/components/customerDemands/CustomerDemandExactEntry";
 export type BusinessWorkbenchPageProps = {
   /** Optional host-supplied official merchant ID. It cannot select another workspace. */
   merchantId?: number;
@@ -473,6 +473,8 @@ function businessRouteRequirement(
 
 function BusinessRoutes({ canReply = false }: { canReply?: boolean }) {
   const [location] = useLocation();
+  const search = useSearch();
+  const exactDemandIntent = new URLSearchParams(search).has("demandId");
   // Sales sources enforce their exact original capability inside the wrapper;
   // the legacy CRM requirement must not pre-deny a seller-only /orders entry.
   const pathname = location.split(/[?#]/, 1)[0];
@@ -495,7 +497,7 @@ function BusinessRoutes({ canReply = false }: { canReply?: boolean }) {
       <Route path="/customers/new" component={CustomerCreate} />
       <Route path="/customers/:id" component={CustomerDetail} />
       <Route path="/customers" component={CustomerList} />
-      <Route path="/customer-demands" component={CustomerDemands} />
+      <Route path="/customer-demands">{() => exactDemandIntent ? <CustomerDemandExactEntry id={customerDemandExactId(search)} /> : <CustomerDemands />}</Route>
       <Route path="/orders" component={CrmSalesOrders} />
       <Route path="/sales-orders" component={CrmSalesOrders} />
       <Route path="/outbound" component={BusinessOutboundRoute} />

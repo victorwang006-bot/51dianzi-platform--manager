@@ -161,6 +161,21 @@ describe("客户集中需求与采购报价", () => {
     render(h(CustomerDemandDialog, { customer, demandId: 41, canManageOrders: false, onClose: vi.fn() }));
     expect(host.textContent).toContain("旧版报价"); expect(host.textContent).toContain("原采用已失效"); expect(Array.from(host.querySelectorAll("button")).some(button => button.textContent?.trim() === "采用报价")).toBe(false);
   });
+  it("confirmed submit retains invalidation and exposes 查看此需求 by exact ID even if list refresh fails", async () => {
+    runtime.detail = state(detail({ status: "draft", hasActiveOrders: false }));
+    runtime.invalidate.mockRejectedValueOnce(new Error("synthetic list refresh failed"));
+    const close = vi.fn(); render(h(CustomerDemandDialog, { customer, demandId: 41, onClose: close, canManageOrders: false }));
+    await click("提交采购");
+    expect(runtime.save).toHaveBeenCalledWith(expect.objectContaining({ id: 41, customerId: 12, intent: "submit" }));
+    expect(runtime.invalidate).toHaveBeenCalledWith({ customerId: 12 });
+    expect(runtime.invalidate).toHaveBeenCalledWith({ id: 41 });
+    expect(close).toHaveBeenCalledOnce();
+    const action = runtime.toast.success.mock.calls.at(-1)?.[1]?.action;
+    expect(action?.label).toBe("查看此需求");
+    act(() => action?.onClick());
+    expect(runtime.navigate).toHaveBeenCalledWith("/customer-demands?demandId=41");
+    expect(runtime.navigate.mock.calls.at(-1)?.[0]).not.toContain("keyword");
+  });
   it("submitted revision edits retain stable source IDs and same-payload idempotent retries", async () => {
     runtime.detail = state(detail({ hasActiveOrders: false }));
     runtime.save.mockRejectedValueOnce(new Error("synthetic network timeout")).mockResolvedValueOnce({ id: 41, demandNo: "XQ-41", status: "submitted", version: 4, revision: 3 });

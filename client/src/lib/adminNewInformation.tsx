@@ -416,24 +416,27 @@ export function useAdminNewInformationSummary(
     token: access.token,
     generation: access.generation,
     modules: {} as Partial<Record<AdminNewInformationModule, AdminNewInformationModuleSummary>>,
+    verifiedAt: {} as Partial<Record<AdminNewInformationModule, number>>,
     blocked: new Set<AdminNewInformationModule>(),
     data: undefined as AdminNewInformationSummary | undefined,
     updatedAt: -1,
   });
   if (known.current.token !== access.token || known.current.generation !== access.generation) {
     known.current = {
-      token: access.token, generation: access.generation, modules: {}, blocked: new Set(ADMIN_NEW_INFORMATION_MODULES), data: undefined, updatedAt: -1,
+      token: access.token, generation: access.generation, modules: {}, verifiedAt: {}, blocked: new Set(ADMIN_NEW_INFORMATION_MODULES), data: undefined, updatedAt: -1,
     };
   }
   const cache = known.current;
   if (!access.permitted || revoked) {
     cache.modules = {};
+    cache.verifiedAt = {};
     cache.blocked = new Set(ADMIN_NEW_INFORMATION_MODULES);
     cache.data = query.data;
     cache.updatedAt = query.dataUpdatedAt;
   }
   const forget = (module: AdminNewInformationModule) => {
     delete cache.modules[module];
+    delete cache.verifiedAt[module];
     cache.blocked.add(module);
   };
   const validCount = (value: unknown): value is number =>
@@ -450,12 +453,16 @@ export function useAdminNewInformationSummary(
           (!item.available && item.reason !== "temporary")) forget(module);
       else if (item.available && validCount(item.count)) {
         cache.modules[module] = { ...item, ...(item.children ? { children: { ...item.children } } : {}) };
+        cache.verifiedAt[module] = query.dataUpdatedAt;
         cache.blocked.delete(module);
       } else if (item.reason === "temporary" && item.lastKnown === true && validCount(item.count) &&
           !cache.blocked.has(module)) {
         // This is the latest completed SERVER query in this boundary, not a
         // local decrement. A newer valid lastKnown replaces the older hook value.
         cache.modules[module] = { ...item, ...(item.children ? { children: { ...item.children } } : {}) };
+        // The server supplied no timestamp for that historical value. Do not
+        // attach our previous successful number's time to a replacement value.
+        delete cache.verifiedAt[module];
       }
     }
   }
@@ -490,11 +497,29 @@ export function useAdminNewInformationSummary(
     if ((runtime.summaryCompleted.get(key) ?? -1) < (runtime.invalidations.get(key) ?? 0)) return "pending";
     return query.isSuccess && item?.available ? "synced" : "pending";
   };
+  /** Presentation ONLY: ordinary fetch = polling/focus/manual read with a valid
+   * successful module snapshot and no invalidation/new receipt epoch outstanding.
+   * Never feed this into row/detail acknowledgement: syncState stays pending
+   * throughout EVERY fetch. invalidateQueries and cross-QC/fresh-ack invalidations
+   * remain genuinely pending until a fresh guarded summary completes. */
+  const presentationState = (module: AdminNewInformationModule) => {
+    const state = syncState(module);
+    const key = access.token ? invalidationKey(access.token) : undefined;
+    const invalidated = access.queryClient.getQueryState(adminNewInformationKeys.summary(options.accountKey))?.isInvalidated;
+    const completed = key !== undefined && (runtime.summaryCompleted.get(key) ?? -1) >= (runtime.invalidations.get(key) ?? 0);
+    return state === "pending" && query.isFetching && query.isSuccess && !query.isError &&
+      !invalidated && completed && summary?.modules[module]?.available === true &&
+      moduleSummary(module) !== undefined && !isModuleLastKnown(module)
+      ? "refreshing" as const : state;
+  };
   return {
     query,
     summary,
     moduleSummary,
     syncState,
+    presentationState,
+    moduleLastSuccessfulAt: (module: AdminNewInformationModule) =>
+      moduleSummary(module) !== undefined ? cache.verifiedAt[module] : undefined,
     retrySummary: () => access.valid() && visible ? query.refetch({ cancelRefetch: true }) : Promise.resolve(undefined),
     isModuleLastKnown,
     lastKnown: ADMIN_NEW_INFORMATION_MODULES.some(module => isModuleLastKnown(module)),

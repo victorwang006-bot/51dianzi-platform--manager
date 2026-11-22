@@ -453,7 +453,11 @@ function CustomerDemandDialogSession({ customer, demandId, mode = "edit", onClos
       void utils.customerDemand.revisionHistory.invalidate({ id: result.id }).catch(() => undefined);
       try { onSaved?.(); } catch { toast.warning("需求已保存，关联列表刷新失败，请稍后刷新。"); }
       if (intent === "submit" || intent === "update") {
-        toast.success(intent === "update" ? "需求变更已保存" : "需求已提交采购", { description: intent === "update" ? `${result.demandNo} · V${result.revision ?? 1}` : result.demandNo });
+        toast.success(intent === "update" ? "需求变更已保存" : "需求已提交采购", {
+          description: intent === "update" ? `${result.demandNo} · V${result.revision ?? 1}` : result.demandNo,
+          // Exact ID navigation retains the existing sales gate; get rechecks current authorization.
+          action: { label: "查看此需求", onClick: () => navigate(`/customer-demands?demandId=${result.id}`) },
+        });
         onClose();
       } else {
         setSaveHint(`草稿已保存${result.demandNo ? `，编号 ${result.demandNo}` : ""}`);

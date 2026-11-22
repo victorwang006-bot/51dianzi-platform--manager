@@ -65,3 +65,51 @@
 .admin-workspace-nav__tab:has([data-admin-new-information="update-status"]) {
   position: relative;
 }
+
+/* notification-nav-20261122 BEGIN: count/status/zero share ONE bounded slot.
+ * Only this notification wrapper participates; chat/legacy badges are untouched. */
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-nav__tab:has(> .admin-new-information-nav-slot) {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-nav-slot {
+  position: static;
+  display: inline-flex;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 18px;
+  align-self: center;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 0;
+  padding: 0;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-nav-slot > :is([data-admin-new-information="count"], [data-admin-new-information="update-status"])[data-placement="nav"] {
+  position: static;
+  inset: auto;
+  transform: none;
+  z-index: auto;
+  display: inline-flex;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  align-self: center;
+  min-width: 16px;
+  max-width: 32px;
+  height: 16px;
+  margin: 0;
+  padding: 0 3px;
+  font-size: 10px !important;
+  line-height: 16px;
+  box-shadow: none !important;
+  pointer-events: auto;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-nav-symbol {
+  margin-left: 1px;
+  font-size: 10px;
+  line-height: 16px;
+}
+/* notification-nav-20261122 END */

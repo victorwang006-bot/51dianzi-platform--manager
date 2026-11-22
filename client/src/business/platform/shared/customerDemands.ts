@@ -67,10 +67,23 @@ export const customerDemandRevisionListSchema = z.object({
   page: z.number().int().min(1).default(1),
   pageSize: z.number().int().min(1).max(20).default(5),
 });
+/** Canonical UTC cursor only; bounded to the native Beijing MySQL DATETIME range. */
+export const procurementSubmissionCursorSchema = z.object({
+  submittedAt: z.string().length(24).datetime({ precision: 3 }).refine(value => {
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) && date.toISOString() === value
+      && value >= "1000-01-01T00:00:00.000Z" && value <= "9999-12-31T15:59:59.999Z";
+  }, "提交时间游标无效"),
+  id,
+}).strict();
+export type ProcurementSubmissionCursor = z.infer<typeof procurementSubmissionCursorSchema>;
 export const procurementDemandListSchema = z.object({
   // mine/unassigned remain accepted for old browsers: they are quote-state aliases, not claim state.
-  view: z.enum(["all", "quoted", "unquoted", "mine", "unassigned"]).default("all"),
+  view: z.enum(["all", "quoted", "unquoted", "reconfirm", "mine", "unassigned"]).default("all"),
+  sort: z.enum(["latest", "urgent"]).default("latest"),
   keyword: text(128), page: id.default(1), pageSize: z.number().int().min(1).max(100).default(20),
+  /** Omitted: baseline only. Null: the authorized, filtered set with nonnull submittedAt was observed empty; total may be positive. */
+  newSince: procurementSubmissionCursorSchema.nullable().optional(),
 });
 export const salesDemandListSchema = z.object({
   keyword: text(128),
@@ -127,6 +140,8 @@ export type ProcurementDemandSummary = Omit<CustomerDemandSummary, "customerId" 
   firstQty: number | null;
   firstQtyUnit: string;
   firstDeliveryRequirement: string;
+  /** One SQL-LIKE-matching material, ordered by sortOrder/id; index is one-based among all materials. */
+  matchedItem?: { index: number; partNumber: string; brand: string; qty: number | null; qtyUnit: string; deliveryRequirement: string };
   myActiveQuoteCount: number;
   mySupplierCount: number;
   myQuoteRoundCount: number;
@@ -154,6 +169,12 @@ export type SalesDemandStageCounts = Record<CustomerDemandWorkflowStage, number>
 export type SalesDemandPage = DemandPage<SalesDemandSummary> & { counts: SalesDemandStageCounts };
 export type CustomerDemandSaveResult = { id: number; demandNo: string; status: CustomerDemandStatus; version: number; revision?: number; replayed: boolean };
 export type DemandPage<T> = { items: T[]; total: number; page: number; pageSize: number };
+export type ProcurementDemandPage = DemandPage<ProcurementDemandSummary> & {
+  /** Latest nonnull submittedAt/id in the same authorized, filtered scope; null does not imply total=0. Independent of page/sort. */
+  latestSubmission: ProcurementSubmissionCursor | null;
+  /** Present only when newSince was supplied; excludes null submittedAt, never guesses from createdAt/updatedAt or unread state. */
+  newCount?: number;
+};
 export type CustomerDemandRevision = {
   id: number;
   revision: number;
