@@ -30,7 +30,6 @@ import { getAdminListLocationLayout } from "./adminListLocationLayout";
 import InquiryReceptionNavigationBadge from "./InquiryReceptionNavigationBadge";
 import { getSalesOrderNavigationContext, type SalesOrderSource } from "@/lib/salesOrderWorkspace";
 import { getAdminWorkspaceDropdownWidth, getAdminWorkspaceDropdownLeft, getAdminWorkspaceSubmenuPlacement } from "@/lib/adminWorkspaceDropdownWidth";
-import { getAdminHeaderNavigationLayout, type AdminHeaderNavigationLayout } from "@/lib/adminHeaderNavigationLayout";
 import "./AdminWorkspaceNavigation.css";
 import "./AdminListPage.css";
 
@@ -49,8 +48,6 @@ export type AdminWorkspaceTabsProps<T extends AdminWorkspaceNavigationItem> = {
   /** Parent-friendly alias for route-chunk preloading. */
   onPreload?: (item: T) => void;
   className?: string;
-  /** Existing account dropdown, aligned with authorized utility entries. */
-  accountMenu?: ReactNode;
 };
 
 export type AdminWorkspaceItemRenderState = {
@@ -103,7 +100,7 @@ function handleNavigationKeys(event: KeyboardEvent<HTMLElement>) {
   buttons[next].scrollIntoView?.({ block: "nearest", inline: "nearest" });
 }
 
-type UnifiedWorkspaceId = AdminWorkspaceId | "sales-orders" | "inventory-management" | "procurement-management" | "more";
+type UnifiedWorkspaceId = AdminWorkspaceId | "sales-orders" | "inventory-management" | "procurement-management";
 const HOVER_CLOSE_DELAY = 180;
 
 function channelQueryForLocation(location: string) {
@@ -181,7 +178,6 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
   renderItem,
   renderBadge,
   className,
-  accountMenu,
 }: AdminModuleTabsProps<T>) {
   const state = getAdminWorkspaceNavigationState(items, location);
   const customerItem = items.find(item => item.path === "/workbench/customers");
@@ -226,50 +222,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     : state.activeWorkspace?.id ?? null;
   const operationsMessageItem = operationsEntries.flatMap(entry => entry.kind === "group" ? entry.items : [entry.item])
     .find(item => item.path === "/messages");
-  const businessIds = [
-    ...(customerItem ? ["customers"] : []), ...(channelItem ? ["inventory"] : []),
-    ...(mallItem ? ["mall-materials"] : []), ...(receptionItem ? ["inquiries"] : []),
-    ...workspaces.filter(workspace => workspace.workspaceId === "business").map(workspace => workspace.id),
-  ];
-  const utilityWorkspaces = workspaces.filter(workspace => workspace.workspaceId !== "business");
   const navRef = useRef<HTMLElement>(null);
-  const accountRef = useRef<HTMLDivElement>(null);
-  const moreTriggerRef = useRef<HTMLButtonElement>(null);
-  const [headerLayout, setHeaderLayout] = useState<AdminHeaderNavigationLayout | null>(null);
-  const layout = headerLayout ?? { visibleBusinessCount: businessIds.length, collapseUtilities: false };
-  const overflowIds = new Set([
-    ...businessIds.slice(layout.visibleBusinessCount),
-    ...(layout.collapseUtilities ? utilityWorkspaces.map(workspace => workspace.id) : []),
-  ]);
-  const showMore = overflowIds.size > 0;
-  const moreWorkspace: typeof workspaces[number] = { id: "more", workspaceId: "business", label: "更多", items };
-  const findWorkspace = (id: UnifiedWorkspaceId) => id === "more" ? (showMore ? moreWorkspace : undefined) : workspaces.find(workspace => workspace.id === id);
-  // Measure only chrome. No reads, marks, authorization changes, or route effects.
-  useLayoutEffect(() => {
-    const nav = navRef.current;
-    if (!nav) return;
-    const measure = () => {
-      const style = getComputedStyle(nav);
-      const value = (name: string, fallback: number) => Number.parseFloat(style.getPropertyValue(name)) || fallback;
-      const next = getAdminHeaderNavigationLayout({
-        width: nav.clientWidth, businessCount: businessIds.length, utilityCount: utilityWorkspaces.length,
-        accountWidth: accountRef.current?.getBoundingClientRect().width ?? 0,
-        cellWidth: value("--admin-nav-cell-width", 124), utilityWidth: value("--admin-nav-utility-width", 140),
-        gap: value("--admin-nav-gap", 8), groupGap: value("--admin-nav-group-gap", 16),
-        moreWidth: value("--admin-nav-more-width", 68),
-      });
-      setHeaderLayout(current => current?.visibleBusinessCount === next.visibleBusinessCount && current.collapseUtilities === next.collapseUtilities ? current : next);
-    };
-    measure();
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
-    observer?.observe(nav);
-    if (accountRef.current) observer?.observe(accountRef.current);
-    window.addEventListener("resize", measure);
-    document.fonts?.addEventListener("loadingdone", measure);
-    let disposed = false;
-    void document.fonts?.ready.then(() => { if (!disposed) measure(); });
-    return () => { disposed = true; observer?.disconnect(); window.removeEventListener("resize", measure); document.fonts?.removeEventListener("loadingdone", measure); };
-  }, [items, businessIds.length, utilityWorkspaces.length, accountMenu]);
   const triggerRefs = useRef(new Map<UnifiedWorkspaceId, HTMLButtonElement>());
   const groupRefs = useRef(new Map<AdminWorkspaceNavigationGroupId, HTMLButtonElement>());
   const layerRef = useRef<HTMLDivElement>(null);
@@ -299,7 +252,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     focus?: { level: 2 | 3; target: "first" | "last" | AdminWorkspaceNavigationGroupId };
   } | null>(null);
   const openWorkspace = open?.items === items && open.location === location
-    ? findWorkspace(open.id) : undefined;
+    ? workspaces.find(workspace => workspace.id === open.id) : undefined;
   const expanded = !!openWorkspace;
   const moduleEntries = open?.id === "operations" ? operationsEntries : [];
   const selectedGroup = expanded && open?.group
@@ -333,7 +286,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     if (layerRef.current) layerRef.current.hidden = true;
     if (open) triggerRefs.current.get(open.id)?.setAttribute("aria-expanded", "false");
     setOpen(null);
-    if (restoreFocus && expanded && open) (open.id === "more" || overflowIds.has(open.id) ? moreTriggerRef.current : triggerRefs.current.get(open.id))?.focus({ preventScroll: true });
+    if (restoreFocus && expanded && open) triggerRefs.current.get(open.id)?.focus({ preventScroll: true });
   }
 
   function workspacePanelWidth(workspace: typeof workspaces[number], measuredWidth?: number) {
@@ -349,8 +302,8 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     cancelHoverClose();
     // Re-entering a parent must not reset its selected child or steal focus.
     if (source === "hover" && expanded && open?.id === id) return;
-    const workspace = findWorkspace(id);
-    const trigger = id === "more" || overflowIds.has(id) ? moreTriggerRef.current : triggerRefs.current.get(id);
+    const workspace = workspaces.find(entry => entry.id === id);
+    const trigger = triggerRefs.current.get(id);
     if (!workspace || workspace.directItem || !trigger) return;
     const rect = trigger.getBoundingClientRect();
     const width = workspacePanelWidth(workspace);
@@ -394,8 +347,6 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     setOpen({ ...open, group: null, focus: { level: 2, target: group.id } });
   }
 
-  useEffect(() => { closeWorkspace(); }, [layout.visibleBusinessCount, layout.collapseUtilities]);
-
   // Cancel delayed work on URL/query, permission snapshot changes and unmount.
   useEffect(() => () => cancelHoverClose(), [items, location]);
 
@@ -406,7 +357,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     let disposed = false;
     const measurePanels = () => {
       if (disposed || layerRef.current?.hidden) return;
-      const trigger = open.id === "more" || overflowIds.has(open.id) ? moreTriggerRef.current : triggerRefs.current.get(open.id);
+      const trigger = triggerRefs.current.get(open.id);
       if (!trigger || !panelRef.current) return;
       const width = workspacePanelWidth(openWorkspace, panelRef.current.getBoundingClientRect().width);
       const left = getAdminWorkspaceDropdownLeft(trigger.getBoundingClientRect().left, width, window.innerWidth);
@@ -548,9 +499,75 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
     );
   }
 
-  if (!customerItem && !channelItem && !mallItem && !receptionItem && !salesItem && !workspaces.length && !accountMenu) return null;
+  if (!customerItem && !channelItem && !mallItem && !receptionItem && !salesItem && !workspaces.length) return null;
 
-  function renderWorkspace(workspace: typeof workspaces[number]) {
+  return (
+    <nav
+      ref={navRef}
+      className={`admin-workspace-nav__tabs admin-workspace-nav__tabs--workspaces${className ? ` ${className}` : ""}`}
+      aria-label="工作区切换"
+      data-admin-navigation="unified-dropdown"
+      data-system-version={ADMIN_SYSTEM_RELEASE}
+      data-display-time-zone={BEIJING_TIME_ZONE}
+      title={`系统版本：${ADMIN_SYSTEM_RELEASE} · 北京时间（UTC+8）`}
+      onKeyDown={handleNavigationKeys}
+      onPointerLeave={scheduleHoverClose}
+    >
+      {customerItem ? (
+        <button type="button"
+          className="admin-workspace-nav__tab admin-workspace-nav__workspace"
+          data-workspace-nav-target="customers" data-navigation-level="1"
+          data-active={customerActive ? "true" : "false"} aria-current={customerActive ? "page" : undefined}
+          onClick={() => { closeWorkspace(); onNavigate(customerItem); }}
+          onPointerEnter={event => {
+            cancelHoverClose();
+            if (isDesktopMouse(event) && expanded) closeWorkspace();
+            (onPreload ?? onItemIntent)?.(customerItem);
+          }}
+          onFocus={() => (onPreload ?? onItemIntent)?.(customerItem)}
+        >客户列表{renderBadge?.(customerItem)}</button>
+      ) : null}
+      {channelItem ? (
+        <button type="button"
+          className="admin-workspace-nav__tab admin-workspace-nav__workspace"
+          title="渠道物料查询"
+          data-workspace-nav-target="inventory"
+          data-navigation-level="1" data-channel-view="flat"
+          data-active={channelActive ? "true" : "false"} aria-current={channelActive ? "page" : undefined}
+          onClick={() => { closeWorkspace(); onNavigate(channelItem, "materials", "flat"); }}
+          onPointerEnter={event => {
+            cancelHoverClose();
+            if (isDesktopMouse(event) && expanded) closeWorkspace();
+            (onPreload ?? onItemIntent)?.(channelItem);
+          }}
+          onFocus={() => (onPreload ?? onItemIntent)?.(channelItem)}
+        >库存列表{renderBadge?.(channelItem)}</button>
+      ) : null}
+      {mallItem ? (
+        <button type="button"
+          className="admin-workspace-nav__tab admin-workspace-nav__workspace"
+          title="商城物料管理" data-workspace-nav-target="mall-materials" data-navigation-level="1"
+          data-active={mallActive ? "true" : "false"} aria-current={mallActive ? "page" : undefined}
+          onClick={() => { closeWorkspace(); onNavigate(mallItem); }}
+          onPointerEnter={event => { cancelHoverClose(); if (isDesktopMouse(event) && expanded) closeWorkspace(); (onPreload ?? onItemIntent)?.(mallItem); }}
+          onFocus={() => (onPreload ?? onItemIntent)?.(mallItem)}
+        >商城物料{renderBadge?.(mallItem)}</button>
+      ) : null}
+      {receptionItem ? (
+        <button type="button"
+          className="admin-workspace-nav__tab admin-workspace-nav__workspace"
+          data-workspace-nav-target="inquiries" data-navigation-level="1"
+          data-active={receptionActive ? "true" : "false"} aria-current={receptionActive ? "page" : undefined}
+          onClick={() => { closeWorkspace(); onNavigate(receptionItem); }}
+          onPointerEnter={event => {
+            cancelHoverClose();
+            if (isDesktopMouse(event) && expanded) closeWorkspace();
+            (onPreload ?? onItemIntent)?.(receptionItem);
+          }}
+          onFocus={() => (onPreload ?? onItemIntent)?.(receptionItem)}
+        >询价接待{renderBadge?.(receptionItem)}</button>
+      ) : null}
+      {workspaces.map(workspace => {
         const isActive = workspace.id === "sales-orders" ? salesActive : workspace.id === activeWorkspaceId;
         const isExpanded = expanded && open?.id === workspace.id;
         const id = `${instanceId}-${workspace.id}`;
@@ -559,19 +576,17 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
           return (
             <button key={workspace.id} type="button"
               className="admin-workspace-nav__tab admin-workspace-nav__workspace"
-              title={workspace.label} data-workspace-nav-target={workspace.id} data-navigation-level={overflowIds.has(workspace.id) ? 2 : 1}
-              data-workspace-nav-child={overflowIds.has(workspace.id) ? "true" : undefined}
-              data-navigation-choice={overflowIds.has(workspace.id) ? "item" : undefined}
+              title={workspace.label} data-workspace-nav-target={workspace.id} data-navigation-level="1"
               data-workspace-direct-item={item.path}
               data-active={isActive ? "true" : "false"} aria-current={isActive ? "page" : undefined}
               onClick={() => { closeWorkspace(); onNavigate(item); }}
               onPointerEnter={event => {
                 cancelHoverClose();
-                if (isDesktopMouse(event) && expanded && open?.id !== "more") closeWorkspace();
+                if (isDesktopMouse(event) && expanded) closeWorkspace();
                 (onPreload ?? onItemIntent)?.(item);
               }}
               onFocus={() => (onPreload ?? onItemIntent)?.(item)}
-            ><span className="admin-workspace-nav__primary-label">{workspace.label}</span><span className="admin-workspace-nav__badge-slot">{renderBadge?.(item)}</span><span className="admin-workspace-nav__arrow-slot" aria-hidden="true" /></button>
+            >{workspace.label}{renderBadge?.(item)}</button>
           );
         }
         return (
@@ -586,14 +601,12 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
             className="admin-workspace-nav__tab admin-workspace-nav__workspace admin-workspace-nav__workspace-trigger"
             title={workspace.id === "inventory-management" ? "采购入库" : undefined}
             data-workspace-nav-target={workspace.id}
-            data-navigation-level={overflowIds.has(workspace.id) ? 2 : 1}
-              data-workspace-nav-child={overflowIds.has(workspace.id) ? "true" : undefined}
-              data-navigation-choice={overflowIds.has(workspace.id) ? "item" : undefined}
+            data-navigation-level="1"
             data-workspace-dropdown-trigger={workspace.id}
             data-active={isActive ? "true" : "false"}
             aria-current={isActive ? "location" : undefined}
             aria-expanded={isExpanded}
-            aria-controls={isExpanded ? `${instanceId}-${workspace.id}` : undefined}
+            aria-controls={isExpanded ? id : undefined}
             onClick={() => {
               if (isExpanded && open?.source === "activation") closeWorkspace();
               else if (isExpanded && open) {
@@ -605,7 +618,6 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
               if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
               if (!["ArrowDown", "ArrowUp", "Enter", " "].includes(event.key)) return;
               event.preventDefault();
-              if (overflowIds.has(workspace.id)) event.stopPropagation();
               if (isExpanded && ["Enter", " "].includes(event.key)) closeWorkspace();
               else openWorkspaceMenu(workspace.id, event.key === "ArrowUp" ? "last" : "first");
             }}
@@ -617,116 +629,13 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
             onPointerLeave={scheduleHoverClose}
             onFocus={() => (onPreload ?? onItemIntent)?.(workspace.id === "sales-orders" ? salesItem! : workspace.items[0])}
           >
-            <span className="admin-workspace-nav__primary-label">{workspace.label}</span>
-            <span className="admin-workspace-nav__badge-slot">
-              {workspace.id === "sales-orders" && salesItem ? renderBadge?.(salesItem) : null}
-              {workspace.id === "operations" && operationsMessageItem ? renderBadge?.(operationsMessageItem) : null}
-            </span>
-            <span className="admin-workspace-nav__chevron admin-workspace-nav__arrow-slot" aria-hidden="true">▾</span>
+            {workspace.label}
+            {workspace.id === "sales-orders" && salesItem ? renderBadge?.(salesItem) : null}
+            {workspace.id === "operations" && operationsMessageItem ? renderBadge?.(operationsMessageItem) : null}
+            <span className="admin-workspace-nav__chevron" aria-hidden="true">▾</span>
           </button>
         );
-  }
-  const primaryBusiness = [
-    ...(customerItem ? [{ id: "customers", node: (
-      <button type="button"
-          className="admin-workspace-nav__tab admin-workspace-nav__workspace"
-          data-workspace-nav-target="customers" data-navigation-level={overflowIds.has("customers") ? 2 : 1}
-          data-workspace-nav-child={overflowIds.has("customers") ? "true" : undefined}
-          data-navigation-choice={overflowIds.has("customers") ? "item" : undefined}
-          data-active={customerActive ? "true" : "false"} aria-current={customerActive ? "page" : undefined}
-          onClick={() => { closeWorkspace(); onNavigate(customerItem); }}
-          onPointerEnter={event => {
-            cancelHoverClose();
-            if (isDesktopMouse(event) && expanded && open?.id !== "more") closeWorkspace();
-            (onPreload ?? onItemIntent)?.(customerItem);
-          }}
-          onFocus={() => (onPreload ?? onItemIntent)?.(customerItem)}
-        ><span className="admin-workspace-nav__primary-label">客户列表</span><span className="admin-workspace-nav__badge-slot">{renderBadge?.(customerItem)}</span><span className="admin-workspace-nav__arrow-slot" aria-hidden="true" /></button>
-    ) }] : []),
-    ...(channelItem ? [{ id: "inventory", node: (
-      <button type="button"
-          className="admin-workspace-nav__tab admin-workspace-nav__workspace"
-          title="渠道物料查询"
-          data-workspace-nav-target="inventory"
-          data-navigation-level={overflowIds.has("inventory") ? 2 : 1}
-          data-workspace-nav-child={overflowIds.has("inventory") ? "true" : undefined}
-          data-navigation-choice={overflowIds.has("inventory") ? "item" : undefined} data-channel-view="flat"
-          data-active={channelActive ? "true" : "false"} aria-current={channelActive ? "page" : undefined}
-          onClick={() => { closeWorkspace(); onNavigate(channelItem, "materials", "flat"); }}
-          onPointerEnter={event => {
-            cancelHoverClose();
-            if (isDesktopMouse(event) && expanded && open?.id !== "more") closeWorkspace();
-            (onPreload ?? onItemIntent)?.(channelItem);
-          }}
-          onFocus={() => (onPreload ?? onItemIntent)?.(channelItem)}
-        ><span className="admin-workspace-nav__primary-label">库存列表</span><span className="admin-workspace-nav__badge-slot">{renderBadge?.(channelItem)}</span><span className="admin-workspace-nav__arrow-slot" aria-hidden="true" /></button>
-    ) }] : []),
-    ...(mallItem ? [{ id: "mall-materials", node: (
-      <button type="button"
-          className="admin-workspace-nav__tab admin-workspace-nav__workspace"
-          title="商城物料管理" data-workspace-nav-target="mall-materials" data-navigation-level={overflowIds.has("mall-materials") ? 2 : 1}
-          data-workspace-nav-child={overflowIds.has("mall-materials") ? "true" : undefined}
-          data-navigation-choice={overflowIds.has("mall-materials") ? "item" : undefined}
-          data-active={mallActive ? "true" : "false"} aria-current={mallActive ? "page" : undefined}
-          onClick={() => { closeWorkspace(); onNavigate(mallItem); }}
-          onPointerEnter={event => { cancelHoverClose(); if (isDesktopMouse(event) && expanded && open?.id !== "more") closeWorkspace(); (onPreload ?? onItemIntent)?.(mallItem); }}
-          onFocus={() => (onPreload ?? onItemIntent)?.(mallItem)}
-        ><span className="admin-workspace-nav__primary-label">商城物料</span><span className="admin-workspace-nav__badge-slot">{renderBadge?.(mallItem)}</span><span className="admin-workspace-nav__arrow-slot" aria-hidden="true" /></button>
-    ) }] : []),
-    ...(receptionItem ? [{ id: "inquiries", node: (
-      <button type="button"
-          className="admin-workspace-nav__tab admin-workspace-nav__workspace"
-          data-workspace-nav-target="inquiries" data-navigation-level={overflowIds.has("inquiries") ? 2 : 1}
-          data-workspace-nav-child={overflowIds.has("inquiries") ? "true" : undefined}
-          data-navigation-choice={overflowIds.has("inquiries") ? "item" : undefined}
-          data-active={receptionActive ? "true" : "false"} aria-current={receptionActive ? "page" : undefined}
-          onClick={() => { closeWorkspace(); onNavigate(receptionItem); }}
-          onPointerEnter={event => {
-            cancelHoverClose();
-            if (isDesktopMouse(event) && expanded && open?.id !== "more") closeWorkspace();
-            (onPreload ?? onItemIntent)?.(receptionItem);
-          }}
-          onFocus={() => (onPreload ?? onItemIntent)?.(receptionItem)}
-        ><span className="admin-workspace-nav__primary-label">询价接待</span><span className="admin-workspace-nav__badge-slot">{renderBadge?.(receptionItem)}</span><span className="admin-workspace-nav__arrow-slot" aria-hidden="true" /></button>
-    ) }] : []),
-    ...workspaces.filter(workspace => workspace.workspaceId === "business").map(workspace => ({ id: workspace.id, node: renderWorkspace(workspace) })),
-  ];
-  const primaryUtilities = utilityWorkspaces.map(workspace => ({ id: workspace.id, node: renderWorkspace(workspace) }));
-  const overflowEntries = [...primaryBusiness, ...primaryUtilities].filter(entry => overflowIds.has(entry.id));
-
-  return (
-    <nav
-      ref={navRef}
-      className={`admin-workspace-nav__tabs admin-workspace-nav__tabs--workspaces${className ? ` ${className}` : ""}`}
-      aria-label="工作区切换"
-      data-admin-navigation="unified-dropdown"
-      data-system-version={ADMIN_SYSTEM_RELEASE}
-      data-display-time-zone={BEIJING_TIME_ZONE}
-      title={`系统版本：${ADMIN_SYSTEM_RELEASE} · 北京时间（UTC+8）`}
-      onKeyDown={handleNavigationKeys}
-      onPointerLeave={scheduleHoverClose}
-    >
-      <div className="admin-workspace-nav__business" data-admin-navigation-group="business">
-        {primaryBusiness.filter(entry => !overflowIds.has(entry.id)).map(entry => <span className="admin-workspace-nav__primary-cell" key={entry.id}>{entry.node}</span>)}
-        {showMore ? <button ref={moreTriggerRef} id={`${instanceId}-more-trigger`} type="button"
-          className="admin-workspace-nav__tab admin-workspace-nav__workspace admin-workspace-nav__more"
-          data-workspace-nav-target="more" data-workspace-dropdown-trigger="more" data-navigation-level="1"
-          data-active={overflowEntries.some(entry => entry.id === activeWorkspaceId || entry.id === "customers" && customerActive || entry.id === "inventory" && channelActive || entry.id === "mall-materials" && mallActive || entry.id === "inquiries" && receptionActive) ? "true" : "false"}
-          aria-label="更多导航入口" aria-expanded={expanded && open?.id === "more"}
-          aria-controls={expanded && open?.id === "more" ? `${instanceId}-more` : undefined}
-          onClick={() => expanded && open?.id === "more" ? closeWorkspace() : openWorkspaceMenu("more")}
-          onKeyDown={event => {
-            if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || !["ArrowDown", "ArrowUp", "Enter", " "].includes(event.key)) return;
-            event.preventDefault();
-            if (expanded && open?.id === "more" && ["Enter", " "].includes(event.key)) closeWorkspace();
-            else openWorkspaceMenu("more", event.key === "ArrowUp" ? "last" : "first");
-          }}
-        >更多<span className="admin-workspace-nav__chevron" aria-hidden="true">▾</span></button> : null}
-      </div>
-      <div className="admin-workspace-nav__utilities" data-admin-navigation-group="utilities">
-        {primaryUtilities.filter(entry => !overflowIds.has(entry.id)).map(entry => <span className="admin-workspace-nav__primary-cell" key={entry.id}>{entry.node}</span>)}
-        {accountMenu ? <div ref={accountRef} className="admin-workspace-nav__account">{accountMenu}</div> : null}
-      </div>
+      })}
       {expanded && open && openWorkspace ? (
         <div
           ref={layerRef}
@@ -745,8 +654,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
             ref={panelRef}
             id={panelId}
             role="region"
-            aria-labelledby={overflowIds.has(open.id) ? undefined : `${panelId}-trigger`}
-            aria-label={overflowIds.has(open.id) ? openWorkspace.label : undefined}
+            aria-labelledby={`${panelId}-trigger`}
             data-admin-navigation="workspace-dropdown"
             data-workspace-dropdown="panel"
             data-workspace={open.id}
@@ -766,7 +674,7 @@ export function WorkspaceTabs<T extends AdminWorkspaceNavigationItem>({
                 onClick={() => closeWorkspace(true)}>关闭</button>
             </div>
             <div className="admin-workspace-nav__workspace-content" data-workspace-dropdown="content">
-              {open.id === "more" ? overflowEntries.map(entry => <span className="admin-workspace-nav__overflow-cell" key={entry.id}>{entry.node}</span>) : open.id === "operations" ? moduleEntries.map(entry => entry.kind === "direct"
+              {open.id === "operations" ? moduleEntries.map(entry => entry.kind === "direct"
                 ? renderLeaf(entry.item, openWorkspace.workspaceId, 2)
                 : (
                   <button key={entry.id}

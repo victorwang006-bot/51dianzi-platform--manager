@@ -84,7 +84,6 @@ import {
 import { AdminNewInformationMenuBadge, adminNewInformationModuleForPath } from "./admin/AdminNewInformationMenuBadge";
 import { ADMIN_NEW_INFORMATION_MODULES, type AdminNewInformationModule, type AdminNewInformationSummary, type AdminNewInformationInspection } from "@shared/adminNewInformation";
 import "./DashboardLayout.css";
-import "./admin/AdminHeaderNavigation.css";
 
 type AdminNewInformationRPC = {
   newInformation: {
@@ -679,7 +678,7 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
             onNavigate={navigateToItem}
             onPreload={preloadItem}
             renderBadge={renderBadge}
-            accountMenu={
+          />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -726,8 +725,6 @@ function DashboardLayoutContent({ children }: DashboardLayoutContentProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-            }
-          />
         </header>
       </div>
       <main className="admin-workspace-shell__main admin-unified-content" data-admin-ui-system="channel-inventory">
