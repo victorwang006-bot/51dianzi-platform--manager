@@ -47,6 +47,11 @@
 /* Page-only tokens feed the shared theme's important role bridges. The explicit
  * section/page selector also wins normal shared/lazy CSS independent of load order.
  * No global theme or detail-dialog tokens are changed. */
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"]:has(section.aui-page.procurement-demands-page[data-admin-ui-system]),
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"]:has(section.aui-page.procurement-demands-page[data-admin-ui-system]) .admin-workspace-shell__main,
+.business-native-content:has(> section.aui-page.procurement-demands-page[data-admin-ui-system]) {
+  background: #fff;
+}
 section.aui-page.procurement-demands-page[data-admin-ui-system] {
   --admin-font-body: 13px;
   --admin-font-label: 12px;
@@ -171,18 +176,26 @@ section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-dem
   color: #345b83;
   font-size: 12px;
   font-weight: 500;
+  text-align: left;
   line-height: 20px;
   overflow-wrap: anywhere;
   white-space: normal;
 }
 section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-model {
   --admin-color-text: #1d3047;
+  display: block;
+  max-width: 100%;
+  text-align: left;
   color: #1d3047;
   font-size: 13px;
   font-weight: 600;
   line-height: 20px;
   overflow-wrap: anywhere;
   white-space: normal;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table td:nth-child(2) > .procurement-demand-text-link:not(.procurement-demand-model) {
+  display: block;
+  margin-top: 2px;
 }
 section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-secondary-data {
   color: #3e4f63;
