@@ -1,0 +1,6 @@
+{
+  "status": "ROLLBACK_DURABLE_CLOSED_AND_DUAL_LOCKS_FREE",
+  "coordSHA": "989addb74f8d141fddb057c1e6510255f3a4310ccd2523803505a37213147875",
+  "fourTargetsRestoredToBeforeSHA": true,
+  "allProcessesOnline": 12
+}

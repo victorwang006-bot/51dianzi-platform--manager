@@ -1,0 +1,109 @@
+{
+  "result": "PASS",
+  "manifestSHA256": "0786e09ac96e74c95b50755404a3a262e656c3f515de98707a8ba86cdb0544c6",
+  "htmlSHA256": "7578df3b3e637b8647e99da6bf4a344bbbb26b40e8181debdc721324cbb070d4",
+  "scope": "demand-redesign-release-20261122-1455",
+  "reviewMode": "一次有限只读联合发布核对；无网络/SSH/DB/Git/生产操作，无候选或发布器修改，无既有测试/构建/source review重跑",
+  "reviewedFiles": [
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/final/manifest.json",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/final/index.html",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/backend-candidate/manifest.json",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/frontend-candidate/manifest.json",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/notification-candidate/manifest.json",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/backend-candidate/front-api.js",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/backend-candidate/admin-api.js",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/backend-candidate/front-delta.json",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/backend-candidate/admin-delta.json",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/backend-candidate/candidate-di-report.json",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/backend-candidate/candidate-di-sql-evidence.json",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/backend-candidate/final-local-verification.json",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/final/assets/AdminNewInformation-notification-redesign-b8126b368094f20d.js",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/final/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/final/assets/procurement-notification-redesign-7d92aa22e2a8ed36.css",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/final/assets/DemandRedesign-runtime-97b93f025b4d77b4.js",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/final/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/final/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/frontend-candidate/evidence/workbench-0.json",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/frontend-candidate/evidence/workbench-1.json",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/frontend-candidate/evidence/patched-procurement-0.js",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/frontend-candidate/evidence/patched-route-0.js",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/frontend-candidate/evidence/offline-smoke.json",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/evidence/native-layout/results.json",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/records.json",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/runtime-guard.json",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/assemble-final.mjs",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/build-frontend.mjs",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/derive-release-remote.py",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/release-remote.py",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/release-client.py",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/publisher-derivation.json",
+    "/home/ubuntu/work/customer-runtime-fix-20261122-1148/release-1214/release-remote.py",
+    "/home/ubuntu/work/demand-redesign-implementation-20261122-1302/source-version.json"
+  ],
+  "publisherSHA256": {
+    "release-remote.py": "eac157de7bab69cb4fcaf7bd7eda72d0d87ca12e41d7d6087a16cd0e6d3c15ab",
+    "release-client.py": "fbb24fbfcff10788ef5b48a60f0dd36b2ae1c8380d2deb022dd71b09c01fcab0",
+    "derive-release-remote.py": "e5e33d839e8d9828230e3c89d1db3b7fe4ba908bab524ea063ffee99d842cfa2",
+    "matureBase": "25a860a3f234aa7da15ef5e21bcfaa16fe872ca344b3d65e367bcb94a516209b"
+  },
+  "checks": [
+    {
+      "name": "final/source freeze/hash闭合",
+      "result": "PASS",
+      "evidence": "最终HTML实算SHA与指定7578df一致；32项final sourcePins、所有freeze changedCodePins与两仓sourceCommit记录一致；组成清单source/capture pins、6个最终静态资源、2个API的完整SHA/size与本地原始捕获记录一致。既有build/finalizer/smoke/DI脚本哈希绑定一致。"
+    },
+    {
+      "name": "final import map旧aliases及新scopes/imports闭合",
+      "result": "PASS",
+      "evidence": "逐项比较原132个imports、118个scopes；非目标映射保留，目标值仅按4项replacement重定向，所有旧目标有效值消失。两WB各36/40个历史alias均到对应新WB；新map共122个scopes，所有requiredNewScopes与98项resolutions一致。另从5个实际候选JS的AST提取全部ESM静态/字面量动态import，逐项证明最终解析到本候选资源或已捕获保护依赖。两个factory runtime无外部ESM import。"
+    },
+    {
+      "name": "before/after/inverse/outside evidence",
+      "result": "PASS",
+      "evidence": "两API各2hunks：逐个核验base64旧/新片段、SHA、byte坐标，前向重建及完整逆向均精确，所有outside段完全一致。两WB各7slots：同样完整前向/逆向与槽外字节一致；5577/6115个非目标函数按证据byte坐标及改动shift逐项确认原SHA与新字节不变。Dashboard仅2slots，完整逆向等于旧文件。HTML仅importmap与指定CSS link，去除新增link及逆置map后完整等于捕获HTML。"
+    },
+    {
+      "name": "实际采购API→BFF→页面及exact入口连接",
+      "result": "PASS",
+      "evidence": "实际front customerDemand.procurementList选择procurementProcedure.input(procurementDemandListSchema).query(listProcurementDemands(scopeFor2(ctx),input))；admin只插完整采购schema与businessInputSchema literal分支，原businessQuery(customerDemand.procurementList,procurement)→forwardBusinessMethod与授权/转发所有旧分支字节不变。实际WB采购组件→__DRGet factory→trpc.customerDemand.procurementList，旧trpc/React/page-memory与NI bridge保留。两WB exact route、原customer factory导出与toast服务端ID跳转真实接线；既有2WB有限smoke的candidate/factory及actualNativeBridgeResolution声明SHA逐项绑定，checks均PASS。"
+    },
+    {
+      "name": "Dashboard headerstatus与NI singleton",
+      "result": "PASS",
+      "evidence": "实际Dashboard import getAdminNewInformationRuntime→__NICreate，原React/JSX/useQuery/useQueryClient/CancelledError注入；新NI runtime复用__live.React/__live.Query并缓存singleton。AdminNewInformationStatus精确插在原header tabs后、原AdminNewInformationProvider内部；没有新建React/Query/额外NI provider。所有旧nav/NI map映射共同到新runtime及Dashboard。"
+    },
+    {
+      "name": "冻结有限DI/smoke/layout复用",
+      "result": "PASS",
+      "evidence": "既有后端DI15PASS及SQL证据、最终本地核验哈希一致；既有两WB真实factory/route/toast有限smoke PASS绑定实际候选。layout复用3采购视口、27NI状态视口/7模块共189槽、0网络记录；54项CSS pins逐项完整SHA一致，其中53个capture CSS（含lazy CSS）和1个候选suffix。未重跑source tests/tsc/构建或任何业务测试。"
+    },
+    {
+      "name": "成熟发布器限定派生",
+      "result": "PASS",
+      "evidence": "成熟基线完整SHA一致，778行→820行；只读复算derive中写文件语句之前的替换，所得发布器与实际仅ASSET_ALLOWLIST无序set字面量展示顺序不同，归一该set后完整AST相同，其余文本无差异。client精确绑定当前PASS manifest，frontHTML为noop、两个API及adminHTML为change、6个admin静态资源、runtimes=[]；允许资源集合与最终manifest完全相同。未执行派生写入或任何发布器。"
+    },
+    {
+      "name": "发布安全顺序/备份/回滚/耐久关闭",
+      "result": "PASS",
+      "evidence": "保留public-deploy→production-code固定双锁顺序、锁inode验证、NOFOLLOW/NOATIME与完整stat+bytes CAS；先耐久精确备份，先不可变link安装静态资源再API/html原子替换，仅changed API groups reload。所有非noop replacement记录owned inode，失败仅在字节与owned metadata确认后逆序回滚，重载受影响API并验证；异主/不明回滚进入failurehold持锁，不擅自关闭。关闭coord与receipt都耐久验证后逆序释放锁；client独立再次核验coord最终SHA/closed/owner及两个锁可获取。"
+    },
+    {
+      "name": "全部12进程与ENV/config及受保护文件",
+      "result": "PASS",
+      "evidence": "发布器内嵌GUARD_CONFIG_KEYS/12项GUARD_PROCESSES/两项GUARD_PROTECTED与capture/runtime-guard完全一致，payload不得放宽。发布前、dependency检查、apply/rollback验证均保护全部进程identity/online/entry/configHash/environmentHash（仅unique_id排除）；非目标6个进程PID固定，改变API组6个实例需观察reload新PID。dump.pm2、nginx.conf完整bytes SHA及除atime外stat保护；不执行pm2 save或修改nginx/config/ENV/worker。"
+    },
+    {
+      "name": "匿名采购授权门禁及写入声明边界",
+      "result": "PASS",
+      "evidence": "发布器只对front /api/trpc/customerDemand.procurementList、admin /api/business-trpc/customerDemand.procurementList发匿名GET，需401/403且tRPC code/httpStatus/path精确相符，无借用账号、无业务SQL列表功能测试或写测。receipt只声明businessTestWrites=0，并明确databaseWriteGuarantee NOT_ASSERTED，允许说明应用startup/reload可能产生数据库写入。"
+    }
+  ],
+  "limitations": [
+    "本次仅本地只读上线前审核；未发布、未访问网络/SSH/数据库/Git/生产；上线时仍须发布器现读基线、双锁及runtime保护全部通过。",
+    "冻结source tests、ES2020 tsc、构建、source review按freeze复用，不重跑；本次哈希与有限精确证据核对不是全库source重审或全站检查。",
+    "既有DI为受控DI/SELECT-only SQLite predicate模拟，smoke及layout为synthetic fixtures/DOM；不是真人账号或MySQL collation/isolation验证。",
+    "匿名GET仅证明采购授权门禁，不证明授权用户业务列表或通知unread/markDisplayed功能；不保证应用startup/reload及全部数据库写入为0。",
+    "沿用final manifest披露的旧Dashboard scoped比较49失败/6通过、此前workflow失败3、MySQL跳过51、wholeHeadDependencyReconstruction=false、inspect503根因未知；未扩大到这些全库/历史事项重审，未从其单独推定本次发布阻塞。",
+    "PASS仅绑定本文件manifestSHA256及记录的发布器SHA；若候选、freeze、发布器或捕获基线漂移，不得复用为新版本通行证。"
+  ]
+}

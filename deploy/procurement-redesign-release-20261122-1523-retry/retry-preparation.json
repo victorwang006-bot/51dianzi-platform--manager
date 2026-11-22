@@ -1,0 +1,28 @@
+{
+  "scope": "demand-redesign-release-20261122-1523-retry",
+  "previousManifestSHA256": "0786e09ac96e74c95b50755404a3a262e656c3f515de98707a8ba86cdb0544c6",
+  "previousReceiptSHA256": "ddb11667e5972b1a34fdd7019cbb2c8a950a2436a9b4cffef118b3417889c341",
+  "sourceInput": {
+    "path": "/opt/ops/.demand-redesign-input-14df6b66831034c2ba6261114d652d51.json",
+    "sha256": "c5e1703804f1202d411a230941f92fdc00d82b37fcff01a2743d458f8efe66d0",
+    "size": 28082112,
+    "stat": {
+      "st_dev": 66309,
+      "st_ino": 2812220,
+      "st_mode": 33152,
+      "st_uid": 0,
+      "st_gid": 0,
+      "st_nlink": 1,
+      "st_size": 28082112,
+      "st_atime_ns": 1795332077495272172,
+      "st_mtime_ns": 1795332077495272172,
+      "st_ctime_ns": 1795332077495272172
+    },
+    "source": "pre-staged SFTP file; not stdin"
+  },
+  "exactApplicationCandidatesUnchanged": true,
+  "expectedAdminCode": "BAD_REQUEST",
+  "expectedAdminStatus": 400,
+  "expectedAdminMessage": "请在请求头提供有效的业务商户标识",
+  "noBusinessMerchantIdentitySupplied": true
+}

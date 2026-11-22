@@ -1,0 +1,14 @@
+{
+  "base": "/home/ubuntu/work/customer-runtime-fix-20261122-1148/release-1214/release-remote.py",
+  "baseSHA256": "25a860a3f234aa7da15ef5e21bcfaa16fe872ca344b3d65e367bcb94a516209b",
+  "scope": "demand-redesign-release-20261122-1455",
+  "newLines": 820,
+  "changes": [
+    "scope and exact asset pins",
+    "front HTML fixed noop, changed API candidates",
+    "all process configuration/environment fingerprints and non-target PIDs",
+    "protected dump/nginx full bytes/stat",
+    "anonymous procurement auth-gate proof",
+    "unchanged dual locks/fullCAS/backup/rollback/durable close/client independent verification"
+  ]
+}

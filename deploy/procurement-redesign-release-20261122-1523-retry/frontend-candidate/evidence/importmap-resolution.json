@@ -1,0 +1,1169 @@
+{
+  "status": "PASS",
+  "requiredNewScopes": {
+    "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js": {
+      "/assets/schemas-CWwXnU9Q.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/schemas-CWwXnU9Q.js",
+      "/assets/DashboardLayout-new-information-614fc7a8233f9caa.js": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+      "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-navigation-bb20946d992bbfe5.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+      "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+      "/assets/index-8jluR_FO.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+      "/assets/DashboardLayout-DfHnpqnr.js": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+      "/assets/index-h_rcmx-z.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-h_rcmx-z.js",
+      "/assets/index-Dp3hShr1.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-Dp3hShr1.js",
+      "/assets/index-CisAFFfx.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CisAFFfx.js",
+      "/assets/message-square-text-GdNyWu3Q.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/message-square-text-GdNyWu3Q.js",
+      "/assets/search-ONoaRAKt.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/search-ONoaRAKt.js",
+      "/assets/circle-check-CAy1Bkqq.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-check-CAy1Bkqq.js",
+      "/assets/arrow-left-DuEH-89r.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/arrow-left-DuEH-89r.js",
+      "/assets/index-DqlifW_A.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DqlifW_A.js",
+      "/assets/shield-check-B59sBzA-.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/shield-check-B59sBzA-.js",
+      "/assets/loader-circle-DDYTq62H.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/loader-circle-DDYTq62H.js",
+      "/assets/erpPermissions-Bcn5P1RI.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/erpPermissions-Bcn5P1RI.js",
+      "/assets/plus-C6siVq_e.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/plus-C6siVq_e.js",
+      "/assets/index-gJJ31_w6.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-gJJ31_w6.js",
+      "/assets/eye-off-CBKi_Y5_.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-off-CBKi_Y5_.js",
+      "/assets/eye-CS62Zv12.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-CS62Zv12.js",
+      "/assets/index-mySplTih.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-mySplTih.js",
+      "/assets/smartphone-BabCZhFc.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/smartphone-BabCZhFc.js",
+      "/assets/mail-rvpPVrVf.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/mail-rvpPVrVf.js",
+      "/assets/chevron-right-56l-KeF7.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/chevron-right-56l-KeF7.js",
+      "/assets/package-search-ke879jHo.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/package-search-ke879jHo.js",
+      "/assets/external-link-D3MS9--y.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/external-link-D3MS9--y.js",
+      "/assets/history-BAScZM1B.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/history-BAScZM1B.js",
+      "/assets/image-DNUpEWRy.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-DNUpEWRy.js",
+      "/assets/trash-2-DVhh5q4W.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/trash-2-DVhh5q4W.js",
+      "/assets/image-plus-CuQLYUMM.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-plus-CuQLYUMM.js",
+      "/assets/index-BRp97hgM.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BRp97hgM.js",
+      "/assets/circle-alert-C1oJk8wR.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-alert-C1oJk8wR.js",
+      "/assets/upload-BaIvfghc.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/upload-BaIvfghc.js",
+      "/assets/pencil-CsXmiusw.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/pencil-CsXmiusw.js",
+      "/assets/UnifiedAdminPage-DIGRdaLW.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/UnifiedAdminPage-DIGRdaLW-composition-abc8f7f14e045c782d481b058b0f15693c62b0011a09cac9893a71ab97fd8fab.js",
+      "/assets/index-xO4YaSX1.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-xO4YaSX1.js",
+      "/assets/calendar-days-Cyfs5g15.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/calendar-days-Cyfs5g15.js",
+      "/assets/file-spreadsheet-DJvw3VPN.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/file-spreadsheet-DJvw3VPN.js",
+      "/assets/refresh-cw-BXprVxBP.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/refresh-cw-BXprVxBP.js",
+      "/assets/download-DjbzCqGn.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/download-DjbzCqGn.js",
+      "/assets/index-CKHSh4Pc.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js",
+      "/assets/index-DgUTVUJa.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DgUTVUJa.js",
+      "/assets/xlsx-DGuHH-KN.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+      "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js"
+    },
+    "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js": {
+      "/assets/schemas-CWwXnU9Q.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/schemas-CWwXnU9Q.js",
+      "/assets/DashboardLayout-new-information-614fc7a8233f9caa.js": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+      "/assets/MallMaterials-self-operated-v7-1f0ce7708e04e2c6.js": "/assets/MallMaterials-conflict-v9-6a31c8196c46c05f.js",
+      "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-navigation-bb20946d992bbfe5.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+      "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+      "/assets/index-8jluR_FO.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+      "/assets/DashboardLayout-DfHnpqnr.js": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+      "/assets/index-h_rcmx-z.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-h_rcmx-z.js",
+      "/assets/index-Dp3hShr1.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-Dp3hShr1.js",
+      "/assets/index-CisAFFfx.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CisAFFfx.js",
+      "/assets/message-square-text-GdNyWu3Q.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/message-square-text-GdNyWu3Q.js",
+      "/assets/search-ONoaRAKt.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/search-ONoaRAKt.js",
+      "/assets/circle-check-CAy1Bkqq.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-check-CAy1Bkqq.js",
+      "/assets/arrow-left-DuEH-89r.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/arrow-left-DuEH-89r.js",
+      "/assets/index-DqlifW_A.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DqlifW_A.js",
+      "/assets/shield-check-B59sBzA-.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/shield-check-B59sBzA-.js",
+      "/assets/loader-circle-DDYTq62H.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/loader-circle-DDYTq62H.js",
+      "/assets/erpPermissions-Bcn5P1RI.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/erpPermissions-Bcn5P1RI.js",
+      "/assets/plus-C6siVq_e.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/plus-C6siVq_e.js",
+      "/assets/index-gJJ31_w6.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-gJJ31_w6.js",
+      "/assets/eye-off-CBKi_Y5_.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-off-CBKi_Y5_.js",
+      "/assets/eye-CS62Zv12.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-CS62Zv12.js",
+      "/assets/index-mySplTih.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-mySplTih.js",
+      "/assets/smartphone-BabCZhFc.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/smartphone-BabCZhFc.js",
+      "/assets/mail-rvpPVrVf.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/mail-rvpPVrVf.js",
+      "/assets/chevron-right-56l-KeF7.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/chevron-right-56l-KeF7.js",
+      "/assets/package-search-ke879jHo.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/package-search-ke879jHo.js",
+      "/assets/external-link-D3MS9--y.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/external-link-D3MS9--y.js",
+      "/assets/history-BAScZM1B.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/history-BAScZM1B.js",
+      "/assets/image-DNUpEWRy.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-DNUpEWRy.js",
+      "/assets/trash-2-DVhh5q4W.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/trash-2-DVhh5q4W.js",
+      "/assets/image-plus-CuQLYUMM.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-plus-CuQLYUMM.js",
+      "/assets/index-BRp97hgM.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BRp97hgM.js",
+      "/assets/circle-alert-C1oJk8wR.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-alert-C1oJk8wR.js",
+      "/assets/upload-BaIvfghc.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/upload-BaIvfghc.js",
+      "/assets/pencil-CsXmiusw.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/pencil-CsXmiusw.js",
+      "/assets/UnifiedAdminPage-DIGRdaLW.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/UnifiedAdminPage-DIGRdaLW-composition-abc8f7f14e045c782d481b058b0f15693c62b0011a09cac9893a71ab97fd8fab.js",
+      "/assets/index-xO4YaSX1.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-xO4YaSX1.js",
+      "/assets/calendar-days-Cyfs5g15.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/calendar-days-Cyfs5g15.js",
+      "/assets/file-spreadsheet-DJvw3VPN.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/file-spreadsheet-DJvw3VPN.js",
+      "/assets/refresh-cw-BXprVxBP.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/refresh-cw-BXprVxBP.js",
+      "/assets/download-DjbzCqGn.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/download-DjbzCqGn.js",
+      "/assets/index-CKHSh4Pc.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js",
+      "/assets/index-DgUTVUJa.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DgUTVUJa.js",
+      "/assets/xlsx-DGuHH-KN.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+      "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js"
+    }
+  },
+  "resolution": [
+    {
+      "index": 0,
+      "beforeScopeURL": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "afterScopeURL": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "originalScopeSHA": "77f32d12bae0de4132de3c3bfbe488b3a8722078be24a3af094d036f97b69f02",
+      "newScopeSHA": "c32e0d3e0f10fb499bc642e295657b3078f00c5e3662275b5b69f1bc093e0a77",
+      "imports": [
+        {
+          "spec": "/assets/DemandRedesign-runtime-97b93f025b4d77b4.js",
+          "kind": "static",
+          "start": 0,
+          "absolute": "/assets/DemandRedesign-runtime-97b93f025b4d77b4.js",
+          "target": "/assets/DemandRedesign-runtime-97b93f025b4d77b4.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./schemas-CWwXnU9Q.js",
+          "kind": "static",
+          "start": 436,
+          "absolute": "/assets/schemas-CWwXnU9Q.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/schemas-CWwXnU9Q.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-navigation-bb20946d992bbfe5.js",
+          "kind": "static",
+          "start": 6213,
+          "absolute": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-navigation-bb20946d992bbfe5.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+          "kind": "static",
+          "start": 144352,
+          "absolute": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+          "target": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-8jluR_FO.js",
+          "kind": "static",
+          "start": 144518,
+          "absolute": "/assets/index-8jluR_FO.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./DashboardLayout-DfHnpqnr.js",
+          "kind": "static",
+          "start": 144819,
+          "absolute": "/assets/DashboardLayout-DfHnpqnr.js",
+          "target": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-h_rcmx-z.js",
+          "kind": "static",
+          "start": 144974,
+          "absolute": "/assets/index-h_rcmx-z.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-h_rcmx-z.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-Dp3hShr1.js",
+          "kind": "static",
+          "start": 145015,
+          "absolute": "/assets/index-Dp3hShr1.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-Dp3hShr1.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-CisAFFfx.js",
+          "kind": "static",
+          "start": 145112,
+          "absolute": "/assets/index-CisAFFfx.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CisAFFfx.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./message-square-text-GdNyWu3Q.js",
+          "kind": "static",
+          "start": 145153,
+          "absolute": "/assets/message-square-text-GdNyWu3Q.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/message-square-text-GdNyWu3Q.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./search-ONoaRAKt.js",
+          "kind": "static",
+          "start": 145208,
+          "absolute": "/assets/search-ONoaRAKt.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/search-ONoaRAKt.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./circle-check-CAy1Bkqq.js",
+          "kind": "static",
+          "start": 145250,
+          "absolute": "/assets/circle-check-CAy1Bkqq.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-check-CAy1Bkqq.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./arrow-left-DuEH-89r.js",
+          "kind": "static",
+          "start": 145298,
+          "absolute": "/assets/arrow-left-DuEH-89r.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/arrow-left-DuEH-89r.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-DqlifW_A.js",
+          "kind": "static",
+          "start": 145344,
+          "absolute": "/assets/index-DqlifW_A.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DqlifW_A.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./shield-check-B59sBzA-.js",
+          "kind": "static",
+          "start": 145497,
+          "absolute": "/assets/shield-check-B59sBzA-.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/shield-check-B59sBzA-.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./loader-circle-DDYTq62H.js",
+          "kind": "static",
+          "start": 145545,
+          "absolute": "/assets/loader-circle-DDYTq62H.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/loader-circle-DDYTq62H.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./erpPermissions-Bcn5P1RI.js",
+          "kind": "static",
+          "start": 145594,
+          "absolute": "/assets/erpPermissions-Bcn5P1RI.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/erpPermissions-Bcn5P1RI.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./plus-C6siVq_e.js",
+          "kind": "static",
+          "start": 145676,
+          "absolute": "/assets/plus-C6siVq_e.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/plus-C6siVq_e.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-gJJ31_w6.js",
+          "kind": "static",
+          "start": 145716,
+          "absolute": "/assets/index-gJJ31_w6.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-gJJ31_w6.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./eye-off-CBKi_Y5_.js",
+          "kind": "static",
+          "start": 145781,
+          "absolute": "/assets/eye-off-CBKi_Y5_.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-off-CBKi_Y5_.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./eye-CS62Zv12.js",
+          "kind": "static",
+          "start": 145824,
+          "absolute": "/assets/eye-CS62Zv12.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-CS62Zv12.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-mySplTih.js",
+          "kind": "static",
+          "start": 145863,
+          "absolute": "/assets/index-mySplTih.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-mySplTih.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./smartphone-BabCZhFc.js",
+          "kind": "static",
+          "start": 145936,
+          "absolute": "/assets/smartphone-BabCZhFc.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/smartphone-BabCZhFc.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./mail-rvpPVrVf.js",
+          "kind": "static",
+          "start": 145982,
+          "absolute": "/assets/mail-rvpPVrVf.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/mail-rvpPVrVf.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./chevron-right-56l-KeF7.js",
+          "kind": "static",
+          "start": 146022,
+          "absolute": "/assets/chevron-right-56l-KeF7.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/chevron-right-56l-KeF7.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./package-search-ke879jHo.js",
+          "kind": "static",
+          "start": 146079,
+          "absolute": "/assets/package-search-ke879jHo.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/package-search-ke879jHo.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./external-link-D3MS9--y.js",
+          "kind": "static",
+          "start": 146129,
+          "absolute": "/assets/external-link-D3MS9--y.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/external-link-D3MS9--y.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./history-BAScZM1B.js",
+          "kind": "static",
+          "start": 146178,
+          "absolute": "/assets/history-BAScZM1B.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/history-BAScZM1B.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./image-DNUpEWRy.js",
+          "kind": "static",
+          "start": 146229,
+          "absolute": "/assets/image-DNUpEWRy.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-DNUpEWRy.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./trash-2-DVhh5q4W.js",
+          "kind": "static",
+          "start": 146270,
+          "absolute": "/assets/trash-2-DVhh5q4W.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/trash-2-DVhh5q4W.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./image-plus-CuQLYUMM.js",
+          "kind": "static",
+          "start": 146313,
+          "absolute": "/assets/image-plus-CuQLYUMM.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-plus-CuQLYUMM.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./schemas-CWwXnU9Q.js",
+          "kind": "static",
+          "start": 146367,
+          "absolute": "/assets/schemas-CWwXnU9Q.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/schemas-CWwXnU9Q.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-BRp97hgM.js",
+          "kind": "static",
+          "start": 146458,
+          "absolute": "/assets/index-BRp97hgM.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BRp97hgM.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./circle-alert-C1oJk8wR.js",
+          "kind": "static",
+          "start": 146507,
+          "absolute": "/assets/circle-alert-C1oJk8wR.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-alert-C1oJk8wR.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./upload-BaIvfghc.js",
+          "kind": "static",
+          "start": 146555,
+          "absolute": "/assets/upload-BaIvfghc.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/upload-BaIvfghc.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./pencil-CsXmiusw.js",
+          "kind": "static",
+          "start": 146597,
+          "absolute": "/assets/pencil-CsXmiusw.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/pencil-CsXmiusw.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./UnifiedAdminPage-DIGRdaLW.js",
+          "kind": "static",
+          "start": 146639,
+          "absolute": "/assets/UnifiedAdminPage-DIGRdaLW.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/UnifiedAdminPage-DIGRdaLW-composition-abc8f7f14e045c782d481b058b0f15693c62b0011a09cac9893a71ab97fd8fab.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-xO4YaSX1.js",
+          "kind": "static",
+          "start": 146723,
+          "absolute": "/assets/index-xO4YaSX1.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-xO4YaSX1.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./calendar-days-Cyfs5g15.js",
+          "kind": "static",
+          "start": 146796,
+          "absolute": "/assets/calendar-days-Cyfs5g15.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/calendar-days-Cyfs5g15.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./file-spreadsheet-DJvw3VPN.js",
+          "kind": "static",
+          "start": 146845,
+          "absolute": "/assets/file-spreadsheet-DJvw3VPN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/file-spreadsheet-DJvw3VPN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./refresh-cw-BXprVxBP.js",
+          "kind": "static",
+          "start": 146897,
+          "absolute": "/assets/refresh-cw-BXprVxBP.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/refresh-cw-BXprVxBP.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./download-DjbzCqGn.js",
+          "kind": "static",
+          "start": 146943,
+          "absolute": "/assets/download-DjbzCqGn.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/download-DjbzCqGn.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-CKHSh4Pc.js",
+          "kind": "static",
+          "start": 146987,
+          "absolute": "/assets/index-CKHSh4Pc.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-DgUTVUJa.js",
+          "kind": "static",
+          "start": 147015,
+          "absolute": "/assets/index-DgUTVUJa.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DgUTVUJa.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/DashboardLayout-new-information-614fc7a8233f9caa.js",
+          "kind": "dynamic",
+          "start": 912,
+          "absolute": "/assets/DashboardLayout-new-information-614fc7a8233f9caa.js",
+          "target": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 876500,
+          "absolute": "/assets/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 877375,
+          "absolute": "/assets/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 988799,
+          "absolute": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 990178,
+          "absolute": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 1635396,
+          "absolute": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2326477,
+          "absolute": "/assets/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2331013,
+          "absolute": "/assets/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2387126,
+          "absolute": "/assets/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2393077,
+          "absolute": "/assets/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2485251,
+          "absolute": "/assets/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2486056,
+          "absolute": "/assets/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2489202,
+          "absolute": "/assets/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2569173,
+          "absolute": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2570323,
+          "absolute": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2575433,
+          "absolute": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2685123,
+          "absolute": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2686250,
+          "absolute": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2691201,
+          "absolute": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2852734,
+          "absolute": "/assets/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        }
+      ],
+      "allStaticAndLiteralDynamicImportsMapped": true,
+      "DashboardLiteralRetained": true
+    },
+    {
+      "index": 1,
+      "beforeScopeURL": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "afterScopeURL": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "originalScopeSHA": "f5510f8c6b8605165c84d739f0ca37f9d1b7276fc9c541f0241a50f451b6dbe0",
+      "newScopeSHA": "57de6661d0dc2e3cec75cbfba9b524361f6287712407007641f771afc7c4db2e",
+      "imports": [
+        {
+          "spec": "/assets/DemandRedesign-runtime-97b93f025b4d77b4.js",
+          "kind": "static",
+          "start": 0,
+          "absolute": "/assets/DemandRedesign-runtime-97b93f025b4d77b4.js",
+          "target": "/assets/DemandRedesign-runtime-97b93f025b4d77b4.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./schemas-CWwXnU9Q.js",
+          "kind": "static",
+          "start": 436,
+          "absolute": "/assets/schemas-CWwXnU9Q.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/schemas-CWwXnU9Q.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/MallMaterials-self-operated-v7-1f0ce7708e04e2c6.js",
+          "kind": "static",
+          "start": 1052,
+          "absolute": "/assets/MallMaterials-self-operated-v7-1f0ce7708e04e2c6.js",
+          "target": "/assets/MallMaterials-conflict-v9-6a31c8196c46c05f.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-navigation-bb20946d992bbfe5.js",
+          "kind": "static",
+          "start": 6535,
+          "absolute": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-navigation-bb20946d992bbfe5.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+          "kind": "static",
+          "start": 144724,
+          "absolute": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+          "target": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-8jluR_FO.js",
+          "kind": "static",
+          "start": 144893,
+          "absolute": "/assets/index-8jluR_FO.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./DashboardLayout-DfHnpqnr.js",
+          "kind": "static",
+          "start": 145194,
+          "absolute": "/assets/DashboardLayout-DfHnpqnr.js",
+          "target": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-h_rcmx-z.js",
+          "kind": "static",
+          "start": 145349,
+          "absolute": "/assets/index-h_rcmx-z.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-h_rcmx-z.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-Dp3hShr1.js",
+          "kind": "static",
+          "start": 145390,
+          "absolute": "/assets/index-Dp3hShr1.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-Dp3hShr1.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-CisAFFfx.js",
+          "kind": "static",
+          "start": 145487,
+          "absolute": "/assets/index-CisAFFfx.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CisAFFfx.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./message-square-text-GdNyWu3Q.js",
+          "kind": "static",
+          "start": 145528,
+          "absolute": "/assets/message-square-text-GdNyWu3Q.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/message-square-text-GdNyWu3Q.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./search-ONoaRAKt.js",
+          "kind": "static",
+          "start": 145583,
+          "absolute": "/assets/search-ONoaRAKt.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/search-ONoaRAKt.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./circle-check-CAy1Bkqq.js",
+          "kind": "static",
+          "start": 145625,
+          "absolute": "/assets/circle-check-CAy1Bkqq.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-check-CAy1Bkqq.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./arrow-left-DuEH-89r.js",
+          "kind": "static",
+          "start": 145673,
+          "absolute": "/assets/arrow-left-DuEH-89r.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/arrow-left-DuEH-89r.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-DqlifW_A.js",
+          "kind": "static",
+          "start": 145719,
+          "absolute": "/assets/index-DqlifW_A.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DqlifW_A.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./shield-check-B59sBzA-.js",
+          "kind": "static",
+          "start": 145872,
+          "absolute": "/assets/shield-check-B59sBzA-.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/shield-check-B59sBzA-.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./loader-circle-DDYTq62H.js",
+          "kind": "static",
+          "start": 145920,
+          "absolute": "/assets/loader-circle-DDYTq62H.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/loader-circle-DDYTq62H.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./erpPermissions-Bcn5P1RI.js",
+          "kind": "static",
+          "start": 145969,
+          "absolute": "/assets/erpPermissions-Bcn5P1RI.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/erpPermissions-Bcn5P1RI.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./plus-C6siVq_e.js",
+          "kind": "static",
+          "start": 146051,
+          "absolute": "/assets/plus-C6siVq_e.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/plus-C6siVq_e.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-gJJ31_w6.js",
+          "kind": "static",
+          "start": 146091,
+          "absolute": "/assets/index-gJJ31_w6.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-gJJ31_w6.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./eye-off-CBKi_Y5_.js",
+          "kind": "static",
+          "start": 146156,
+          "absolute": "/assets/eye-off-CBKi_Y5_.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-off-CBKi_Y5_.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./eye-CS62Zv12.js",
+          "kind": "static",
+          "start": 146199,
+          "absolute": "/assets/eye-CS62Zv12.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-CS62Zv12.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-mySplTih.js",
+          "kind": "static",
+          "start": 146238,
+          "absolute": "/assets/index-mySplTih.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-mySplTih.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./smartphone-BabCZhFc.js",
+          "kind": "static",
+          "start": 146311,
+          "absolute": "/assets/smartphone-BabCZhFc.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/smartphone-BabCZhFc.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./mail-rvpPVrVf.js",
+          "kind": "static",
+          "start": 146357,
+          "absolute": "/assets/mail-rvpPVrVf.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/mail-rvpPVrVf.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./chevron-right-56l-KeF7.js",
+          "kind": "static",
+          "start": 146397,
+          "absolute": "/assets/chevron-right-56l-KeF7.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/chevron-right-56l-KeF7.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./package-search-ke879jHo.js",
+          "kind": "static",
+          "start": 146454,
+          "absolute": "/assets/package-search-ke879jHo.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/package-search-ke879jHo.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./external-link-D3MS9--y.js",
+          "kind": "static",
+          "start": 146504,
+          "absolute": "/assets/external-link-D3MS9--y.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/external-link-D3MS9--y.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./history-BAScZM1B.js",
+          "kind": "static",
+          "start": 146553,
+          "absolute": "/assets/history-BAScZM1B.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/history-BAScZM1B.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./image-DNUpEWRy.js",
+          "kind": "static",
+          "start": 146604,
+          "absolute": "/assets/image-DNUpEWRy.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-DNUpEWRy.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./trash-2-DVhh5q4W.js",
+          "kind": "static",
+          "start": 146645,
+          "absolute": "/assets/trash-2-DVhh5q4W.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/trash-2-DVhh5q4W.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./image-plus-CuQLYUMM.js",
+          "kind": "static",
+          "start": 146688,
+          "absolute": "/assets/image-plus-CuQLYUMM.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-plus-CuQLYUMM.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./schemas-CWwXnU9Q.js",
+          "kind": "static",
+          "start": 146742,
+          "absolute": "/assets/schemas-CWwXnU9Q.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/schemas-CWwXnU9Q.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-BRp97hgM.js",
+          "kind": "static",
+          "start": 146833,
+          "absolute": "/assets/index-BRp97hgM.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BRp97hgM.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./circle-alert-C1oJk8wR.js",
+          "kind": "static",
+          "start": 146882,
+          "absolute": "/assets/circle-alert-C1oJk8wR.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-alert-C1oJk8wR.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./upload-BaIvfghc.js",
+          "kind": "static",
+          "start": 146930,
+          "absolute": "/assets/upload-BaIvfghc.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/upload-BaIvfghc.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./pencil-CsXmiusw.js",
+          "kind": "static",
+          "start": 146972,
+          "absolute": "/assets/pencil-CsXmiusw.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/pencil-CsXmiusw.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./UnifiedAdminPage-DIGRdaLW.js",
+          "kind": "static",
+          "start": 147014,
+          "absolute": "/assets/UnifiedAdminPage-DIGRdaLW.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/UnifiedAdminPage-DIGRdaLW-composition-abc8f7f14e045c782d481b058b0f15693c62b0011a09cac9893a71ab97fd8fab.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-xO4YaSX1.js",
+          "kind": "static",
+          "start": 147098,
+          "absolute": "/assets/index-xO4YaSX1.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-xO4YaSX1.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./calendar-days-Cyfs5g15.js",
+          "kind": "static",
+          "start": 147171,
+          "absolute": "/assets/calendar-days-Cyfs5g15.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/calendar-days-Cyfs5g15.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./file-spreadsheet-DJvw3VPN.js",
+          "kind": "static",
+          "start": 147220,
+          "absolute": "/assets/file-spreadsheet-DJvw3VPN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/file-spreadsheet-DJvw3VPN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./refresh-cw-BXprVxBP.js",
+          "kind": "static",
+          "start": 147272,
+          "absolute": "/assets/refresh-cw-BXprVxBP.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/refresh-cw-BXprVxBP.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./download-DjbzCqGn.js",
+          "kind": "static",
+          "start": 147318,
+          "absolute": "/assets/download-DjbzCqGn.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/download-DjbzCqGn.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-CKHSh4Pc.js",
+          "kind": "static",
+          "start": 147362,
+          "absolute": "/assets/index-CKHSh4Pc.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./index-DgUTVUJa.js",
+          "kind": "static",
+          "start": 147390,
+          "absolute": "/assets/index-DgUTVUJa.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DgUTVUJa.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/DashboardLayout-new-information-614fc7a8233f9caa.js",
+          "kind": "dynamic",
+          "start": 912,
+          "absolute": "/assets/DashboardLayout-new-information-614fc7a8233f9caa.js",
+          "target": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 881740,
+          "absolute": "/assets/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 882615,
+          "absolute": "/assets/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 994039,
+          "absolute": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 995418,
+          "absolute": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 1657046,
+          "absolute": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2177725,
+          "absolute": "/assets/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2182261,
+          "absolute": "/assets/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2238374,
+          "absolute": "/assets/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2244325,
+          "absolute": "/assets/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2336499,
+          "absolute": "/assets/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2337304,
+          "absolute": "/assets/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2340450,
+          "absolute": "/assets/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2420421,
+          "absolute": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2421571,
+          "absolute": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2426681,
+          "absolute": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2536371,
+          "absolute": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2537498,
+          "absolute": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2542449,
+          "absolute": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        },
+        {
+          "spec": "./xlsx-DGuHH-KN.js",
+          "kind": "dynamic",
+          "start": 2703982,
+          "absolute": "/assets/xlsx-DGuHH-KN.js",
+          "target": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+          "existsCapturedOrCandidate": true
+        }
+      ],
+      "allStaticAndLiteralDynamicImportsMapped": true,
+      "DashboardLiteralRetained": true
+    }
+  ],
+  "parentReplacementsSnapshot": {
+    "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+    "/assets/AdminNewInformation-runtime-fix-26903de9e5a06e89.js": "/assets/AdminNewInformation-notification-redesign-b8126b368094f20d.js"
+  },
+  "parentNotificationManifestSHA": "b539561ffafe30c2d27f1e8646e8786490896e66e2188912a1cc13ec47fe0142",
+  "checks": {
+    "allStaticAndLiteralDynamicImportsHaveCapturedOrCandidateTargets": true,
+    "originalDashboardNILiteralUnchanged": true,
+    "parentDashboardRuntimeSingletonRedirectReflected": true,
+    "newScopesProtectRootLevelRelativeImports": true,
+    "allSourcePinsStable": true,
+    "allCandidateAssetHashesStable": true
+  }
+}

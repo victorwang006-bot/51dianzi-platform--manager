@@ -1,0 +1,72 @@
+{
+  "result": "PASS",
+  "scope": "demand-redesign-release-20261122-1523-retry",
+  "manifestSHA256": "3205d0392343fbef250d527d97f6c1c8756f953c57b0282841162e86fe2d15b3",
+  "previousReview": {
+    "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/integration-release-review.json",
+    "sha256": "f2eee6854729ebab1ba5b90afc53dc3dced1ed73ebfbc6b6492382cde4ca81c5",
+    "manifestSHA256": "0786e09ac96e74c95b50755404a3a262e656c3f515de98707a8ba86cdb0544c6"
+  },
+  "reviewMode": "有限补充本地只读核对；无网络/SSH/DB/Git/生产操作；未执行派生器、客户端或发布器，未改候选或发布器；仅评审文件写出",
+  "publisherSHA256": {
+    "derive-release-remote.py": "fbc78716eb72a47069b3e6e8881fce984112d9915ab9d04bfebbf2c98b8e8594",
+    "release-client.py": "4082afd882fec986c6884516cd41f1c7418bb5529bae08c57513fcb35bae8153",
+    "release-remote.py": "7a846d07407f643b89792505ef4d6757010edd5844afe718ff3e03023d20022e"
+  },
+  "retryPreparationSHA256": "36fdcd0715295fa38ab17f00f8feadb660c7df217691eff36bcf6d99a66d660e",
+  "previousReceiptSHA256": "ddb11667e5972b1a34fdd7019cbb2c8a950a2436a9b4cffef118b3417889c341",
+  "checks": [
+    {
+      "name": "旧PASS与新final manifest绑定",
+      "result": "PASS",
+      "evidence": "实算旧清单SHA与旧PASS及retry-preparation.previousManifestSHA256一致；新清单实算SHA如上。两清单deepEqual仅scope/retryAfter不同，未逐项重审98 resolutions。6 assets、2 API、HTML实际字节完整SHA/size均与不变清单一致；sourcePins及全部其余清单字段原样保留。"
+    },
+    {
+      "name": "admin missing-merchant输入门禁精确更正",
+      "result": "PASS",
+      "evidence": "新derive及已生成remote：front仍仅允许HTTP401/403、UNAUTHORIZED/FORBIDDEN；admin仅允许HTTP400、BAD_REQUEST，并要求精确message=请在请求头提供有效的业务商户标识。双方仍要求data.httpStatus匹配响应status及data.path=customerDemand.procurementList。请求入口、GET query和public_get函数不变，未加入merchantID/身份/业务商户头。admin ledger明确not authentication or business-list functional test，receipt限制说明区分front匿名鉴权门禁与admin缺商户输入门禁。"
+    },
+    {
+      "name": "原持久输入来源pins闭合",
+      "result": "PASS",
+      "evidence": "retry-preparation.sourceInput完整等于旧持久receipt.input；旧receipt完整SHA匹配准备记录。client复用路径/完整SHA/size与receipt一致：/opt/ops/.demand-redesign-input-14df6b66831034c2ba6261114d652d51.json，c5e1703804f1202d411a230941f92fdc00d82b37fcff01a2743d458f8efe66d0，28082112 bytes。远端代码只读NOFOLLOW/NOATIME、realpath相同、regular/root:root/0600/singlelink、读前后dev/ino/size/mtime/ctime稳定，并核验完整SHA/size及旧scope；不执行或覆盖旧输入、旧nonce发布器。"
+    },
+    {
+      "name": "manifest-only SFTP与完整payload重构闭合",
+      "result": "PASS",
+      "evidence": "本地仍按原完整pins独立构造完整payload/raw；上传仅新manifest gzip及新publisher，各按本地完整SHA/size检查。远端解析新gzip必须仅含manifest，以新manifest整体替换旧seed.manifest（含新scope/nonce/coord/targets.beforeStat/current runtimeGuard/dependencies），仅复用seed候选体。重构完整JSON后必须完整SHA和size同时等于本地完整payload/raw，才允许EXCL写新input并fsync。另只读解压旧本地payload.gz，确认其完整H/size等于receipt输入pin，候选targets/assets/runtimes体与当前本地候选独立构造完全相同；内存manifest替换与独立完整构造full-H/size一致。该内存证明不是当前freshcapture运行验收。"
+    },
+    {
+      "name": "新nonce私有输入/发布器及独立新stage",
+      "result": "PASS",
+      "evidence": "新nonce仍由secrets.token_hex(16)生成；SFTP新gzip/publisher使用wx、0600，新完整input使用O_CREAT|O_EXCL|O_NOFOLLOW、0600及目录fsync，之后只执行新script_path+new input_path。publisher新SCOPE及独立stage创建逻辑不变；旧nonce仅作为只读seed来源，旧publisher不执行、不覆盖。"
+    },
+    {
+      "name": "双锁/fullCAS/备份/回滚/关闭未削弱",
+      "result": "PASS",
+      "evidence": "旧derive/client/remote实际SHA均先与旧PASS绑定。新remote除SCOPE、asset set展示顺序及fresh GUARD常量行外，完整文本差异仅public_procurement_unauth门禁和run_release的verificationLimitations字符串；函数AST差异仅该两函数。双锁固定顺序/inode保护、完整bytes+stat CAS、精确耐久备份、不可变asset link安装、owned-inode逆向回滚、failurehold、coord/receipt耐久关闭及client独立闭窗/双锁解锁验证全部原样保留。client差异仅scope和manifest-only/seed重构传输，不减少源/候选pins或闭窗验证。"
+    },
+    {
+      "name": "current runtimeGuard绑定及保护逻辑不变",
+      "result": "PASS",
+      "evidence": "derive仍从N/capture/runtime-guard.json加载currentguard生成publisher，client同样从N加载guard；remote内嵌12进程/2受保护文件且GUARD_CONFIG_KEYS不变。EXACT_RUNTIME_GUARD_REQUIRED、全部进程identity/online/entry/config/environment、非目标PID、dump/nginx完整SHA/stat及reload范围保护函数AST均不变，旧seed.runtimeGuard被新manifest整体替换，不能携旧guard放宽。未另读新capture rows，不以本次静态核对替代上线时fresh基线及runtime验证。"
+    }
+  ],
+  "limitations": [
+    "本次仅补充门禁期望更正和安全传输修正的本地静态核对，不是再次全量source/构建/功能审查；未重跑旧98 resolutions、source tests、构建、DI、smoke或layout。原PASS其余限制沿用。",
+    "admin HTTP400 BAD_REQUEST及精确缺商户message仅证明missing-merchant输入门禁，不是完整鉴权或业务SQL测试；front匿名401/403也不证明已授权账号采购列表、MySQL collation或通知unread/markDisplayed。没有提供任何merchantID或身份。",
+    "仅复用旧输入候选体；新manifest必须由新freshcapture/currentguard生成并在实际运行通过所有新pins、双锁、CAS及完整payload H/size校验。未执行客户端/发布器、未访问生产，未独立验证新capture rows。",
+    "businessTestWrites=0不等于保证全部数据库写入为0；application startup/reload可能写数据库，原NOT_ASSERTED声明保留。",
+    "PASS仅绑定本文件新final manifestSHA256及上述本轮脚本SHA。候选、清单、freeze或脚本漂移不得复用；currentguard/capture变更应按既定producer重新生成并维持全部保护。"
+  ],
+  "parentSyntaxCorrection": {
+    "onlyChanges": [
+      "nested newline expression replaced with chr(10), same payload serialization",
+      "generated staging script ast.parse before remote execution"
+    ],
+    "clientSHA256": "051d6ed645caaa170df224a5c4b4d6ea35025a502d0eebd56137e3d594d2ce4b",
+    "actualGeneratedScriptSyntax": "PASS",
+    "productionWindowEnteredDuringSyntaxFailure": false,
+    "failureLog": "staging-syntax-failure.log"
+  }
+}

@@ -1,0 +1,1009 @@
+{
+  "status": "PASS",
+  "kind": "actual-candidate-native-ABI-and-finite-offline-interaction",
+  "scope": "Actual immutable candidate AST/native getter/route and compiled sidecar, synthetic data only. Existing query, UI and quote components injected as controlled bridge test doubles; no network or mutation; no duplicate general source suite.",
+  "results": [
+    {
+      "index": 0,
+      "candidateURL": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "candidateSHA": "de9283c857584c6122bd5e8d71f0b66e353e37e7832d80b6346abf23ba05c7e1",
+      "actualNativeBridgeResolution": [
+        {
+          "name": "__DRGet",
+          "declarations": [
+            {
+              "start": 5461459,
+              "end": 5463148,
+              "kind": "FunctionDeclaration",
+              "sha256": "92b9ba43ce069b7d7262556b1e64d87b4923916ed5b34cba03b8d9c5376071a1"
+            }
+          ]
+        },
+        {
+          "name": "__DRInstance",
+          "declarations": [
+            {
+              "start": 5461446,
+              "end": 5461458,
+              "kind": "VariableDeclaration",
+              "sha256": "85c54618cad3cb77a3d95cb53ef8c02617bbb191f939c1a8cb9d675984dbbbde"
+            }
+          ]
+        },
+        {
+          "name": "__DRCreate",
+          "declarations": [
+            {
+              "start": 7,
+              "end": 41,
+              "kind": "ImportSpecifier",
+              "sha256": "0aeade38b0531925ad336cad61095d458fe78f17f41d228b3d23a8869c170eb3"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3037835,
+              "end": 3039438,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__NI",
+          "declarations": [
+            {
+              "start": 900,
+              "end": 1005,
+              "kind": "VariableDeclaration",
+              "sha256": "a5c501c940cfd7ec3de62d2a0d0e8c3630d4c1efa339f56ff78f1e6b33d53738"
+            }
+          ]
+        },
+        {
+          "name": "__NI",
+          "declarations": [
+            {
+              "start": 900,
+              "end": 1005,
+              "kind": "VariableDeclaration",
+              "sha256": "a5c501c940cfd7ec3de62d2a0d0e8c3630d4c1efa339f56ff78f1e6b33d53738"
+            }
+          ]
+        },
+        {
+          "name": "zn",
+          "declarations": [
+            {
+              "start": 3806700,
+              "end": 3806758,
+              "kind": "VariableDeclaration",
+              "sha256": "16e2000843db50cb917899ea30f6e6024e4b9feceac4d813e58493b8a45351cf"
+            }
+          ]
+        },
+        {
+          "name": "R_",
+          "declarations": [
+            {
+              "start": 5440181,
+              "end": 5455731,
+              "kind": "FunctionDeclaration",
+              "sha256": "d9b688468706f9166eaaf391b4ac0ecbef01de3205ece4d74ca2abd93e0748f4"
+            }
+          ]
+        },
+        {
+          "name": "$d",
+          "declarations": [
+            {
+              "start": 3815358,
+              "end": 3815535,
+              "kind": "FunctionDeclaration",
+              "sha256": "aee9c51b68122eb5a104ad0e2c87c1aa0c8ba2587f2def1946b8a577fe353ec8"
+            }
+          ]
+        },
+        {
+          "name": "Lf",
+          "declarations": [
+            {
+              "start": 3867945,
+              "end": 3868133,
+              "kind": "FunctionDeclaration",
+              "sha256": "77d865a282344a5b1844d414f578f97655fd5e1d65b1df2116f0979b8a4cf374"
+            }
+          ]
+        },
+        {
+          "name": "Vn",
+          "declarations": [
+            {
+              "start": 3813578,
+              "end": 3813641,
+              "kind": "VariableDeclaration",
+              "sha256": "4cf53d2b73703175cc5ceea24708c3cad4daddb7bf7e8c9a70de6e83bdc56c9e"
+            }
+          ]
+        },
+        {
+          "name": "Wn",
+          "declarations": [
+            {
+              "start": 3813642,
+              "end": 3814012,
+              "kind": "FunctionDeclaration",
+              "sha256": "fdebc08d9479dcb9cdb09aca5eb4b3847096c184a27fdbe243b4100aae638809"
+            }
+          ]
+        },
+        {
+          "name": "Rn",
+          "declarations": [
+            {
+              "start": 3763810,
+              "end": 3763875,
+              "kind": "VariableDeclaration",
+              "sha256": "4b0a27cec6ce71bac25ced18cb9eece979b22576af69d34fec0c106e59836268"
+            }
+          ]
+        },
+        {
+          "name": "en",
+          "declarations": [
+            {
+              "start": 3763880,
+              "end": 3763945,
+              "kind": "VariableDeclaration",
+              "sha256": "6b74f07f52f5558c07aabfd79590bd344417f6c1c55be907d37a679802ddee2a"
+            }
+          ]
+        },
+        {
+          "name": "Ht",
+          "declarations": [
+            {
+              "start": 3764331,
+              "end": 3764410,
+              "kind": "VariableDeclaration",
+              "sha256": "8b53383c75de2a8171959ea2aabc711186fc48943b6ed4f3c55f80d66a2965d3"
+            }
+          ]
+        },
+        {
+          "name": "Ql",
+          "declarations": [
+            {
+              "start": 3764509,
+              "end": 3764765,
+              "kind": "VariableDeclaration",
+              "sha256": "914b2dc8ef752c2d0b8087e00d6246cea9ce20e424de1f8a86a94d55a15f9250"
+            }
+          ]
+        },
+        {
+          "name": "fo",
+          "declarations": [
+            {
+              "start": 3764770,
+              "end": 3764878,
+              "kind": "VariableDeclaration",
+              "sha256": "4a13b9ba3f4b50cb7b6bc85f5e6249b9bada2f4ac269640f42eb09c3944347f2"
+            }
+          ]
+        },
+        {
+          "name": "La",
+          "declarations": [
+            {
+              "start": 3765379,
+              "end": 3765469,
+              "kind": "VariableDeclaration",
+              "sha256": "bbc5a5e6bd71364859849f46861116465f6ce7c56fb762332c7dfe3c119bdfcf"
+            }
+          ]
+        }
+      ],
+      "sourceFactorySHA": "97b93f025b4d77b4e50ba64b622bda6fba71bec23758773ec1ebaa72165a7924",
+      "checks": {
+        "actualCandidateParse": true,
+        "actualToastActionExactIDExecuted": true,
+        "allInjectedGetterNamesResolve": true,
+        "actualExistingFreshReadHelperResolved": true,
+        "actualNativeFactoryExecuted": true,
+        "noNewReactQueryTRPCScopePageMemory": true,
+        "legacyNullRowRetained": true,
+        "serverLatestInput": true,
+        "fourQuoteViews": true,
+        "quoteExactIdInteraction": true,
+        "B1NoCachedAck": true,
+        "B1FreshDisplayedCursorAck": true,
+        "denialErasesRows": true,
+        "exactEntryNoCachedOpen": true,
+        "exactEntryAuthorizedCustomerReadOnly": true,
+        "exactParserRejectsDuplicates": true,
+        "actualRouteRetainsCustomersManageGate": true,
+        "actualRouteExactAndFallbackExecuted": true
+      }
+    },
+    {
+      "index": 1,
+      "candidateURL": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "candidateSHA": "06fee82ae0b73be5b8b48f89a921dd9314d5910b9459fe6d907aa4c97f404b40",
+      "actualNativeBridgeResolution": [
+        {
+          "name": "__DRGet",
+          "declarations": [
+            {
+              "start": 6357674,
+              "end": 6359363,
+              "kind": "FunctionDeclaration",
+              "sha256": "92b9ba43ce069b7d7262556b1e64d87b4923916ed5b34cba03b8d9c5376071a1"
+            }
+          ]
+        },
+        {
+          "name": "__DRInstance",
+          "declarations": [
+            {
+              "start": 6357661,
+              "end": 6357673,
+              "kind": "VariableDeclaration",
+              "sha256": "85c54618cad3cb77a3d95cb53ef8c02617bbb191f939c1a8cb9d675984dbbbde"
+            }
+          ]
+        },
+        {
+          "name": "__DRCreate",
+          "declarations": [
+            {
+              "start": 7,
+              "end": 41,
+              "kind": "ImportSpecifier",
+              "sha256": "0aeade38b0531925ad336cad61095d458fe78f17f41d228b3d23a8869c170eb3"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__customerLive",
+          "declarations": [
+            {
+              "start": 3934050,
+              "end": 3935653,
+              "kind": "VariableDeclaration",
+              "sha256": "fd25cc75b7b64fe45add300257a7569b4237616f7c278d7e4e1c87fb73e47107"
+            }
+          ]
+        },
+        {
+          "name": "__NI",
+          "declarations": [
+            {
+              "start": 900,
+              "end": 1005,
+              "kind": "VariableDeclaration",
+              "sha256": "a5c501c940cfd7ec3de62d2a0d0e8c3630d4c1efa339f56ff78f1e6b33d53738"
+            }
+          ]
+        },
+        {
+          "name": "__NI",
+          "declarations": [
+            {
+              "start": 900,
+              "end": 1005,
+              "kind": "VariableDeclaration",
+              "sha256": "a5c501c940cfd7ec3de62d2a0d0e8c3630d4c1efa339f56ff78f1e6b33d53738"
+            }
+          ]
+        },
+        {
+          "name": "zn",
+          "declarations": [
+            {
+              "start": 4702915,
+              "end": 4702973,
+              "kind": "VariableDeclaration",
+              "sha256": "16e2000843db50cb917899ea30f6e6024e4b9feceac4d813e58493b8a45351cf"
+            }
+          ]
+        },
+        {
+          "name": "R_",
+          "declarations": [
+            {
+              "start": 6336396,
+              "end": 6351946,
+              "kind": "FunctionDeclaration",
+              "sha256": "d9b688468706f9166eaaf391b4ac0ecbef01de3205ece4d74ca2abd93e0748f4"
+            }
+          ]
+        },
+        {
+          "name": "$d",
+          "declarations": [
+            {
+              "start": 4711573,
+              "end": 4711750,
+              "kind": "FunctionDeclaration",
+              "sha256": "aee9c51b68122eb5a104ad0e2c87c1aa0c8ba2587f2def1946b8a577fe353ec8"
+            }
+          ]
+        },
+        {
+          "name": "Lf",
+          "declarations": [
+            {
+              "start": 4764160,
+              "end": 4764348,
+              "kind": "FunctionDeclaration",
+              "sha256": "77d865a282344a5b1844d414f578f97655fd5e1d65b1df2116f0979b8a4cf374"
+            }
+          ]
+        },
+        {
+          "name": "Vn",
+          "declarations": [
+            {
+              "start": 4709793,
+              "end": 4709856,
+              "kind": "VariableDeclaration",
+              "sha256": "4cf53d2b73703175cc5ceea24708c3cad4daddb7bf7e8c9a70de6e83bdc56c9e"
+            }
+          ]
+        },
+        {
+          "name": "Wn",
+          "declarations": [
+            {
+              "start": 4709857,
+              "end": 4710227,
+              "kind": "FunctionDeclaration",
+              "sha256": "fdebc08d9479dcb9cdb09aca5eb4b3847096c184a27fdbe243b4100aae638809"
+            }
+          ]
+        },
+        {
+          "name": "Rn",
+          "declarations": [
+            {
+              "start": 4660025,
+              "end": 4660090,
+              "kind": "VariableDeclaration",
+              "sha256": "4b0a27cec6ce71bac25ced18cb9eece979b22576af69d34fec0c106e59836268"
+            }
+          ]
+        },
+        {
+          "name": "en",
+          "declarations": [
+            {
+              "start": 4660095,
+              "end": 4660160,
+              "kind": "VariableDeclaration",
+              "sha256": "6b74f07f52f5558c07aabfd79590bd344417f6c1c55be907d37a679802ddee2a"
+            }
+          ]
+        },
+        {
+          "name": "Ht",
+          "declarations": [
+            {
+              "start": 4660546,
+              "end": 4660625,
+              "kind": "VariableDeclaration",
+              "sha256": "8b53383c75de2a8171959ea2aabc711186fc48943b6ed4f3c55f80d66a2965d3"
+            }
+          ]
+        },
+        {
+          "name": "Ql",
+          "declarations": [
+            {
+              "start": 4660724,
+              "end": 4660980,
+              "kind": "VariableDeclaration",
+              "sha256": "914b2dc8ef752c2d0b8087e00d6246cea9ce20e424de1f8a86a94d55a15f9250"
+            }
+          ]
+        },
+        {
+          "name": "fo",
+          "declarations": [
+            {
+              "start": 4660985,
+              "end": 4661093,
+              "kind": "VariableDeclaration",
+              "sha256": "4a13b9ba3f4b50cb7b6bc85f5e6249b9bada2f4ac269640f42eb09c3944347f2"
+            }
+          ]
+        },
+        {
+          "name": "La",
+          "declarations": [
+            {
+              "start": 4661594,
+              "end": 4661684,
+              "kind": "VariableDeclaration",
+              "sha256": "bbc5a5e6bd71364859849f46861116465f6ce7c56fb762332c7dfe3c119bdfcf"
+            }
+          ]
+        }
+      ],
+      "sourceFactorySHA": "97b93f025b4d77b4e50ba64b622bda6fba71bec23758773ec1ebaa72165a7924",
+      "checks": {
+        "actualCandidateParse": true,
+        "actualToastActionExactIDExecuted": true,
+        "allInjectedGetterNamesResolve": true,
+        "actualExistingFreshReadHelperResolved": true,
+        "actualNativeFactoryExecuted": true,
+        "noNewReactQueryTRPCScopePageMemory": true,
+        "legacyNullRowRetained": true,
+        "serverLatestInput": true,
+        "fourQuoteViews": true,
+        "quoteExactIdInteraction": true,
+        "B1NoCachedAck": true,
+        "B1FreshDisplayedCursorAck": true,
+        "denialErasesRows": true,
+        "exactEntryNoCachedOpen": true,
+        "exactEntryAuthorizedCustomerReadOnly": true,
+        "exactParserRejectsDuplicates": true,
+        "actualRouteRetainsCustomersManageGate": true,
+        "actualRouteExactAndFallbackExecuted": true
+      }
+    }
+  ]
+}

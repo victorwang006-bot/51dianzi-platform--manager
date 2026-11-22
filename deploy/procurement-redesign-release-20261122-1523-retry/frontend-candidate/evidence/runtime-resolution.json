@@ -1,0 +1,805 @@
+{
+  "sourcePins": {
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx": "60a20121a179ebf5e7546ce26deb5730e5680b9cfc2f4fc8bf1839c3cf0905bd",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/procurementDemandReads.ts": "002f164902e273adc06f8baab1ade97fefdf221119410cb0d34cb0c5cebfb465",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandExactEntry.tsx": "5ee16cfa18984dca9e458a0ab5ac1c8b4a204caa0570f3036efc19374f864115",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandDialog.tsx": "a04baedeee9e969e18aa99d33fddb31558c21b635a52745b10c8c2a35cd0f777",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/BusinessWorkbenchPage.tsx": "4a618d07019b3f3a539c6c1d1591ffa426e60ecf5511ca13ca114f1f035085c2",
+    "/home/ubuntu/work/demand-redesign-implementation-20261122-1302/source-version.json": "2adde1c67d341b3f497578a4fe650ae2df795c8bf9427329b927891d88421325",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/shared/beijingTime.ts": "f0150cfce5acb2259c647e75cde937ee20b41a1202f3fb181c80f07d8acc0820"
+  },
+  "resolutions": [
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/demand-redesign-entry.ts",
+      "spec": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "kind": "source-derived",
+      "local": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx"
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/demand-redesign-entry.ts",
+      "spec": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandExactEntry.tsx",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandExactEntry.tsx",
+      "kind": "source-derived",
+      "local": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandExactEntry.tsx"
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandExactEntry.tsx",
+      "spec": "wouter",
+      "key": "wouter",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "useLocation": "useLocation"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandExactEntry.tsx",
+      "spec": "../../../../../BusinessScope",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/BusinessScope",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "useBusinessScope": "useBusinessScope"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandExactEntry.tsx",
+      "spec": "../../../../../api/business-trpc",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/api/business-trpc",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "trpc": "trpc"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandExactEntry.tsx",
+      "spec": "../../hooks/usePageMemory",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/hooks/usePageMemory",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "usePageMemory": "usePageMemory",
+        "useRememberedState": "useRememberedState",
+        "freshListOptions": "freshListOptions",
+        "useRestoringListQuery": "useRestoringListQuery"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandExactEntry.tsx",
+      "spec": "./CustomerDemandDialog",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandDialog",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "CustomerDemandDialog": "CustomerDemandDialog"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "../hooks/usePageMemory",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/hooks/usePageMemory",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "usePageMemory": "usePageMemory",
+        "useRememberedState": "useRememberedState",
+        "freshListOptions": "freshListOptions",
+        "useRestoringListQuery": "useRestoringListQuery"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandExactEntry.tsx",
+      "spec": "./useDemandReadSession",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/useDemandReadSession",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "demandFreshReadOptions": "demandFreshReadOptions",
+        "useDemandServerRead": "useDemandServerRead"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "react",
+      "key": "react",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "useEffect": "React.useEffect",
+        "useRef": "React.useRef",
+        "useState": "React.useState"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandExactEntry.tsx",
+      "spec": "react/jsx-runtime",
+      "key": "react/jsx-runtime",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "jsx": "jsx.jsx",
+        "jsxs": "jsx.jsxs",
+        "Fragment": "jsx.Fragment"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "../../../../BusinessScope",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/BusinessScope",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "useBusinessScope": "useBusinessScope"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "./procurementDemandReads",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/procurementDemandReads",
+      "kind": "source-derived",
+      "local": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/procurementDemandReads.ts"
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "@/components/admin/UnifiedAdminPage",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/UnifiedAdminPage",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "AdminDataPanel": "AdminDataPanel",
+        "AdminFilterBar": "AdminFilterBar",
+        "AdminPage": "AdminPage"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "../../../../../lib/adminNewInformation",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminNewInformation",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "useAdminNewInformationContextRows": "useAdminNewInformationContextRows"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "../../../../../components/admin/AdminNewInformationBadge",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminNewInformationBadge",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "AdminNewInformationRowBadge": "AdminNewInformationRowBadge"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "lucide-react",
+      "key": "lucide-react",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "ChevronLeft": "ChevronLeft",
+        "ChevronRight": "ChevronRight",
+        "Loader2": "Loader2",
+        "RefreshCw": "RefreshCw",
+        "Search": "Search",
+        "X": "X"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "sonner",
+      "key": "sonner",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "toast": "toast"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "../../../shared/customerDemands",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/shared/customerDemands",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "CUSTOMER_DEMAND_UNITS": "CUSTOMER_DEMAND_UNITS"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "../../../shared/beijingTime",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/shared/beijingTime",
+      "kind": "source-derived",
+      "local": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/shared/beijingTime.ts"
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "../../../../BusinessContentFrame",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/BusinessContentFrame",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "default": "PlatformLayout"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "../components/customerDemands/DemandQuoteDialog",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/DemandQuoteDialog",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "DemandQuoteDialog": "DemandQuoteDialog"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "../components/customerDemands/DemandQuoteList",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/DemandQuoteList",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "DemandQuoteList": "DemandQuoteList"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "../components/ui/button",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/ui/button",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "Button": "Button"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "../components/ui/input",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/ui/input",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "Input": "Input"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "../components/ui/table",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/ui/table",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "Table": "Table",
+        "TableBody": "TableBody",
+        "TableCell": "TableCell",
+        "TableHead": "TableHead",
+        "TableHeader": "TableHeader",
+        "TableRow": "TableRow"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "../components/ui/dialog",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/ui/dialog",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "Dialog": "Dialog",
+        "DialogContent": "DialogContent",
+        "DialogDescription": "DialogDescription",
+        "DialogTitle": "DialogTitle"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "../../../../api/business-trpc",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/api/business-trpc",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "trpc": "trpc"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "./ProcurementDemands.css",
+      "kind": "parent-owned-css-not-emitted"
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+      "spec": "react/jsx-runtime",
+      "key": "react/jsx-runtime",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "jsx": "jsx.jsx",
+        "jsxs": "jsx.jsxs",
+        "Fragment": "jsx.Fragment"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/procurementDemandReads.ts",
+      "spec": "react",
+      "key": "react",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "useEffect": "React.useEffect",
+        "useRef": "React.useRef",
+        "useState": "React.useState"
+      }
+    },
+    {
+      "from": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/procurementDemandReads.ts",
+      "spec": "../../../../api/business-trpc",
+      "key": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/api/business-trpc",
+      "kind": "existing-native-bridge",
+      "exports": {
+        "trpc": "trpc"
+      }
+    }
+  ],
+  "metafile": {
+    "inputs": {
+      "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/hooks/usePageMemory": {
+        "bytes": 227,
+        "imports": [],
+        "format": "esm"
+      },
+      "native-bridge:react": {
+        "bytes": 132,
+        "imports": [],
+        "format": "esm"
+      },
+      "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/BusinessScope": {
+        "bytes": 54,
+        "imports": [],
+        "format": "esm"
+      },
+      "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/api/business-trpc": {
+        "bytes": 30,
+        "imports": [],
+        "format": "esm"
+      },
+      "../channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/procurementDemandReads.ts": {
+        "bytes": 4256,
+        "imports": [
+          {
+            "path": "native-bridge:react",
+            "kind": "import-statement",
+            "original": "react"
+          },
+          {
+            "path": "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/api/business-trpc",
+            "kind": "import-statement",
+            "original": "../../../../api/business-trpc"
+          }
+        ],
+        "format": "esm"
+      },
+      "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/UnifiedAdminPage": {
+        "bytes": 142,
+        "imports": [],
+        "format": "esm"
+      },
+      "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminNewInformation": {
+        "bytes": 88,
+        "imports": [],
+        "format": "esm"
+      },
+      "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminNewInformationBadge": {
+        "bytes": 76,
+        "imports": [],
+        "format": "esm"
+      },
+      "native-bridge:lucide-react": {
+        "bytes": 229,
+        "imports": [],
+        "format": "esm"
+      },
+      "native-bridge:sonner": {
+        "bytes": 32,
+        "imports": [],
+        "format": "esm"
+      },
+      "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/shared/customerDemands": {
+        "bytes": 64,
+        "imports": [],
+        "format": "esm"
+      },
+      "../channel-release-20261121-1837/manager/client/src/business/platform/shared/beijingTime.ts": {
+        "bytes": 8416,
+        "imports": [],
+        "format": "esm"
+      },
+      "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/BusinessContentFrame": {
+        "bytes": 37,
+        "imports": [],
+        "format": "esm"
+      },
+      "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/DemandQuoteDialog": {
+        "bytes": 56,
+        "imports": [],
+        "format": "esm"
+      },
+      "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/DemandQuoteList": {
+        "bytes": 52,
+        "imports": [],
+        "format": "esm"
+      },
+      "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/ui/button": {
+        "bytes": 34,
+        "imports": [],
+        "format": "esm"
+      },
+      "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/ui/input": {
+        "bytes": 32,
+        "imports": [],
+        "format": "esm"
+      },
+      "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/ui/table": {
+        "bytes": 239,
+        "imports": [],
+        "format": "esm"
+      },
+      "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/ui/dialog": {
+        "bytes": 185,
+        "imports": [],
+        "format": "esm"
+      },
+      "empty-css:./ProcurementDemands.css": {
+        "bytes": 0,
+        "imports": []
+      },
+      "native-bridge:react/jsx-runtime": {
+        "bytes": 110,
+        "imports": [],
+        "format": "esm"
+      },
+      "../channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx": {
+        "bytes": 34226,
+        "imports": [
+          {
+            "path": "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/hooks/usePageMemory",
+            "kind": "import-statement",
+            "original": "../hooks/usePageMemory"
+          },
+          {
+            "path": "native-bridge:react",
+            "kind": "import-statement",
+            "original": "react"
+          },
+          {
+            "path": "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/BusinessScope",
+            "kind": "import-statement",
+            "original": "../../../../BusinessScope"
+          },
+          {
+            "path": "../channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/procurementDemandReads.ts",
+            "kind": "import-statement",
+            "original": "./procurementDemandReads"
+          },
+          {
+            "path": "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/UnifiedAdminPage",
+            "kind": "import-statement",
+            "original": "@/components/admin/UnifiedAdminPage"
+          },
+          {
+            "path": "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminNewInformation",
+            "kind": "import-statement",
+            "original": "../../../../../lib/adminNewInformation"
+          },
+          {
+            "path": "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminNewInformationBadge",
+            "kind": "import-statement",
+            "original": "../../../../../components/admin/AdminNewInformationBadge"
+          },
+          {
+            "path": "native-bridge:lucide-react",
+            "kind": "import-statement",
+            "original": "lucide-react"
+          },
+          {
+            "path": "native-bridge:sonner",
+            "kind": "import-statement",
+            "original": "sonner"
+          },
+          {
+            "path": "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/shared/customerDemands",
+            "kind": "import-statement",
+            "original": "../../../shared/customerDemands"
+          },
+          {
+            "path": "../channel-release-20261121-1837/manager/client/src/business/platform/shared/beijingTime.ts",
+            "kind": "import-statement",
+            "original": "../../../shared/beijingTime"
+          },
+          {
+            "path": "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/BusinessContentFrame",
+            "kind": "import-statement",
+            "original": "../../../../BusinessContentFrame"
+          },
+          {
+            "path": "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/DemandQuoteDialog",
+            "kind": "import-statement",
+            "original": "../components/customerDemands/DemandQuoteDialog"
+          },
+          {
+            "path": "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/DemandQuoteList",
+            "kind": "import-statement",
+            "original": "../components/customerDemands/DemandQuoteList"
+          },
+          {
+            "path": "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/ui/button",
+            "kind": "import-statement",
+            "original": "../components/ui/button"
+          },
+          {
+            "path": "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/ui/input",
+            "kind": "import-statement",
+            "original": "../components/ui/input"
+          },
+          {
+            "path": "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/ui/table",
+            "kind": "import-statement",
+            "original": "../components/ui/table"
+          },
+          {
+            "path": "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/ui/dialog",
+            "kind": "import-statement",
+            "original": "../components/ui/dialog"
+          },
+          {
+            "path": "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/api/business-trpc",
+            "kind": "import-statement",
+            "original": "../../../../api/business-trpc"
+          },
+          {
+            "path": "empty-css:./ProcurementDemands.css",
+            "kind": "import-statement",
+            "original": "./ProcurementDemands.css"
+          },
+          {
+            "path": "native-bridge:react/jsx-runtime",
+            "kind": "import-statement",
+            "original": "react/jsx-runtime"
+          }
+        ],
+        "format": "esm"
+      },
+      "native-bridge:wouter": {
+        "bytes": 44,
+        "imports": [],
+        "format": "esm"
+      },
+      "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandDialog": {
+        "bytes": 62,
+        "imports": [],
+        "format": "esm"
+      },
+      "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/useDemandReadSession": {
+        "bytes": 127,
+        "imports": [],
+        "format": "esm"
+      },
+      "../channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandExactEntry.tsx": {
+        "bytes": 2604,
+        "imports": [
+          {
+            "path": "native-bridge:wouter",
+            "kind": "import-statement",
+            "original": "wouter"
+          },
+          {
+            "path": "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/BusinessScope",
+            "kind": "import-statement",
+            "original": "../../../../../BusinessScope"
+          },
+          {
+            "path": "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/api/business-trpc",
+            "kind": "import-statement",
+            "original": "../../../../../api/business-trpc"
+          },
+          {
+            "path": "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/hooks/usePageMemory",
+            "kind": "import-statement",
+            "original": "../../hooks/usePageMemory"
+          },
+          {
+            "path": "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandDialog",
+            "kind": "import-statement",
+            "original": "./CustomerDemandDialog"
+          },
+          {
+            "path": "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/useDemandReadSession",
+            "kind": "import-statement",
+            "original": "./useDemandReadSession"
+          },
+          {
+            "path": "native-bridge:react/jsx-runtime",
+            "kind": "import-statement",
+            "original": "react/jsx-runtime"
+          }
+        ],
+        "format": "esm"
+      },
+      "../channel-release-20261121-1837/manager/demand-redesign-entry.ts": {
+        "bytes": 386,
+        "imports": [
+          {
+            "path": "../channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx",
+            "kind": "import-statement",
+            "original": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx"
+          },
+          {
+            "path": "../channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandExactEntry.tsx",
+            "kind": "import-statement",
+            "original": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandExactEntry.tsx"
+          }
+        ],
+        "format": "esm"
+      }
+    },
+    "outputs": {
+      "stdin.js": {
+        "imports": [],
+        "exports": [],
+        "entryPoint": "../channel-release-20261121-1837/manager/demand-redesign-entry.ts",
+        "inputs": {
+          "../channel-release-20261121-1837/manager/demand-redesign-entry.ts": {
+            "bytesInOutput": 259
+          },
+          "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/hooks/usePageMemory": {
+            "bytesInOutput": 208
+          },
+          "native-bridge:react": {
+            "bytesInOutput": 118
+          },
+          "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/BusinessScope": {
+            "bytesInOutput": 50
+          },
+          "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/api/business-trpc": {
+            "bytesInOutput": 26
+          },
+          "../channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/procurementDemandReads.ts": {
+            "bytesInOutput": 3154
+          },
+          "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/UnifiedAdminPage": {
+            "bytesInOutput": 128
+          },
+          "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminNewInformation": {
+            "bytesInOutput": 84
+          },
+          "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminNewInformationBadge": {
+            "bytesInOutput": 72
+          },
+          "native-bridge:lucide-react": {
+            "bytesInOutput": 200
+          },
+          "native-bridge:sonner": {
+            "bytesInOutput": 28
+          },
+          "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/shared/customerDemands": {
+            "bytesInOutput": 60
+          },
+          "../channel-release-20261121-1837/manager/client/src/business/platform/shared/beijingTime.ts": {
+            "bytesInOutput": 1448
+          },
+          "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/BusinessContentFrame": {
+            "bytesInOutput": 60
+          },
+          "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/DemandQuoteDialog": {
+            "bytesInOutput": 52
+          },
+          "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/DemandQuoteList": {
+            "bytesInOutput": 48
+          },
+          "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/ui/button": {
+            "bytesInOutput": 30
+          },
+          "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/ui/input": {
+            "bytesInOutput": 28
+          },
+          "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/ui/table": {
+            "bytesInOutput": 210
+          },
+          "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/ui/dialog": {
+            "bytesInOutput": 166
+          },
+          "native-bridge:react/jsx-runtime": {
+            "bytesInOutput": 96
+          },
+          "../channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx": {
+            "bytesInOutput": 38291
+          },
+          "native-bridge:wouter": {
+            "bytesInOutput": 40
+          },
+          "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandDialog": {
+            "bytesInOutput": 58
+          },
+          "native-bridge:/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/useDemandReadSession": {
+            "bytesInOutput": 118
+          },
+          "../channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandExactEntry.tsx": {
+            "bytesInOutput": 2362
+          }
+        },
+        "bytes": 51159
+      }
+    }
+  },
+  "bridgeExports": {
+    "react": {
+      "useEffect": "React.useEffect",
+      "useRef": "React.useRef",
+      "useState": "React.useState"
+    },
+    "react/jsx-runtime": {
+      "jsx": "jsx.jsx",
+      "jsxs": "jsx.jsxs",
+      "Fragment": "jsx.Fragment"
+    },
+    "wouter": {
+      "useLocation": "useLocation"
+    },
+    "lucide-react": {
+      "ChevronLeft": "ChevronLeft",
+      "ChevronRight": "ChevronRight",
+      "Loader2": "Loader2",
+      "RefreshCw": "RefreshCw",
+      "Search": "Search",
+      "X": "X"
+    },
+    "sonner": {
+      "toast": "toast"
+    },
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/BusinessScope": {
+      "useBusinessScope": "useBusinessScope"
+    },
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/api/business-trpc": {
+      "trpc": "trpc"
+    },
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/hooks/usePageMemory": {
+      "usePageMemory": "usePageMemory",
+      "useRememberedState": "useRememberedState",
+      "freshListOptions": "freshListOptions",
+      "useRestoringListQuery": "useRestoringListQuery"
+    },
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/UnifiedAdminPage": {
+      "AdminDataPanel": "AdminDataPanel",
+      "AdminFilterBar": "AdminFilterBar",
+      "AdminPage": "AdminPage"
+    },
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminNewInformation": {
+      "useAdminNewInformationContextRows": "useAdminNewInformationContextRows"
+    },
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminNewInformationBadge": {
+      "AdminNewInformationRowBadge": "AdminNewInformationRowBadge"
+    },
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/shared/customerDemands": {
+      "CUSTOMER_DEMAND_UNITS": "CUSTOMER_DEMAND_UNITS"
+    },
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/BusinessContentFrame": {
+      "default": "PlatformLayout"
+    },
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/DemandQuoteDialog": {
+      "DemandQuoteDialog": "DemandQuoteDialog"
+    },
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/DemandQuoteList": {
+      "DemandQuoteList": "DemandQuoteList"
+    },
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandDialog": {
+      "CustomerDemandDialog": "CustomerDemandDialog"
+    },
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/useDemandReadSession": {
+      "demandFreshReadOptions": "demandFreshReadOptions",
+      "useDemandServerRead": "useDemandServerRead"
+    },
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/ui/button": {
+      "Button": "Button"
+    },
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/ui/input": {
+      "Input": "Input"
+    },
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/ui/table": {
+      "Table": "Table",
+      "TableBody": "TableBody",
+      "TableCell": "TableCell",
+      "TableHead": "TableHead",
+      "TableHeader": "TableHeader",
+      "TableRow": "TableRow"
+    },
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/ui/dialog": {
+      "Dialog": "Dialog",
+      "DialogContent": "DialogContent",
+      "DialogDescription": "DialogDescription",
+      "DialogTitle": "DialogTitle"
+    }
+  },
+  "actualExports": [
+    "createDemandRedesign"
+  ],
+  "factoryExports": [
+    "ProcurementDemands",
+    "CustomerDemandExactEntry",
+    "customerDemandExactId"
+  ]
+}

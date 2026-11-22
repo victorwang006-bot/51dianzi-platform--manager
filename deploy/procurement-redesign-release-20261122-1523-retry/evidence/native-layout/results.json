@@ -1,0 +1,4892 @@
+{
+  "status": "OFFLINE_NATIVE_CAPTURE_CSS_SYNTHETIC_DOM_NOT_AUTHENTICATED_PRODUCTION",
+  "cssPins": [
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-97.css",
+      "sha256": "194389615e8848675383024d7f856bbe892d140b2c24d0a2340d4780bc38719b"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-117.css",
+      "sha256": "1bc41785d5ab2453c96bfd97e08b04c03670449bb91c092828389e4b6bb7f328"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-55.css",
+      "sha256": "403b8716333e170e448e7fbaf7d4812f49fd8311c762b5a5ca2352f3a60d5085"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-124.css",
+      "sha256": "0551f32fcd334ced8270979fe467e011f95095c8700cdf03da663ca4f7695f7e"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-36.css",
+      "sha256": "87a9e4c8f3507ff46da85a5655232556fa33de184cf6f4a05347127c8be8d1ad"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-109.css",
+      "sha256": "d608d923a66f8e343a0212e46b1017fa3ccbc9baff7bab490d9f8bd4946bca20"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-93.css",
+      "sha256": "8fb5bd555322ed40d748e4a4217f06f8a5ff750fccf8dfaae36dc36589c5842e"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-123.css",
+      "sha256": "03dae7d34255efb97c625272233bbad7831dbe8085268184c54a1f0a04ea11ac"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-125.css",
+      "sha256": "ab7377762ccd427fcc1cd54c04121856198863e1e6bdb6212a3caf581f4bc72c"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-122.css",
+      "sha256": "ba0c8aa45192096f53979c509733dba55a6b0bd7051eb9576a78d5ff3add2436"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-102.css",
+      "sha256": "58182fae8f34ebefe8991ab56e654f9d057c9faa51793c3e7380eb5989fa87a3"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-101.css",
+      "sha256": "67080a2ed3d9df308bdfcfdcad6766fa285c98e027b8c69867b22502bf6ede60"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-100.css",
+      "sha256": "f52a1e2467f48bf29cdc11ffae9912f78c96f5fcc04fd717a2393e3664d10007"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-94.css",
+      "sha256": "8ffadcc0979c5e7b1a7416137144b3beffb75444b5907d18e5384eb7bae8cb2d"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-119.css",
+      "sha256": "7dc97ecfc1c40bbcaa66de96f0aeb326c913dfd4f87467120102cdf6771140fc"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-96.css",
+      "sha256": "8ca656c3fc7973284c44cd32b8f5334ca7fb44f282ff6207f90e3b2939fbadfe"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-120.css",
+      "sha256": "1841c7bc1e1588584ab4785210eb08d7e686913035a5e85bd8cf5c3ba83e9af4"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-121.css",
+      "sha256": "e412e6a7d87028b454ac1a485b8feafb0f944769a3c33e71f3e38e3bb2d4bdbd"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-131.css",
+      "sha256": "025e4489de338468e2eca53ce7eebf15edcb1c4b9b7afd3a36c8a8cf137c32e7"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-126.css",
+      "sha256": "967d4546ae9c41417f7305e2e56fb6003e96f0651865310996400121cf034c35"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-132.css",
+      "sha256": "dc940e31bf165037f5c2f9ae9e46c012f5dde3460ead7ee891a195ef4ab43d28"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-130.css",
+      "sha256": "0bcd06cfbf169e87873512df62dafe28ae61fc8c1fbdf593b019a46dab12fb24"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-118.css",
+      "sha256": "57da79a664a78c88d9d8dd548d9a63ecf3e0b1af325755cfeab5f7eefec2a827"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-110.css",
+      "sha256": "295de5e736a635117c974037ae49307eda98f44bee69ea7e656591230a64814f"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-127.css",
+      "sha256": "bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-129.css",
+      "sha256": "82debf05eb11e875a558434575b181e935021cd9dc152616ec376c10bf491c55"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-99.css",
+      "sha256": "84184014c648680f5a538e88353ee8f41fc4e00c5beeeb77b1838a5af40de4c0"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-77.css",
+      "sha256": "e0e24486164aa6c60b3fb3213bdb0d68dbf201f66652f5ae75c04baf549e5efc"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-81.css",
+      "sha256": "367eba0c8f63fe5cb098dd972d15de74a9db3c9a4915801a9e25d0b1b766505c"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-79.css",
+      "sha256": "bb14afb63f856ad40526de19d7436cd8fbbb6a1393f9b2aa597c411a52df80e6"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-78.css",
+      "sha256": "8a057e3b66a85a83b8e475457138a45798ffa2ee07f9b5e97071d6d90fd26edf"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-80.css",
+      "sha256": "7ec863b61664fc7a58c1683e39623869fb72b82705366ad4fccb1a792fc8a65c"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-84.css",
+      "sha256": "cdd5358599db3ebe1ee2d3c774789fb63e46b130558b34b5b946fef4c045d8e6"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-85.css",
+      "sha256": "8dd5ff8562c287e8a173d2208d5f71644c28e22baca9bcf6530d501492d30a31"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-86.css",
+      "sha256": "deabd14d5a0cc1a0e053ed520cf2ffb50a335a927dece552d8de89010e32af24"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-92.css",
+      "sha256": "8da2d002881676a1e6eeeffd4ed3f1faceb8f9728e1711e026a6797690da8d12"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-68.css",
+      "sha256": "08e7332c1c26a0bea31b3fc36b733b1239d748a206eb569c9f4305e3aec20665"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-88.css",
+      "sha256": "a213f3b6c1c556c38a66c557e97f93432977b0da6c4cd100a22db744a4baa1d2"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-83.css",
+      "sha256": "c511e36ac5cf5bfcc51a72c8a3e6c423511c2a6b4bbe5b97847b897c6d64e29b"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-103.css",
+      "sha256": "70ac2ce2d3507909e5e084855aa364b75c7b74d03cbbafbeb8daee5913c384d0"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-128.css",
+      "sha256": "7f2cb86c3b489b732cd67677787e98ee66c5cdcdf916aa67b719263b3f0b9e12"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-114.css",
+      "sha256": "bb24e724fc97e425d4c245d2811d83af4c8beff2b080d43eb65e851d8e3ffe21"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-115.css",
+      "sha256": "3cddbfc1c80d3769dca9dda9855981d5cf99ed12118045b8908f436dabcf0d95"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-116.css",
+      "sha256": "3b83db4061a4088ea88d1a192377024f93b026913c730c41d044c71ea0978ea3"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-104.css",
+      "sha256": "0abf3e1aacf580cfda4a0f9f45db055a549ed5cb4e59d2c09b96b8e22c23fb97"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-107.css",
+      "sha256": "ea794bf45ade4eb3186427faa1141072408e995cbbb984d17913a5e995ecc725"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-106.css",
+      "sha256": "cdd99dcb83de0c20872d3a14b71329565f14207e6ae4ffd9d8a665536dbfaba4"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-105.css",
+      "sha256": "af6b970e3a2e2e06ede82b8ea6e2f4f16596b8171072c9d6aea2b761d377f3c0"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-111.css",
+      "sha256": "f8d5bedee4c9c8a76aae5a4c6dd9906e18a1f89301f9526e5b6ecc99343f7072"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-98.css",
+      "sha256": "4a72eb9795dbe8ac794fe52f8e65c3da26d5b004aca50167e1ad9492e4e7c4ef"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/dependency-112.css",
+      "sha256": "8ddad65bc0ac0f6b8a0c4ecfe16c1b8ab402ee43a2498df5be29948835fb06cb"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/notification-candidate/assets/procurement-notification-redesign-7d92aa22e2a8ed36.css",
+      "sha256": "7d92aa22e2a8ed366bde67ced746e83578cb05e73cafdb9ccaeeb7073359d7cc"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/lazy-css-0.css",
+      "sha256": "60ae8ddc4e159c3a114d52a4a842fea94e132146368d1e65fb6afcefdab37ff4"
+    },
+    {
+      "path": "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/lazy-css-1.css",
+      "sha256": "0d7c518bbaa7983d4491180b997e8ef3405512910439a623d71ebcbf04024d39"
+    }
+  ],
+  "procurement": [
+    {
+      "viewport": 1560,
+      "pageWidth": 1560,
+      "table": {
+        "left": 1,
+        "right": 1559,
+        "width": 1558
+      },
+      "scroll": {
+        "left": 1,
+        "right": 1559,
+        "width": 1558
+      },
+      "groups": 5,
+      "rows": [
+        {
+          "actions": 1,
+          "button": {
+            "left": 1471,
+            "right": 1549,
+            "width": 78
+          },
+          "cell": {
+            "left": 1459,
+            "right": 1559,
+            "width": 100
+          },
+          "modelFits": true
+        },
+        {
+          "actions": 1,
+          "button": {
+            "left": 1471,
+            "right": 1549,
+            "width": 78
+          },
+          "cell": {
+            "left": 1459,
+            "right": 1559,
+            "width": 100
+          },
+          "modelFits": true
+        },
+        {
+          "actions": 1,
+          "button": {
+            "left": 1497,
+            "right": 1547,
+            "width": 50
+          },
+          "cell": {
+            "left": 1459,
+            "right": 1559,
+            "width": 100
+          },
+          "modelFits": true
+        },
+        {
+          "actions": 1,
+          "button": {
+            "left": 1471,
+            "right": 1549,
+            "width": 78
+          },
+          "cell": {
+            "left": 1459,
+            "right": 1559,
+            "width": 100
+          },
+          "modelFits": true
+        }
+      ]
+    },
+    {
+      "viewport": 1280,
+      "pageWidth": 1280,
+      "table": {
+        "left": 1,
+        "right": 1321,
+        "width": 1320
+      },
+      "scroll": {
+        "left": 1,
+        "right": 1279,
+        "width": 1278
+      },
+      "groups": 5,
+      "rows": [
+        {
+          "actions": 1,
+          "button": {
+            "left": 1191,
+            "right": 1269,
+            "width": 78
+          },
+          "cell": {
+            "left": 1179,
+            "right": 1279,
+            "width": 100
+          },
+          "modelFits": true
+        },
+        {
+          "actions": 1,
+          "button": {
+            "left": 1191,
+            "right": 1269,
+            "width": 78
+          },
+          "cell": {
+            "left": 1179,
+            "right": 1279,
+            "width": 100
+          },
+          "modelFits": true
+        },
+        {
+          "actions": 1,
+          "button": {
+            "left": 1217,
+            "right": 1267,
+            "width": 50
+          },
+          "cell": {
+            "left": 1179,
+            "right": 1279,
+            "width": 100
+          },
+          "modelFits": true
+        },
+        {
+          "actions": 1,
+          "button": {
+            "left": 1191,
+            "right": 1269,
+            "width": 78
+          },
+          "cell": {
+            "left": 1179,
+            "right": 1279,
+            "width": 100
+          },
+          "modelFits": true
+        }
+      ]
+    },
+    {
+      "viewport": 390,
+      "pageWidth": 390,
+      "table": {
+        "left": 1,
+        "right": 1321,
+        "width": 1320
+      },
+      "scroll": {
+        "left": 1,
+        "right": 389,
+        "width": 388
+      },
+      "groups": 5,
+      "rows": [
+        {
+          "actions": 1,
+          "button": {
+            "left": 301,
+            "right": 379,
+            "width": 78
+          },
+          "cell": {
+            "left": 289,
+            "right": 389,
+            "width": 100
+          },
+          "modelFits": true
+        },
+        {
+          "actions": 1,
+          "button": {
+            "left": 301,
+            "right": 379,
+            "width": 78
+          },
+          "cell": {
+            "left": 289,
+            "right": 389,
+            "width": 100
+          },
+          "modelFits": true
+        },
+        {
+          "actions": 1,
+          "button": {
+            "left": 327,
+            "right": 377,
+            "width": 50
+          },
+          "cell": {
+            "left": 289,
+            "right": 389,
+            "width": 100
+          },
+          "modelFits": true
+        },
+        {
+          "actions": 1,
+          "button": {
+            "left": 301,
+            "right": 379,
+            "width": 78
+          },
+          "cell": {
+            "left": 289,
+            "right": 389,
+            "width": 100
+          },
+          "modelFits": true
+        }
+      ]
+    }
+  ],
+  "notification": [
+    {
+      "state": "count",
+      "viewport": 1560,
+      "modules": [
+        {
+          "slot": {
+            "left": 125.171875,
+            "right": 157.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 64.171875,
+            "right": 120.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 125.171875,
+            "right": 148.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 240.171875,
+            "right": 272.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 179.171875,
+            "right": 235.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 240.171875,
+            "right": 263.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 355.171875,
+            "right": 387.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 294.171875,
+            "right": 350.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 355.171875,
+            "right": 378.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 470.171875,
+            "right": 502.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 409.171875,
+            "right": 465.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 470.171875,
+            "right": 493.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 585.171875,
+            "right": 617.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 524.171875,
+            "right": 580.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 585.171875,
+            "right": 608.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 700.171875,
+            "right": 732.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 639.171875,
+            "right": 695.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 700.171875,
+            "right": 723.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 815.171875,
+            "right": 847.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 754.171875,
+            "right": 810.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 815.171875,
+            "right": 838.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        }
+      ]
+    },
+    {
+      "state": "refreshing",
+      "viewport": 1560,
+      "modules": [
+        {
+          "slot": {
+            "left": 125.171875,
+            "right": 157.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 64.171875,
+            "right": 120.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 125.171875,
+            "right": 150.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 240.171875,
+            "right": 272.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 179.171875,
+            "right": 235.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 240.171875,
+            "right": 265.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 355.171875,
+            "right": 387.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 294.171875,
+            "right": 350.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 355.171875,
+            "right": 380.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 470.171875,
+            "right": 502.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 409.171875,
+            "right": 465.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 470.171875,
+            "right": 495.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 585.171875,
+            "right": 617.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 524.171875,
+            "right": 580.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 585.171875,
+            "right": 610.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 700.171875,
+            "right": 732.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 639.171875,
+            "right": 695.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 700.171875,
+            "right": 725.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 815.171875,
+            "right": 847.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 754.171875,
+            "right": 810.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 815.171875,
+            "right": 840.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        }
+      ]
+    },
+    {
+      "state": "invalidated",
+      "viewport": 1560,
+      "modules": [
+        {
+          "slot": {
+            "left": 125.171875,
+            "right": 157.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 64.171875,
+            "right": 120.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 125.171875,
+            "right": 157.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 240.171875,
+            "right": 272.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 179.171875,
+            "right": 235.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 240.171875,
+            "right": 272.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 355.171875,
+            "right": 387.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 294.171875,
+            "right": 350.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 355.171875,
+            "right": 387.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 470.171875,
+            "right": 502.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 409.171875,
+            "right": 465.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 470.171875,
+            "right": 502.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 585.171875,
+            "right": 617.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 524.171875,
+            "right": 580.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 585.171875,
+            "right": 617.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 700.171875,
+            "right": 732.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 639.171875,
+            "right": 695.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 700.171875,
+            "right": 732.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 815.171875,
+            "right": 847.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 754.171875,
+            "right": 810.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 815.171875,
+            "right": 847.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        }
+      ]
+    },
+    {
+      "state": "unknown",
+      "viewport": 1560,
+      "modules": [
+        {
+          "slot": {
+            "left": 125.171875,
+            "right": 157.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 64.171875,
+            "right": 120.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 125.171875,
+            "right": 141.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 240.171875,
+            "right": 272.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 179.171875,
+            "right": 235.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 240.171875,
+            "right": 256.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 355.171875,
+            "right": 387.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 294.171875,
+            "right": 350.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 355.171875,
+            "right": 371.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 470.171875,
+            "right": 502.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 409.171875,
+            "right": 465.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 470.171875,
+            "right": 486.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 585.171875,
+            "right": 617.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 524.171875,
+            "right": 580.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 585.171875,
+            "right": 601.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 700.171875,
+            "right": 732.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 639.171875,
+            "right": 695.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 700.171875,
+            "right": 716.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 815.171875,
+            "right": 847.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 754.171875,
+            "right": 810.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 815.171875,
+            "right": 831.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        }
+      ]
+    },
+    {
+      "state": "failed",
+      "viewport": 1560,
+      "modules": [
+        {
+          "slot": {
+            "left": 125.171875,
+            "right": 157.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 64.171875,
+            "right": 120.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 125.171875,
+            "right": 154.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 240.171875,
+            "right": 272.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 179.171875,
+            "right": 235.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 240.171875,
+            "right": 269.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 355.171875,
+            "right": 387.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 294.171875,
+            "right": 350.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 355.171875,
+            "right": 384.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 470.171875,
+            "right": 502.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 409.171875,
+            "right": 465.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 470.171875,
+            "right": 499.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 585.171875,
+            "right": 617.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 524.171875,
+            "right": 580.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 585.171875,
+            "right": 614.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 700.171875,
+            "right": 732.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 639.171875,
+            "right": 695.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 700.171875,
+            "right": 729.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 815.171875,
+            "right": 847.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 754.171875,
+            "right": 810.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 815.171875,
+            "right": 844.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        }
+      ]
+    },
+    {
+      "state": "denied",
+      "viewport": 1560,
+      "modules": [
+        {
+          "slot": {
+            "left": 125.171875,
+            "right": 157.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 64.171875,
+            "right": 120.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 125.171875,
+            "right": 142.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 240.171875,
+            "right": 272.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 179.171875,
+            "right": 235.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 240.171875,
+            "right": 257.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 355.171875,
+            "right": 387.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 294.171875,
+            "right": 350.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 355.171875,
+            "right": 372.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 470.171875,
+            "right": 502.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 409.171875,
+            "right": 465.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 470.171875,
+            "right": 487.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 585.171875,
+            "right": 617.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 524.171875,
+            "right": 580.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 585.171875,
+            "right": 602.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 700.171875,
+            "right": 732.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 639.171875,
+            "right": 695.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 700.171875,
+            "right": 717.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 815.171875,
+            "right": 847.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 754.171875,
+            "right": 810.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 815.171875,
+            "right": 832.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        }
+      ]
+    },
+    {
+      "state": "zero",
+      "viewport": 1560,
+      "modules": [
+        {
+          "slot": {
+            "left": 125.171875,
+            "right": 157.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 64.171875,
+            "right": 120.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 240.171875,
+            "right": 272.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 179.171875,
+            "right": 235.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 355.171875,
+            "right": 387.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 294.171875,
+            "right": 350.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 470.171875,
+            "right": 502.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 409.171875,
+            "right": 465.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 585.171875,
+            "right": 617.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 524.171875,
+            "right": 580.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 700.171875,
+            "right": 732.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 639.171875,
+            "right": 695.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 815.171875,
+            "right": 847.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 754.171875,
+            "right": 810.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        }
+      ]
+    },
+    {
+      "state": "zero-refreshing",
+      "viewport": 1560,
+      "modules": [
+        {
+          "slot": {
+            "left": 125.171875,
+            "right": 157.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 64.171875,
+            "right": 120.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 240.171875,
+            "right": 272.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 179.171875,
+            "right": 235.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 355.171875,
+            "right": 387.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 294.171875,
+            "right": 350.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 470.171875,
+            "right": 502.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 409.171875,
+            "right": 465.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 585.171875,
+            "right": 617.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 524.171875,
+            "right": 580.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 700.171875,
+            "right": 732.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 639.171875,
+            "right": 695.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 815.171875,
+            "right": 847.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 754.171875,
+            "right": 810.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        }
+      ]
+    },
+    {
+      "state": "zero-invalidated",
+      "viewport": 1560,
+      "modules": [
+        {
+          "slot": {
+            "left": 125.171875,
+            "right": 157.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 64.171875,
+            "right": 120.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 125.171875,
+            "right": 142.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 240.171875,
+            "right": 272.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 179.171875,
+            "right": 235.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 240.171875,
+            "right": 257.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 355.171875,
+            "right": 387.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 294.171875,
+            "right": 350.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 355.171875,
+            "right": 372.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 470.171875,
+            "right": 502.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 409.171875,
+            "right": 465.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 470.171875,
+            "right": 487.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 585.171875,
+            "right": 617.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 524.171875,
+            "right": 580.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 585.171875,
+            "right": 602.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 700.171875,
+            "right": 732.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 639.171875,
+            "right": 695.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 700.171875,
+            "right": 717.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 815.171875,
+            "right": 847.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 754.171875,
+            "right": 810.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 815.171875,
+            "right": 832.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        }
+      ]
+    },
+    {
+      "state": "count",
+      "viewport": 1280,
+      "modules": [
+        {
+          "slot": {
+            "left": 119.171875,
+            "right": 151.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 58.171875,
+            "right": 114.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 119.171875,
+            "right": 142.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 228.171875,
+            "right": 260.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 167.171875,
+            "right": 223.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 228.171875,
+            "right": 251.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 337.171875,
+            "right": 369.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 276.171875,
+            "right": 332.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 337.171875,
+            "right": 360.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 446.171875,
+            "right": 478.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 385.171875,
+            "right": 441.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 446.171875,
+            "right": 469.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 555.171875,
+            "right": 587.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 494.171875,
+            "right": 550.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 555.171875,
+            "right": 578.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 664.171875,
+            "right": 696.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 603.171875,
+            "right": 659.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 664.171875,
+            "right": 687.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 773.171875,
+            "right": 805.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 712.171875,
+            "right": 768.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 773.171875,
+            "right": 796.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        }
+      ]
+    },
+    {
+      "state": "refreshing",
+      "viewport": 1280,
+      "modules": [
+        {
+          "slot": {
+            "left": 119.171875,
+            "right": 151.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 58.171875,
+            "right": 114.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 119.171875,
+            "right": 144.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 228.171875,
+            "right": 260.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 167.171875,
+            "right": 223.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 228.171875,
+            "right": 253.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 337.171875,
+            "right": 369.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 276.171875,
+            "right": 332.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 337.171875,
+            "right": 362.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 446.171875,
+            "right": 478.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 385.171875,
+            "right": 441.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 446.171875,
+            "right": 471.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 555.171875,
+            "right": 587.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 494.171875,
+            "right": 550.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 555.171875,
+            "right": 580.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 664.171875,
+            "right": 696.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 603.171875,
+            "right": 659.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 664.171875,
+            "right": 689.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 773.171875,
+            "right": 805.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 712.171875,
+            "right": 768.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 773.171875,
+            "right": 798.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        }
+      ]
+    },
+    {
+      "state": "invalidated",
+      "viewport": 1280,
+      "modules": [
+        {
+          "slot": {
+            "left": 119.171875,
+            "right": 151.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 58.171875,
+            "right": 114.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 119.171875,
+            "right": 151.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 228.171875,
+            "right": 260.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 167.171875,
+            "right": 223.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 228.171875,
+            "right": 260.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 337.171875,
+            "right": 369.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 276.171875,
+            "right": 332.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 337.171875,
+            "right": 369.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 446.171875,
+            "right": 478.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 385.171875,
+            "right": 441.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 446.171875,
+            "right": 478.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 555.171875,
+            "right": 587.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 494.171875,
+            "right": 550.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 555.171875,
+            "right": 587.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 664.171875,
+            "right": 696.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 603.171875,
+            "right": 659.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 664.171875,
+            "right": 696.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 773.171875,
+            "right": 805.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 712.171875,
+            "right": 768.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 773.171875,
+            "right": 805.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        }
+      ]
+    },
+    {
+      "state": "unknown",
+      "viewport": 1280,
+      "modules": [
+        {
+          "slot": {
+            "left": 119.171875,
+            "right": 151.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 58.171875,
+            "right": 114.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 119.171875,
+            "right": 135.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 228.171875,
+            "right": 260.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 167.171875,
+            "right": 223.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 228.171875,
+            "right": 244.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 337.171875,
+            "right": 369.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 276.171875,
+            "right": 332.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 337.171875,
+            "right": 353.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 446.171875,
+            "right": 478.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 385.171875,
+            "right": 441.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 446.171875,
+            "right": 462.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 555.171875,
+            "right": 587.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 494.171875,
+            "right": 550.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 555.171875,
+            "right": 571.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 664.171875,
+            "right": 696.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 603.171875,
+            "right": 659.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 664.171875,
+            "right": 680.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 773.171875,
+            "right": 805.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 712.171875,
+            "right": 768.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 773.171875,
+            "right": 789.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        }
+      ]
+    },
+    {
+      "state": "failed",
+      "viewport": 1280,
+      "modules": [
+        {
+          "slot": {
+            "left": 119.171875,
+            "right": 151.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 58.171875,
+            "right": 114.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 119.171875,
+            "right": 148.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 228.171875,
+            "right": 260.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 167.171875,
+            "right": 223.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 228.171875,
+            "right": 257.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 337.171875,
+            "right": 369.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 276.171875,
+            "right": 332.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 337.171875,
+            "right": 366.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 446.171875,
+            "right": 478.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 385.171875,
+            "right": 441.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 446.171875,
+            "right": 475.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 555.171875,
+            "right": 587.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 494.171875,
+            "right": 550.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 555.171875,
+            "right": 584.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 664.171875,
+            "right": 696.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 603.171875,
+            "right": 659.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 664.171875,
+            "right": 693.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 773.171875,
+            "right": 805.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 712.171875,
+            "right": 768.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 773.171875,
+            "right": 802.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        }
+      ]
+    },
+    {
+      "state": "denied",
+      "viewport": 1280,
+      "modules": [
+        {
+          "slot": {
+            "left": 119.171875,
+            "right": 151.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 58.171875,
+            "right": 114.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 119.171875,
+            "right": 136.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 228.171875,
+            "right": 260.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 167.171875,
+            "right": 223.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 228.171875,
+            "right": 245.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 337.171875,
+            "right": 369.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 276.171875,
+            "right": 332.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 337.171875,
+            "right": 354.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 446.171875,
+            "right": 478.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 385.171875,
+            "right": 441.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 446.171875,
+            "right": 463.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 555.171875,
+            "right": 587.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 494.171875,
+            "right": 550.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 555.171875,
+            "right": 572.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 664.171875,
+            "right": 696.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 603.171875,
+            "right": 659.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 664.171875,
+            "right": 681.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 773.171875,
+            "right": 805.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 712.171875,
+            "right": 768.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 773.171875,
+            "right": 790.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        }
+      ]
+    },
+    {
+      "state": "zero",
+      "viewport": 1280,
+      "modules": [
+        {
+          "slot": {
+            "left": 119.171875,
+            "right": 151.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 58.171875,
+            "right": 114.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 228.171875,
+            "right": 260.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 167.171875,
+            "right": 223.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 337.171875,
+            "right": 369.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 276.171875,
+            "right": 332.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 446.171875,
+            "right": 478.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 385.171875,
+            "right": 441.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 555.171875,
+            "right": 587.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 494.171875,
+            "right": 550.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 664.171875,
+            "right": 696.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 603.171875,
+            "right": 659.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 773.171875,
+            "right": 805.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 712.171875,
+            "right": 768.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        }
+      ]
+    },
+    {
+      "state": "zero-refreshing",
+      "viewport": 1280,
+      "modules": [
+        {
+          "slot": {
+            "left": 119.171875,
+            "right": 151.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 58.171875,
+            "right": 114.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 228.171875,
+            "right": 260.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 167.171875,
+            "right": 223.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 337.171875,
+            "right": 369.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 276.171875,
+            "right": 332.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 446.171875,
+            "right": 478.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 385.171875,
+            "right": 441.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 555.171875,
+            "right": 587.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 494.171875,
+            "right": 550.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 664.171875,
+            "right": 696.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 603.171875,
+            "right": 659.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 773.171875,
+            "right": 805.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 712.171875,
+            "right": 768.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        }
+      ]
+    },
+    {
+      "state": "zero-invalidated",
+      "viewport": 1280,
+      "modules": [
+        {
+          "slot": {
+            "left": 119.171875,
+            "right": 151.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 58.171875,
+            "right": 114.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 119.171875,
+            "right": 136.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 228.171875,
+            "right": 260.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 167.171875,
+            "right": 223.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 228.171875,
+            "right": 245.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 337.171875,
+            "right": 369.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 276.171875,
+            "right": 332.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 337.171875,
+            "right": 354.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 446.171875,
+            "right": 478.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 385.171875,
+            "right": 441.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 446.171875,
+            "right": 463.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 555.171875,
+            "right": 587.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 494.171875,
+            "right": 550.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 555.171875,
+            "right": 572.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 664.171875,
+            "right": 696.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 603.171875,
+            "right": 659.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 664.171875,
+            "right": 681.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 773.171875,
+            "right": 805.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 712.171875,
+            "right": 768.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 773.171875,
+            "right": 790.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        }
+      ]
+    },
+    {
+      "state": "count",
+      "viewport": 390,
+      "modules": [
+        {
+          "slot": {
+            "left": 109.171875,
+            "right": 141.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 48.171875,
+            "right": 104.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 109.171875,
+            "right": 132.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 218.171875,
+            "right": 250.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 157.171875,
+            "right": 213.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 218.171875,
+            "right": 241.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 327.171875,
+            "right": 359.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 266.171875,
+            "right": 322.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 327.171875,
+            "right": 350.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 436.171875,
+            "right": 468.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 375.171875,
+            "right": 431.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 436.171875,
+            "right": 459.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 545.171875,
+            "right": 577.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 484.171875,
+            "right": 540.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 545.171875,
+            "right": 568.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 654.171875,
+            "right": 686.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 593.171875,
+            "right": 649.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 654.171875,
+            "right": 677.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 763.171875,
+            "right": 795.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 702.171875,
+            "right": 758.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 763.171875,
+            "right": 786.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 23.171875
+          },
+          "position": "static"
+        }
+      ]
+    },
+    {
+      "state": "refreshing",
+      "viewport": 390,
+      "modules": [
+        {
+          "slot": {
+            "left": 109.171875,
+            "right": 141.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 48.171875,
+            "right": 104.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 109.171875,
+            "right": 134.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 218.171875,
+            "right": 250.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 157.171875,
+            "right": 213.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 218.171875,
+            "right": 243.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 327.171875,
+            "right": 359.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 266.171875,
+            "right": 322.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 327.171875,
+            "right": 352.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 436.171875,
+            "right": 468.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 375.171875,
+            "right": 431.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 436.171875,
+            "right": 461.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 545.171875,
+            "right": 577.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 484.171875,
+            "right": 540.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 545.171875,
+            "right": 570.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 654.171875,
+            "right": 686.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 593.171875,
+            "right": 649.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 654.171875,
+            "right": 679.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 763.171875,
+            "right": 795.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 702.171875,
+            "right": 758.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 763.171875,
+            "right": 788.34375,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 25.171875
+          },
+          "position": "static"
+        }
+      ]
+    },
+    {
+      "state": "invalidated",
+      "viewport": 390,
+      "modules": [
+        {
+          "slot": {
+            "left": 109.171875,
+            "right": 141.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 48.171875,
+            "right": 104.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 109.171875,
+            "right": 141.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 218.171875,
+            "right": 250.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 157.171875,
+            "right": 213.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 218.171875,
+            "right": 250.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 327.171875,
+            "right": 359.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 266.171875,
+            "right": 322.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 327.171875,
+            "right": 359.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 436.171875,
+            "right": 468.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 375.171875,
+            "right": 431.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 436.171875,
+            "right": 468.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 545.171875,
+            "right": 577.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 484.171875,
+            "right": 540.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 545.171875,
+            "right": 577.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 654.171875,
+            "right": 686.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 593.171875,
+            "right": 649.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 654.171875,
+            "right": 686.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 763.171875,
+            "right": 795.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 702.171875,
+            "right": 758.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 763.171875,
+            "right": 795.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 32
+          },
+          "position": "static"
+        }
+      ]
+    },
+    {
+      "state": "unknown",
+      "viewport": 390,
+      "modules": [
+        {
+          "slot": {
+            "left": 109.171875,
+            "right": 141.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 48.171875,
+            "right": 104.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 109.171875,
+            "right": 125.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 218.171875,
+            "right": 250.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 157.171875,
+            "right": 213.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 218.171875,
+            "right": 234.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 327.171875,
+            "right": 359.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 266.171875,
+            "right": 322.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 327.171875,
+            "right": 343.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 436.171875,
+            "right": 468.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 375.171875,
+            "right": 431.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 436.171875,
+            "right": 452.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 545.171875,
+            "right": 577.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 484.171875,
+            "right": 540.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 545.171875,
+            "right": 561.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 654.171875,
+            "right": 686.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 593.171875,
+            "right": 649.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 654.171875,
+            "right": 670.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 763.171875,
+            "right": 795.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 702.171875,
+            "right": 758.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 763.171875,
+            "right": 779.171875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 16
+          },
+          "position": "static"
+        }
+      ]
+    },
+    {
+      "state": "failed",
+      "viewport": 390,
+      "modules": [
+        {
+          "slot": {
+            "left": 109.171875,
+            "right": 141.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 48.171875,
+            "right": 104.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 109.171875,
+            "right": 138.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 218.171875,
+            "right": 250.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 157.171875,
+            "right": 213.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 218.171875,
+            "right": 247.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 327.171875,
+            "right": 359.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 266.171875,
+            "right": 322.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 327.171875,
+            "right": 356.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 436.171875,
+            "right": 468.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 375.171875,
+            "right": 431.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 436.171875,
+            "right": 465.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 545.171875,
+            "right": 577.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 484.171875,
+            "right": 540.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 545.171875,
+            "right": 574.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 654.171875,
+            "right": 686.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 593.171875,
+            "right": 649.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 654.171875,
+            "right": 683.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 763.171875,
+            "right": 795.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 702.171875,
+            "right": 758.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 763.171875,
+            "right": 792.046875,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 28.875
+          },
+          "position": "static"
+        }
+      ]
+    },
+    {
+      "state": "denied",
+      "viewport": 390,
+      "modules": [
+        {
+          "slot": {
+            "left": 109.171875,
+            "right": 141.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 48.171875,
+            "right": 104.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 109.171875,
+            "right": 126.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 218.171875,
+            "right": 250.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 157.171875,
+            "right": 213.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 218.171875,
+            "right": 235.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 327.171875,
+            "right": 359.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 266.171875,
+            "right": 322.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 327.171875,
+            "right": 344.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 436.171875,
+            "right": 468.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 375.171875,
+            "right": 431.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 436.171875,
+            "right": 453.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 545.171875,
+            "right": 577.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 484.171875,
+            "right": 540.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 545.171875,
+            "right": 562.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 654.171875,
+            "right": 686.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 593.171875,
+            "right": 649.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 654.171875,
+            "right": 671.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 763.171875,
+            "right": 795.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 702.171875,
+            "right": 758.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 763.171875,
+            "right": 780.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        }
+      ]
+    },
+    {
+      "state": "zero",
+      "viewport": 390,
+      "modules": [
+        {
+          "slot": {
+            "left": 109.171875,
+            "right": 141.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 48.171875,
+            "right": 104.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 218.171875,
+            "right": 250.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 157.171875,
+            "right": 213.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 327.171875,
+            "right": 359.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 266.171875,
+            "right": 322.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 436.171875,
+            "right": 468.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 375.171875,
+            "right": 431.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 545.171875,
+            "right": 577.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 484.171875,
+            "right": 540.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 654.171875,
+            "right": 686.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 593.171875,
+            "right": 649.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 763.171875,
+            "right": 795.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 702.171875,
+            "right": 758.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        }
+      ]
+    },
+    {
+      "state": "zero-refreshing",
+      "viewport": 390,
+      "modules": [
+        {
+          "slot": {
+            "left": 109.171875,
+            "right": 141.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 48.171875,
+            "right": 104.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 218.171875,
+            "right": 250.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 157.171875,
+            "right": 213.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 327.171875,
+            "right": 359.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 266.171875,
+            "right": 322.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 436.171875,
+            "right": 468.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 375.171875,
+            "right": 431.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 545.171875,
+            "right": 577.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 484.171875,
+            "right": 540.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 654.171875,
+            "right": 686.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 593.171875,
+            "right": 649.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        },
+        {
+          "slot": {
+            "left": 763.171875,
+            "right": 795.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 702.171875,
+            "right": 758.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": null,
+          "position": null
+        }
+      ]
+    },
+    {
+      "state": "zero-invalidated",
+      "viewport": 390,
+      "modules": [
+        {
+          "slot": {
+            "left": 109.171875,
+            "right": 141.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 48.171875,
+            "right": 104.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 109.171875,
+            "right": 126.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 218.171875,
+            "right": 250.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 157.171875,
+            "right": 213.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 218.171875,
+            "right": 235.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 327.171875,
+            "right": 359.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 266.171875,
+            "right": 322.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 327.171875,
+            "right": 344.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 436.171875,
+            "right": 468.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 375.171875,
+            "right": 431.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 436.171875,
+            "right": 453.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 545.171875,
+            "right": 577.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 484.171875,
+            "right": 540.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 545.171875,
+            "right": 562.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 654.171875,
+            "right": 686.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 593.171875,
+            "right": 649.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 654.171875,
+            "right": 671.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        },
+        {
+          "slot": {
+            "left": 763.171875,
+            "right": 795.171875,
+            "top": 15.5,
+            "bottom": 33.5,
+            "width": 32
+          },
+          "label": {
+            "left": 702.171875,
+            "right": 758.171875,
+            "top": 14.5,
+            "bottom": 34.5,
+            "width": 56
+          },
+          "badge": {
+            "left": 763.171875,
+            "right": 780.5625,
+            "top": 16.5,
+            "bottom": 32.5,
+            "width": 17.390625
+          },
+          "position": "static"
+        }
+      ]
+    }
+  ],
+  "networkRequests": 0,
+  "limitations": "Actual captured native CSS plus exact proposed suffix and existing lazy Dashboard CSS. DOM from real source mocked procurement/NI fixtures; not a logged-in live header."
+}

@@ -1,0 +1,85 @@
+{
+  "scope": "demand-redesign-release-20261122-1455",
+  "assets": [
+    {
+      "side": "admin",
+      "url": "/assets/AdminNewInformation-notification-redesign-b8126b368094f20d.js",
+      "local": "/home/ubuntu/work/demand-redesign-release-20261122-1455/notification-candidate/assets/AdminNewInformation-notification-redesign-b8126b368094f20d.js",
+      "sha256": "b8126b368094f20d64a1570a3f9524a0ef8584825291f79169d0951060d94317",
+      "size": 307544
+    },
+    {
+      "side": "admin",
+      "url": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+      "local": "/home/ubuntu/work/demand-redesign-release-20261122-1455/notification-candidate/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+      "sha256": "011de15527e214138a16ae3d76ecf0c76b87ad269bf8b4ddda3ce1195cc7db19",
+      "size": 99389
+    },
+    {
+      "side": "admin",
+      "url": "/assets/procurement-notification-redesign-7d92aa22e2a8ed36.css",
+      "local": "/home/ubuntu/work/demand-redesign-release-20261122-1455/notification-candidate/assets/procurement-notification-redesign-7d92aa22e2a8ed36.css",
+      "sha256": "7d92aa22e2a8ed366bde67ced746e83578cb05e73cafdb9ccaeeb7073359d7cc",
+      "size": 8885
+    }
+  ],
+  "sourcePins": {
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/adminNewInformationConstants.ts": "a2a9194ca9f48cb45e3be30fc6b3f54310c465f0012c101ac50afcca8c2c1988",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminNewInformation.tsx": "dda94052103eb52ffc707cc40b5803a3398a91c0197884534faafa51a81603b3",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminNewInformationBadge.tsx": "5d4e1f2bb3227e07411f0b83b7d696c6f178f99432d519ed336a8051d6272647",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminNewInformationMenuBadge.tsx": "8ddbf075feed75738857215ec1dc68c06e2ef346ee0c34da6a6fef56b0ba1503",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/adminNewInformation.ts": "29690138f57fcc31b88e33aef0cb6f4dab2fbe7064db564636a83f9cd883add2",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminNewInformationStatus.tsx": "8b36e55bc1ff31cde7cdaf38d781f68f85fb294dad9f44c01654eb4527f2921d",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/DashboardLayout.tsx": "90b9c3089471fe059a8a52bcf522c7fe6c744d25455463cdfe7dcd9375b160c6",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.css": "cd905b0da1dcbb756bc43c7b7f75e72b416c90a4bc6e036820a202927ddbc908"
+  },
+  "nav": {
+    "beforeURL": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+    "beforeSHA": "6614aeb7b2a8f529f13f215055973acb7c3e52c16431fcc5fbb54638a3ad1e45",
+    "afterURL": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+    "afterSHA": "011de15527e214138a16ae3d76ecf0c76b87ad269bf8b4ddda3ce1195cc7db19",
+    "local": "/home/ubuntu/work/demand-redesign-release-20261122-1455/notification-candidate/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+    "patches": [
+      {
+        "start": 55,
+        "end": 125,
+        "after": "\"/assets/AdminNewInformation-notification-redesign-b8126b368094f20d.js\"",
+        "reason": "Frozen source notification singleton runtime",
+        "before": "\"/assets/AdminNewInformation-admin-polish-runtime-67feeba8e334ea18.js\"",
+        "afterStart": 55,
+        "afterEnd": 126,
+        "beforeSHA": "f7a385ab3050f6c92dca1ec55916942f38c810c692b7ebea32df8e7ca7955c92",
+        "afterSHA": "1e881e684808330ea6477a0859527f1f418c97eb1c2f4789f0cdf3bfe9f4ff59"
+      },
+      {
+        "start": 95709,
+        "end": 95709,
+        "after": "a.jsx(__NI.AdminNewInformationStatus,{}),",
+        "reason": "Source Dashboard header status after tabs inside original provider",
+        "before": "",
+        "afterStart": 95710,
+        "afterEnd": 95751,
+        "beforeSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "afterSHA": "dbd9ea84af38dcbd972d65864bb16aae7cd03da311e366cd0c46929b6445cfb6"
+      }
+    ]
+  },
+  "runtimeURL": "/assets/AdminNewInformation-notification-redesign-b8126b368094f20d.js",
+  "cssURL": "/assets/procurement-notification-redesign-7d92aa22e2a8ed36.css",
+  "replacements": {
+    "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+    "/assets/AdminNewInformation-runtime-fix-26903de9e5a06e89.js": "/assets/AdminNewInformation-notification-redesign-b8126b368094f20d.js"
+  },
+  "checks": {
+    "navFullByteInverse": true,
+    "outsideSlotsExact": true,
+    "originalReactJSXQuerySingletons": true,
+    "originalProviderAndReadGatesExact": true,
+    "sourceHeaderPosition": true,
+    "sourceFreeze": true,
+    "allHistoricalHandlersPreserved": true
+  },
+  "tests": {
+    "status": "NATIVE_SYNTAX_AND_SOURCE_PINS_PASS"
+  }
+}

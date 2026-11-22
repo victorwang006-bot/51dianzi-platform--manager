@@ -1,0 +1,977 @@
+{
+  "scope": "demand-redesign-release-20261122-1523-retry",
+  "sourceCommits": {
+    "manager": "3379f4874da80df1bed3463a5adbd3728d6c54ed",
+    "platform": "887104e6546eefacbe0a79779fe860bacbdbaf41"
+  },
+  "sourcePins": {
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/adminNewInformationConstants.ts": "a2a9194ca9f48cb45e3be30fc6b3f54310c465f0012c101ac50afcca8c2c1988",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminNewInformation.tsx": "dda94052103eb52ffc707cc40b5803a3398a91c0197884534faafa51a81603b3",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminNewInformationBadge.tsx": "5d4e1f2bb3227e07411f0b83b7d696c6f178f99432d519ed336a8051d6272647",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminNewInformationMenuBadge.tsx": "8ddbf075feed75738857215ec1dc68c06e2ef346ee0c34da6a6fef56b0ba1503",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/adminNewInformation.ts": "29690138f57fcc31b88e33aef0cb6f4dab2fbe7064db564636a83f9cd883add2",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminNewInformationStatus.tsx": "8b36e55bc1ff31cde7cdaf38d781f68f85fb294dad9f44c01654eb4527f2921d",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/DashboardLayout.tsx": "90b9c3089471fe059a8a52bcf522c7fe6c744d25455463cdfe7dcd9375b160c6",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.css": "cd905b0da1dcbb756bc43c7b7f75e72b416c90a4bc6e036820a202927ddbc908",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx": "60a20121a179ebf5e7546ce26deb5730e5680b9cfc2f4fc8bf1839c3cf0905bd",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/procurementDemandReads.ts": "002f164902e273adc06f8baab1ade97fefdf221119410cb0d34cb0c5cebfb465",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandExactEntry.tsx": "5ee16cfa18984dca9e458a0ab5ac1c8b4a204caa0570f3036efc19374f864115",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandDialog.tsx": "a04baedeee9e969e18aa99d33fddb31558c21b635a52745b10c8c2a35cd0f777",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/BusinessWorkbenchPage.tsx": "4a618d07019b3f3a539c6c1d1591ffa426e60ecf5511ca13ca114f1f035085c2",
+    "/home/ubuntu/work/demand-redesign-implementation-20261122-1302/source-version.json": "2adde1c67d341b3f497578a4fe650ae2df795c8bf9427329b927891d88421325",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/shared/beijingTime.ts": "f0150cfce5acb2259c647e75cde937ee20b41a1202f3fb181c80f07d8acc0820",
+    "/home/ubuntu/work/channel-release-20261121-1837/platform/shared/customerDemands.ts": "7b58913ec15ce8e18ad627c7500ae3e108a1d0cc38981c64123523238e40d76e",
+    "/home/ubuntu/work/channel-release-20261121-1837/platform/server/services/customerDemands.ts": "d84da13b3a35dbb225a8662a75a9983b4cfea4141e9a910c6cb1d3987ad87e45",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/shared/customerDemands.ts": "e02a2c2dbd221460d6aa26706d8c4500cb5e5633f5be2918ed27aec4a3c41524",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/front-router-types/server/services/customerDemands.ts": "33b95a918836de0189c1b19a3443f700b3cb2bcdd0da02f2d20b0491c6074788",
+    "/home/ubuntu/work/demand-redesign-release-20261122-1455/capture/records.json": "a7d3d5e90ced632b4084fff18ebdea5540c43a953c5e87c6fa0b404bc5185f63",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/businessRouter.ts": "f4dc901e661568031f767e5a5d7771dafb3480b9c498c7ab291ef4d8b19ec410",
+    "/home/ubuntu/work/channel-release-20261121-1837/platform/server/customerDemandProcurementList.test.ts": "ddda8af019e334b0b6a3e06cc6cff5a74f24e10e1897d021e340dc8c74bf91e8",
+    "/home/ubuntu/work/channel-release-20261121-1837/platform/server/testUtils/customerDemandProcurementSqlMock.py": "88f1a759ea430f474d431295b601490d2ea8a5da0537987d489a215a1e20a0b2",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandExactEntry.test.ts": "93fab132433bf2e337c31dbb39d98382a0cc35da9e0e592affd06da35d4e1084",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/components/customerDemands/CustomerDemandWorkbench.test.ts": "affa83e31ddac59f31465a81d8c39cda7db0936f429ca9688cf6a0a8ea44465b",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.memory.test.ts": "67ddca480c7feed0f61f5b764c9031ba077469f65a0ed226d3f7bec39009a0c4",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.render.test.ts": "703de6854748dcaf88d7a454dd25c9aa97282400a74a5d457c5e17200225edb9",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminNewInformationBadge.css": "d6e8805f177f23e3472b98dadb8fe4e22c20b71cd3395d7c93200d9c79d1af25",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminNewInformationStatus.css": "09ae2fd10f4e064895bbf64e260845a173336d9a928b15b02ffb73250c6fdbe8",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/ui-unification-tests/procurement-demands.test.ts": "203ff006e5d21aec51439c359a5b20ddec27ee3aef89b653880ee836a7ec0253",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminNewInformation.test.ts": "aec4161887be61deee9c5383e67f8bdcaa46e1623852c8fb30f282c6226b56fd",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/deploy/notification-redesign-20261122/styles-suffix.css": "11734eb7a89027275fe1528b7532abbefde120f9c2bc76b87763f96f063960e9"
+  },
+  "html": {
+    "local": "/home/ubuntu/work/demand-redesign-release-20261122-1455/final/index.html",
+    "beforeSHA": "9b64edef5024defe7dcfd53a9a3b44afe30951c155ad760e97365e6394c64acb",
+    "afterSHA": "7578df3b3e637b8647e99da6bf4a344bbbb26b40e8181debdc721324cbb070d4",
+    "size": 915082
+  },
+  "assets": [
+    {
+      "side": "admin",
+      "url": "/assets/AdminNewInformation-notification-redesign-b8126b368094f20d.js",
+      "local": "/home/ubuntu/work/demand-redesign-release-20261122-1455/final/assets/AdminNewInformation-notification-redesign-b8126b368094f20d.js",
+      "sha256": "b8126b368094f20d64a1570a3f9524a0ef8584825291f79169d0951060d94317",
+      "size": 307544
+    },
+    {
+      "side": "admin",
+      "url": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+      "local": "/home/ubuntu/work/demand-redesign-release-20261122-1455/final/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+      "sha256": "011de15527e214138a16ae3d76ecf0c76b87ad269bf8b4ddda3ce1195cc7db19",
+      "size": 99389
+    },
+    {
+      "side": "admin",
+      "url": "/assets/procurement-notification-redesign-7d92aa22e2a8ed36.css",
+      "local": "/home/ubuntu/work/demand-redesign-release-20261122-1455/final/assets/procurement-notification-redesign-7d92aa22e2a8ed36.css",
+      "sha256": "7d92aa22e2a8ed366bde67ced746e83578cb05e73cafdb9ccaeeb7073359d7cc",
+      "size": 8885
+    },
+    {
+      "side": "admin",
+      "url": "/assets/DemandRedesign-runtime-97b93f025b4d77b4.js",
+      "local": "/home/ubuntu/work/demand-redesign-release-20261122-1455/final/assets/DemandRedesign-runtime-97b93f025b4d77b4.js",
+      "sha256": "97b93f025b4d77b4e50ba64b622bda6fba71bec23758773ec1ebaa72165a7924",
+      "size": 51228,
+      "kind": "source-derived-runtime-sidecar"
+    },
+    {
+      "side": "admin",
+      "url": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "local": "/home/ubuntu/work/demand-redesign-release-20261122-1455/final/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "sha256": "de9283c857584c6122bd5e8d71f0b66e353e37e7832d80b6346abf23ba05c7e1",
+      "size": 5541961,
+      "kind": "precise-native-WB"
+    },
+    {
+      "side": "admin",
+      "url": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "local": "/home/ubuntu/work/demand-redesign-release-20261122-1455/final/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "sha256": "06fee82ae0b73be5b8b48f89a921dd9314d5910b9459fe6d907aa4c97f404b40",
+      "size": 6439587,
+      "kind": "precise-native-WB"
+    }
+  ],
+  "apis": [
+    {
+      "side": "front",
+      "local": "/home/ubuntu/work/demand-redesign-release-20261122-1455/backend-candidate/front-api.js",
+      "beforeSHA": "65850e0660fcee0db86f2b8bf959f30b5450576f971599347c0cf69ef617776d",
+      "afterSHA": "a16d691a4279dbcd469e1aedfbb22f61b2e8c023f75384c23adcb1ef7515be14",
+      "size": 6001658
+    },
+    {
+      "side": "admin",
+      "local": "/home/ubuntu/work/demand-redesign-release-20261122-1455/backend-candidate/admin-api.js",
+      "beforeSHA": "84bb6eed50d466e54209311d5ec0d70a1cf734b650a00b8d6f658287a5cfa1b9",
+      "afterSHA": "de4e92fa7165ad52c6bbeb93b5b04629d2b548070055002b16337cc4b4930df8",
+      "size": 1635839
+    }
+  ],
+  "runtimes": [],
+  "replacements": {
+    "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+    "/assets/AdminNewInformation-runtime-fix-26903de9e5a06e89.js": "/assets/AdminNewInformation-notification-redesign-b8126b368094f20d.js",
+    "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+    "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js"
+  },
+  "resolutions": [
+    {
+      "from": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "to": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+      "spec": "/assets/AdminNewInformation-notification-redesign-b8126b368094f20d.js",
+      "before": null,
+      "after": "/assets/AdminNewInformation-notification-redesign-b8126b368094f20d.js",
+      "newImport": true
+    },
+    {
+      "from": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "to": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+      "spec": "./index-8jluR_FO.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "to": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+      "spec": "/assets/BusinessWorkbenchPage-inquiry-reception-1-1db2f6d03b11ad8d376113ca82af755197612b2da4f5bcf36f2b4edfd311ebe8.js",
+      "before": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "after": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "to": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+      "spec": "/assets/admin-list-location-db1bfac861e62ccff0feefed4e69f00deeb4ac329b22c41164e38f24f589a0f9.js",
+      "before": "/assets/admin-list-location-reception-experience-a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c.js",
+      "after": "/assets/admin-list-location-reception-experience-a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "to": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+      "spec": "./index-CKHSh4Pc.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "/assets/DemandRedesign-runtime-97b93f025b4d77b4.js",
+      "before": null,
+      "after": "/assets/DemandRedesign-runtime-97b93f025b4d77b4.js",
+      "newImport": true
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./schemas-CWwXnU9Q.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/schemas-CWwXnU9Q.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/schemas-CWwXnU9Q.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "/assets/DashboardLayout-new-information-614fc7a8233f9caa.js",
+      "before": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "after": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-navigation-bb20946d992bbfe5.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+      "before": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+      "after": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./index-8jluR_FO.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./DashboardLayout-DfHnpqnr.js",
+      "before": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "after": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./index-h_rcmx-z.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-h_rcmx-z.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-h_rcmx-z.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./index-Dp3hShr1.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-Dp3hShr1.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-Dp3hShr1.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./index-CisAFFfx.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CisAFFfx.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CisAFFfx.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./message-square-text-GdNyWu3Q.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/message-square-text-GdNyWu3Q.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/message-square-text-GdNyWu3Q.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./search-ONoaRAKt.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/search-ONoaRAKt.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/search-ONoaRAKt.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./circle-check-CAy1Bkqq.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-check-CAy1Bkqq.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-check-CAy1Bkqq.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./arrow-left-DuEH-89r.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/arrow-left-DuEH-89r.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/arrow-left-DuEH-89r.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./index-DqlifW_A.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DqlifW_A.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DqlifW_A.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./shield-check-B59sBzA-.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/shield-check-B59sBzA-.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/shield-check-B59sBzA-.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./loader-circle-DDYTq62H.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/loader-circle-DDYTq62H.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/loader-circle-DDYTq62H.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./erpPermissions-Bcn5P1RI.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/erpPermissions-Bcn5P1RI.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/erpPermissions-Bcn5P1RI.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./plus-C6siVq_e.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/plus-C6siVq_e.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/plus-C6siVq_e.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./index-gJJ31_w6.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-gJJ31_w6.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-gJJ31_w6.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./eye-off-CBKi_Y5_.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-off-CBKi_Y5_.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-off-CBKi_Y5_.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./eye-CS62Zv12.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-CS62Zv12.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-CS62Zv12.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./index-mySplTih.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-mySplTih.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-mySplTih.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./smartphone-BabCZhFc.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/smartphone-BabCZhFc.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/smartphone-BabCZhFc.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./mail-rvpPVrVf.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/mail-rvpPVrVf.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/mail-rvpPVrVf.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./chevron-right-56l-KeF7.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/chevron-right-56l-KeF7.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/chevron-right-56l-KeF7.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./package-search-ke879jHo.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/package-search-ke879jHo.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/package-search-ke879jHo.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./external-link-D3MS9--y.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/external-link-D3MS9--y.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/external-link-D3MS9--y.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./history-BAScZM1B.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/history-BAScZM1B.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/history-BAScZM1B.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./image-DNUpEWRy.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-DNUpEWRy.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-DNUpEWRy.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./trash-2-DVhh5q4W.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/trash-2-DVhh5q4W.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/trash-2-DVhh5q4W.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./image-plus-CuQLYUMM.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-plus-CuQLYUMM.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-plus-CuQLYUMM.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./index-BRp97hgM.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BRp97hgM.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BRp97hgM.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./circle-alert-C1oJk8wR.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-alert-C1oJk8wR.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-alert-C1oJk8wR.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./upload-BaIvfghc.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/upload-BaIvfghc.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/upload-BaIvfghc.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./pencil-CsXmiusw.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/pencil-CsXmiusw.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/pencil-CsXmiusw.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./UnifiedAdminPage-DIGRdaLW.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/UnifiedAdminPage-DIGRdaLW-composition-abc8f7f14e045c782d481b058b0f15693c62b0011a09cac9893a71ab97fd8fab.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/UnifiedAdminPage-DIGRdaLW-composition-abc8f7f14e045c782d481b058b0f15693c62b0011a09cac9893a71ab97fd8fab.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./index-xO4YaSX1.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-xO4YaSX1.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-xO4YaSX1.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./calendar-days-Cyfs5g15.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/calendar-days-Cyfs5g15.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/calendar-days-Cyfs5g15.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./file-spreadsheet-DJvw3VPN.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/file-spreadsheet-DJvw3VPN.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/file-spreadsheet-DJvw3VPN.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./refresh-cw-BXprVxBP.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/refresh-cw-BXprVxBP.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/refresh-cw-BXprVxBP.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./download-DjbzCqGn.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/download-DjbzCqGn.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/download-DjbzCqGn.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./index-CKHSh4Pc.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./index-DgUTVUJa.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DgUTVUJa.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DgUTVUJa.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "./xlsx-DGuHH-KN.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-0-de9283c857584c61.js",
+      "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "/assets/DemandRedesign-runtime-97b93f025b4d77b4.js",
+      "before": null,
+      "after": "/assets/DemandRedesign-runtime-97b93f025b4d77b4.js",
+      "newImport": true
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./schemas-CWwXnU9Q.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/schemas-CWwXnU9Q.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/schemas-CWwXnU9Q.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "/assets/DashboardLayout-new-information-614fc7a8233f9caa.js",
+      "before": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "after": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "/assets/MallMaterials-self-operated-v7-1f0ce7708e04e2c6.js",
+      "before": "/assets/MallMaterials-conflict-v9-6a31c8196c46c05f.js",
+      "after": "/assets/MallMaterials-conflict-v9-6a31c8196c46c05f.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-demand-navigation-bb20946d992bbfe5.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+      "before": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+      "after": "/assets/CompactListToolbar-compact-f4fbd16031bcb5a78f286d148cc8e5331a1bd68c680c019ebb7427cdb17641a4.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./index-8jluR_FO.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./DashboardLayout-DfHnpqnr.js",
+      "before": "/assets/DashboardLayout-admin-polish-6614aeb7b2a8f529.js",
+      "after": "/assets/DashboardLayout-notification-redesign-011de15527e21413.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./index-h_rcmx-z.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-h_rcmx-z.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-h_rcmx-z.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./index-Dp3hShr1.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-Dp3hShr1.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-Dp3hShr1.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./index-CisAFFfx.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CisAFFfx.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CisAFFfx.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./message-square-text-GdNyWu3Q.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/message-square-text-GdNyWu3Q.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/message-square-text-GdNyWu3Q.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./search-ONoaRAKt.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/search-ONoaRAKt.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/search-ONoaRAKt.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./circle-check-CAy1Bkqq.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-check-CAy1Bkqq.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-check-CAy1Bkqq.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./arrow-left-DuEH-89r.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/arrow-left-DuEH-89r.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/arrow-left-DuEH-89r.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./index-DqlifW_A.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DqlifW_A.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DqlifW_A.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./shield-check-B59sBzA-.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/shield-check-B59sBzA-.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/shield-check-B59sBzA-.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./loader-circle-DDYTq62H.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/loader-circle-DDYTq62H.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/loader-circle-DDYTq62H.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./erpPermissions-Bcn5P1RI.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/erpPermissions-Bcn5P1RI.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/erpPermissions-Bcn5P1RI.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./plus-C6siVq_e.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/plus-C6siVq_e.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/plus-C6siVq_e.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./index-gJJ31_w6.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-gJJ31_w6.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-gJJ31_w6.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./eye-off-CBKi_Y5_.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-off-CBKi_Y5_.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-off-CBKi_Y5_.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./eye-CS62Zv12.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-CS62Zv12.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/eye-CS62Zv12.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./index-mySplTih.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-mySplTih.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-mySplTih.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./smartphone-BabCZhFc.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/smartphone-BabCZhFc.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/smartphone-BabCZhFc.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./mail-rvpPVrVf.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/mail-rvpPVrVf.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/mail-rvpPVrVf.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./chevron-right-56l-KeF7.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/chevron-right-56l-KeF7.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/chevron-right-56l-KeF7.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./package-search-ke879jHo.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/package-search-ke879jHo.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/package-search-ke879jHo.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./external-link-D3MS9--y.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/external-link-D3MS9--y.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/external-link-D3MS9--y.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./history-BAScZM1B.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/history-BAScZM1B.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/history-BAScZM1B.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./image-DNUpEWRy.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-DNUpEWRy.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-DNUpEWRy.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./trash-2-DVhh5q4W.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/trash-2-DVhh5q4W.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/trash-2-DVhh5q4W.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./image-plus-CuQLYUMM.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-plus-CuQLYUMM.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/image-plus-CuQLYUMM.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./index-BRp97hgM.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BRp97hgM.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-BRp97hgM.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./circle-alert-C1oJk8wR.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-alert-C1oJk8wR.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/circle-alert-C1oJk8wR.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./upload-BaIvfghc.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/upload-BaIvfghc.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/upload-BaIvfghc.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./pencil-CsXmiusw.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/pencil-CsXmiusw.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/pencil-CsXmiusw.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./UnifiedAdminPage-DIGRdaLW.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/UnifiedAdminPage-DIGRdaLW-composition-abc8f7f14e045c782d481b058b0f15693c62b0011a09cac9893a71ab97fd8fab.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/UnifiedAdminPage-DIGRdaLW-composition-abc8f7f14e045c782d481b058b0f15693c62b0011a09cac9893a71ab97fd8fab.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./index-xO4YaSX1.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-xO4YaSX1.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-xO4YaSX1.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./calendar-days-Cyfs5g15.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/calendar-days-Cyfs5g15.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/calendar-days-Cyfs5g15.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./file-spreadsheet-DJvw3VPN.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/file-spreadsheet-DJvw3VPN.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/file-spreadsheet-DJvw3VPN.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./refresh-cw-BXprVxBP.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/refresh-cw-BXprVxBP.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/refresh-cw-BXprVxBP.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./download-DjbzCqGn.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/download-DjbzCqGn.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/download-DjbzCqGn.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./index-CKHSh4Pc.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./index-DgUTVUJa.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DgUTVUJa.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-DgUTVUJa.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "./xlsx-DGuHH-KN.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "to": "/assets/BusinessWorkbenchPage-demand-redesign-1-06fee82ae0b73be5.js",
+      "spec": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/xlsx-DGuHH-KN.js",
+      "newImport": false
+    }
+  ],
+  "componentManifests": {
+    "frontend": "/home/ubuntu/work/demand-redesign-release-20261122-1455/frontend-candidate/manifest.json",
+    "backend": "/home/ubuntu/work/demand-redesign-release-20261122-1455/backend-candidate/manifest.json",
+    "notification": "/home/ubuntu/work/demand-redesign-release-20261122-1455/notification-candidate/manifest.json"
+  },
+  "checks": {
+    "fullHTMLInverse": true,
+    "allNonTargetAliasesAndOldScopesPreserved": true,
+    "allOldTargetAliasesRedirected": true,
+    "originalSingletonsPreserved": true,
+    "sourceFreeze": true,
+    "frontHTMLUnchanged": true,
+    "noFullWorkbenchRebuild": true,
+    "actualNativeCssIncludingLazy": true
+  },
+  "tests": {
+    "status": "TARGETED_NATIVE_PASS_WITH_DISCLOSED_LIMITS",
+    "frontend": {
+      "status": "PASS",
+      "evidence": "/home/ubuntu/work/demand-redesign-release-20261122-1455/frontend-candidate/evidence/offline-smoke.json",
+      "script": "/home/ubuntu/work/demand-redesign-release-20261122-1455/smoke-frontend.mjs",
+      "scriptSHA": "eb6c932271acee628c03c0447fc1ab5f63ac08e39e637fb7f2fb046854a5c25f",
+      "scope": "Actual immutable candidate AST/native getter/route and compiled sidecar, synthetic data only. Existing query, UI and quote components injected as controlled bridge test doubles; no network or mutation; no duplicate general source suite.",
+      "importResolution": {
+        "status": "PASS",
+        "evidence": "/home/ubuntu/work/demand-redesign-release-20261122-1455/frontend-candidate/evidence/importmap-resolution.json"
+      },
+      "esmSyntax": {
+        "status": "PASS",
+        "allThreeActualCandidateAssets": true,
+        "command": "node --input-type=module --check < asset.js"
+      }
+    },
+    "backend": {
+      "candidateDI": {
+        "report": "/home/ubuntu/work/demand-redesign-release-20261122-1455/backend-candidate/candidate-di-report.json",
+        "sha256": "8f2a71a5bc8d9c6cc7e55d26e7ecc45204aa486f801ba6219390db3afefde9fb",
+        "passed": 15,
+        "status": "PASS",
+        "sqlEvidence": "/home/ubuntu/work/demand-redesign-release-20261122-1455/backend-candidate/candidate-di-sql-evidence.json",
+        "sqlEvidenceSHA": "c6f1071b4d908bd82f01d0f3b058e5aeb8d7faef1bdec08146c146b622c78154"
+      },
+      "finalLocalVerification": {
+        "file": "/home/ubuntu/work/demand-redesign-release-20261122-1455/backend-candidate/final-local-verification.json",
+        "sha256": "3234edabc6895fe2505f63c78385233afcf8ffd1533846b58d4fcad413c72b80",
+        "status": "PASS"
+      }
+    },
+    "notification": {
+      "status": "NATIVE_SYNTAX_AND_SOURCE_PINS_PASS"
+    },
+    "layout": {
+      "procurement": 3,
+      "notification": 27,
+      "network": 0,
+      "syntheticDomNotRealAccount": true
+    }
+  },
+  "limitations": {
+    "dashboardScopedLegacyComparisonFailed": 49,
+    "dashboardScopedLegacyComparisonPassed": 6,
+    "wholeHeadDependencyReconstruction": false,
+    "priorWorkflowFailures": 3,
+    "priorMySqlTestsSkipped": 51,
+    "actualMySqlExecuted": false,
+    "realAccountBusinessTest": false,
+    "inspect503UniqueRootCauseKnown": false
+  },
+  "retryAfter": {
+    "receipt": "/home/ubuntu/work/demand-redesign-release-20261122-1455/receipt.json",
+    "receiptSHA256": "ddb11667e5972b1a34fdd7019cbb2c8a950a2436a9b4cffef118b3417889c341",
+    "previousResult": "ROLLED_BACK_VERIFIED",
+    "reason": "Correct missing-merchant BFF validation expectation: admin anonymous no-header response is BAD_REQUEST 400 before auth. Exact application candidates unchanged."
+  }
+}

@@ -1,0 +1,270 @@
+/* Exact source procurement CSS, then frozen notification suffix. Existing native links retained. */
+/* Page-owned layout only; shared admin primitives provide the blue/white theme. */
+.procurement-demands-page,
+.procurement-demands-detail {
+  min-width: 0;
+  color: var(--admin-color-text, #1f2937);
+  font-size: var(--admin-content-font-body, 12px);
+  line-height: var(--admin-content-line-height, 1.5);
+}
+.procurement-demands-page .procurement-demand-control,
+.procurement-demands-detail .procurement-demand-control {
+  height: var(--admin-content-control-height, 32px);
+  border-radius: 6px;
+  font-size: var(--admin-content-font-body, 12px);
+}
+.procurement-demands-detail .procurement-demand-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--admin-content-control-height, 32px);
+  height: var(--admin-content-control-height, 32px);
+}
+.procurement-demands-page .procurement-demands-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.procurement-demands-page .procurement-demands-table {
+  width: 100%;
+  min-width: 920px;
+  font-size: var(--admin-content-font-body, 12px);
+}
+/* Five information groups; every action remains reachable by horizontal scroll. */
+.procurement-demands-page
+  .procurement-demands-table
+  > colgroup
+  > col:nth-child(1) {
+  width: auto;
+}
+.procurement-demands-page
+  .procurement-demands-table
+  > colgroup
+  > col:nth-child(2) {
+  width: 160px;
+}
+.procurement-demands-page
+  .procurement-demands-table
+  > colgroup
+  > col:nth-child(3) {
+  width: 210px;
+}
+.procurement-demands-page
+  .procurement-demands-table
+  > colgroup
+  > col:nth-child(4) {
+  width: 170px;
+}
+.procurement-demands-page
+  .procurement-demands-table
+  > colgroup
+  > col:nth-child(5) {
+  width: 110px;
+}
+.procurement-demands-page .procurement-demands-table th,
+.procurement-demands-detail .procurement-demand-items th {
+  height: 36px;
+  padding: 8px 12px;
+  color: var(--admin-color-secondary, #475569);
+  font-size: var(--admin-content-font-caption, 11px);
+  font-weight: 500;
+}
+.procurement-demands-page .procurement-demands-table td,
+.procurement-demands-detail .procurement-demand-items td {
+  padding: 12px;
+  vertical-align: middle;
+}
+.procurement-demands-page .procurement-demand-number,
+.procurement-demands-page .procurement-demand-model,
+.procurement-demands-page .procurement-demand-secondary-data,
+.procurement-demands-detail .procurement-demand-model {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.procurement-demands-page .procurement-demand-priority,
+.procurement-demands-page .procurement-demand-conditions {
+  font-size: var(--admin-content-font-caption, 11px);
+}
+.procurement-demands-page .procurement-demand-secondary-data,
+.procurement-demands-page .procurement-demand-conditions {
+  color: var(--admin-color-secondary, #475569);
+}
+.procurement-demands-page .procurement-demand-actions {
+  position: static;
+  background: white;
+}
+.procurement-demands-page .procurement-demand-text-link {
+  color: #185fa5;
+  text-align: left;
+  border-radius: 3px;
+}
+.procurement-demands-page .procurement-demand-text-link:hover {
+  text-decoration: underline;
+}
+.procurement-demands-page .procurement-demand-text-link:focus-visible {
+  outline: 2px solid #185fa5;
+  outline-offset: 3px;
+}
+.procurement-demands-page .procurement-demand-arrivals {
+  padding: 10px 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  background: #f5f9fd;
+  color: #185fa5;
+}
+.procurement-demands-page .procurement-demand-reconfirm {
+  color: #a16207;
+}
+.procurement-demands-page .procurement-demand-update-alert {
+  border-bottom: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+.procurement-demands-detail .procurement-demand-metadata {
+  overflow-wrap: anywhere;
+}
+.procurement-demands-detail .procurement-demand-items {
+  min-width: 920px;
+  font-size: var(--admin-content-font-body, 12px);
+}
+.procurement-demands-detail .procurement-demand-items tbody tr {
+  height: 56px;
+}
+.procurement-demands-detail .procurement-demand-items td {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 640px) {
+  .procurement-demands-page .procurement-demand-conditions {
+    gap: 6px;
+  }
+  .procurement-demands-page .procurement-demands-table th,
+  .procurement-demands-page .procurement-demands-table td {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}
+
+/* notification-nav-20261122 BEGIN: count/status/zero share ONE bounded slot.
+ * Only this notification wrapper participates; chat/legacy badges are untouched. */
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-nav__tab:has(> .admin-new-information-nav-slot) {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-nav-slot {
+  position: static;
+  display: inline-flex;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 18px;
+  align-self: center;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 0;
+  padding: 0;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-nav-slot > :is([data-admin-new-information="count"], [data-admin-new-information="update-status"])[data-placement="nav"] {
+  position: static;
+  inset: auto;
+  transform: none;
+  z-index: auto;
+  display: inline-flex;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  align-self: center;
+  min-width: 16px;
+  max-width: 32px;
+  height: 16px;
+  margin: 0;
+  padding: 0 3px;
+  font-size: 10px !important;
+  line-height: 16px;
+  box-shadow: none !important;
+  pointer-events: auto;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-nav-symbol {
+  margin-left: 1px;
+  font-size: 10px;
+  line-height: 16px;
+}
+/* notification-nav-20261122 END */
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status {
+  position: relative;
+  flex: 0 0 84px;
+  width: 84px;
+  font-size: 12px;
+  line-height: 18px;
+  color: #475569;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 28px;
+  list-style: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status > summary::-webkit-details-marker { display: none; }
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status > summary:focus-visible {
+  outline: 2px solid #64748b;
+  outline-offset: 2px;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status:is([data-admin-new-information-global="failed"], [data-admin-new-information-global="blocked"]) > summary {
+  color: #92400e;
+  background: #fffbeb;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status__icon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  flex: 0 0 10px;
+  width: 10px;
+  height: 10px;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status__icon[data-busy="true"] {
+  border: 1.5px solid #cbd5e1;
+  border-top-color: #64748b;
+  border-radius: 50%;
+  animation: admin-information-spin 1s linear infinite;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status__panel {
+  position: fixed;
+  z-index: 65;
+  right: 12px;
+  top: 72px;
+  box-sizing: border-box;
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(420px, calc(100svh - 80px));
+  overflow: auto;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-shadow: 0 6px 22px #0f172a24;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status__panel p { margin: 0 0 8px; }
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status__panel ul { margin: 0 0 10px; padding: 0; list-style: none; }
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status__panel li { margin-bottom: 7px; }
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status__panel small { display: block; color: #64748b; font-size: 11px; }
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status__panel button {
+  min-height: 30px;
+  padding: 3px 9px;
+  margin-bottom: 8px;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+}
+@keyframes admin-information-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status__icon[data-busy="true"] { animation: none; }
+}
