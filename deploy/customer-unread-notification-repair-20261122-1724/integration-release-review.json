@@ -1,0 +1,93 @@
+{
+  "result": "PASS",
+  "scope": "customer-unread-notification-repair-release-20261122-1724",
+  "reviewMode": "INDEPENDENT_READ_ONLY_OFFLINE_INTEGRATION_RELEASE_REVIEW",
+  "manifestSHA256": "e516479d16ffbbf2492bb788ec2f86831b3ad08f23b2eafd41ed4828917b23d3",
+  "releaseDriverSHA256": "40fb503ad5fdb018619b82c570f6eb9a58c73f30396ce54fb235fd78a31c6ff9",
+  "releaseClientSHA256": "06f5db9e5ce6be67bc08ca08c8df0a05f36941d6d24171ae2d99c25ae5222285",
+  "prepareReleaseDriverSHA256": "40f050ef91c34943e36c8cbbe2e388a73d3ce7d40187dd7064f1d958c9c505c0",
+  "findings": [],
+  "checked": [
+    {
+      "id": "FREEZE_AND_SOURCE_PINS",
+      "status": "PASS",
+      "details": "final/manifest.json 的42个sourcePins、客户manifest的相对sourceSHAs与artifactSHAs、diagnostics-sourcepins的7个sourceHashes、后端capturePins均与本地完整字节匹配；四个最终API/runtime的完整SHA256与size匹配。三份冻结Python脚本AST可解析。未发现源码或候选漂移。",
+      "sourceCommits": {
+        "front": "bac021ca40e9670bb790229600dbedf968846538",
+        "admin": "6d1ca122516ae4ed6b3dc910465dec19a1f7ab07"
+      }
+    },
+    {
+      "id": "CUSTOMER_ACTIVE_ROUTE_CHAIN",
+      "status": "PASS",
+      "details": "实际front候选customerRouter.list仍以__customerPicker20261117.customerListInputSchema解析并调用同factory的listCustomers(scopeFor(ctx),input)。appRouter.customer和fixed buildCallers.customer均指向此router；executeInternalBusinessMethod继续以可信principal构造context并调用固定原procedure。窄internalBusiness.customerList输入及listInternalBusinessCustomers reader也仍引用同picker，不切换到dormant函数。",
+      "evidence": [
+        "front-candidate/front-api.js:103618-103628",
+        "front-candidate/front-api.js:124375-124386",
+        "front-candidate/front-api.js:131479-131603",
+        "front-candidate/front-api.js:131685-131688",
+        "front-candidate/front-api.js:133535"
+      ]
+    },
+    {
+      "id": "CUSTOMER_AUTHORIZED_SQL_INTERSECTION",
+      "status": "PASS",
+      "details": "customerIds为optional正安全整数数组、上限2000；reader独立safeParse。省略/undefined无新增谓词；去重后使用参数化c.id IN；[]追加FALSE。交集在原企业/actor/team/delegation/assignee/star/date/search/grade/stage/archive/due条件之后、共同where/count/LIMIT之前，total来自同授权交集count。原native授权仍先于reader查询发生。四处插入正逆字节重建完整一致，outside字节精确保留。",
+      "baselineSHA256": "7d357530812b8e15ff08abd418aa247cc50c1276821285272631d1215ccea53d",
+      "runtimeSHA256": "3e3b275ecf6462f74e4943053ecc34fefc27df323a83accf1653d2e9a0a2fb25"
+    },
+    {
+      "id": "DIAGNOSTIC_TRACE_AND_SAFE_OUTPUT",
+      "status": "PASS",
+      "details": "实际admin候选含一份diagnostics初始化与一个trace storage；另有独立sink ALS而非第二trace模块。core/source/prove/私有订单helper共用同安全模块与请求trace。输出字段和错误分类均为闭合白名单及有界数值，不序列化原error/message/stack/cause/SQL/refs/业务ID或密钥。160阶段缓冲、限频、trace.closed及记录清空保持；sink异常被吞且不改变业务结果。prove最多四worker并等待allSettled后才失败，外层native fence在全部已发reader settle后释放。"
+    },
+    {
+      "id": "PRIVATE_TRANSPORT_AND_SCOPE",
+      "status": "PASS",
+      "details": "新getPlatformOrderNewInformationFacts实际调用callPlatformOrderNewInformation，保留原10秒timeout及undefined/[]/codes传递。native.callPlatformOrder只保留旧ABI桥接赋值，不被getFacts调用。私有错误只保留安全kind/httpStatus/upstreamTrpcCode/timing，不赋.code=FORBIDDEN；上游403/FORBIDDEN不会被原explicitlyDenied忽略。原public订单transport位于主API且未改变。lookup仍prove全部合法source、先验证全union，scope只过滤最终items并保留allowed refs过滤。"
+    },
+    {
+      "id": "NATIVE_ABI_CONTRACT_AND_EXACT_DELTA",
+      "status": "PASS",
+      "details": "原native db/router/adminProcedure/helper/fence注入与factory六返回键保持；原Zod/SQL/TRPC依赖import及共享e9f事实contract realm保持。独立静态TypeScript绑定检查两runtime均无未定义自由名且无parse errors。admin runtime仅6个指定hunks、两个主API各仅1个import URL hunk；完整forward/inverse及所有outside span SHA均精确一致。新businessAuthorizationFence源细分hooks不在部署候选中，候选无createConnection/MAX_FENCE_LEASES/新fence实现。",
+      "adminRuntimeSHA256": "1239d4b93447da6dee2e949ea32293a199af59355728d26038cac36dc323f875",
+      "factsContractSHA256": "e9f76fbcf7ffe29e590a8e83f326aa388ddfacf170b45f85cf38a1a14a462d9a"
+    },
+    {
+      "id": "MATURE_DRIVER_AST_FUNCTION_PROTECTION",
+      "status": "PASS",
+      "details": "与demand-redesign-release-20261122-1523-retry/release-remote.py逐函数AST定位并逐字比较：双方37函数，34函数完全相同；仅load_payload、run_release及重命名public_procurement_unauth至public_customer_unauth有授权范围内差异。原禁止runtime约束仅精确扩为指定front customerPicker3e3b与admin newInformation1239两个文件；没有放宽任意runtime。锁/CAS/backup/atomic/immutable/rollback/failurehold/durable receipt原语逐字保持。"
+    },
+    {
+      "id": "RELEASE_SCOPE_AND_RECOVERY",
+      "status": "PASS",
+      "details": "固定双锁顺序、公用coord closed/非recovery fresh guard、SHA+inode/metadata CAS、完整备份、不覆盖内容寻址runtime、失败owned-inode逆向恢复、歧义failurehold、durable close/receipt后独立解锁保持。两个HTML均硬性NOOP且保留inode；assets为空。runtime list等于冻结两文件allowlist，文件名hash一致且各自side API精确引用一次。仅reload dianzi51与dianzi51-admin；其它进程PID、所有config/environment指纹及nginx/dump受保护。guard常量与fresh capture/runtime-guard.json相同。"
+    },
+    {
+      "id": "PRIVATE_FULL_PAYLOAD_CLIENT",
+      "status": "PASS",
+      "details": "客户端只接受本审查PASS及manifest/driver/client完整SHA pins；按最终API及两个runtime重新生成fullpayload，无旧payloadseed/staging复用。nonce私有gzip和脚本wx/0600上传，解压前校验完整压缩文件及脚本SHA/size/metadata，解压后校验raw完整SHA/size并O_EXCL/fsync落盘。driver拒绝已存在stage。客户端比较durable receipt与传输receipt，核对精确reload/targets/runtimes，并独立检查coord closed及双锁可获。未在本审查执行客户端。"
+    },
+    {
+      "id": "TARGETED_EVIDENCE_ACCEPTED_NOT_RERUN",
+      "status": "PASS",
+      "details": "接受现有18客户真实router离线case、107源码加5原生ABI/transport兼容case、6最终候选原字节factory mockcase。接受真实ES2020 tsc exit0；standard exit2仅原MapIterator TS2802从819移至873，config未改。本审查只读取证据并做哈希/精确增量/AST静态核对，未重跑这些测试或全站。"
+    },
+    {
+      "id": "FRESH_HTML_AND_PRIOR_RELEASES_PRESERVED",
+      "status": "PASS",
+      "details": "fresh capture本地字节匹配：front HTML e83a1ca0渠道新静态、admin HTML eb21e460采购Demo保持；旧API front a16d691a/admin de4e92fa为本轮基线。29个带local的捕获文件无SHA漂移，捕获coord为shared_release_active=false/window.status=closed。两个主API仅import替换及两个HTML NOOP，不回滚采购Demo、顶部静默通知或渠道静态。"
+    }
+  ],
+  "limits": [
+    "PASS只表示冻结字节、定向证据和发布器集成静态审查未发现确切阻碍；不是已经发布或生产功能验收。",
+    "历史sales.inspect 503底层cause仍OPEN；本轮仅部署安全stage trace，不能声称根因已闭合或真实503已经恢复。",
+    "原native fence仅由core观察callback operation及成功callback之后的cleanup；未部署lease/connect/lock/unlock细分hooks，原native吞掉的cleanup错误不可宣称可见。",
+    "18/112/6用例含合成身份、权限gate、store、SELECT executor及transport mock；不证明真实客户过滤MySQL或真实账号通知功能。",
+    "匿名customer/auth gate、admin缺商户header gate及newInformation.unreadRefs auth gate只证明入口门禁；客户端终端成功标签也不得解释为真实customerIds SQL或unread/markDisplayed功能验收。",
+    "没有DB migration/业务写测试/真实业务身份借用；businessTestWrites=0不等于应用startup/reload的数据库写入为0。",
+    "standard tsc保留一项已披露基线TS2802；未修改config或修复无关代码。",
+    "未运行SSH、浏览器、网络、真实DB、Git操作或API启动；源码HEAD/已推送/干净状态沿用委派确认，执行客户端仍需再次校验冻结HEAD和sourcePins。",
+    "fresh捕获不是本审查重新访问生产的结果；发布前和锁内的fresh guards/CAS必须由冻结发布器实际通过。"
+  ]
+}

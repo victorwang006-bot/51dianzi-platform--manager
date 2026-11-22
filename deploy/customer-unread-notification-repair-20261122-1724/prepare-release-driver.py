@@ -14,7 +14,7 @@ def sub(before,after):
  old=old.replace(before,after)
 def line(name,value):
  global old
- old,n=re.subn(r'^'+name+r' = .+$',name+' = '+repr(value),old,flags=re.M);assert n==1,name
+ old,n=re.subn(r'^'+name+r' = .+$',lambda _match:name+' = '+repr(value),old,flags=re.M);assert n==1,name
 line('SCOPE',W.name);line('ASSET_ALLOWLIST',set());line('GUARD_CONFIG_KEYS',guard['configKeys']);line('GUARD_PROTECTED',guard['protectedFiles']);line('GUARD_PROCESSES',guard['processes'])
 line('INPUT_PATTERN',r'/opt/ops/\.customer-unread-notification-input-([a-f0-9]{32})\.json')
 runtimes=[{k:r[k] for k in ('side','path','sha256','size')} for r in final['runtimes']]

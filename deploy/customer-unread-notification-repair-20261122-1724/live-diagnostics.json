@@ -1,0 +1,17 @@
+{
+  "status": "READ_ONLY_SANITIZED_DIAGNOSTICS_SAMPLE",
+  "logs": [
+    {
+      "path": "/root/enterprise-shadow-20261017-r2/activation-restore-20261018/minimal-release/dianzi51-admin.out-191.log",
+      "sampleBytes": 35545
+    },
+    {
+      "path": "/root/enterprise-shadow-20261017-r2/activation-restore-20261018/minimal-release/dianzi51-admin.out-192.log",
+      "sampleBytes": 262144
+    }
+  ],
+  "records": [],
+  "discardedRecords": 0,
+  "businessRequestsSent": 0,
+  "rawMessagesReturned": false
+}

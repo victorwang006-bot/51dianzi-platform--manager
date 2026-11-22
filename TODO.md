@@ -561,6 +561,10 @@ preview新增业务逻辑不写询价/publication；但既有CRM准入门禁存�
 
 ## 2026-11-22 17:24 客户未读筛选与通知503诊断修复（已批准上线）
 
-- [ ] 客户只看未读：修复真实被customerRouter.list/固定dispatch调用的front customerPicker输入与reader，不再剥掉customerIds；正安全整数最多2000，省略兼容、空数组零结果、去重，在原企业/团队/负责人/搜索/日期/星标权限交集内且count及分页前应用同一ID条件；保留原生star fence、销售picker及所有范围，不能删前端越界检查或清真实未读。
-- [ ] 通知503诊断：核心及全源聚合保留随机trace、固定来源/阶段、受控错误类别/上游状态/耗时；原生订单私有transport保留安全分类但不把服务鉴权拒绝当可忽略源；日志不含Cookie/JWT/服务密钥/回执/客户订单详情/原始message stack/SQL参数，sink失败不影响请求，issued reads全部settled后才释放fence，公开响应/授权/已读语义不变。
-- [ ] 精确上线：只生成必要内容寻址模块并切换真正API接线，让相关服务组加载；保留原采购Demo和前后台HTML/静态资产，无DB迁移、员工权限变更、真实业务写测；新鲜基线、公共锁后代码锁、CAS、备份、owned-inode回滚与持久closed；分别记录客户修复与诊断结果，不以诊断上线或未关联200冒称历史503根因关闭。
+- [x] 客户只看未读：修复真实被customerRouter.list/固定dispatch调用的front customerPicker输入与reader，不再剥掉customerIds；正安全整数最多2000，省略兼容、空数组零结果、去重，在原企业/团队/负责人/搜索/日期/星标权限交集内且count及分页前应用同一ID条件；保留原生star fence、销售picker及所有范围，不能删前端越界检查或清真实未读。
+- [x] 通知503诊断：核心及全源聚合保留随机trace、固定来源/阶段、受控错误类别/上游状态/耗时；原生订单私有transport保留安全分类但不把服务鉴权拒绝当可忽略源；日志不含Cookie/JWT/服务密钥/回执/客户订单详情/原始message stack/SQL参数，sink失败不影响请求，issued reads全部settled后才释放fence，公开响应/授权/已读语义不变。
+- [x] 精确上线：只生成必要内容寻址模块并切换真正API接线，让相关服务组加载；保留原采购Demo和前后台HTML/静态资产，无DB迁移、员工权限变更、真实业务写测；新鲜基线、公共锁后代码锁、CAS、备份、owned-inode回滚与持久closed；分别记录客户修复与诊断结果，不以诊断上线或未关联200冒称历史503根因关闭。
+
+真实终态：2026-11-22 17:46:46（北京时间），VERIFIED/closed；只新增front customerPicker3e3b275e与admin通知1239d4b9两runtime、两API各一import，精确reload原4+2 API实例，前台并发渠道e83a1ca0与后台采购Demo eb21e460 HTML保持，其他worker/PID、12进程配置环境和保护文件不变。独立双锁释放、全部SSH关闭已确认。18客户router/runtime、112诊断源/兼容、6最终runtime原字节离线用例通过；真实ES2020全库类型0错，标准目标只有原MapIterator TS2802。没有真人SQL功能验收/业务写测；不保证应用原启动无DB写。17:48只读脱敏采样0条新诊断请求，历史销售503底层根因仍OPEN，不把上线诊断冒称修好。源码平台bac021ca40e9670bb790229600dbedf968846538、后台6d1ca122516ae4ed6b3dc910465dec19a1f7ab07，正式回执归档deploy/customer-unread-notification-repair-20261122-1724。原fence细分hooks未部署，只观察原native操作与post-callback cleanup。
+
+- [ ] 历史销售sales.inspect503底层根因闭合：须有真实新失败trace或可关联原请求的底层证据，再针对确定原因修复；不得用匿名门禁200/401/403、mock或静默呈现替代。

@@ -1,0 +1,12 @@
+{
+  "status": "VERIFIED_CLOSED_ARCHIVE_READY",
+  "sourceCommits": {
+    "front": "bac021ca40e9670bb790229600dbedf968846538",
+    "admin": "6d1ca122516ae4ed6b3dc910465dec19a1f7ab07"
+  },
+  "productionMutationsAfterVerifiedReceipt": 0,
+  "allSSHClosed": true,
+  "historical503RootCause": "OPEN",
+  "realBusinessSQLFunctionalTests": false,
+  "finalReportPath": "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/客户未读筛选与通知诊断-正式上线回执.md"
+}

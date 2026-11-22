@@ -1,0 +1,127 @@
+{
+  "scope": "customer-unread-notification-repair-release-20261122-1724",
+  "authorization": "2026-11-22 17:24 user approved implementation and production release",
+  "sourceCommits": {
+    "front": "bac021ca40e9670bb790229600dbedf968846538",
+    "admin": "6d1ca122516ae4ed6b3dc910465dec19a1f7ab07"
+  },
+  "sourcePins": {
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/businessRouter.ts": "f4dc901e661568031f767e5a5d7771dafb3480b9c498c7ab291ef4d8b19ec410",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/platformOrderApi.ts": "db774b3ade18ab2f7efabb655ec1cb8fcef0b4014a4cde0a3dc9717dfddcf125",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformation.ts": "364e0e811492e8fe97a34bfc2fb27371acb8484851302c1fb4344a881bce8798",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformationSources.ts": "5221d27d453de5f09d8a36fe7b311c06a83ff3473ab9a74e88aaf41783943bc8",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformationDiagnostics.ts": "1e4ce3ef329edcd357a4784fab34513f679cde58aee8dca450cab63a7ed61dec",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/db.ts": "54ad169b8333fa42a7b646caa4609f371997eafa9ec3f46690a9ee645f582ae4",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/_core/trpc.ts": "076493109df925bb32971ab9d710be40f1091d1db6b5406e1823e53a43ca7907",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/businessAccess.ts": "26a41803b29bfd251f725660a4201fd99b6622bfa57da7e3768ca5aacd329429",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/officialChannelAccess.ts": "f7cbe2ca8d9887a04e865068cd860bcca6c5631fcc1b9967987947411c4df5aa",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/drizzle/schema.ts": "6d11602def757ecf6bffc906bfd62dfbc534eb68b3730cdbe474a3fcdca62a7d",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/drizzle/officialChannelSchema.ts": "a6f79063e6f18655741920e8d07ca7a664013e182d44ac9eed6fb1cd20ac8d2a",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/routers/adminNewInformation.ts": "7341e17effbf68eafc59e040fd6ed8236be087a89c1b85c23f8ad360fef9a15f",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformationSources/mall.ts": "57a8b568b081b5c050e123a4dbad785255dbe8e403555d0cadf985de87eb8068",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/adminNewInformation.ts": "29690138f57fcc31b88e33aef0cb6f4dab2fbe7064db564636a83f9cd883add2",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/officialMall.ts": "aaa40d2c05222e6279700cb93288493ed3d3e8c140f8035c37f65fbd4c37dc6d",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/adminNewInformationConstants.ts": "a2a9194ca9f48cb45e3be30fc6b3f54310c465f0012c101ac50afcca8c2c1988",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/drizzle/adminNewInformationSchema.ts": "151f20b33cffee93ded6f4fdc5f590cd39905a8d8c66420638df6ae8f345e303",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/adminPermissions.ts": "e1e67a907530fcd610e7705de190b5adcea3e3c66223c6e559f09e99346c67cf",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/officialMall.ts": "8dc7b15a50f191de2f7d6d22891f8c81fbd1f13a6ea37a2f42f1c391b6fd5161",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/officialTechnicalPreparation.ts": "bb9a359679f7a3e8663f6ea4277ed5f21939966c934c72983ccf71861fbdf78e",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/drizzle/officialMallSchema.ts": "e0e8504536a94e2f4cc3e17092f17047852255e21a43014d0fd4627c5d1c96ab",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/officialMallSuggestPolicy.ts": "8ee0034c9d37a91fc3ef7095168d5acbf228df652378de378007534752e423b5",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/officialTechnicalResource.ts": "1d3c1edc960aa5dd15a1488e4f564c47e6afd5e06cdc3ccc28d714aa69274753",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/officialTechnicalPreparedStore.ts": "2bde73f0dd1eeab2b8e6cd5c97499bdb9a79d948c9a0912460465f62eff104bd",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/officialTechnicalDictionary.ts": "00b6103380266f8c17343114987e0b540e85fbf227afa2ad19abac0c3f21e26a",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/officialTechnicalSupplement.ts": "c6d30181c3d7fb293b01e60fe3b931e397ad2ca6b1af9d909545d12df9dfa177",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/officialTechnicalSafety.ts": "430b269f007965f7c359d274858870090edcbd9a4eb4aea298b7a5f3a6387bdb",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/competitorDisplayPolicy.ts": "31eafd742851953df6b047b3823db4dc3976372be34a1e2fb7dc3557b03b19a5",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/officialTechnicalReaderDocument.ts": "f7329efc37cc299e8f76fc24720ea48686683316b8a5005ed81deaed3cf1aec8",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/officialTechnicalReader.ts": "a01c911532e8591ce40a86bff3a63b33c5b47742ebcf615e1df3366b87b05acf",
+    "/home/ubuntu/work/channel-release-20261121-1837/platform/deploy/company-stock-sales-v1/customer-picker-fix/customer-picker.runtime.mjs": "3e3b275ecf6462f74e4943053ecc34fefc27df323a83accf1653d2e9a0a2fb25",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/businessAuthorizationFence.ts": "1b58eb9ea39666d1442313769689ba6dd34568f38d8ac96dbf9acf15dfd5d2a5",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformationDiagnostics.test.ts": "eb45bd47597f15c70d4b2c192003ceb307538a77773930c8fa92b339a5f4c0c9",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/businessAuthorizationFence.diagnostics.test.ts": "9b49cbad310f0a507f05dfbdb70389f56b839a32d3247f11b8b79c88db1b1831",
+    "/home/ubuntu/work/channel-release-20261121-1837/platform/shared/crmCustomers.ts": "7c417c45d2392c2a70ce5a1b3f6e23208aba4610cf5dc25386b11229e91f8788",
+    "/home/ubuntu/work/channel-release-20261121-1837/platform/server/services/crmCustomers.ts": "fed50e801b0fa3ff84f643f5d139641bb3be9ffec52dddcd4a837db1688646bc",
+    "/home/ubuntu/work/channel-release-20261121-1837/platform/server/routers/customer.ts": "1a66629dc3ae9e08b230f5265c0cf9dacc9c28fc42a88d3935f92a44f3f15c44",
+    "/home/ubuntu/work/channel-release-20261121-1837/platform/server/customerListInput.ts": "eefa3b6590eb5fb6b3b3d86b619a76e47c18fe94c17c6108bd2ee660b27053a0",
+    "/home/ubuntu/work/channel-release-20261121-1837/platform/deploy/company-stock-sales-v1/customer-picker-fix/build-runtime.mjs": "b301d6c4fb488ec41f63714553aea617b00fe15eb3a1fdd359790aa4c7290e15",
+    "/home/ubuntu/work/channel-release-20261121-1837/platform/deploy/company-stock-sales-v1/customer-picker-fix/build-customer-unread-runtime.mjs": "8f093dca0d05713fe16992061b279726eea74eed084a6885ae010a28a6728272",
+    "/home/ubuntu/work/channel-release-20261121-1837/platform/deploy/company-stock-sales-v1/customer-picker-fix/customer-unread-increment.json": "22987299e0362010c9f314c9f40c9f43994a0a5112095155e2667f0e907f5041",
+    "/home/ubuntu/work/channel-release-20261121-1837/platform/deploy/company-stock-sales-v1/customer-picker-fix/customer-unread-runtime.test.mjs": "5a7411f7364c7a0ba9a81bdcf800c517f43cc28c0c0ca1c38ba26ee3c6568072"
+  },
+  "apis": [
+    {
+      "side": "front",
+      "local": "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/front-candidate/front-api.js",
+      "beforeSHA": "a16d691a4279dbcd469e1aedfbb22f61b2e8c023f75384c23adcb1ef7515be14",
+      "afterSHA": "696900d36d6a03abf7569a8fb832a47e5f9c201c03c510604f55940b0e351073",
+      "size": 6001658
+    },
+    {
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+      "local": "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/backend-candidate/admin-api.js",
+      "beforeSHA": "de4e92fa7165ad52c6bbeb93b5b04629d2b548070055002b16337cc4b4930df8",
+      "afterSHA": "ea0940846697fb8ec96aab6d3cbb24b13cdf155515e85e810b3f17f1b0fb2515",
+      "size": 1635839,
+      "hunks": 1,
+      "side": "admin"
+    }
+  ],
+  "runtimes": [
+    {
+      "side": "front",
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/front/runtime/customerPicker.3e3b275ecf6462f74e4943053ecc34fefc27df323a83accf1653d2e9a0a2fb25.runtime.mjs",
+      "local": "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/customer/runtime/customerPicker.3e3b275ecf6462f74e4943053ecc34fefc27df323a83accf1653d2e9a0a2fb25.runtime.mjs",
+      "sha256": "3e3b275ecf6462f74e4943053ecc34fefc27df323a83accf1653d2e9a0a2fb25",
+      "size": 25572
+    },
+    {
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/runtime/newInformation.admin.1239d4b93447da6dee2e949ea32293a199af59355728d26038cac36dc323f875.runtime.mjs",
+      "local": "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/backend-candidate/runtime/newInformation.admin.1239d4b93447da6dee2e949ea32293a199af59355728d26038cac36dc323f875.runtime.mjs",
+      "sha256": "1239d4b93447da6dee2e949ea32293a199af59355728d26038cac36dc323f875",
+      "size": 119656,
+      "side": "admin"
+    }
+  ],
+  "assets": [],
+  "unchangedHTML": {
+    "front": {
+      "sha256": "e83a1ca01cac1d2759e36555b600f534af3e154601992c1dd4230c2682248890",
+      "path": "/opt/releases/20261031-homepage-banner-v39/front/dist/public/index.html"
+    },
+    "admin": {
+      "sha256": "eb21e460a4b0335de2c1b2545decc37f0c0943d78946fe2c15be2a0a55c9d05b",
+      "path": "/opt/releases/20261031-wechat-chat-entry-v33/admin/dist/public/index.html"
+    }
+  },
+  "tests": {
+    "status": "TARGETED_NATIVE_PASS_WITH_DISCLOSED_LIMITS",
+    "customerRouterRuntimeCases": 18,
+    "diagnosticsSourceAndCompatibilityCases": 112,
+    "actualCandidateFactoryCases": 6,
+    "typeResults": {
+      "managerStandardExitCode": 2,
+      "managerES2020ExitCode": 0,
+      "standardErrors": [
+        "server/services/adminNewInformation.ts(873,33): error TS2802: Type 'MapIterator<string>' can only be iterated through when using the '--downlevelIteration' flag or with a '--target' of 'es2015' or higher."
+      ],
+      "ES2020Errors": [],
+      "configChanged": false
+    }
+  },
+  "checks": {
+    "singleImportPerAPI": true,
+    "runtimeIncrementalOnly": true,
+    "outsideExactAndInverse": true,
+    "nativeDependenciesAndReturnUnchanged": true,
+    "sameFactsContractRealm": true,
+    "newFencePool": false,
+    "originalPublicOrderTransportChanged": false
+  },
+  "limitations": [
+    "Synthetic identities, authorization gates, stores, SELECT executors and upstream transport in offline tests; not production customer filter MySQL proof",
+    "Historical sales inspect 503 cause remains OPEN; diagnostics is not a claim to have fixed it",
+    "Original native fence operation and post-callback cleanup observable; no new lease/connect/lock/unlock hooks deployed",
+    "No business test writes, DDL, DML tests or permissions changes; normal application startup/reload database writes are not asserted absent"
+  ]
+}
