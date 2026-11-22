@@ -1,0 +1,35 @@
+{
+  "schema": "503-deeper-result-safe-v1",
+  "conclusion": "仍无法唯一归因，不能从统一catch已丢失的原异常重建；未证明服务端503已修复。",
+  "timezone": {"iana": "Asia/Shanghai", "offset": "+08:00", "nginxLoggedOffset": "+0800"},
+  "windows": {"focusStart": "2026-11-22T11:35:00+08:00", "focusEndExclusive": "2026-11-22T11:38:00+08:00", "wideStart": "2026-11-22T11:30:00+08:00", "wideEnd": "2026-11-22T12:17:30+08:00"},
+  "directlyProven": {
+    "inspect503": ["2026-11-22T11:35:49+08:00", "2026-11-22T11:35:50+08:00"],
+    "focusParsedRequests": {"admin": 54, "frontOrGlobal": 85},
+    "wideParsedRequests": {"admin": 166, "frontOrGlobal": 426},
+    "otherParsed502503504CountInWideWindow": 0,
+    "currentNginxErrorLogBytes": {"global": 0, "admin": 0},
+    "nginxRequestOrUpstreamTimingRecorded": false,
+    "currentPm2Processes": {"adminCount": 2, "frontCount": 4, "allOnline": true, "allUptimeStartsBeforeFocusWindow": true},
+    "pm2DaemonLogMtimeUtc": "2026-11-22T00:14:55.549Z",
+    "pm2RestartEvidenceInFocusWindow": false,
+    "completeExistingSnapshotsNotBoundedTails": true
+  },
+  "associationOnly": {
+    "adminPm2BaseConfigClass": "HTTP_LOOPBACK",
+    "currentNginxInternalExecuteLiteralAndDecodedFixedPathCount": 0,
+    "runtimeEnvironmentNotInspected": true,
+    "internalCallsNotHavingNginxLogsIsNotZeroCalls": true,
+    "applicationLogPrefixTimestampsFound": 0,
+    "applicationNotificationOrInternalExecuteFixedTokenCount": 0,
+    "adminOutUntimedRequestMs": {"count": 6829, "minMs": 1, "maxMs": 882, "between9And11SecondsCount": 0, "notAttributedToInspect": true},
+    "frontUntimedBroadTimeoutTokenCount": 3,
+    "historicalPlatformBusinessServiceErrorFileMtimeUtc": "2026-11-15T12:00:56.300Z",
+    "historicalErrorsAndCumulativeRestartsNotAttributableToFocusWindow": true
+  },
+  "missingEvidence": ["两次请求的stage、安全transport kind及elapsed", "同秒或10秒可关联内部Business.execute日志", "两次既有响应的非敏感错误字段", "应用日志时间/procedure关联"],
+  "limits": ["只统计可解析访问记录；无匹配不证明无失败", "HTTP200或混批200不是模块成功证明", "未证明NGINX或应用哪一层生成503", "未证明本次为timeout、权限、数据库、fence或schema失败"],
+  "safety": {"businessRequests": 0, "businessWrites": 0, "productionOrSourceWrites": 0, "gitOperations": 0, "runtimeDf1bTouched": false, "envJwtOrDbRead": false, "identityBorrowing": false, "persistentMonitorAdded": false, "rawSensitiveValuesRetained": false},
+  "evidenceFiles": ["aggregate-readonly.json", "discover-readonly.json", "coverage-readonly.json", "ssh-closure-proof.json"],
+  "ssh": {"sessions": 3, "knownHostsPreexisting": true, "expectedHostFingerprintPreexisting": true, "rejectUnknownHosts": true, "finallyClosedAll": true}
+}
