@@ -1,0 +1,657 @@
+{
+  "scope": "customer-unread-picker-and-admin-sales-503-sanitized-diagnostics",
+  "status": "offline-assembled-not-deployed",
+  "sourceRoots": {
+    "manager": "/home/ubuntu/work/channel-release-20261121-1837/manager",
+    "platform": "/home/ubuntu/work/channel-release-20261121-1837/platform"
+  },
+  "sourcePins": {
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/businessRouter.ts": "f4dc901e661568031f767e5a5d7771dafb3480b9c498c7ab291ef4d8b19ec410",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/platformOrderApi.ts": "db774b3ade18ab2f7efabb655ec1cb8fcef0b4014a4cde0a3dc9717dfddcf125",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformation.ts": "364e0e811492e8fe97a34bfc2fb27371acb8484851302c1fb4344a881bce8798",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformationSources.ts": "5221d27d453de5f09d8a36fe7b311c06a83ff3473ab9a74e88aaf41783943bc8",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformationDiagnostics.ts": "1e4ce3ef329edcd357a4784fab34513f679cde58aee8dca450cab63a7ed61dec",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/db.ts": "54ad169b8333fa42a7b646caa4609f371997eafa9ec3f46690a9ee645f582ae4",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/_core/trpc.ts": "076493109df925bb32971ab9d710be40f1091d1db6b5406e1823e53a43ca7907",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/businessAccess.ts": "26a41803b29bfd251f725660a4201fd99b6622bfa57da7e3768ca5aacd329429",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/officialChannelAccess.ts": "f7cbe2ca8d9887a04e865068cd860bcca6c5631fcc1b9967987947411c4df5aa",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/drizzle/schema.ts": "6d11602def757ecf6bffc906bfd62dfbc534eb68b3730cdbe474a3fcdca62a7d",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/drizzle/officialChannelSchema.ts": "a6f79063e6f18655741920e8d07ca7a664013e182d44ac9eed6fb1cd20ac8d2a",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/routers/adminNewInformation.ts": "7341e17effbf68eafc59e040fd6ed8236be087a89c1b85c23f8ad360fef9a15f",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformationSources/mall.ts": "57a8b568b081b5c050e123a4dbad785255dbe8e403555d0cadf985de87eb8068",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/adminNewInformation.ts": "29690138f57fcc31b88e33aef0cb6f4dab2fbe7064db564636a83f9cd883add2",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/officialMall.ts": "aaa40d2c05222e6279700cb93288493ed3d3e8c140f8035c37f65fbd4c37dc6d",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/adminNewInformationConstants.ts": "a2a9194ca9f48cb45e3be30fc6b3f54310c465f0012c101ac50afcca8c2c1988",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/drizzle/adminNewInformationSchema.ts": "151f20b33cffee93ded6f4fdc5f590cd39905a8d8c66420638df6ae8f345e303",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/adminPermissions.ts": "e1e67a907530fcd610e7705de190b5adcea3e3c66223c6e559f09e99346c67cf",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/officialMall.ts": "8dc7b15a50f191de2f7d6d22891f8c81fbd1f13a6ea37a2f42f1c391b6fd5161",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/officialTechnicalPreparation.ts": "bb9a359679f7a3e8663f6ea4277ed5f21939966c934c72983ccf71861fbdf78e",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/drizzle/officialMallSchema.ts": "e0e8504536a94e2f4cc3e17092f17047852255e21a43014d0fd4627c5d1c96ab",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/officialMallSuggestPolicy.ts": "8ee0034c9d37a91fc3ef7095168d5acbf228df652378de378007534752e423b5",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/officialTechnicalResource.ts": "1d3c1edc960aa5dd15a1488e4f564c47e6afd5e06cdc3ccc28d714aa69274753",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/officialTechnicalPreparedStore.ts": "2bde73f0dd1eeab2b8e6cd5c97499bdb9a79d948c9a0912460465f62eff104bd",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/officialTechnicalDictionary.ts": "00b6103380266f8c17343114987e0b540e85fbf227afa2ad19abac0c3f21e26a",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/officialTechnicalSupplement.ts": "c6d30181c3d7fb293b01e60fe3b931e397ad2ca6b1af9d909545d12df9dfa177",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/officialTechnicalSafety.ts": "430b269f007965f7c359d274858870090edcbd9a4eb4aea298b7a5f3a6387bdb",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/competitorDisplayPolicy.ts": "31eafd742851953df6b047b3823db4dc3976372be34a1e2fb7dc3557b03b19a5",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/officialTechnicalReaderDocument.ts": "f7329efc37cc299e8f76fc24720ea48686683316b8a5005ed81deaed3cf1aec8",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/officialTechnicalReader.ts": "a01c911532e8591ce40a86bff3a63b33c5b47742ebcf615e1df3366b87b05acf"
+  },
+  "capturePins": {
+    "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/capture/records.json": "9693b694aa80658959a14f9203677a36ad6a55392fa36ce89bae0c137fec7b7c",
+    "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/capture/admin-api.js": "de4e92fa7165ad52c6bbeb93b5b04629d2b548070055002b16337cc4b4930df8",
+    "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/capture/dependency-4.mjs": "df1b13f2d03cf6832c75f2219884fc37f6a28777edf9647b077564dd026307a1",
+    "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/capture/dependency-5.mjs": "e9f76fbcf7ffe29e590a8e83f326aa388ddfacf170b45f85cf38a1a14a462d9a"
+  },
+  "api": {
+    "admin": {
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+      "local": "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/backend-candidate/admin-api.js",
+      "beforeSHA": "de4e92fa7165ad52c6bbeb93b5b04629d2b548070055002b16337cc4b4930df8",
+      "afterSHA": "ea0940846697fb8ec96aab6d3cbb24b13cdf155515e85e810b3f17f1b0fb2515",
+      "size": 1635839,
+      "hunks": 1
+    }
+  },
+  "runtimes": [
+    {
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/runtime/newInformation.admin.1239d4b93447da6dee2e949ea32293a199af59355728d26038cac36dc323f875.runtime.mjs",
+      "local": "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/backend-candidate/runtime/newInformation.admin.1239d4b93447da6dee2e949ea32293a199af59355728d26038cac36dc323f875.runtime.mjs",
+      "sha256": "1239d4b93447da6dee2e949ea32293a199af59355728d26038cac36dc323f875",
+      "size": 119656
+    }
+  ],
+  "existingFiles": [
+    {
+      "path": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/runtime/newInformation.contracts.e9f76fbcf7ffe29e590a8e83f326aa388ddfacf170b45f85cf38a1a14a462d9a.runtime.mjs",
+      "sha256": "e9f76fbcf7ffe29e590a8e83f326aa388ddfacf170b45f85cf38a1a14a462d9a",
+      "unchanged": true
+    }
+  ],
+  "dependencies": {
+    "admin": {
+      "provided": [
+        "getDb",
+        "withBusinessAuthorizationFence",
+        "getAdminUserById",
+        "getAdminUserPermissions",
+        "getActiveBusinessStaffBinding",
+        "getActiveBusinessMerchantScope",
+        "getBusinessWorkbenchMerchantById",
+        "getAdminUserSalesScopeCodes",
+        "router",
+        "adminProcedure",
+        "businessEnterpriseBindingFromMerchant",
+        "businessScopeAllows",
+        "getBusinessWorkbenchMerchantIds",
+        "loadOfficialAccess",
+        "assertOfficialRecordAction",
+        "officialTeamPredicate",
+        "officialActorFromContext",
+        "adminStaffArchives",
+        "materials",
+        "officialChannelTeams",
+        "withCurrentBusinessAuthorization",
+        "businessAuditActor",
+        "callPlatformBusinessCommand",
+        "callPlatformOrder"
+      ],
+      "required": [
+        "adminProcedure",
+        "adminStaffArchives",
+        "assertOfficialRecordAction",
+        "businessAuditActor",
+        "businessEnterpriseBindingFromMerchant",
+        "businessScopeAllows",
+        "callPlatformBusinessCommand",
+        "callPlatformOrder",
+        "getActiveBusinessMerchantScope",
+        "getActiveBusinessStaffBinding",
+        "getAdminUserById",
+        "getAdminUserPermissions",
+        "getAdminUserSalesScopeCodes",
+        "getBusinessWorkbenchMerchantById",
+        "getBusinessWorkbenchMerchantIds",
+        "getDb",
+        "loadOfficialAccess",
+        "materials",
+        "officialActorFromContext",
+        "officialChannelTeams",
+        "officialTeamPredicate",
+        "router",
+        "withBusinessAuthorizationFence",
+        "withCurrentBusinessAuthorization"
+      ],
+      "oldRequired": [
+        "adminProcedure",
+        "adminStaffArchives",
+        "assertOfficialRecordAction",
+        "businessAuditActor",
+        "businessEnterpriseBindingFromMerchant",
+        "businessScopeAllows",
+        "callPlatformBusinessCommand",
+        "callPlatformOrder",
+        "getActiveBusinessMerchantScope",
+        "getActiveBusinessStaffBinding",
+        "getAdminUserById",
+        "getAdminUserPermissions",
+        "getAdminUserSalesScopeCodes",
+        "getBusinessWorkbenchMerchantById",
+        "getBusinessWorkbenchMerchantIds",
+        "getDb",
+        "loadOfficialAccess",
+        "materials",
+        "officialActorFromContext",
+        "officialChannelTeams",
+        "officialTeamPredicate",
+        "router",
+        "withBusinessAuthorizationFence",
+        "withCurrentBusinessAuthorization"
+      ],
+      "injectionListByteIdentical": true,
+      "returnKeys": [
+        "newInformation",
+        "createAdminNewInformationRouterForSource",
+        "createAdminNewInformationSourceForContext",
+        "createAdminNewInformationService",
+        "readBusinessNewInformationFacts",
+        "createMallNewInformationReader"
+      ],
+      "returnByteIdentical": true
+    },
+    "externalAliasMap": [
+      {
+        "kind": "external",
+        "module": "node:crypto",
+        "imported": "randomUUID",
+        "compiled": "randomUUID",
+        "captured": "randomUUID"
+      },
+      {
+        "kind": "external",
+        "module": "./newInformation.contracts.e9f76fbcf7ffe29e590a8e83f326aa388ddfacf170b45f85cf38a1a14a462d9a.runtime.mjs",
+        "imported": "newInformationFactsInputSchema",
+        "compiled": "newInformationFactsInputSchema",
+        "captured": "newInformationFactsInputSchema"
+      },
+      {
+        "kind": "external",
+        "module": "./newInformation.contracts.e9f76fbcf7ffe29e590a8e83f326aa388ddfacf170b45f85cf38a1a14a462d9a.runtime.mjs",
+        "imported": "newInformationFactsResultSchema",
+        "compiled": "newInformationFactsResultSchema",
+        "captured": "newInformationFactsResultSchema"
+      },
+      {
+        "kind": "external",
+        "module": "node:crypto",
+        "imported": "createHash",
+        "compiled": "createHash2",
+        "captured": "createHash2"
+      },
+      {
+        "kind": "external",
+        "module": "node:crypto",
+        "imported": "randomUUID",
+        "compiled": "randomUUID2",
+        "captured": "randomUUID"
+      },
+      {
+        "kind": "external",
+        "module": "@trpc/server",
+        "imported": "TRPCError",
+        "compiled": "TRPCError3",
+        "captured": "TRPCError3"
+      },
+      {
+        "kind": "external",
+        "module": "node:crypto",
+        "imported": "createHash",
+        "compiled": "createHash3",
+        "captured": "createHash2"
+      },
+      {
+        "kind": "external",
+        "module": "zod",
+        "imported": "z",
+        "compiled": "z2",
+        "captured": "z2"
+      },
+      {
+        "kind": "external",
+        "module": "zod",
+        "imported": "z",
+        "compiled": "z3",
+        "captured": "z2"
+      },
+      {
+        "kind": "external",
+        "module": "node:crypto",
+        "imported": "randomUUID",
+        "compiled": "randomUUID3",
+        "captured": "randomUUID"
+      },
+      {
+        "kind": "external",
+        "module": "zod",
+        "imported": "z",
+        "compiled": "z4",
+        "captured": "z2"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm",
+        "imported": "sql",
+        "compiled": "sql",
+        "captured": "sql"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm",
+        "imported": "sql",
+        "compiled": "sql2",
+        "captured": "sql"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm/mysql-core",
+        "imported": "boolean",
+        "compiled": "boolean",
+        "captured": "boolean"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm/mysql-core",
+        "imported": "customType",
+        "compiled": "customType",
+        "captured": "customType"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm/mysql-core",
+        "imported": "index",
+        "compiled": "index",
+        "captured": "index"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm/mysql-core",
+        "imported": "int",
+        "compiled": "int2",
+        "captured": "int2"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm/mysql-core",
+        "imported": "json",
+        "compiled": "json2",
+        "captured": "json2"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm/mysql-core",
+        "imported": "mysqlEnum",
+        "compiled": "mysqlEnum2",
+        "captured": "mysqlEnum2"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm/mysql-core",
+        "imported": "mysqlTable",
+        "compiled": "mysqlTable2",
+        "captured": "mysqlTable2"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm/mysql-core",
+        "imported": "text",
+        "compiled": "text",
+        "captured": "text"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm/mysql-core",
+        "imported": "uniqueIndex",
+        "compiled": "uniqueIndex",
+        "captured": "uniqueIndex"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm/mysql-core",
+        "imported": "varchar",
+        "compiled": "varchar2",
+        "captured": "varchar2"
+      },
+      {
+        "kind": "external",
+        "module": "zod",
+        "imported": "z",
+        "compiled": "z5",
+        "captured": "z2"
+      },
+      {
+        "kind": "external",
+        "module": "node:crypto",
+        "imported": "createHash",
+        "compiled": "createHash4",
+        "captured": "createHash2"
+      },
+      {
+        "kind": "external",
+        "module": "node:crypto",
+        "imported": "randomUUID",
+        "compiled": "randomUUID4",
+        "captured": "randomUUID"
+      },
+      {
+        "kind": "external",
+        "module": "@trpc/server",
+        "imported": "TRPCError",
+        "compiled": "TRPCError4",
+        "captured": "TRPCError3"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm",
+        "imported": "and",
+        "compiled": "and2",
+        "captured": "and2"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm",
+        "imported": "asc",
+        "compiled": "asc",
+        "captured": "asc"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm",
+        "imported": "desc",
+        "compiled": "desc",
+        "captured": "desc"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm",
+        "imported": "eq",
+        "compiled": "eq2",
+        "captured": "eq2"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm",
+        "imported": "inArray",
+        "compiled": "inArray",
+        "captured": "inArray"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm",
+        "imported": "like",
+        "compiled": "like",
+        "captured": "like"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm",
+        "imported": "sql",
+        "compiled": "sql3",
+        "captured": "sql"
+      },
+      {
+        "kind": "external",
+        "module": "zod",
+        "imported": "z",
+        "compiled": "z6",
+        "captured": "z2"
+      },
+      {
+        "kind": "external",
+        "module": "node:crypto",
+        "imported": "createHash",
+        "compiled": "createHash5",
+        "captured": "createHash2"
+      },
+      {
+        "kind": "external",
+        "module": "@trpc/server",
+        "imported": "TRPCError",
+        "compiled": "TRPCError5",
+        "captured": "TRPCError3"
+      },
+      {
+        "kind": "external",
+        "module": "./newInformation.contracts.e9f76fbcf7ffe29e590a8e83f326aa388ddfacf170b45f85cf38a1a14a462d9a.runtime.mjs",
+        "imported": "ADMIN_NEW_INFORMATION_ACTIVATED_AT",
+        "compiled": "ADMIN_NEW_INFORMATION_ACTIVATED_AT",
+        "captured": "ADMIN_NEW_INFORMATION_ACTIVATED_AT"
+      },
+      {
+        "kind": "external",
+        "module": "./newInformation.contracts.e9f76fbcf7ffe29e590a8e83f326aa388ddfacf170b45f85cf38a1a14a462d9a.runtime.mjs",
+        "imported": "newInformationFactsInputSchema",
+        "compiled": "newInformationFactsInputSchema2",
+        "captured": "newInformationFactsInputSchema"
+      },
+      {
+        "kind": "external",
+        "module": "./newInformation.contracts.e9f76fbcf7ffe29e590a8e83f326aa388ddfacf170b45f85cf38a1a14a462d9a.runtime.mjs",
+        "imported": "newInformationFactsResultSchema",
+        "compiled": "newInformationFactsResultSchema2",
+        "captured": "newInformationFactsResultSchema"
+      },
+      {
+        "kind": "external",
+        "module": "@trpc/server",
+        "imported": "TRPCError",
+        "compiled": "TRPCError2",
+        "captured": "TRPCError3"
+      },
+      {
+        "kind": "external",
+        "module": "zod",
+        "imported": "z",
+        "compiled": "z",
+        "captured": "z2"
+      },
+      {
+        "kind": "external",
+        "module": "node:crypto",
+        "imported": "createHash",
+        "compiled": "createHash",
+        "captured": "createHash2"
+      },
+      {
+        "kind": "external",
+        "module": "node:crypto",
+        "imported": "createHmac",
+        "compiled": "createHmac",
+        "captured": "createHmac"
+      },
+      {
+        "kind": "external",
+        "module": "node:crypto",
+        "imported": "timingSafeEqual",
+        "compiled": "timingSafeEqual",
+        "captured": "timingSafeEqual"
+      },
+      {
+        "kind": "external",
+        "module": "@trpc/server",
+        "imported": "TRPCError",
+        "compiled": "TRPCError",
+        "captured": "TRPCError3"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm",
+        "imported": "and",
+        "compiled": "and",
+        "captured": "and2"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm",
+        "imported": "eq",
+        "compiled": "eq",
+        "captured": "eq2"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm/mysql-core",
+        "imported": "int",
+        "compiled": "int",
+        "captured": "int2"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm/mysql-core",
+        "imported": "json",
+        "compiled": "json",
+        "captured": "json2"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm/mysql-core",
+        "imported": "mysqlEnum",
+        "compiled": "mysqlEnum",
+        "captured": "mysqlEnum2"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm/mysql-core",
+        "imported": "mysqlTable",
+        "compiled": "mysqlTable",
+        "captured": "mysqlTable2"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm/mysql-core",
+        "imported": "primaryKey",
+        "compiled": "primaryKey",
+        "captured": "primaryKey"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm/mysql-core",
+        "imported": "varchar",
+        "compiled": "varchar",
+        "captured": "varchar2"
+      },
+      {
+        "kind": "external",
+        "module": "node:crypto",
+        "imported": "createHash",
+        "compiled": "createHash6",
+        "captured": "createHash2"
+      },
+      {
+        "kind": "external",
+        "module": "drizzle-orm",
+        "imported": "eq",
+        "compiled": "eq3",
+        "captured": "eq2"
+      },
+      {
+        "kind": "external",
+        "module": "./newInformation.contracts.e9f76fbcf7ffe29e590a8e83f326aa388ddfacf170b45f85cf38a1a14a462d9a.runtime.mjs",
+        "imported": "ADMIN_NEW_INFORMATION_ACTIVATED_AT",
+        "compiled": "ADMIN_NEW_INFORMATION_ACTIVATED_AT2",
+        "captured": "ADMIN_NEW_INFORMATION_ACTIVATED_AT"
+      },
+      {
+        "kind": "external",
+        "module": "./newInformation.contracts.e9f76fbcf7ffe29e590a8e83f326aa388ddfacf170b45f85cf38a1a14a462d9a.runtime.mjs",
+        "imported": "ADMIN_NEW_INFORMATION_GENERATION",
+        "compiled": "ADMIN_NEW_INFORMATION_GENERATION",
+        "captured": "ADMIN_NEW_INFORMATION_GENERATION"
+      },
+      {
+        "kind": "external",
+        "module": "./newInformation.contracts.e9f76fbcf7ffe29e590a8e83f326aa388ddfacf170b45f85cf38a1a14a462d9a.runtime.mjs",
+        "imported": "newInformationFactsInputSchema",
+        "compiled": "newInformationFactsInputSchema3",
+        "captured": "newInformationFactsInputSchema"
+      },
+      {
+        "kind": "external",
+        "module": "./newInformation.contracts.e9f76fbcf7ffe29e590a8e83f326aa388ddfacf170b45f85cf38a1a14a462d9a.runtime.mjs",
+        "imported": "newInformationFactsResultSchema",
+        "compiled": "newInformationFactsResultSchema3",
+        "captured": "newInformationFactsResultSchema"
+      },
+      {
+        "kind": "preserved-original-constant",
+        "module": "shared/adminNewInformationConstants.ts",
+        "compiled": "ADMIN_NEW_INFORMATION_MODULES",
+        "captured": "ADMIN_NEW_INFORMATION_MODULES"
+      }
+    ],
+    "newExternalAllowlist": [
+      "node:async_hooks#AsyncLocalStorage"
+    ]
+  },
+  "deployedSourceSections": [
+    {
+      "path": "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformation.ts",
+      "declaration": "createAdminNewInformationService"
+    },
+    {
+      "path": "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformationSources.ts",
+      "declaration": "prove"
+    },
+    {
+      "path": "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformationSources.ts",
+      "declaration": "createAdminNewInformationSourceForContext"
+    },
+    {
+      "path": "/home/ubuntu/work/channel-release-20261121-1837/manager/server/platformOrderApi.ts",
+      "declarations": [
+        "getConfig",
+        "PlatformOrderNewInformationError",
+        "callPlatformOrderNewInformation",
+        "getPlatformOrderNewInformationFacts"
+      ]
+    },
+    {
+      "path": "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformationDiagnostics.ts",
+      "declarations": "complete single compiled module"
+    }
+  ],
+  "diagnostics": {
+    "moduleCopies": 1,
+    "traceStorageDeclarations": 1,
+    "privateFactsTransport": true,
+    "nativeFenceImplementationBundled": false,
+    "privateExportsAdded": false,
+    "fenceStages": "native default fence wrapper observes operation versus post-operation cleanup; original native fence does not gain new lease/connect/lock/unlock instrumentation"
+  },
+  "targets": {
+    "adminApi": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/dist/index.js",
+    "oldAdminRuntime": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/runtime/newInformation.admin.df1b13f2d03cf6832c75f2219884fc37f6a28777edf9647b077564dd026307a1.runtime.mjs",
+    "existingFactsContract": "/opt/releases/20261110-customer-workbench-b7f3a2a7e317/admin/runtime/newInformation.contracts.e9f76fbcf7ffe29e590a8e83f326aa388ddfacf170b45f85cf38a1a14a462d9a.runtime.mjs",
+    "frontHandling": "not handled; parent front assembler may operate independently"
+  },
+  "checks": {
+    "typescriptParse": true,
+    "nodeSyntax": true,
+    "routeGraphSha256": "508b8e49e6afc5b128685978ba9ef1c813789df77b1077dcec4d0c6d3e1d7776",
+    "routeGraphUnchanged": true,
+    "inverseVerified": true,
+    "outsideHunksVerified": true,
+    "sourceStableBeforeAfter": true,
+    "boundSymbolAliases": true,
+    "noUnresolvedNames": true,
+    "originalNativeAbi": true,
+    "noApiStartup": true,
+    "noDatabase": true,
+    "noBrowser": true,
+    "noGit": true,
+    "noSSH": true,
+    "noProductionWrites": true,
+    "noHtmlWrites": true,
+    "noContractCompilation": true,
+    "noOldGeneratorExecution": true
+  },
+  "runtimePolicy": "Incremental old actual df1b13 runtime: three exact function replacements, old private facts module replacement, additive source-compiled diagnostics and one allowlisted ALS import. All outside hunks preserved byte-for-byte; actual admin API changes only one import URL."
+}

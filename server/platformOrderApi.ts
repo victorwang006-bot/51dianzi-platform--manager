@@ -1,3 +1,5 @@
+import { safeAdminNewInformationError } from "./services/adminNewInformationDiagnostics";
+
 /**
  * 商城订单状态，必须与前台 `ORDER_STATUSES` 保持全集一致。
  *
@@ -192,6 +194,53 @@ export function getPlatformOrderDetail(
   });
 }
 
+/** Private notification-only error. No .code and no upstream message/cause.
+ * Ordinary orders stats/list/detail intentionally keep their original errors.
+ */
+class PlatformOrderNewInformationError extends Error {
+  readonly kind: string;
+  readonly httpStatus?: number;
+  readonly upstreamTrpcCode?: string;
+  readonly timing: number;
+  constructor(kind: "config" | "network" | "timeout" | "http" | "upstream" | "decode" | "empty", started: number, httpStatus?: number, upstreamTrpcCode?: unknown) {
+    super("ADMIN_NEW_INFORMATION_ORDER_TRANSPORT_UNAVAILABLE");
+    const safe = safeAdminNewInformationError({ kind, httpStatus, upstreamTrpcCode, timing: Math.max(0, performance.now() - started) });
+    this.kind = safe.kind ?? "network";
+    this.httpStatus = safe.httpStatus;
+    this.upstreamTrpcCode = safe.upstreamTrpcCode;
+    this.timing = typeof safe.timing === "number" ? safe.timing : 0;
+  }
+}
+async function callPlatformOrderNewInformation(input: Record<string, unknown>): Promise<unknown> {
+  const started = performance.now();
+  let config: ReturnType<typeof getConfig>;
+  try { config = getConfig(); }
+  catch { throw new PlatformOrderNewInformationError("config", started); }
+  const body = JSON.stringify({ "0": { json: input } });
+  let response: Response;
+  try {
+    response = await fetch(`${config.baseUrl}/api/trpc/internalOrder.newInformationFacts?batch=1&input=${encodeURIComponent(body)}`, {
+      headers: { "content-type": "application/json", "x-portal-key": config.key },
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch (error) {
+    // Name is used ONLY to choose a fixed enum, never emitted or retained.
+    const timeout = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+    throw new PlatformOrderNewInformationError(timeout ? "timeout" : "network", started);
+  }
+  let payload: Array<{ result?: { data?: unknown }; error?: { json?: { data?: { code?: unknown } }; data?: { code?: unknown } } }> | null;
+  try { payload = await response.json(); }
+  catch { throw new PlatformOrderNewInformationError(response.ok ? "decode" : "http", started, response.status); }
+  const first = Array.isArray(payload) ? payload[0] : undefined;
+  if (!response.ok || first?.error) {
+    throw new PlatformOrderNewInformationError(response.ok ? "upstream" : "http", started, response.status,
+      first?.error?.json?.data?.code ?? first?.error?.data?.code);
+  }
+  const data = first?.result?.data;
+  if (!data) throw new PlatformOrderNewInformationError("empty", started, response.status);
+  return (typeof data === "object" && data !== null && "json" in data) ? data.json : data;
+}
+
 /** Native sales fact transport ONLY. Registry validates the shared result schema.
  * Caller proves local admin + orders.read and derives the three-state scope server-side.
  * Fixed internalOrder.newInformationFacts, never a paginated list approximation.
@@ -200,7 +249,7 @@ export function getPlatformOrderNewInformationFacts(
   input: { refs?: string[] },
   salesStaffCodes?: PlatformSalesScope,
 ): Promise<unknown> {
-  return callPlatformOrder<unknown>("newInformationFacts", {
+  return callPlatformOrderNewInformation({
     ...input,
     ...(salesStaffCodes === undefined ? {} : { salesStaffCodes }),
   });

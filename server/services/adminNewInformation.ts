@@ -1,4 +1,10 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import {
+  runAdminNewInformationDiagnostic, adminNewInformationDiagnosticStage,
+  adminNewInformationDiagnosticSync, adminNewInformationDiagnosticStore,
+  withAdminNewInformationDiagnosticLabels, recordAdminNewInformationDiagnostic,
+  adminNewInformationFenceDiagnostics,
+} from "./adminNewInformationDiagnostics";
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 import {
@@ -424,18 +430,52 @@ const MAX_RECEIPT_SIZE = 4096;
 export function createAdminNewInformationService(
   deps: AdminNewInformationDeps
 ): AdminNewInformationService {
-  const store = deps.store ?? createDrizzleAdminNewInformationStore();
+  const rawStore = deps.store ?? createDrizzleAdminNewInformationStore();
+  const store: AdminNewInformationStore = {
+    withModule: (viewer, module, operation) =>
+      adminNewInformationDiagnosticStore(done => rawStore.withModule(viewer, module, async state => {
+        const result = await operation(state);
+        done();
+        return result;
+      })),
+    withModules: (viewer, modules, operation) =>
+      adminNewInformationDiagnosticStore(done => rawStore.withModules(viewer, modules, async states => {
+        const result = await operation(states);
+        done();
+        return result;
+      })),
+  };
   const now = deps.now ?? Date.now;
   const ttl = deps.receiptTtlMs ?? 120_000;
   if (!Number.isSafeInteger(ttl) || ttl <= 0 || ttl > 300_000)
     throw new Error("INVALID_RECEIPT_TTL");
-  const fence =
+  const rawFence =
     deps.withViewerFence ??
     (<T>(viewer: AdminNewInformationViewer, operation: () => Promise<T>) =>
       withBusinessAuthorizationFence(
         { adminUserId: viewer.adminUserId },
-        operation
+        operation,
+        adminNewInformationFenceDiagnostics
       ));
+  const fence: NonNullable<AdminNewInformationDeps["withViewerFence"]> = (viewer, operation) =>
+    adminNewInformationDiagnosticStage("fence", async () => {
+      let completedAt: number | undefined;
+      try {
+        const result = await rawFence(viewer, () => adminNewInformationDiagnosticStage("operation", async () => {
+          const result = await operation();
+          completedAt = performance.now();
+          recordAdminNewInformationDiagnostic("cleanup", "begin", completedAt);
+          return result;
+        }));
+        if (completedAt !== undefined) recordAdminNewInformationDiagnostic("cleanup", "ok", completedAt);
+        return result;
+      } catch (error) {
+        // Injected production fence is authoritative: no second lease pool or
+        // connection. Only its genuine post-callback failure is called cleanup.
+        if (completedAt !== undefined) recordAdminNewInformationDiagnostic("cleanup", "error", completedAt, error);
+        throw error;
+      }
+    });
   const secret = () => {
     const value =
       typeof deps.secret === "function"
@@ -447,6 +487,9 @@ export function createAdminNewInformationService(
       .digest();
   };
   function sign(receipt: Receipt | CompoundReceipt): string {
+    return adminNewInformationDiagnosticSync("receipt", () => signReceipt(receipt));
+  }
+  function signReceipt(receipt: Receipt | CompoundReceipt): string {
     const payload = Buffer.from(JSON.stringify(receipt)).toString("base64url");
     const token = `${payload}.${createHmac("sha256", secret()).update(payload).digest("base64url")}`;
     if (token.length > MAX_RECEIPT_SIZE) throw unavailable();
@@ -523,16 +566,13 @@ export function createAdminNewInformationService(
     const all: AdminNewInformationEvent[] = [];
     // A nonterminating/partial source must never initialize a baseline.
     for (let page = 0; page < 10_000; page++) {
-      const reply = await deps.source.list({
-        viewer,
-        module,
-        cursor,
-        snapshot,
-        baseline: { initialized },
+      const reply = await adminNewInformationDiagnosticStage("list", async () => {
+        const reply = await deps.source.list({ viewer, module, cursor, snapshot, baseline: { initialized } });
+        if (!reply || reply.available !== true)
+          throw new SourceUnavailableError(reply?.available === false ? reply.reason : "temporary");
+        adminNewInformationDiagnosticSync("events", () => assertScope(reply.scope));
+        return reply;
       });
-      if (!reply || reply.available !== true)
-        throw new SourceUnavailableError(reply?.available === false ? reply.reason : "temporary");
-      assertScope(reply.scope);
       if (
         !nonempty(reply.snapshot, 1024) ||
         (snapshot && snapshot !== reply.snapshot) ||
@@ -541,14 +581,22 @@ export function createAdminNewInformationService(
         throw unavailable();
       scope = reply.scope;
       snapshot = reply.snapshot;
-      all.push(...validateEvents(reply.items));
-      if (reply.nextCursor == null) return { scope, rows: validateEvents(all) };
+      all.push(...adminNewInformationDiagnosticSync("events", () => validateEvents(reply.items)));
+      if (reply.nextCursor == null) return { scope, rows: adminNewInformationDiagnosticSync("events", () => validateEvents(all)) };
       if (!nonempty(reply.nextCursor, 1024) || cursors.has(reply.nextCursor))
         throw unavailable();
       cursors.add(reply.nextCursor);
       cursor = reply.nextCursor;
     }
     throw unavailable();
+  }
+  async function diagnosticLookup(input: Parameters<AdminNewInformationSource["lookup"]>[0]) {
+    return adminNewInformationDiagnosticStage("lookup", async () => {
+      const reply = await deps.source.lookup(input);
+      if (!reply || reply.available !== true) throw unavailable();
+      adminNewInformationDiagnosticSync("events", () => assertScope(reply.scope));
+      return reply;
+    });
   }
   async function establish(
     viewer: AdminNewInformationViewer,
@@ -562,53 +610,56 @@ export function createAdminNewInformationService(
     state.initialized = true;
     state.lastSummary = { count: 0, available: true };
   }
-  return {
+  const service: AdminNewInformationService = {
     async summary(viewer) {
-      assertViewer(viewer);
+      adminNewInformationDiagnosticSync("viewer", () => assertViewer(viewer));
       const modules = {} as AdminNewInformationSummary["modules"];
       for (const module of ADMIN_NEW_INFORMATION_MODULES) {
-        let previous: AdminNewInformationModuleSummary = {
-          count: 0,
-          available: false,
-          lastKnown: false,
-        };
-        try {
-          secret(); // No secret means no initialization or receipt-capable operation.
-          modules[module] = await fence(viewer, () =>
-            store.withModule(viewer, module, async state => {
-              previous = { ...state.lastSummary, available: false, lastKnown: state.initialized };
-              const current = await scan(viewer, module, state.initialized);
-              if (!state.initialized) {
-                for (const row of current.rows)
-                  if (row.historical !== false) state.seen.add(eventKey(row));
-                state.initialized = true;
-              }
-              state.lastSummary = countEvents(
-                state,
-                current.rows,
-                current.scope
-              );
-              return state.lastSummary;
-            })
-          );
-        } catch (error) {
-          // Preserve the last proven count when the source failed; never report a
-          // successful empty result or delete existing seen/baseline metadata.
-          // Legacy available:false without reason remains conservatively hidden.
-          const reason = error instanceof SourceUnavailableError ? error.reason : "temporary";
-          modules[module] = {
-            ...previous,
-            ...(reason ? { reason } : {}),
-            ...(reason === "denied" ? { lastKnown: false } : {}),
+        await withAdminNewInformationDiagnosticLabels({ module }, async () => {
+          let previous: AdminNewInformationModuleSummary = {
+            count: 0,
+            available: false,
+            lastKnown: false,
           };
-        }
+          try {
+            adminNewInformationDiagnosticSync("secret", secret); // No secret means no initialization or receipt-capable operation.
+            modules[module] = await fence(viewer, () =>
+              store.withModule(viewer, module, async state => {
+                previous = { ...state.lastSummary, available: false, lastKnown: state.initialized };
+                const current = await scan(viewer, module, state.initialized);
+                if (!state.initialized) {
+                  for (const row of current.rows)
+                    if (row.historical !== false) state.seen.add(eventKey(row));
+                  state.initialized = true;
+                }
+                state.lastSummary = countEvents(
+                  state,
+                  current.rows,
+                  current.scope
+                );
+                return state.lastSummary;
+              })
+            );
+          } catch (error) {
+            recordAdminNewInformationDiagnostic("request", "temporary", undefined, error);
+            // Preserve the last proven count when the source failed; never report a
+            // successful empty result or delete existing seen/baseline metadata.
+            // Legacy available:false without reason remains conservatively hidden.
+            const reason = error instanceof SourceUnavailableError ? error.reason : "temporary";
+            modules[module] = {
+              ...previous,
+              ...(reason ? { reason } : {}),
+              ...(reason === "denied" ? { lastKnown: false } : {}),
+            };
+          }
+        });
       }
       return { modules };
     },
     async unreadRefs(viewer, input) {
-      assertViewer(viewer);
+      adminNewInformationDiagnosticSync("viewer", () => assertViewer(viewer));
       const checked = adminNewInformationUnreadRefsSchema.parse(input);
-      secret();
+      adminNewInformationDiagnosticSync("secret", secret);
       try {
         return await fence(viewer, () =>
           store.withModule(viewer, checked.module, async state => {
@@ -632,12 +683,12 @@ export function createAdminNewInformationService(
               // child aliases/client metadata as merchant authorization evidence.
               for (let offset = 0; offset < Math.max(1, candidates.length); offset += 100) {
                 const batch = candidates.slice(offset, offset + 100);
-                const reply = await deps.source.lookup({ viewer, module: checked.module, refs: batch, scope: checked.scope });
+                const reply = await diagnosticLookup({ viewer, module: checked.module, refs: batch, scope: checked.scope });
                 if (!reply || reply.available !== true) throw unavailable();
                 assertScope(reply.scope);
                 if (!sameScope(current.scope, reply.scope)) throw unavailable();
                 const allowed = new Set(batch);
-                for (const row of validateEvents(reply.items)) {
+                for (const row of adminNewInformationDiagnosticSync("events", () => validateEvents(reply.items))) {
                   if (allowed.has(row.id) && exact.has(eventKey(row)) && isNew(effective, row, reply.scope)) refs.add(row.id);
                 }
                 if (refs.size > ADMIN_NEW_INFORMATION_MAX_UNREAD_REFS) throw unavailable();
@@ -646,22 +697,24 @@ export function createAdminNewInformationService(
             return { refs: Array.from(refs).sort(), available: true as const };
           })
         );
-      } catch {
+      } catch (error) {
+        recordAdminNewInformationDiagnostic("request", "temporary", undefined, error);
         throw unavailable();
       }
     },
     async inspect(viewer, input) {
-      assertViewer(viewer);
+      adminNewInformationDiagnosticSync("viewer", () => assertViewer(viewer));
       const checked = adminNewInformationInspectSchema.parse(input);
-      secret();
+      adminNewInformationDiagnosticSync("secret", secret);
       if (!checked.refs.length) return { items: [] };
       try {
         return await fence(viewer, () =>
           store.withModule(viewer, checked.module, async state => {
             // A row lookup is never enough to baseline a module or a UI page.
-            await establish(viewer, checked.module, state);
+            if (state.initialized) await establish(viewer, checked.module, state);
+            else await adminNewInformationDiagnosticStage("establish", () => establish(viewer, checked.module, state));
             const refs = Array.from(new Set(checked.refs));
-            const reply = await deps.source.lookup({
+            const reply = await diagnosticLookup({
               viewer,
               module: checked.module,
               refs,
@@ -670,7 +723,7 @@ export function createAdminNewInformationService(
             if (!reply || reply.available !== true) throw unavailable();
             assertScope(reply.scope);
             const allowed = new Set(refs);
-            const rows = validateEvents(reply.items).filter(row =>
+            const rows = adminNewInformationDiagnosticSync("events", () => validateEvents(reply.items)).filter(row =>
               allowed.has(row.id)
             );
             const physicalRows = new Map<string, AdminNewInformationEvent[]>();
@@ -727,19 +780,20 @@ export function createAdminNewInformationService(
             };
           })
         );
-      } catch {
+      } catch (error) {
+        recordAdminNewInformationDiagnostic("request", "temporary", undefined, error);
         throw unavailable();
       }
     },
     async markDisplayed(viewer, input) {
-      assertViewer(viewer);
+      adminNewInformationDiagnosticSync("viewer", () => assertViewer(viewer));
       const checked = adminNewInformationMarkSchema.parse(input);
-      secret();
-      const receipts = Array.from(new Set(checked.receipts)).flatMap(token => {
+      adminNewInformationDiagnosticSync("secret", secret);
+      const receipts = adminNewInformationDiagnosticSync("receipt", () => Array.from(new Set(checked.receipts)).flatMap(token => {
         const facts = verify(token, viewer);
         if (!facts) throw unavailable();
         return facts;
-      });
+      }));
       if (!receipts.length) return { marked: 0, accepted: 0 };
       const modules = ADMIN_NEW_INFORMATION_MODULES.filter(module =>
         receipts.some(receipt => receipt.m === module)
@@ -772,7 +826,7 @@ export function createAdminNewInformationService(
               // Validate every module/group before writing ANY submitted event.
               for (const group of Array.from(groups.values())) {
                 const first = group[0];
-                const reply = await deps.source.lookup({
+                const reply = await diagnosticLookup({
                   viewer,
                   module,
                   refs: Array.from(new Set(group.map(receipt => receipt.id))),
@@ -788,7 +842,7 @@ export function createAdminNewInformationService(
                 const previousScope = provenScopes.get(module);
                 if (previousScope && !sameScope(previousScope, reply.scope)) throw unavailable();
                 provenScopes.set(module, reply.scope);
-                const real = new Set(validateEvents(reply.items).map(eventKey));
+                const real = new Set(adminNewInformationDiagnosticSync("events", () => validateEvents(reply.items)).map(eventKey));
                 for (const receipt of group) {
                   const key = eventKey({ id: receipt.id, version: receipt.ev });
                   // Check expiry again after potentially slow permission/source IO.
@@ -835,9 +889,16 @@ export function createAdminNewInformationService(
             return { marked, accepted: checked.receipts.length };
           })
         );
-      } catch {
+      } catch (error) {
+        recordAdminNewInformationDiagnostic("request", "temporary", undefined, error);
         throw unavailable();
       }
     },
+  };
+  return {
+    summary: viewer => runAdminNewInformationDiagnostic("summary", "all", () => service.summary(viewer)),
+    unreadRefs: (viewer, input) => runAdminNewInformationDiagnostic("unreadRefs", input?.module, () => service.unreadRefs(viewer, input)),
+    inspect: (viewer, input) => runAdminNewInformationDiagnostic("inspect", input?.module, () => service.inspect(viewer, input)),
+    markDisplayed: (viewer, input) => runAdminNewInformationDiagnostic("markDisplayed", "all", () => service.markDisplayed(viewer, input)),
   };
 }

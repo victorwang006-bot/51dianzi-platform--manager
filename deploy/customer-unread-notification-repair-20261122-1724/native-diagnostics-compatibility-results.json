@@ -1,0 +1,57 @@
+{
+  "mode": "OFFLINE_NATIVE_ABI_MOCK_ONLY",
+  "passed": true,
+  "tests": 5,
+  "results": [
+    {
+      "name": "bundled_private_native_transport_trace_and_native_trpc_realm",
+      "passed": true
+    },
+    {
+      "name": "native_success_one_end_original_two_argument_fence",
+      "passed": true
+    },
+    {
+      "name": "old_native_fence_post_callback_cleanup_observed_without_new_pool",
+      "passed": true
+    },
+    {
+      "name": "original_captured_native_transport_mock_proves_evidence_loss_no_api_boot",
+      "passed": true
+    },
+    {
+      "name": "all_original_public_order_functions_byte_exact",
+      "passed": true
+    }
+  ],
+  "networkRequests": 0,
+  "realDatabaseConnections": 0,
+  "businessWrites": 0,
+  "productionActions": 0,
+  "nativeFenceCalls": 3,
+  "originalCapturedAdminApiSha256": "de4e92fa7165ad52c6bbeb93b5b04629d2b548070055002b16337cc4b4930df8",
+  "nativeRealmsInjected": [
+    "SQL and/eq",
+    "Zod z",
+    "TRPCError",
+    "db/helpers/schema"
+  ],
+  "oneDiagnosticModule": true,
+  "noRootDbBundle": true,
+  "noSecondFencePool": true,
+  "sourceInputCount": 19,
+  "requests": [
+    {
+      "procedure": "/api/trpc/internalOrder.newInformationFacts",
+      "signalPresent": true
+    },
+    {
+      "procedure": "/api/trpc/internalOrder.newInformationFacts",
+      "signalPresent": true
+    },
+    {
+      "procedure": "/api/trpc/internalOrder.newInformationFacts",
+      "signalPresent": true
+    }
+  ]
+}

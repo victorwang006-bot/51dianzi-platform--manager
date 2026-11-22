@@ -1,4 +1,9 @@
 import { createHash } from "node:crypto";
+import {
+  adminNewInformationDiagnosticStage, adminNewInformationDiagnosticSync,
+  withAdminNewInformationDiagnosticLabels, recordAdminNewInformationDiagnostic,
+  type DiagnosticMethod, type DiagnosticSourceKind,
+} from "./adminNewInformationDiagnostics";
 import { eq } from "drizzle-orm";
 import { adminStaffArchives } from "../../drizzle/schema";
 import {
@@ -79,6 +84,8 @@ const BUSINESS_SOURCES: Record<AdminNewInformationModule, readonly EntryRule[]> 
   mall: [],
 };
 type Entry = {
+  method: DiagnosticMethod;
+  sourceKind: DiagnosticSourceKind;
   selector: string;
   identity: unknown;
   authority: unknown;
@@ -158,20 +165,35 @@ async function prove(entries: readonly Entry[], inputFor: (entry: Entry) => Admi
     while (next < entries.length) {
       const index = next++;
       const entry = entries[index];
-      let raw: unknown;
-      try {
-        raw = await entry.read(newInformationFactsInputSchema.parse(inputFor(entry)));
-      } catch (error) {
-        if (explicitlyDenied(error)) continue;
-        throw error;
-      }
-      // Parsing errors, available:false and unknown pagination flags are not denials.
-      result[index] = { entry, facts: validFacts(raw, entry) };
+      await withAdminNewInformationDiagnosticLabels({ method: entry.method, sourceKind: entry.sourceKind, entry: index }, async () => {
+        let raw: unknown;
+        try {
+          const started = performance.now();
+          recordAdminNewInformationDiagnostic("entryRead", "begin", started);
+          try {
+            raw = await entry.read(newInformationFactsInputSchema.parse(inputFor(entry)));
+            recordAdminNewInformationDiagnostic("entryRead", "ok", started);
+          } catch (error) {
+            recordAdminNewInformationDiagnostic("entryRead", explicitlyDenied(error) ? "denied" : "error", started, error);
+            throw error;
+          }
+        } catch (error) {
+          if (explicitlyDenied(error)) return;
+          throw error;
+        }
+        // Parsing errors, available:false and unknown pagination flags are not denials.
+        result[index] = { entry, facts: adminNewInformationDiagnosticSync("validFacts", () => validFacts(raw, entry)) };
+      });
     }
   }));
   // Fail only AFTER all issued RPCs finish. Returning on Promise.all's first
   // rejection would release the core fence while another reader is still running.
-  if (settled.some(row => row.status === "rejected")) fail();
+  if (settled.some(row => row.status === "rejected")) {
+    for (const row of settled) if (row.status === "rejected")
+      recordAdminNewInformationDiagnostic("allSettled", "error", undefined, row.reason);
+    fail();
+  }
+  recordAdminNewInformationDiagnostic("allSettled", "ok");
   return result.filter((row): row is ProvenEntry => row !== undefined);
 }
 
@@ -250,6 +272,7 @@ export function createAdminNewInformationSourceForContext(
     const entries: Entry[] = [];
     if (module === "mall") {
       if (hasAdminPermission(account.adminRole, "officialInventory.read", permissions)) entries.push({
+        method: "nativeMall.read", sourceKind: "nativeMall",
         selector: "native:mall", identity: ["native-official-mall", account.id],
         authority: ["native-official-mall"], prefix: "mall-material:", read: input => mallFacts(ctx, input),
       });
@@ -261,6 +284,7 @@ export function createAdminNewInformationSourceForContext(
           typeof code !== "string" || !/^[a-z0-9_-]{1,64}$/.test(code)))) fail();
       const normalizedCodes = codes === undefined ? undefined : Array.from(new Set(codes)).sort();
       entries.push({
+        method: "internalOrder.newInformationFacts", sourceKind: "nativeOrders",
         selector: "native:orders", identity: ["native-orders", account.id, normalizedCodes ?? "unrestricted"],
         authority: ["native-orders", normalizedCodes ?? "unrestricted"],
         prefix: "order:", read: input => orderFacts(input, normalizedCodes),
@@ -291,6 +315,7 @@ export function createAdminNewInformationSourceForContext(
       // header, owner string or native backend sales-owner scope.
       const enterpriseBinding = businessEnterpriseBindingFromMerchant(merchant);
       for (const rule of rules) entries.push({
+        method: rule.method, sourceKind: rule.method === "crmSalesOrder.newInformationFacts" ? "crmSales" : rule.method === "order.sellerNewInformationFacts" ? "sellerOrders" : "business",
         selector: `merchant:${merchantId}`,
         identity: ["business", merchantId, rule.method, binding.frontUserId, enterpriseBinding],
         authority: [binding.bindingVersion, scope.scopeVersion, [...scope.modulePermissions].sort()],
@@ -317,11 +342,11 @@ export function createAdminNewInformationSourceForContext(
       try {
         // This provider emits ONE complete snapshot, never a UI first page.
         if (input.cursor !== undefined || input.snapshot !== undefined) fail();
-        const { entries, authority } = await authorization(input.viewer, input.module);
+        const { entries, authority } = await adminNewInformationDiagnosticStage("authorization", () => authorization(input.viewer, input.module), { module: input.module });
         const proven = await prove(entries, () => ({}));
         if (!proven.length) return { available: false, reason: "denied" };
         const scope = fullScope(input.viewer, input.module, authority, proven);
-        const items = unionItems(proven);
+        const items = adminNewInformationDiagnosticSync("union", () => unionItems(proven));
         return {
           available: true, scope, items,
           snapshot: digest([ADMIN_NEW_INFORMATION_GENERATION, scope,
@@ -330,6 +355,7 @@ export function createAdminNewInformationSourceForContext(
           nextCursor: null,
         };
       } catch (error) {
+        recordAdminNewInformationDiagnostic("list", error instanceof SourceUnavailable && error.reason === "denied" ? "denied" : "temporary", undefined, error);
         return { available: false, reason: error instanceof SourceUnavailable ? error.reason : "temporary" };
       }
     },
@@ -338,7 +364,7 @@ export function createAdminNewInformationSourceForContext(
         const refs = newInformationFactsInputSchema.parse({ refs: [...input.refs] }).refs!;
         if (input.scope !== undefined && (typeof input.scope !== "string" || input.scope.length > 180)) fail();
         const filter = selector(input.scope);
-        const { entries, authority } = await authorization(input.viewer, input.module);
+        const { entries, authority } = await adminNewInformationDiagnosticStage("authorization", () => authorization(input.viewer, input.module), { module: input.module });
         // Query exact refs under EVERY currently legal source's own SQL authority.
         // Empty/foreign namespaces still recheck grants using refs:[]. The client
         // selector filters ONLY the final items; it never reduces the authority
@@ -348,11 +374,12 @@ export function createAdminNewInformationSourceForContext(
         if (!proven.length) return { available: false, reason: "denied" };
         const scope = fullScope(input.viewer, input.module, authority, proven);
         const allowed = new Set(refs);
-        unionItems(proven); // Fail closed even for contradictory unselected aliases.
+        adminNewInformationDiagnosticSync("union", () => unionItems(proven)); // Fail closed even for contradictory unselected aliases.
         const selected = proven.filter(({ entry, facts }) => filter === undefined || filter === entry.selector ||
           filter === facts.scope.identity || filter === scope.identity);
-        return { available: true, scope, items: unionItems(selected).filter(row => allowed.has(row.id)) };
+        return { available: true, scope, items: adminNewInformationDiagnosticSync("union", () => unionItems(selected)).filter(row => allowed.has(row.id)) };
       } catch (error) {
+        recordAdminNewInformationDiagnostic("lookup", error instanceof SourceUnavailable && error.reason === "denied" ? "denied" : "temporary", undefined, error);
         return { available: false, reason: error instanceof SourceUnavailable ? error.reason : "temporary" };
       }
     },

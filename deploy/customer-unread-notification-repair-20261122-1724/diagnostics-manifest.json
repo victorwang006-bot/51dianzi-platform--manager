@@ -1,0 +1,90 @@
+{
+  "scope": "manager notification diagnostics source-only handoff",
+  "generatedAt": "2026-11-22T09:35:37.039913+00:00",
+  "managerRoot": "/home/ubuntu/work/channel-release-20261121-1837/manager",
+  "managerHead": "d7111416a8699c81edb6f15617a595e54664378d",
+  "sourceHashes": {
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformation.ts": "364e0e811492e8fe97a34bfc2fb27371acb8484851302c1fb4344a881bce8798",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformationSources.ts": "5221d27d453de5f09d8a36fe7b311c06a83ff3473ab9a74e88aaf41783943bc8",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformationDiagnostics.ts": "1e4ce3ef329edcd357a4784fab34513f679cde58aee8dca450cab63a7ed61dec",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/platformOrderApi.ts": "db774b3ade18ab2f7efabb655ec1cb8fcef0b4014a4cde0a3dc9717dfddcf125",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/businessAuthorizationFence.ts": "1b58eb9ea39666d1442313769689ba6dd34568f38d8ac96dbf9acf15dfd5d2a5",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformationDiagnostics.test.ts": "eb45bd47597f15c70d4b2c192003ceb307538a77773930c8fa92b339a5f4c0c9",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/businessAuthorizationFence.diagnostics.test.ts": "9b49cbad310f0a507f05dfbdb70389f56b839a32d3247f11b8b79c88db1b1831"
+  },
+  "baselineSourceHashes": {
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformation.ts": "9bde744a01e78e78def6268f9cc0ae0dbd7d046c417fb04f0c6ef3fe050575f2",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformationSources.ts": "0bca3ddec4b15c086046f56fb490e7f096397049b81df86cb84ba18b8275629e",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformationDiagnostics.ts": null,
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/platformOrderApi.ts": "77e79de09153ba25395876efbdc0a2aa8e0d8d5530b783b1951daacd66ffde3a",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/businessAuthorizationFence.ts": "d917857d7633522f69bb44cda8945703376d137fe5728725b5289c4c976bf71e",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformationDiagnostics.test.ts": null,
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/businessAuthorizationFence.diagnostics.test.ts": null
+  },
+  "artifacts": {
+    "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/diagnostics-implementation.md": "559c765e01626a71a6619bf6690934ca2d0acf26dbdda8e838d503701d0378ef",
+    "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/diagnostics-tests-results.json": "cb88f17ccfec179520db3b87a7fcace6c9d13a1715de23ee4dd4dd961e3e8652",
+    "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/manager-diagnostics-tests.log": "f5ca0d2446cb4746d7c97ac8eacbda74f23e9a60e7945d8489dabd6e7956c62d",
+    "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/native-diagnostics-compatibility.mjs": "5606c582830fc04d9a0c2c7371af10259e2829cca1fd6c0cc4cad1968419bfa1",
+    "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/native-diagnostics-compatibility-results.json": "8de184f82ceaeccc9ac3c5d79bba83fba6f7616cc2b265c73ebcee76d9db9ca5",
+    "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/native-diagnostics-compatibility.runtime.mjs": "8acda455d3667e8c87c9fb29a0d22f60fe19e2afbe9cb26d83efb3bc422a8ebf",
+    "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/native-diagnostics-compatibility.metafile.json": "13da45b1e83e2eae77436caf9a71fb30fec2f65c582dec82099a6b2d4dee74e4",
+    "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/native-diagnostics-compatibility.log": "8de184f82ceaeccc9ac3c5d79bba83fba6f7616cc2b265c73ebcee76d9db9ca5"
+  },
+  "tests": {
+    "mode": "OFFLINE_MOCK_ONLY",
+    "managerVitest": {
+      "files": 4,
+      "passed": 107,
+      "failed": 0,
+      "log": "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/manager-diagnostics-tests.log",
+      "config": "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/manager-diagnostics-vitest.config.mjs"
+    },
+    "nativeABI": {
+      "passed": 5,
+      "failed": 0,
+      "result": "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/native-diagnostics-compatibility-results.json",
+      "script": "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/native-diagnostics-compatibility.mjs"
+    },
+    "totalPassed": 112,
+    "piiCanaryInLogs": false,
+    "gitDiffCheck": true,
+    "tsc": {
+      "exitCode": 2,
+      "newErrorsInChangedSource": 0,
+      "baselineExistingError": "TS2802 at original HEAD core line819 for MapIterator; target/downlevelIteration config",
+      "log": "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/manager-tsc.log"
+    },
+    "productionTests": false,
+    "realDatabaseConnections": 0,
+    "networkRequests": 0,
+    "businessWrites": 0
+  },
+  "authorization": "User approval 2026-11-22 17:24; parent owns production assembly/deploy",
+  "productionWiring": {
+    "onlyNewNotificationRuntimeImportRequired": true,
+    "mustRemoveOldNotificationPlatformOrderVirtualBridge": true,
+    "newNotificationPrivateTransport": "getConfig + PlatformOrderNewInformationError + callPlatformOrderNewInformation + getPlatformOrderNewInformationFacts + same diagnostic module",
+    "keepOriginalPublicOrderHelperByteExact": true,
+    "keepOriginalNativeDbRealmAndFencePool": true,
+    "newBuiltinAllowlistEntry": "node:async_hooks",
+    "oldNativeFenceDetailedHooksDeployed": false,
+    "historical503RootCauseClosed": false
+  },
+  "safety": {
+    "noSSH": true,
+    "noProduction": true,
+    "noDeployment": true,
+    "noGitCommit": true,
+    "noClientChange": true,
+    "noSchemaChange": true,
+    "noBuildReleaseScriptChange": true,
+    "didNotEditParentTODOOrPlan": true,
+    "noTimeoutIncrease": true,
+    "originalExplicitlyDeniedUnchanged": true,
+    "oneALSModuleNativeCheck": true,
+    "noRootDbBundleNativeCheck": true,
+    "noSecondFencePoolNativeCheck": true
+  },
+  "offlineRuntimeNotReleaseCandidate": true
+}

@@ -1,0 +1,23 @@
+{
+  "status": "PASS_ACTUAL_CANDIDATE_OFFLINE_NATIVE",
+  "runtimeSHA256": "1239d4b93447da6dee2e949ea32293a199af59355728d26038cac36dc323f875",
+  "apiSHA256": "ea0940846697fb8ec96aab6d3cbb24b13cdf155515e85e810b3f17f1b0fb2515",
+  "cases": 6,
+  "passed": [
+    "actual_candidate_private_native_transport_and_single_trace_with_safe_503",
+    "upstream_FORBIDDEN_not_ignored_as_source_denial",
+    "actual_candidate_success_single_end_and_original_native_fence",
+    "actual_candidate_post_operation_cleanup_observed",
+    "actual_candidate_sink_failure_does_not_change_result",
+    "actual_candidate_all_issued_reads_settle_before_native_fence_release"
+  ],
+  "exactCandidateBytes": true,
+  "unchangedFactoryReturn": true,
+  "oneRuntimeTraceModule": true,
+  "fenceCalls": 6,
+  "syntheticFetchCalls": 6,
+  "realNetworkRequests": 0,
+  "realDatabaseConnections": 0,
+  "businessWrites": 0,
+  "limitations": "Synthetic identities, stores, native authorization and upstream fetch; no production API startup, account use or business SQL."
+}

@@ -558,3 +558,9 @@ preview新增业务逻辑不写询价/publication；但既有CRM准入门禁存�
 - [x] 公网HTML与新内容寻址资源完整SHA、持久VERIFIED/closed及独立双锁释放和SSH关闭通过后再报告上线完成，历史回执不改写，明确真人业务SQL/503验证边界。
 
 正式终态：2026-11-22T16:31:04.460792+08:00，纯后台静态VERIFIED，6资产及HTML全hash、12PID/配置环境保持，无API reload；独立closed/双锁释放和SSH关闭已确认。运行源码fffa844472e600b7bf191021080cc069a936e741，回执见deploy/procurement-demo-restore-20261122-1610/采购需求Demo恢复-正式上线回执.md。503及真人业务SQL验收边界仍开放；后续提交只归档，不改变运行代码。
+
+## 2026-11-22 17:24 客户未读筛选与通知503诊断修复（已批准上线）
+
+- [ ] 客户只看未读：修复真实被customerRouter.list/固定dispatch调用的front customerPicker输入与reader，不再剥掉customerIds；正安全整数最多2000，省略兼容、空数组零结果、去重，在原企业/团队/负责人/搜索/日期/星标权限交集内且count及分页前应用同一ID条件；保留原生star fence、销售picker及所有范围，不能删前端越界检查或清真实未读。
+- [ ] 通知503诊断：核心及全源聚合保留随机trace、固定来源/阶段、受控错误类别/上游状态/耗时；原生订单私有transport保留安全分类但不把服务鉴权拒绝当可忽略源；日志不含Cookie/JWT/服务密钥/回执/客户订单详情/原始message stack/SQL参数，sink失败不影响请求，issued reads全部settled后才释放fence，公开响应/授权/已读语义不变。
+- [ ] 精确上线：只生成必要内容寻址模块并切换真正API接线，让相关服务组加载；保留原采购Demo和前后台HTML/静态资产，无DB迁移、员工权限变更、真实业务写测；新鲜基线、公共锁后代码锁、CAS、备份、owned-inode回滚与持久closed；分别记录客户修复与诊断结果，不以诊断上线或未关联200冒称历史503根因关闭。

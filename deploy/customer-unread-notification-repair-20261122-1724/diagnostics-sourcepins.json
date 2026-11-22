@@ -1,0 +1,12 @@
+{
+  "managerHead": "d7111416a8699c81edb6f15617a595e54664378d",
+  "sourceHashes": {
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformation.ts": "364e0e811492e8fe97a34bfc2fb27371acb8484851302c1fb4344a881bce8798",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformationSources.ts": "5221d27d453de5f09d8a36fe7b311c06a83ff3473ab9a74e88aaf41783943bc8",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformationDiagnostics.ts": "1e4ce3ef329edcd357a4784fab34513f679cde58aee8dca450cab63a7ed61dec",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/platformOrderApi.ts": "db774b3ade18ab2f7efabb655ec1cb8fcef0b4014a4cde0a3dc9717dfddcf125",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/businessAuthorizationFence.ts": "1b58eb9ea39666d1442313769689ba6dd34568f38d8ac96dbf9acf15dfd5d2a5",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformationDiagnostics.test.ts": "eb45bd47597f15c70d4b2c192003ceb307538a77773930c8fa92b339a5f4c0c9",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/businessAuthorizationFence.diagnostics.test.ts": "9b49cbad310f0a507f05dfbdb70389f56b839a32d3247f11b8b79c88db1b1831"
+  }
+}

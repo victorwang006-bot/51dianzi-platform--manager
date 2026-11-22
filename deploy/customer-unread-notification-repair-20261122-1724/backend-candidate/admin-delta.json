@@ -1,0 +1,38 @@
+{
+  "patches": [
+    {
+      "start": 1181,
+      "end": 1289,
+      "before": "../runtime/newInformation.admin.df1b13f2d03cf6832c75f2219884fc37f6a28777edf9647b077564dd026307a1.runtime.mjs",
+      "after": "../runtime/newInformation.admin.1239d4b93447da6dee2e949ea32293a199af59355728d26038cac36dc323f875.runtime.mjs",
+      "reason": "ONLY actual __createNewInformationAdmin import URL",
+      "afterStart": 1181,
+      "afterEnd": 1289,
+      "beforeSha256": "4b2650250fba181b984272bfd6b37f9db364a328c02ae146261eb7f334b53b91",
+      "afterSha256": "a5535538280926b2a4b3ecb35d829bea21b3ad3bce49c33a7be889feef1d65fe",
+      "beforeByteStart": 1181,
+      "beforeByteEnd": 1289
+    }
+  ],
+  "beforeSha256": "de4e92fa7165ad52c6bbeb93b5b04629d2b548070055002b16337cc4b4930df8",
+  "afterSha256": "ea0940846697fb8ec96aab6d3cbb24b13cdf155515e85e810b3f17f1b0fb2515",
+  "outside": [
+    {
+      "beforeStart": 0,
+      "beforeEnd": 1181,
+      "afterStart": 0,
+      "afterEnd": 1181,
+      "sha256": "6cc2f0b2e4e1e63fe1222769219375bb30c5ac8d8d361804642904d60406e433"
+    },
+    {
+      "beforeStart": 1289,
+      "beforeEnd": 1622407,
+      "afterStart": 1289,
+      "afterEnd": 1622407,
+      "sha256": "14ab2ee886d40478cfba2b5a8ab7bf8ca724b7b78f930c1a9e4b63bc701e6645"
+    }
+  ],
+  "inverseVerified": true,
+  "outsideHunksVerified": true,
+  "astExact": true
+}

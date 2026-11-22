@@ -22,8 +22,17 @@ let activeLeaseCount = 0;
 const leaseWaiters: Array<() => void> = [];
 
 function fenceError(code: string) {
-  return new Error(code);
+  const error = new Error(code);
+  // Closed private diagnostic classification, not a business/tRPC .code.
+  const fenceClass = code.slice("BUSINESS_AUTHORIZATION_FENCE_".length);
+  if (["ADMIN_INVALID", "MERCHANT_INVALID", "LEASE_TIMEOUT", "BUSY", "DATABASE_UNAVAILABLE"].includes(fenceClass))
+    Object.defineProperty(error, "fenceClass", { value: fenceClass });
+  return error;
 }
+
+export type BusinessAuthorizationFenceDiagnostics = {
+  stage<T>(phase: "fenceLease" | "fenceConnect" | "fenceLock" | "operation" | "cleanupUnlock" | "cleanupEnd", operation: () => Promise<T>): Promise<T>;
+};
 
 function assertFenceKey(key: FenceKey) {
   if (!Number.isSafeInteger(key.adminUserId) || key.adminUserId <= 0) {
@@ -107,22 +116,25 @@ async function releaseNamedLock(connection: mysql.Connection, name: string) {
 export async function withBusinessAuthorizationFence<T>(
   key: FenceKey,
   operation: () => Promise<T>,
+  diagnostics?: BusinessAuthorizationFenceDiagnostics,
 ): Promise<T> {
+  const stage: BusinessAuthorizationFenceDiagnostics["stage"] = (phase, run) =>
+    diagnostics ? diagnostics.stage(phase, run) : run();
   assertFenceKey(key);
   const databaseUrl = process.env.DATABASE_URL?.trim();
   if (!databaseUrl) throw fenceError("BUSINESS_AUTHORIZATION_FENCE_DATABASE_UNAVAILABLE");
 
-  const releaseLease = await reserveFenceLease();
+  const releaseLease = await stage("fenceLease", reserveFenceLease);
   let connection: mysql.Connection | null = null;
   const acquired: string[] = [];
   let operationError: unknown = null;
   try {
-    connection = await mysql.createConnection(databaseUrl);
+    connection = await stage("fenceConnect", () => mysql.createConnection(databaseUrl));
     for (const name of businessAuthorizationFenceNames(key)) {
-      await acquireNamedLock(connection, name);
+      await stage("fenceLock", () => acquireNamedLock(connection!, name));
       acquired.push(name);
     }
-    return await operation();
+    return await stage("operation", operation);
   } catch (error) {
     operationError = error;
     throw error;
@@ -131,7 +143,7 @@ export async function withBusinessAuthorizationFence<T>(
     if (connection) {
       for (const name of acquired.reverse()) {
         try {
-          await releaseNamedLock(connection, name);
+          await stage("cleanupUnlock", () => releaseNamedLock(connection!, name));
         } catch (releaseError) {
           // Do not hide an authorization/command error. If the connection has
           // already failed, MySQL has released its advisory locks as well.
@@ -139,7 +151,7 @@ export async function withBusinessAuthorizationFence<T>(
         }
       }
       try {
-        await connection.end();
+        await stage("cleanupEnd", () => connection!.end());
       } catch (closeError) {
         if (!operationError && !cleanupError) cleanupError = closeError;
       }

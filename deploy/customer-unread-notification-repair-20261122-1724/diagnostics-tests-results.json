@@ -1,0 +1,29 @@
+{
+  "mode": "OFFLINE_MOCK_ONLY",
+  "managerVitest": {
+    "files": 4,
+    "passed": 107,
+    "failed": 0,
+    "log": "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/manager-diagnostics-tests.log",
+    "config": "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/manager-diagnostics-vitest.config.mjs"
+  },
+  "nativeABI": {
+    "passed": 5,
+    "failed": 0,
+    "result": "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/native-diagnostics-compatibility-results.json",
+    "script": "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/native-diagnostics-compatibility.mjs"
+  },
+  "totalPassed": 112,
+  "piiCanaryInLogs": false,
+  "gitDiffCheck": true,
+  "tsc": {
+    "exitCode": 2,
+    "newErrorsInChangedSource": 0,
+    "baselineExistingError": "TS2802 at original HEAD core line819 for MapIterator; target/downlevelIteration config",
+    "log": "/home/ubuntu/work/customer-unread-notification-repair-release-20261122-1724/manager-tsc.log"
+  },
+  "productionTests": false,
+  "realDatabaseConnections": 0,
+  "networkRequests": 0,
+  "businessWrites": 0
+}
