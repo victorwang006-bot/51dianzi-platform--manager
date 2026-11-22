@@ -1,0 +1,85 @@
+{
+  "scope": "procurement-demo-restore-release-20261122-1610",
+  "result": "VERIFIED",
+  "closed": true,
+  "finishedAtUtc": "2026-11-22T08:31:04.460792+00:00",
+  "sourceCommitManager": "fffa844472e600b7bf191021080cc069a936e741",
+  "assets": [
+    {
+      "side": "admin",
+      "url": "/assets/AdminNewInformation-notification-redesign-8a0443b2848920b4.js",
+      "sha256": "8a0443b2848920b4fa0b1e85666a91a6b69174468989ba8f4e71d78fadbe16b3",
+      "size": 306953
+    },
+    {
+      "side": "admin",
+      "url": "/assets/DashboardLayout-notification-redesign-18d7a0494bb6665e.js",
+      "sha256": "18d7a0494bb6665e39c0a6791efb1a5d9b50b9bdfe8ecee2a39cb61385e97292",
+      "size": 99389
+    },
+    {
+      "side": "admin",
+      "url": "/assets/procurement-notification-redesign-b0e1b46815716c96.css",
+      "sha256": "b0e1b46815716c96a08c5d83beaf1340b30d03063984eefef37a12c496f48da3",
+      "size": 17631
+    },
+    {
+      "side": "admin",
+      "url": "/assets/DemandRedesign-runtime-6918495fc8737583.js",
+      "sha256": "6918495fc87375833716f8da67cbe0af6bcf136140580118040812d25d2c2586",
+      "size": 52561
+    },
+    {
+      "side": "admin",
+      "url": "/assets/BusinessWorkbenchPage-procurement-compact-0-46d6dd6b4387ddef.js",
+      "sha256": "46d6dd6b4387ddefa80739ef492a3985df61e419e3a17201624ce0728da57a82",
+      "size": 5541961
+    },
+    {
+      "side": "admin",
+      "url": "/assets/BusinessWorkbenchPage-procurement-compact-1-b187a39a371a3f0e.js",
+      "sha256": "b187a39a371a3f0e4862fd1c870e4cd5b678f2fb74f485ad1e31bffa978ecfe3",
+      "size": 6439587
+    }
+  ],
+  "targets": [
+    {
+      "side": "front",
+      "kind": "html",
+      "beforeSHA": "6dc44ab1fd1ab3624e25090daf836edea9ac5e8116c413d829fc11a8608504d6",
+      "afterSHA": "6dc44ab1fd1ab3624e25090daf836edea9ac5e8116c413d829fc11a8608504d6",
+      "size": 708985
+    },
+    {
+      "side": "admin",
+      "kind": "html",
+      "beforeSHA": "7578df3b3e637b8647e99da6bf4a344bbbb26b40e8181debdc721324cbb070d4",
+      "afterSHA": "eb21e460a4b0335de2c1b2545decc37f0c0943d78946fe2c15be2a0a55c9d05b",
+      "size": 928468
+    },
+    {
+      "side": "front",
+      "kind": "api",
+      "beforeSHA": "a16d691a4279dbcd469e1aedfbb22f61b2e8c023f75384c23adcb1ef7515be14",
+      "afterSHA": "a16d691a4279dbcd469e1aedfbb22f61b2e8c023f75384c23adcb1ef7515be14",
+      "size": 6001658
+    },
+    {
+      "side": "admin",
+      "kind": "api",
+      "beforeSHA": "de4e92fa7165ad52c6bbeb93b5b04629d2b548070055002b16337cc4b4930df8",
+      "afterSHA": "de4e92fa7165ad52c6bbeb93b5b04629d2b548070055002b16337cc4b4930df8",
+      "size": 1635839
+    }
+  ],
+  "apiReloadGroups": [],
+  "businessTestWrites": 0,
+  "runtimeChanges": 0,
+  "allProcessCount": 12,
+  "originalPIDConfigEnvironmentPreserved": true,
+  "coordFinalSHA": "75b3c00efdaa27a8e88ecd63b28417ee3c5bf67ab7a1bcc0dd5ec4ea82fb9cb8",
+  "receiptSHA256": "52bf47a9b3f76dadee267bbb35e17d2e1a1cd1a164fcfc3dfbfda63521191a97",
+  "reviewManifestSHA256": "05331e19a3f1111d117fac6c9013c2e23dc0629622e00657081516a1e729a46f",
+  "verificationLimits": "Exact static HTML/assets and unchanged API pins, all 12 original process PIDs/config/environment preserved, anonymous input gates only; synthetic offline UI checks are not real-account procurement/SQL/unread validation; 503 remains open",
+  "inspect503Closed": false
+}

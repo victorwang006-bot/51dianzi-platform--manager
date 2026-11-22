@@ -1,0 +1,11 @@
+# 最终Demo恢复：定向检查记录
+
+本次范围仅采购展示与顶部通知呈现。采购3文件52项、通知1文件113项通过；最后仅CSS白底画布和型号左对齐收口后复验受影响UI样式18项，不重复计入165。两个实际原生工作台候选各执行一次工厂/原单例桥/原路由授权与精确入口/报价绑定/最新主表fresh确认/撤权遮旧数据的有限离线交互通过；最后CSS收口没有改变三个JS资产完整SHA，因此沿用同一JS交互证据，不重复全站验证。
+
+真实manager默认check-only仅未改server/services/adminNewInformation.ts:819的MapIterator ES5 TS2802，修改前后日志逐字相同，没有新增错误。以既有ES2020参数运行完整真实manager check-only零错误；不把绑定Demo项目诊断当真实仓库检查，不修复无关旧配置。
+
+实际当前52个head CSS链接仅原组合CSS原位替换，叠加两原生lazy Dashboard/WB样式，真实采购源DOM（模拟数据）及九个导航通知状态进行1280/1600/1024/390限定几何检查。查看44px、报价76px、间距6px、高28px固定；桌面型号256/260px，Microchip单行、不越列；九列状态操作相邻无重叠，窄屏允许横滚且取消sticky。所有真实查询模拟，阻断全部网络；几何和交互均不是已登录生产账号或真实SQL验收。
+
+采购除Table展示和面板class之外26106字节原样，详情8784字节、原报价handler452字节和匹配物料/submittedAt投影427字节原样；通知lib、采购读状态机、原DashboardProvider、工作台路由和报价/精确入口组件保护SHA一致。未知不补零、失败不冒成功、权限失效仍不显示受限旧数字；不mark、不本地减数、不清真实未读。503唯一根因仍开放。
+
+发布候选只增量六个后台内容寻址资产及后台HTML；两原生WB各仅既有工厂import一个字符串slot，全部5586/6124个函数字节保留；Dashboard只换既有通知runtime import，不重复注入Status。最终HTML仅importmap及原ownedCSS href，API列表为空。生产上线须另以持久VERIFIED/closed、完整公网SHA及独立双锁释放结果为准。
