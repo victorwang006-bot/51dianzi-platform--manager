@@ -1,0 +1,93 @@
+/* Header presentation only. Existing page/table/dropdown business styles stay intact. */
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-shell__header > .admin-workspace-nav__tabs--workspaces[data-admin-navigation="unified-dropdown"] {
+  --admin-nav-cell-width: 124px;
+  --admin-nav-utility-width: 140px;
+  --admin-nav-gap: 8px;
+  --admin-nav-group-gap: 16px;
+  --admin-nav-more-width: 68px;
+  display: flex;
+  flex: 1 1 0%;
+  align-self: stretch;
+  min-width: 0;
+  min-height: 0;
+  gap: var(--admin-nav-group-gap);
+  padding: 0;
+  overflow: visible;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__business,
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__utilities {
+  display: flex;
+  align-items: stretch;
+  gap: var(--admin-nav-gap);
+  min-width: 0;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__business {
+  flex: 1 1 0%;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__utilities {
+  flex: 0 0 auto;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__primary-cell {
+  display: flex;
+  flex: 0 0 var(--admin-nav-cell-width);
+  width: var(--admin-nav-cell-width);
+  align-items: stretch;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__utilities > .admin-workspace-nav__primary-cell {
+  flex-basis: var(--admin-nav-utility-width);
+  width: var(--admin-nav-utility-width);
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] [data-admin-navigation="unified-dropdown"] :is(.admin-workspace-nav__primary-cell, .admin-workspace-nav__overflow-cell) > .admin-workspace-nav__workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px 8px;
+  align-items: center;
+  column-gap: 4px;
+  width: 100%;
+  min-height: 0;
+  padding: 0 8px;
+  font-size: 14px;
+  line-height: 20px;
+  white-space: nowrap;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__primary-label {
+  text-align: left;
+  white-space: nowrap;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__badge-slot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 32px;
+  min-height: 18px;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__arrow-slot {
+  width: 8px;
+  text-align: center;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__more {
+  flex: 0 0 var(--admin-nav-more-width);
+  width: var(--admin-nav-more-width);
+  gap: 6px;
+  padding: 0 8px;
+  font-size: 14px;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__account {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-left: 8px;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__account:first-child {
+  margin-left: 0;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__account > .admin-workspace-shell__account {
+  margin-left: 0;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__overflow-cell {
+  display: flex;
+  min-width: 168px;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] [data-admin-navigation="unified-dropdown"] .admin-workspace-nav__overflow-cell > .admin-workspace-nav__workspace {
+  min-height: 40px;
+  padding: 0 12px;
+}

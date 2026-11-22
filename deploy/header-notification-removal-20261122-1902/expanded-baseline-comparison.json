@@ -1,0 +1,33 @@
+{
+  "baseline": {
+    "numTotalTests": 167,
+    "numPassedTests": 150,
+    "numFailedTests": 17
+  },
+  "final": {
+    "numTotalTests": 167,
+    "numPassedTests": 150,
+    "numFailedTests": 17
+  },
+  "sameHistoricalFailures": true,
+  "newFailures": [],
+  "historicalFailures": [
+    "20261113 一级管理下拉与运营三级提醒 Escape同步关闭所有层，取消迟到计时器",
+    "20261113 一级管理下拉与运营三级提醒 URL变化立即关闭原层，迟到任务不能重新打开",
+    "20261113 一级管理下拉与运营三级提醒 items变化立即关闭原层，迟到任务不能重新打开",
+    "20261113 一级管理下拉与运营三级提醒 leaf同步关闭所有层，取消迟到计时器",
+    "20261113 一级管理下拉与运营三级提醒 outside同步关闭所有层，取消迟到计时器",
+    "20261113 一级管理下拉与运营三级提醒 procurement-management中/workbench/procurement-demands保留原授权对象，父回调前同步隐藏且仅调用一次",
+    "20261113 一级管理下拉与运营三级提醒 procurement-management中/workbench/procurement-orders保留原授权对象，父回调前同步隐藏且仅调用一次",
+    "20261113 一级管理下拉与运营三级提醒 procurement-management直接显示原子项，无业务工作台或额外三级",
+    "20261113 一级管理下拉与运营三级提醒 在管理和运营之间切换只保留一个菜单，并清除旧三级",
+    "20261113 一级管理下拉与运营三级提醒 外部焦点和resize关闭，菜单自身滚动保留",
+    "20261113 一级管理下拉与运营三级提醒 未知URL无active，打开菜单不替代真实路由",
+    "20261113 一级管理下拉与运营三级提醒 窄屏procurement-management无需三级，所有叶子可达且滚动不关抽屉",
+    "20261113 一级管理下拉与运营三级提醒 管理一级键盘直达二级，上下循环、Home/End、Esc回父，Tab无陷阱",
+    "20261113 已批准八项一级入口 URL或父权限新快照立即关闭旧菜单，旧快照返回不迟到重开",
+    "内容自适应下拉：真实DOM宽度定位与CSS契约 procurement-management uses actual width, no fixed inline width and no right overflow",
+    "原业务子项移至一级管理菜单的回归 procurement-management → /workbench/procurement-demands保留业务上下文、badge与原对象",
+    "原业务子项移至一级管理菜单的回归 已移除DOM的内部点击原composedPath仍保留菜单"
+  ]
+}

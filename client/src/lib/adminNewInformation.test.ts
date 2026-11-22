@@ -36,7 +36,6 @@ import {
   formatAdminNewInformationCount,
 } from "../components/admin/AdminNewInformationBadge";
 import { AdminNewInformationMenuBadge } from "../components/admin/AdminNewInformationMenuBadge";
-import { AdminNewInformationStatus } from "../components/admin/AdminNewInformationStatus";
 
 function summary(count = 3, available = true): AdminNewInformationSummary {
   return {
@@ -1259,7 +1258,7 @@ describe("navigation shows only trusted positive counts, not per-module status s
 let latestSummary: ReturnType<typeof useAdminNewInformationSummary>;
 function NotificationProbe() {
   latestSummary = useAdminNewInformationContext().summary;
-  return h(AdminNewInformationStatus);
+  return null;
 }
 function StatusMenuView({ account = "admin:1", moduleRead = true }: { account?: string; moduleRead?: boolean }) {
   return h(AdminNewInformationProvider, { client: api, accountKey: account, canRead: true,
@@ -1267,7 +1266,14 @@ function StatusMenuView({ account = "admin:1", moduleRead = true }: { account?: 
       h(NotificationProbe), h("div", { "data-module": "customers" }, h(AdminNewInformationMenuBadge, { module: "customers" }))) });
 }
 const customerBadge = () => host.querySelector<HTMLElement>('[data-module="customers"] [data-admin-new-information]');
-const globalStatus = () => host.querySelector<HTMLElement>('[data-admin-new-information-global]')!;
+function expectNoNotificationStatusUI() {
+  expect(host.querySelector('[data-admin-new-information-global]')).toBeNull();
+  expect(host.querySelector('[data-information-module], .admin-new-information-status__icon')).toBeNull();
+  expect(host.querySelector('details, summary, button[aria-label="只读重试新信息核验"]')).toBeNull();
+  expect(host.textContent).not.toContain("通知状态");
+  expect(host.textContent).not.toContain("!更新失败");
+  expect(host.textContent).not.toContain("⊘核验受限");
+}
 describe("ordinary fetch presentation never changes business acknowledgement semantics", () => {
   it.each([0, 3, 100])("known %s stays stable and explicitly old during the unchanged 15s poll", async count => {
     vi.mocked(api.summary).mockResolvedValue(summary(count));
@@ -1275,7 +1281,7 @@ describe("ordinary fetch presentation never changes business acknowledgement sem
     const time = latestSummary.moduleLastSuccessfulAt("customers");
     const classes = customerBadge()?.className;
     const slot = host.querySelector('[data-admin-new-information-slot="customers"]');
-    const summaryText = globalStatus().querySelector("summary")!.textContent;
+    expectNoNotificationStatusUI();
     expect(time).toBeTypeOf("number");
     const next = deferred<AdminNewInformationSummary>();
     vi.mocked(api.summary).mockReturnValue(next.promise);
@@ -1284,11 +1290,7 @@ describe("ordinary fetch presentation never changes business acknowledgement sem
     expect(latestSummary.presentationState("customers")).toBe("refreshing");
     expect(latestSummary.count("customers")).toBe(count);
     expect(latestSummary.moduleLastSuccessfulAt("customers")).toBe(time);
-    expect(globalStatus().dataset.adminNewInformationGlobal).toBe("refreshing");
-    expect(globalStatus().querySelector("summary")!.textContent).toBe("通知状态");
-    expect(globalStatus().querySelector("summary")!.textContent).toBe(summaryText);
-    expect(globalStatus().querySelector('[data-busy], .admin-new-information-status__icon')).toBeNull();
-    expect(globalStatus().hasAttribute("open")).toBe(false);
+    expectNoNotificationStatusUI();
     expect(host.querySelector('[data-admin-new-information-slot="customers"]')).toBe(slot);
     if (count === 0) expect(customerBadge()).toBeNull();
     else {
@@ -1303,6 +1305,7 @@ describe("ordinary fetch presentation never changes business acknowledgement sem
     expect(latestSummary.syncState("customers")).toBe("synced");
     expect(latestSummary.presentationState("customers")).toBe("synced");
     expect(latestSummary.moduleLastSuccessfulAt("customers")!).toBeGreaterThan(time!);
+    expectNoNotificationStatusUI();
     expect(api.markDisplayed).not.toHaveBeenCalled();
   });
   it("successful focus refresh is ordinary too, but explicit invalidate is truly pending even with a known positive", async () => {
@@ -1311,6 +1314,7 @@ describe("ordinary fetch presentation never changes business acknowledgement sem
     vi.mocked(api.summary).mockReturnValue(next.promise);
     await act(async () => { focusManager.setFocused(false); focusManager.setFocused(true); }); await tick();
     expect(latestSummary.presentationState("customers")).toBe("refreshing");
+    expectNoNotificationStatusUI();
     await act(async () => next.resolve(summary(3))); await tick();
     const invalidated = deferred<AdminNewInformationSummary>();
     vi.mocked(api.summary).mockReturnValue(invalidated.promise);
@@ -1318,13 +1322,13 @@ describe("ordinary fetch presentation never changes business acknowledgement sem
     expect(latestSummary.syncState("customers")).toBe("pending");
     expect(latestSummary.presentationState("customers")).toBe("pending");
     expect(customerBadge()!.textContent).toBe("3");
-    expect(globalStatus().querySelector("summary")!.textContent).toBe("通知状态");
+    expectNoNotificationStatusUI();
     expect(customerBadge()!.title).toContain("上次成功核验值");
     await act(async () => invalidated.resolve(summary(2))); await tick();
     expect(latestSummary.count("customers")).toBe(2);
     expect(latestSummary.presentationState("customers")).toBe("synced");
   });
-  it("initial unknown has an empty slot and global explanation, never refreshing or fake zero", async () => {
+  it("initial unknown has an empty slot without a notification status panel, never refreshing or fake zero", async () => {
     const first = deferred<AdminNewInformationSummary>(); vi.mocked(api.summary).mockReturnValue(first.promise);
     await render(h(StatusMenuView));
     expect(latestSummary.presentationState("customers")).toBe("pending");
@@ -1332,73 +1336,96 @@ describe("ordinary fetch presentation never changes business acknowledgement sem
     expect(latestSummary.moduleLastSuccessfulAt("customers")).toBeUndefined();
     expect(customerBadge()).toBeNull();
     expect(host.querySelector('[data-admin-new-information-slot="customers"]')!.childNodes).toHaveLength(0);
-    expect(globalStatus().querySelector("summary")!.textContent).toBe("通知状态");
-    expect(globalStatus().querySelector("summary")!.title).toContain("未知数量不是零");
+    expectNoNotificationStatusUI();
+    expect(host.textContent).toBe("");
     await act(async () => first.resolve(summary(0))); await tick();
+    expect(latestSummary.count("customers")).toBe(0);
+    expect(latestSummary.syncState("customers")).toBe("synced");
     expect(customerBadge()).toBeNull();
+    expectNoNotificationStatusUI();
   });
-  it.each([0, 3])("whole request failure preserves known %s silently with one clear reachable retry", async count => {
+  it.each([0, 3])("whole request 503 preserves known %s silently and recovers on the next 15s automatic refresh without marking read", async count => {
     vi.mocked(api.summary).mockResolvedValue(summary(count)); await render(h(StatusMenuView));
-    vi.mocked(api.summary).mockRejectedValue(new Error("offline synthetic")); await tick(15000);
+    const time = latestSummary.moduleLastSuccessfulAt("customers");
+    const initialCalls = vi.mocked(api.summary).mock.calls.length;
+    vi.mocked(api.summary).mockRejectedValue({ data: { httpStatus: 503 } }); await tick(15000);
+    expect(api.summary).toHaveBeenCalledTimes(initialCalls + 1);
+    expect(latestSummary.syncState("customers")).toBe("failed");
     expect(latestSummary.presentationState("customers")).toBe("failed");
+    expect(latestSummary.count("customers")).toBe(count);
+    expect(latestSummary.isModuleLastKnown("customers")).toBe(true);
+    expect(latestSummary.moduleLastSuccessfulAt("customers")).toBe(time);
     if (count) {
       expect(customerBadge()!.textContent).toBe("3");
       expect(customerBadge()!.dataset.knownCount).toBe(String(count));
       expect(customerBadge()!.title).toContain("上次成功核验值");
     } else expect(customerBadge()).toBeNull();
-    expect(globalStatus().querySelector("summary")!.textContent).toBe("!更新失败");
-    expect(globalStatus().hasAttribute("open")).toBe(false);
-    expect(globalStatus().querySelector('[data-information-module="customers"]')!.textContent).toContain(`${count} 条（上次成功值）`);
-    expect(host.querySelectorAll('button[aria-label="只读重试新信息核验"]')).toHaveLength(1);
-    const retry = deferred<AdminNewInformationSummary>(); vi.mocked(api.summary).mockReturnValue(retry.promise);
-    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="只读重试新信息核验"]')!.click()); await tick();
-    expect(latestSummary.presentationState("customers")).not.toBe("refreshing");
-    expect(globalStatus().dataset.adminNewInformationGlobal).toBe("failed");
-    expect(host.querySelector<HTMLButtonElement>('button[aria-label="只读重试新信息核验"]')!.disabled).toBe(true);
-    await act(async () => retry.resolve(summary(0))); await tick();
-    expect(latestSummary.presentationState("customers")).toBe("synced"); expect(customerBadge()).toBeNull();
+    expectNoNotificationStatusUI();
+    const recovery = deferred<AdminNewInformationSummary>(); vi.mocked(api.summary).mockReturnValue(recovery.promise);
+    await tick(15000);
+    expect(api.summary).toHaveBeenCalledTimes(initialCalls + 2);
+    expect(latestSummary.syncState("customers")).toBe("pending");
+    expect(latestSummary.presentationState("customers")).toBe("pending");
+    expect(latestSummary.count("customers")).toBe(count);
+    expect(latestSummary.moduleLastSuccessfulAt("customers")).toBe(time);
+    expectNoNotificationStatusUI();
+    await act(async () => recovery.resolve(summary(0))); await tick();
+    expect(latestSummary.count("customers")).toBe(0);
+    expect(latestSummary.isModuleLastKnown("customers")).toBe(false);
+    expect(latestSummary.syncState("customers")).toBe("synced");
+    expect(latestSummary.presentationState("customers")).toBe("synced");
+    expect(latestSummary.moduleLastSuccessfulAt("customers")!).toBeGreaterThan(time!);
+    expect(customerBadge()).toBeNull();
+    expectNoNotificationStatusUI();
     expect(api.inspect).not.toHaveBeenCalled(); expect(api.markDisplayed).not.toHaveBeenCalled();
   });
-  it("first failure is discoverable without a known count, not a hidden empty summary", async () => {
+  it("first failure remains unknown with no status entry or retry panel, not a fabricated zero", async () => {
     vi.mocked(api.summary).mockRejectedValue(new Error("first synthetic failure")); await render(h(StatusMenuView));
+    expect(latestSummary.syncState("customers")).toBe("failed");
+    expect(latestSummary.presentationState("customers")).toBe("failed");
     expect(latestSummary.count("customers")).toBeUndefined();
+    expect(latestSummary.isModuleLastKnown("customers")).toBe(false);
+    expect(latestSummary.moduleLastSuccessfulAt("customers")).toBeUndefined();
     expect(customerBadge()).toBeNull();
-    expect(globalStatus().dataset.adminNewInformationGlobal).toBe("failed");
-    expect(globalStatus().textContent).toContain("数量未知");
-    expect(globalStatus().querySelector("summary")!.textContent).toBe("!更新失败");
-    expect(globalStatus().hasAttribute("open")).toBe(false);
+    expectNoNotificationStatusUI();
+    expect(host.textContent).toBe("");
+    expect(api.inspect).not.toHaveBeenCalled(); expect(api.markDisplayed).not.toHaveBeenCalled();
   });
-  it("first unknown failure remains a stable exception throughout controlled read-only retry, including another 503", async () => {
+  it("first unknown remains unknown through 15s automatic refresh and continued 503s, without zero or read acknowledgement", async () => {
     vi.mocked(api.summary).mockRejectedValue({ data: { httpStatus: 503 } });
     await render(h(StatusMenuView));
-    const details = globalStatus() as HTMLDetailsElement;
-    expect(details.open).toBe(false);
-    expect(details.querySelector("summary")!.textContent).toBe("!更新失败");
-    expect(customerBadge()).toBeNull();
-    const retry = deferred<AdminNewInformationSummary>();
-    vi.mocked(api.summary).mockReturnValue(retry.promise);
-    const calls = vi.mocked(api.summary).mock.calls.length;
-    await act(async () => {
-      details.open = true;
-      details.querySelector<HTMLButtonElement>('button[aria-label="只读重试新信息核验"]')!.click();
-    });
-    await tick();
-    const button = details.querySelector<HTMLButtonElement>('button[aria-label="只读重试新信息核验"]')!;
-    expect(api.summary).toHaveBeenCalledTimes(calls + 1);
-    expect(button.disabled).toBe(true);
-    expect(details.open).toBe(true);
-    expect(details.querySelector("summary")!.textContent).toBe("!更新失败");
-    expect(details.querySelector('[data-busy]')).toBeNull();
-    await act(async () => { button.click(); button.click(); }); await tick();
-    expect(api.summary).toHaveBeenCalledTimes(calls + 1);
-    expect(latestSummary.syncState("customers")).toBe("pending");
-    expect(details.querySelector('[data-information-module="customers"]')!.textContent).toContain("数量未知 · 暂不可用 / 更新失败");
+    expect(latestSummary.syncState("customers")).toBe("failed");
     expect(latestSummary.count("customers")).toBeUndefined();
     expect(customerBadge()).toBeNull();
-    await act(async () => retry.reject({ data: { httpStatus: 503 } })); await tick();
-    expect(details.querySelector("summary")!.textContent).toBe("!更新失败");
-    expect(button.disabled).toBe(false);
-    expect(details.querySelector('[data-information-module="customers"]')!.textContent).toContain("数量未知 · 暂不可用 / 更新失败");
+    expectNoNotificationStatusUI();
+    const next = deferred<AdminNewInformationSummary>();
+    vi.mocked(api.summary).mockReturnValueOnce(next.promise);
+    const calls = vi.mocked(api.summary).mock.calls.length;
+    await tick(15000);
+    expect(api.summary).toHaveBeenCalledTimes(calls + 1);
+    await tick(1000);
+    expect(api.summary).toHaveBeenCalledTimes(calls + 1);
+    expect(latestSummary.syncState("customers")).toBe("pending");
+    expect(latestSummary.presentationState("customers")).toBe("pending");
+    expect(latestSummary.count("customers")).toBeUndefined();
+    expect(latestSummary.isModuleLastKnown("customers")).toBe(false);
+    expect(latestSummary.moduleLastSuccessfulAt("customers")).toBeUndefined();
+    expect(customerBadge()).toBeNull();
+    expectNoNotificationStatusUI();
+    await act(async () => next.reject({ data: { httpStatus: 503 } })); await tick();
+    expect(latestSummary.syncState("customers")).toBe("failed");
+    expect(latestSummary.presentationState("customers")).toBe("failed");
+    for (const extraPoll of [1, 2]) {
+      await tick(15000);
+      expect(api.summary).toHaveBeenCalledTimes(calls + 1 + extraPoll);
+      expect(latestSummary.syncState("customers")).toBe("failed");
+      expect(latestSummary.count("customers")).toBeUndefined();
+      expect(latestSummary.isModuleLastKnown("customers")).toBe(false);
+      expect(latestSummary.moduleLastSuccessfulAt("customers")).toBeUndefined();
+      expect(customerBadge()).toBeNull();
+      expect(host.textContent).toBe("");
+      expectNoNotificationStatusUI();
+    }
     expect(api.inspect).not.toHaveBeenCalled();
     expect(api.markDisplayed).not.toHaveBeenCalled();
   });
@@ -1408,46 +1435,75 @@ describe("ordinary fetch presentation never changes business acknowledgement sem
     vi.mocked(api.summary).mockResolvedValue(value);
     await render(h(StatusMenuView));
     expect(customerBadge()).toBeNull();
-    expect(globalStatus().querySelector('[data-information-module="customers"]')!.textContent).toContain("数量未知 · 暂不可用 / 更新失败");
-    expect(globalStatus().querySelector('[data-information-module="inventory"]')!.textContent).toContain("2 条 · 已核验");
+    expect(latestSummary.syncState("customers")).toBe("failed");
+    expect(latestSummary.count("customers")).toBeUndefined();
+    expect(latestSummary.isModuleLastKnown("customers")).toBe(false);
+    expect(latestSummary.syncState("inventory")).toBe("synced");
+    expect(latestSummary.count("inventory")).toBe(2);
+    const inventoryTime = latestSummary.moduleLastSuccessfulAt("inventory");
+    expect(inventoryTime).toBeTypeOf("number");
+    expectNoNotificationStatusUI();
     const next = deferred<AdminNewInformationSummary>();
     vi.mocked(api.summary).mockReturnValue(next.promise);
     await tick(15000);
     expect(latestSummary.syncState("customers")).toBe("pending");
-    expect(globalStatus().querySelector("summary")!.textContent).toBe("!更新失败");
-    expect(globalStatus().querySelector('[data-information-module="customers"]')!.textContent).toContain("数量未知 · 暂不可用 / 更新失败");
+    expect(latestSummary.presentationState("customers")).toBe("pending");
+    expect(latestSummary.count("customers")).toBeUndefined();
+    expect(latestSummary.presentationState("inventory")).toBe("refreshing");
+    expect(latestSummary.count("inventory")).toBe(2);
+    expect(latestSummary.moduleLastSuccessfulAt("inventory")).toBe(inventoryTime);
+    expectNoNotificationStatusUI();
     await act(async () => next.resolve(summary(4))); await tick();
-    expect(globalStatus().querySelector("summary")!.textContent).toBe("通知状态");
+    expect(latestSummary.syncState("customers")).toBe("synced");
     expect(customerBadge()!.textContent).toBe("4");
+    expectNoNotificationStatusUI();
     expect(api.markDisplayed).not.toHaveBeenCalled();
   });
-  it("exception presentation memory never follows a switch to an unknown new account", async () => {
+  it("failed summary state never follows a switch to an unknown new account, with the removed panel absent", async () => {
     vi.mocked(api.summary).mockRejectedValue(new Error("old account error"));
     await render(h(StatusMenuView));
-    expect(globalStatus().querySelector("summary")!.textContent).toBe("!更新失败");
+    expect(latestSummary.presentationState("customers")).toBe("failed");
+    expectNoNotificationStatusUI();
     const current = deferred<AdminNewInformationSummary>();
     vi.mocked(api.summary).mockReturnValue(current.promise);
     await render(h(StatusMenuView, { account: "admin:2" }));
-    expect(globalStatus().querySelector("summary")!.textContent).toBe("通知状态");
+    expect(latestSummary.presentationState("customers")).toBe("pending");
+    expect(latestSummary.count("customers")).toBeUndefined();
+    expect(latestSummary.moduleLastSuccessfulAt("customers")).toBeUndefined();
+    expectNoNotificationStatusUI();
     expect(customerBadge()).toBeNull();
     await act(async () => current.resolve(summary(0))); await tick();
-    expect(globalStatus().querySelector("summary")!.textContent).toBe("通知状态");
+    expect(latestSummary.presentationState("customers")).toBe("synced");
+    expect(latestSummary.count("customers")).toBe(0);
+    expect(customerBadge()).toBeNull();
+    expectNoNotificationStatusUI();
   });
-  it("temporary and denied stay module-specific; denied old proof/time cannot return during retry", async () => {
+  it("temporary and denied stay module-specific; denied old proof/time cannot return during automatic refresh", async () => {
     await render(h(StatusMenuView));
+    const time = latestSummary.moduleLastSuccessfulAt("customers");
     const mixed = summary(0); mixed.modules.customers = { count: 0, available: false, reason: "temporary", lastKnown: false };
     await refetchSummary(mixed);
     expect(latestSummary.count("customers")).toBe(3); expect(customerBadge()!.textContent).toBe("3");
-    expect(globalStatus().querySelector('[data-information-module="customers"]')!.textContent).toContain("客户列表：3 条（上次成功值） · 暂不可用 / 更新失败");
+    expect(latestSummary.syncState("customers")).toBe("failed");
+    expect(latestSummary.isModuleLastKnown("customers")).toBe(true);
+    expect(latestSummary.moduleLastSuccessfulAt("customers")).toBe(time);
+    expect(latestSummary.syncState("inventory")).toBe("synced");
+    expectNoNotificationStatusUI();
     mixed.modules.customers = { count: 99, available: false, reason: "denied", lastKnown: true };
     await refetchSummary({ ...mixed, modules: { ...mixed.modules } });
     expect(latestSummary.count("customers")).toBeUndefined(); expect(latestSummary.moduleLastSuccessfulAt("customers")).toBeUndefined();
-    expect(customerBadge()).toBeNull(); expect(globalStatus().dataset.adminNewInformationGlobal).toBe("blocked");
-    expect(globalStatus().querySelector('[data-information-module="customers"]')!.textContent).toBe("客户列表：数量未知 · 权限或身份受限");
+    expect(customerBadge()).toBeNull(); expect(latestSummary.syncState("customers")).toBe("blocked");
+    expect(latestSummary.isModuleLastKnown("customers")).toBe(false);
+    expect(latestSummary.syncState("inventory")).toBe("synced");
+    expectNoNotificationStatusUI();
     const next = deferred<AdminNewInformationSummary>(); vi.mocked(api.summary).mockReturnValue(next.promise); await tick(15000);
     expect(latestSummary.presentationState("customers")).toBe("blocked"); expect(customerBadge()).toBeNull();
-    expect(globalStatus().querySelector("summary")!.textContent).toBe("⊘核验受限");
+    expect(latestSummary.count("customers")).toBeUndefined(); expect(latestSummary.moduleLastSuccessfulAt("customers")).toBeUndefined();
+    expectNoNotificationStatusUI();
     await act(async () => next.resolve(summary(4))); await tick(); expect(latestSummary.count("customers")).toBe(4);
+    expect(latestSummary.syncState("customers")).toBe("synced");
+    expect(latestSummary.moduleLastSuccessfulAt("customers")).toBeTypeOf("number");
+    expect(api.markDisplayed).not.toHaveBeenCalled();
   });
   it("account switch during ordinary fetch drops old count/time and rejects the late result", async () => {
     await render(h(StatusMenuView));
@@ -1469,16 +1525,19 @@ describe("ordinary fetch presentation never changes business acknowledgement sem
     await render(h(StatusMenuView)); expect(latestSummary.count("customers")).toBeUndefined();
     await refetchSummary(summary(4)); expect(latestSummary.count("customers")).toBe(4);
   });
-  it("authorization loss concentrates restriction and exposes no useless retry or former proof", async () => {
+  it("authorization loss disables automatic refresh and clears former proof/time without a status or retry panel", async () => {
     await render(h(StatusMenuView)); vi.mocked(api.summary).mockRejectedValue({ data: { httpStatus: 403 } }); await tick(15000);
     expect(latestSummary.status).toBe("disabled"); expect(latestSummary.count("customers")).toBeUndefined();
-    expect(customerBadge()).toBeNull(); expect(globalStatus().dataset.adminNewInformationGlobal).toBe("blocked");
-    expect(globalStatus().querySelector("summary")!.textContent).toBe("⊘核验受限");
-    expect(globalStatus().querySelector('[data-information-module="customers"]')!.textContent).toBe("客户列表：数量未知 · 权限或身份受限");
-    expect(globalStatus().textContent).not.toContain("3 条");
-    expect(globalStatus().textContent).not.toContain("上次成功更新时间：");
+    expect(latestSummary.syncState("customers")).toBe("disabled");
+    expect(latestSummary.moduleLastSuccessfulAt("customers")).toBeUndefined();
+    expect(latestSummary.isModuleLastKnown("customers")).toBe(false);
+    expect(customerBadge()).toBeNull(); expectNoNotificationStatusUI();
     expect(queryClient.getQueryData(adminNewInformationKeys.summary("admin:1"))).toBeUndefined();
-    expect(host.querySelector('button[aria-label="只读重试新信息核验"]')).toBeNull();
+    const calls = vi.mocked(api.summary).mock.calls.length;
+    await tick(45000);
+    expect(api.summary).toHaveBeenCalledTimes(calls);
+    expectNoNotificationStatusUI();
+    expect(api.inspect).not.toHaveBeenCalled(); expect(api.markDisplayed).not.toHaveBeenCalled();
   });
   it("same-page cross-QC fresh acknowledgement cancels ordinary reads and requires EACH new epoch receipt", async () => {
     const secondClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });

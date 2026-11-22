@@ -1,0 +1,3937 @@
+{
+  "scope": "OFFLINE_REAL_NAV_COMPONENT_SYNTHETIC_MENU_WITH_CAPTURED_NATIVE_CSS",
+  "productionConnected": false,
+  "networkRequests": [],
+  "rows": [
+    {
+      "viewport": 1920,
+      "states": [
+        {
+          "count": 82,
+          "positions": [
+            [
+              "customers",
+              210.03125,
+              124
+            ],
+            [
+              "inventory",
+              342.03125,
+              124
+            ],
+            [
+              "mall-materials",
+              474.03125,
+              124
+            ],
+            [
+              "inquiries",
+              606.03125,
+              124
+            ],
+            [
+              "procurement-management",
+              738.03125,
+              124
+            ],
+            [
+              "inventory-management",
+              870.03125,
+              124
+            ],
+            [
+              "sales-orders",
+              1002.03125,
+              124
+            ],
+            [
+              "personal",
+              1369.984375,
+              140
+            ],
+            [
+              "operations",
+              1517.984375,
+              140
+            ],
+            [
+              "organization",
+              1665.984375,
+              140
+            ]
+          ],
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 1920,
+              "top": 0,
+              "bottom": 52,
+              "width": 1920,
+              "height": 52
+            },
+            "nav": {
+              "left": 210.03125,
+              "right": 1902,
+              "top": 0,
+              "bottom": 51,
+              "width": 1691.96875,
+              "height": 51
+            },
+            "cells": [
+              {
+                "id": "customers",
+                "rect": {
+                  "left": 210.03125,
+                  "right": 334.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 218.03125,
+                  "right": 278.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 282.03125,
+                  "right": 314.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 282.03125,
+                  "right": 299.484375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "inventory",
+                "rect": {
+                  "left": 342.03125,
+                  "right": 466.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 350.03125,
+                  "right": 410.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 414.03125,
+                  "right": 446.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 414.03125,
+                  "right": 431.484375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "mall-materials",
+                "rect": {
+                  "left": 474.03125,
+                  "right": 598.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 482.03125,
+                  "right": 542.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 546.03125,
+                  "right": 578.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 546.03125,
+                  "right": 563.484375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "inquiries",
+                "rect": {
+                  "left": 606.03125,
+                  "right": 730.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 614.03125,
+                  "right": 674.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 678.03125,
+                  "right": 710.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 678.03125,
+                  "right": 695.484375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "procurement-management",
+                "rect": {
+                  "left": 738.03125,
+                  "right": 862.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 746.03125,
+                  "right": 806.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 810.03125,
+                  "right": 842.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 810.03125,
+                  "right": 827.484375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "inventory-management",
+                "rect": {
+                  "left": 870.03125,
+                  "right": 994.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 878.03125,
+                  "right": 938.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 942.03125,
+                  "right": 974.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 942.03125,
+                  "right": 959.484375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "sales-orders",
+                "rect": {
+                  "left": 1002.03125,
+                  "right": 1126.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1010.03125,
+                  "right": 1070.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1074.03125,
+                  "right": 1106.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 1074.03125,
+                  "right": 1091.484375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "personal",
+                "rect": {
+                  "left": 1369.984375,
+                  "right": 1509.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1377.984375,
+                  "right": 1453.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1457.984375,
+                  "right": 1489.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 1457.984375,
+                  "right": 1475.4375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "operations",
+                "rect": {
+                  "left": 1517.984375,
+                  "right": 1657.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1525.984375,
+                  "right": 1601.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1605.984375,
+                  "right": 1637.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 1605.984375,
+                  "right": 1623.4375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "organization",
+                "rect": {
+                  "left": 1665.984375,
+                  "right": 1805.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1673.984375,
+                  "right": 1749.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1753.984375,
+                  "right": 1785.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              }
+            ],
+            "account": {
+              "left": 1821.984375,
+              "right": 1902,
+              "top": 0,
+              "bottom": 51,
+              "width": 80.015625,
+              "height": 51
+            },
+            "bodyWidth": 1920,
+            "viewport": 1920,
+            "more": false,
+            "status": false
+          }
+        },
+        {
+          "count": 0,
+          "positions": [
+            [
+              "customers",
+              210.03125,
+              124
+            ],
+            [
+              "inventory",
+              342.03125,
+              124
+            ],
+            [
+              "mall-materials",
+              474.03125,
+              124
+            ],
+            [
+              "inquiries",
+              606.03125,
+              124
+            ],
+            [
+              "procurement-management",
+              738.03125,
+              124
+            ],
+            [
+              "inventory-management",
+              870.03125,
+              124
+            ],
+            [
+              "sales-orders",
+              1002.03125,
+              124
+            ],
+            [
+              "personal",
+              1369.984375,
+              140
+            ],
+            [
+              "operations",
+              1517.984375,
+              140
+            ],
+            [
+              "organization",
+              1665.984375,
+              140
+            ]
+          ],
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 1920,
+              "top": 0,
+              "bottom": 52,
+              "width": 1920,
+              "height": 52
+            },
+            "nav": {
+              "left": 210.03125,
+              "right": 1902,
+              "top": 0,
+              "bottom": 51,
+              "width": 1691.96875,
+              "height": 51
+            },
+            "cells": [
+              {
+                "id": "customers",
+                "rect": {
+                  "left": 210.03125,
+                  "right": 334.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 218.03125,
+                  "right": 278.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 282.03125,
+                  "right": 314.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "inventory",
+                "rect": {
+                  "left": 342.03125,
+                  "right": 466.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 350.03125,
+                  "right": 410.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 414.03125,
+                  "right": 446.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "mall-materials",
+                "rect": {
+                  "left": 474.03125,
+                  "right": 598.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 482.03125,
+                  "right": 542.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 546.03125,
+                  "right": 578.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "inquiries",
+                "rect": {
+                  "left": 606.03125,
+                  "right": 730.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 614.03125,
+                  "right": 674.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 678.03125,
+                  "right": 710.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "procurement-management",
+                "rect": {
+                  "left": 738.03125,
+                  "right": 862.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 746.03125,
+                  "right": 806.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 810.03125,
+                  "right": 842.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "inventory-management",
+                "rect": {
+                  "left": 870.03125,
+                  "right": 994.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 878.03125,
+                  "right": 938.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 942.03125,
+                  "right": 974.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "sales-orders",
+                "rect": {
+                  "left": 1002.03125,
+                  "right": 1126.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1010.03125,
+                  "right": 1070.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1074.03125,
+                  "right": 1106.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "personal",
+                "rect": {
+                  "left": 1369.984375,
+                  "right": 1509.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1377.984375,
+                  "right": 1453.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1457.984375,
+                  "right": 1489.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "operations",
+                "rect": {
+                  "left": 1517.984375,
+                  "right": 1657.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1525.984375,
+                  "right": 1601.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1605.984375,
+                  "right": 1637.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "organization",
+                "rect": {
+                  "left": 1665.984375,
+                  "right": 1805.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1673.984375,
+                  "right": 1749.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1753.984375,
+                  "right": 1785.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              }
+            ],
+            "account": {
+              "left": 1821.984375,
+              "right": 1902,
+              "top": 0,
+              "bottom": 51,
+              "width": 80.015625,
+              "height": 51
+            },
+            "bodyWidth": 1920,
+            "viewport": 1920,
+            "more": false,
+            "status": false
+          }
+        },
+        {
+          "count": 100,
+          "positions": [
+            [
+              "customers",
+              210.03125,
+              124
+            ],
+            [
+              "inventory",
+              342.03125,
+              124
+            ],
+            [
+              "mall-materials",
+              474.03125,
+              124
+            ],
+            [
+              "inquiries",
+              606.03125,
+              124
+            ],
+            [
+              "procurement-management",
+              738.03125,
+              124
+            ],
+            [
+              "inventory-management",
+              870.03125,
+              124
+            ],
+            [
+              "sales-orders",
+              1002.03125,
+              124
+            ],
+            [
+              "personal",
+              1369.984375,
+              140
+            ],
+            [
+              "operations",
+              1517.984375,
+              140
+            ],
+            [
+              "organization",
+              1665.984375,
+              140
+            ]
+          ],
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 1920,
+              "top": 0,
+              "bottom": 52,
+              "width": 1920,
+              "height": 52
+            },
+            "nav": {
+              "left": 210.03125,
+              "right": 1902,
+              "top": 0,
+              "bottom": 51,
+              "width": 1691.96875,
+              "height": 51
+            },
+            "cells": [
+              {
+                "id": "customers",
+                "rect": {
+                  "left": 210.03125,
+                  "right": 334.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 218.03125,
+                  "right": 278.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 282.03125,
+                  "right": 314.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 282.03125,
+                  "right": 305.203125,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "inventory",
+                "rect": {
+                  "left": 342.03125,
+                  "right": 466.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 350.03125,
+                  "right": 410.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 414.03125,
+                  "right": 446.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 414.03125,
+                  "right": 437.203125,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "mall-materials",
+                "rect": {
+                  "left": 474.03125,
+                  "right": 598.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 482.03125,
+                  "right": 542.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 546.03125,
+                  "right": 578.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 546.03125,
+                  "right": 569.203125,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "inquiries",
+                "rect": {
+                  "left": 606.03125,
+                  "right": 730.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 614.03125,
+                  "right": 674.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 678.03125,
+                  "right": 710.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 678.03125,
+                  "right": 701.203125,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "procurement-management",
+                "rect": {
+                  "left": 738.03125,
+                  "right": 862.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 746.03125,
+                  "right": 806.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 810.03125,
+                  "right": 842.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 810.03125,
+                  "right": 833.203125,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "inventory-management",
+                "rect": {
+                  "left": 870.03125,
+                  "right": 994.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 878.03125,
+                  "right": 938.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 942.03125,
+                  "right": 974.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 942.03125,
+                  "right": 965.203125,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "sales-orders",
+                "rect": {
+                  "left": 1002.03125,
+                  "right": 1126.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1010.03125,
+                  "right": 1070.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1074.03125,
+                  "right": 1106.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 1074.03125,
+                  "right": 1097.203125,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "personal",
+                "rect": {
+                  "left": 1369.984375,
+                  "right": 1509.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1377.984375,
+                  "right": 1453.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1457.984375,
+                  "right": 1489.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 1457.984375,
+                  "right": 1481.15625,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "operations",
+                "rect": {
+                  "left": 1517.984375,
+                  "right": 1657.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1525.984375,
+                  "right": 1601.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1605.984375,
+                  "right": 1637.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 1605.984375,
+                  "right": 1629.15625,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "organization",
+                "rect": {
+                  "left": 1665.984375,
+                  "right": 1805.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1673.984375,
+                  "right": 1749.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1753.984375,
+                  "right": 1785.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              }
+            ],
+            "account": {
+              "left": 1821.984375,
+              "right": 1902,
+              "top": 0,
+              "bottom": 51,
+              "width": 80.015625,
+              "height": 51
+            },
+            "bodyWidth": 1920,
+            "viewport": 1920,
+            "more": false,
+            "status": false
+          }
+        }
+      ]
+    },
+    {
+      "viewport": 1440,
+      "states": [
+        {
+          "count": 82,
+          "positions": [
+            [
+              "customers",
+              204.03125,
+              124
+            ],
+            [
+              "inventory",
+              336.03125,
+              124
+            ],
+            [
+              "mall-materials",
+              468.03125,
+              124
+            ],
+            [
+              "inquiries",
+              600.03125,
+              124
+            ],
+            [
+              "more",
+              732.03125,
+              68
+            ],
+            [
+              "personal",
+              889.984375,
+              140
+            ],
+            [
+              "operations",
+              1037.984375,
+              140
+            ],
+            [
+              "organization",
+              1185.984375,
+              140
+            ]
+          ],
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 1440,
+              "top": 0,
+              "bottom": 52,
+              "width": 1440,
+              "height": 52
+            },
+            "nav": {
+              "left": 204.03125,
+              "right": 1422,
+              "top": 0,
+              "bottom": 51,
+              "width": 1217.96875,
+              "height": 51
+            },
+            "cells": [
+              {
+                "id": "customers",
+                "rect": {
+                  "left": 204.03125,
+                  "right": 328.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 212.03125,
+                  "right": 272.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 276.03125,
+                  "right": 308.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 276.03125,
+                  "right": 293.484375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "inventory",
+                "rect": {
+                  "left": 336.03125,
+                  "right": 460.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 344.03125,
+                  "right": 404.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 408.03125,
+                  "right": 440.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 408.03125,
+                  "right": 425.484375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "mall-materials",
+                "rect": {
+                  "left": 468.03125,
+                  "right": 592.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 476.03125,
+                  "right": 536.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 540.03125,
+                  "right": 572.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 540.03125,
+                  "right": 557.484375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "inquiries",
+                "rect": {
+                  "left": 600.03125,
+                  "right": 724.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 608.03125,
+                  "right": 668.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 672.03125,
+                  "right": 704.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 672.03125,
+                  "right": 689.484375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "more",
+                "rect": {
+                  "left": 732.03125,
+                  "right": 800.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 68,
+                  "height": 51
+                },
+                "label": null,
+                "slot": null,
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "personal",
+                "rect": {
+                  "left": 889.984375,
+                  "right": 1029.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 897.984375,
+                  "right": 973.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 977.984375,
+                  "right": 1009.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 977.984375,
+                  "right": 995.4375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "operations",
+                "rect": {
+                  "left": 1037.984375,
+                  "right": 1177.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1045.984375,
+                  "right": 1121.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1125.984375,
+                  "right": 1157.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 1125.984375,
+                  "right": 1143.4375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "organization",
+                "rect": {
+                  "left": 1185.984375,
+                  "right": 1325.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1193.984375,
+                  "right": 1269.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1273.984375,
+                  "right": 1305.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              }
+            ],
+            "account": {
+              "left": 1341.984375,
+              "right": 1422,
+              "top": 0,
+              "bottom": 51,
+              "width": 80.015625,
+              "height": 51
+            },
+            "bodyWidth": 1440,
+            "viewport": 1440,
+            "more": true,
+            "status": false
+          }
+        },
+        {
+          "count": 0,
+          "positions": [
+            [
+              "customers",
+              204.03125,
+              124
+            ],
+            [
+              "inventory",
+              336.03125,
+              124
+            ],
+            [
+              "mall-materials",
+              468.03125,
+              124
+            ],
+            [
+              "inquiries",
+              600.03125,
+              124
+            ],
+            [
+              "more",
+              732.03125,
+              68
+            ],
+            [
+              "personal",
+              889.984375,
+              140
+            ],
+            [
+              "operations",
+              1037.984375,
+              140
+            ],
+            [
+              "organization",
+              1185.984375,
+              140
+            ]
+          ],
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 1440,
+              "top": 0,
+              "bottom": 52,
+              "width": 1440,
+              "height": 52
+            },
+            "nav": {
+              "left": 204.03125,
+              "right": 1422,
+              "top": 0,
+              "bottom": 51,
+              "width": 1217.96875,
+              "height": 51
+            },
+            "cells": [
+              {
+                "id": "customers",
+                "rect": {
+                  "left": 204.03125,
+                  "right": 328.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 212.03125,
+                  "right": 272.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 276.03125,
+                  "right": 308.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "inventory",
+                "rect": {
+                  "left": 336.03125,
+                  "right": 460.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 344.03125,
+                  "right": 404.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 408.03125,
+                  "right": 440.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "mall-materials",
+                "rect": {
+                  "left": 468.03125,
+                  "right": 592.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 476.03125,
+                  "right": 536.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 540.03125,
+                  "right": 572.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "inquiries",
+                "rect": {
+                  "left": 600.03125,
+                  "right": 724.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 608.03125,
+                  "right": 668.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 672.03125,
+                  "right": 704.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "more",
+                "rect": {
+                  "left": 732.03125,
+                  "right": 800.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 68,
+                  "height": 51
+                },
+                "label": null,
+                "slot": null,
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "personal",
+                "rect": {
+                  "left": 889.984375,
+                  "right": 1029.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 897.984375,
+                  "right": 973.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 977.984375,
+                  "right": 1009.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "operations",
+                "rect": {
+                  "left": 1037.984375,
+                  "right": 1177.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1045.984375,
+                  "right": 1121.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1125.984375,
+                  "right": 1157.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "organization",
+                "rect": {
+                  "left": 1185.984375,
+                  "right": 1325.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1193.984375,
+                  "right": 1269.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1273.984375,
+                  "right": 1305.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              }
+            ],
+            "account": {
+              "left": 1341.984375,
+              "right": 1422,
+              "top": 0,
+              "bottom": 51,
+              "width": 80.015625,
+              "height": 51
+            },
+            "bodyWidth": 1440,
+            "viewport": 1440,
+            "more": true,
+            "status": false
+          }
+        },
+        {
+          "count": 100,
+          "positions": [
+            [
+              "customers",
+              204.03125,
+              124
+            ],
+            [
+              "inventory",
+              336.03125,
+              124
+            ],
+            [
+              "mall-materials",
+              468.03125,
+              124
+            ],
+            [
+              "inquiries",
+              600.03125,
+              124
+            ],
+            [
+              "more",
+              732.03125,
+              68
+            ],
+            [
+              "personal",
+              889.984375,
+              140
+            ],
+            [
+              "operations",
+              1037.984375,
+              140
+            ],
+            [
+              "organization",
+              1185.984375,
+              140
+            ]
+          ],
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 1440,
+              "top": 0,
+              "bottom": 52,
+              "width": 1440,
+              "height": 52
+            },
+            "nav": {
+              "left": 204.03125,
+              "right": 1422,
+              "top": 0,
+              "bottom": 51,
+              "width": 1217.96875,
+              "height": 51
+            },
+            "cells": [
+              {
+                "id": "customers",
+                "rect": {
+                  "left": 204.03125,
+                  "right": 328.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 212.03125,
+                  "right": 272.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 276.03125,
+                  "right": 308.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 276.03125,
+                  "right": 299.203125,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "inventory",
+                "rect": {
+                  "left": 336.03125,
+                  "right": 460.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 344.03125,
+                  "right": 404.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 408.03125,
+                  "right": 440.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 408.03125,
+                  "right": 431.203125,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "mall-materials",
+                "rect": {
+                  "left": 468.03125,
+                  "right": 592.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 476.03125,
+                  "right": 536.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 540.03125,
+                  "right": 572.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 540.03125,
+                  "right": 563.203125,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "inquiries",
+                "rect": {
+                  "left": 600.03125,
+                  "right": 724.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 608.03125,
+                  "right": 668.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 672.03125,
+                  "right": 704.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 672.03125,
+                  "right": 695.203125,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "more",
+                "rect": {
+                  "left": 732.03125,
+                  "right": 800.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 68,
+                  "height": 51
+                },
+                "label": null,
+                "slot": null,
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "personal",
+                "rect": {
+                  "left": 889.984375,
+                  "right": 1029.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 897.984375,
+                  "right": 973.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 977.984375,
+                  "right": 1009.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 977.984375,
+                  "right": 1001.15625,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "operations",
+                "rect": {
+                  "left": 1037.984375,
+                  "right": 1177.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1045.984375,
+                  "right": 1121.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1125.984375,
+                  "right": 1157.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 1125.984375,
+                  "right": 1149.15625,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "organization",
+                "rect": {
+                  "left": 1185.984375,
+                  "right": 1325.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1193.984375,
+                  "right": 1269.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1273.984375,
+                  "right": 1305.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              }
+            ],
+            "account": {
+              "left": 1341.984375,
+              "right": 1422,
+              "top": 0,
+              "bottom": 51,
+              "width": 80.015625,
+              "height": 51
+            },
+            "bodyWidth": 1440,
+            "viewport": 1440,
+            "more": true,
+            "status": false
+          }
+        }
+      ]
+    },
+    {
+      "viewport": 1280,
+      "states": [
+        {
+          "count": 82,
+          "positions": [
+            [
+              "customers",
+              204.03125,
+              124
+            ],
+            [
+              "inventory",
+              336.03125,
+              124
+            ],
+            [
+              "mall-materials",
+              468.03125,
+              124
+            ],
+            [
+              "more",
+              600.03125,
+              68
+            ],
+            [
+              "personal",
+              729.984375,
+              140
+            ],
+            [
+              "operations",
+              877.984375,
+              140
+            ],
+            [
+              "organization",
+              1025.984375,
+              140
+            ]
+          ],
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 1280,
+              "top": 0,
+              "bottom": 52,
+              "width": 1280,
+              "height": 52
+            },
+            "nav": {
+              "left": 204.03125,
+              "right": 1262,
+              "top": 0,
+              "bottom": 51,
+              "width": 1057.96875,
+              "height": 51
+            },
+            "cells": [
+              {
+                "id": "customers",
+                "rect": {
+                  "left": 204.03125,
+                  "right": 328.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 212.03125,
+                  "right": 272.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 276.03125,
+                  "right": 308.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 276.03125,
+                  "right": 293.484375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "inventory",
+                "rect": {
+                  "left": 336.03125,
+                  "right": 460.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 344.03125,
+                  "right": 404.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 408.03125,
+                  "right": 440.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 408.03125,
+                  "right": 425.484375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "mall-materials",
+                "rect": {
+                  "left": 468.03125,
+                  "right": 592.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 476.03125,
+                  "right": 536.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 540.03125,
+                  "right": 572.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 540.03125,
+                  "right": 557.484375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "more",
+                "rect": {
+                  "left": 600.03125,
+                  "right": 668.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 68,
+                  "height": 51
+                },
+                "label": null,
+                "slot": null,
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "personal",
+                "rect": {
+                  "left": 729.984375,
+                  "right": 869.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 737.984375,
+                  "right": 813.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 817.984375,
+                  "right": 849.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 817.984375,
+                  "right": 835.4375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "operations",
+                "rect": {
+                  "left": 877.984375,
+                  "right": 1017.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 885.984375,
+                  "right": 961.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 965.984375,
+                  "right": 997.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 965.984375,
+                  "right": 983.4375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "organization",
+                "rect": {
+                  "left": 1025.984375,
+                  "right": 1165.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1033.984375,
+                  "right": 1109.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1113.984375,
+                  "right": 1145.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              }
+            ],
+            "account": {
+              "left": 1181.984375,
+              "right": 1262,
+              "top": 0,
+              "bottom": 51,
+              "width": 80.015625,
+              "height": 51
+            },
+            "bodyWidth": 1280,
+            "viewport": 1280,
+            "more": true,
+            "status": false
+          }
+        },
+        {
+          "count": 0,
+          "positions": [
+            [
+              "customers",
+              204.03125,
+              124
+            ],
+            [
+              "inventory",
+              336.03125,
+              124
+            ],
+            [
+              "mall-materials",
+              468.03125,
+              124
+            ],
+            [
+              "more",
+              600.03125,
+              68
+            ],
+            [
+              "personal",
+              729.984375,
+              140
+            ],
+            [
+              "operations",
+              877.984375,
+              140
+            ],
+            [
+              "organization",
+              1025.984375,
+              140
+            ]
+          ],
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 1280,
+              "top": 0,
+              "bottom": 52,
+              "width": 1280,
+              "height": 52
+            },
+            "nav": {
+              "left": 204.03125,
+              "right": 1262,
+              "top": 0,
+              "bottom": 51,
+              "width": 1057.96875,
+              "height": 51
+            },
+            "cells": [
+              {
+                "id": "customers",
+                "rect": {
+                  "left": 204.03125,
+                  "right": 328.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 212.03125,
+                  "right": 272.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 276.03125,
+                  "right": 308.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "inventory",
+                "rect": {
+                  "left": 336.03125,
+                  "right": 460.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 344.03125,
+                  "right": 404.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 408.03125,
+                  "right": 440.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "mall-materials",
+                "rect": {
+                  "left": 468.03125,
+                  "right": 592.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 476.03125,
+                  "right": 536.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 540.03125,
+                  "right": 572.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "more",
+                "rect": {
+                  "left": 600.03125,
+                  "right": 668.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 68,
+                  "height": 51
+                },
+                "label": null,
+                "slot": null,
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "personal",
+                "rect": {
+                  "left": 729.984375,
+                  "right": 869.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 737.984375,
+                  "right": 813.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 817.984375,
+                  "right": 849.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "operations",
+                "rect": {
+                  "left": 877.984375,
+                  "right": 1017.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 885.984375,
+                  "right": 961.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 965.984375,
+                  "right": 997.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "organization",
+                "rect": {
+                  "left": 1025.984375,
+                  "right": 1165.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1033.984375,
+                  "right": 1109.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1113.984375,
+                  "right": 1145.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              }
+            ],
+            "account": {
+              "left": 1181.984375,
+              "right": 1262,
+              "top": 0,
+              "bottom": 51,
+              "width": 80.015625,
+              "height": 51
+            },
+            "bodyWidth": 1280,
+            "viewport": 1280,
+            "more": true,
+            "status": false
+          }
+        },
+        {
+          "count": 100,
+          "positions": [
+            [
+              "customers",
+              204.03125,
+              124
+            ],
+            [
+              "inventory",
+              336.03125,
+              124
+            ],
+            [
+              "mall-materials",
+              468.03125,
+              124
+            ],
+            [
+              "more",
+              600.03125,
+              68
+            ],
+            [
+              "personal",
+              729.984375,
+              140
+            ],
+            [
+              "operations",
+              877.984375,
+              140
+            ],
+            [
+              "organization",
+              1025.984375,
+              140
+            ]
+          ],
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 1280,
+              "top": 0,
+              "bottom": 52,
+              "width": 1280,
+              "height": 52
+            },
+            "nav": {
+              "left": 204.03125,
+              "right": 1262,
+              "top": 0,
+              "bottom": 51,
+              "width": 1057.96875,
+              "height": 51
+            },
+            "cells": [
+              {
+                "id": "customers",
+                "rect": {
+                  "left": 204.03125,
+                  "right": 328.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 212.03125,
+                  "right": 272.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 276.03125,
+                  "right": 308.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 276.03125,
+                  "right": 299.203125,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "inventory",
+                "rect": {
+                  "left": 336.03125,
+                  "right": 460.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 344.03125,
+                  "right": 404.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 408.03125,
+                  "right": 440.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 408.03125,
+                  "right": 431.203125,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "mall-materials",
+                "rect": {
+                  "left": 468.03125,
+                  "right": 592.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 476.03125,
+                  "right": 536.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 540.03125,
+                  "right": 572.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 540.03125,
+                  "right": 563.203125,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "more",
+                "rect": {
+                  "left": 600.03125,
+                  "right": 668.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 68,
+                  "height": 51
+                },
+                "label": null,
+                "slot": null,
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "personal",
+                "rect": {
+                  "left": 729.984375,
+                  "right": 869.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 737.984375,
+                  "right": 813.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 817.984375,
+                  "right": 849.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 817.984375,
+                  "right": 841.15625,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "operations",
+                "rect": {
+                  "left": 877.984375,
+                  "right": 1017.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 885.984375,
+                  "right": 961.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 965.984375,
+                  "right": 997.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 965.984375,
+                  "right": 989.15625,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "organization",
+                "rect": {
+                  "left": 1025.984375,
+                  "right": 1165.984375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 140,
+                  "height": 51
+                },
+                "label": {
+                  "left": 1033.984375,
+                  "right": 1109.984375,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 76,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 1113.984375,
+                  "right": 1145.984375,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              }
+            ],
+            "account": {
+              "left": 1181.984375,
+              "right": 1262,
+              "top": 0,
+              "bottom": 51,
+              "width": 80.015625,
+              "height": 51
+            },
+            "bodyWidth": 1280,
+            "viewport": 1280,
+            "more": true,
+            "status": false
+          }
+        }
+      ]
+    },
+    {
+      "viewport": 768,
+      "states": [
+        {
+          "count": 82,
+          "positions": [
+            [
+              "customers",
+              198.03125,
+              124
+            ],
+            [
+              "inventory",
+              330.03125,
+              124
+            ],
+            [
+              "mall-materials",
+              462.03125,
+              124
+            ],
+            [
+              "more",
+              594.03125,
+              68
+            ]
+          ],
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 768,
+              "top": 0,
+              "bottom": 52,
+              "width": 768,
+              "height": 52
+            },
+            "nav": {
+              "left": 198.03125,
+              "right": 750,
+              "top": 0,
+              "bottom": 51,
+              "width": 551.96875,
+              "height": 51
+            },
+            "cells": [
+              {
+                "id": "customers",
+                "rect": {
+                  "left": 198.03125,
+                  "right": 322.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 206.03125,
+                  "right": 266.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 270.03125,
+                  "right": 302.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 270.03125,
+                  "right": 287.484375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "inventory",
+                "rect": {
+                  "left": 330.03125,
+                  "right": 454.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 338.03125,
+                  "right": 398.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 402.03125,
+                  "right": 434.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 402.03125,
+                  "right": 419.484375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "mall-materials",
+                "rect": {
+                  "left": 462.03125,
+                  "right": 586.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 470.03125,
+                  "right": 530.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 534.03125,
+                  "right": 566.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 534.03125,
+                  "right": 551.484375,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "more",
+                "rect": {
+                  "left": 594.03125,
+                  "right": 662.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 68,
+                  "height": 51
+                },
+                "label": null,
+                "slot": null,
+                "badge": null,
+                "font": "14px"
+              }
+            ],
+            "account": {
+              "left": 714,
+              "right": 750,
+              "top": 0,
+              "bottom": 51,
+              "width": 36,
+              "height": 51
+            },
+            "bodyWidth": 768,
+            "viewport": 768,
+            "more": true,
+            "status": false
+          }
+        },
+        {
+          "count": 0,
+          "positions": [
+            [
+              "customers",
+              198.03125,
+              124
+            ],
+            [
+              "inventory",
+              330.03125,
+              124
+            ],
+            [
+              "mall-materials",
+              462.03125,
+              124
+            ],
+            [
+              "more",
+              594.03125,
+              68
+            ]
+          ],
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 768,
+              "top": 0,
+              "bottom": 52,
+              "width": 768,
+              "height": 52
+            },
+            "nav": {
+              "left": 198.03125,
+              "right": 750,
+              "top": 0,
+              "bottom": 51,
+              "width": 551.96875,
+              "height": 51
+            },
+            "cells": [
+              {
+                "id": "customers",
+                "rect": {
+                  "left": 198.03125,
+                  "right": 322.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 206.03125,
+                  "right": 266.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 270.03125,
+                  "right": 302.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "inventory",
+                "rect": {
+                  "left": 330.03125,
+                  "right": 454.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 338.03125,
+                  "right": 398.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 402.03125,
+                  "right": 434.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "mall-materials",
+                "rect": {
+                  "left": 462.03125,
+                  "right": 586.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 470.03125,
+                  "right": 530.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 534.03125,
+                  "right": 566.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "more",
+                "rect": {
+                  "left": 594.03125,
+                  "right": 662.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 68,
+                  "height": 51
+                },
+                "label": null,
+                "slot": null,
+                "badge": null,
+                "font": "14px"
+              }
+            ],
+            "account": {
+              "left": 714,
+              "right": 750,
+              "top": 0,
+              "bottom": 51,
+              "width": 36,
+              "height": 51
+            },
+            "bodyWidth": 768,
+            "viewport": 768,
+            "more": true,
+            "status": false
+          }
+        },
+        {
+          "count": 100,
+          "positions": [
+            [
+              "customers",
+              198.03125,
+              124
+            ],
+            [
+              "inventory",
+              330.03125,
+              124
+            ],
+            [
+              "mall-materials",
+              462.03125,
+              124
+            ],
+            [
+              "more",
+              594.03125,
+              68
+            ]
+          ],
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 768,
+              "top": 0,
+              "bottom": 52,
+              "width": 768,
+              "height": 52
+            },
+            "nav": {
+              "left": 198.03125,
+              "right": 750,
+              "top": 0,
+              "bottom": 51,
+              "width": 551.96875,
+              "height": 51
+            },
+            "cells": [
+              {
+                "id": "customers",
+                "rect": {
+                  "left": 198.03125,
+                  "right": 322.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 206.03125,
+                  "right": 266.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 270.03125,
+                  "right": 302.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 270.03125,
+                  "right": 293.203125,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "inventory",
+                "rect": {
+                  "left": 330.03125,
+                  "right": 454.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 338.03125,
+                  "right": 398.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 402.03125,
+                  "right": 434.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 402.03125,
+                  "right": 425.203125,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "mall-materials",
+                "rect": {
+                  "left": 462.03125,
+                  "right": 586.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 470.03125,
+                  "right": 530.03125,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 534.03125,
+                  "right": 566.03125,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 534.03125,
+                  "right": 557.203125,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "more",
+                "rect": {
+                  "left": 594.03125,
+                  "right": 662.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 68,
+                  "height": 51
+                },
+                "label": null,
+                "slot": null,
+                "badge": null,
+                "font": "14px"
+              }
+            ],
+            "account": {
+              "left": 714,
+              "right": 750,
+              "top": 0,
+              "bottom": 51,
+              "width": 36,
+              "height": 51
+            },
+            "bodyWidth": 768,
+            "viewport": 768,
+            "more": true,
+            "status": false
+          }
+        }
+      ]
+    },
+    {
+      "viewport": 390,
+      "states": [
+        {
+          "count": 82,
+          "positions": [
+            [
+              "customers",
+              68,
+              124
+            ],
+            [
+              "more",
+              200,
+              68
+            ]
+          ],
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 390,
+              "top": 0,
+              "bottom": 52,
+              "width": 390,
+              "height": 52
+            },
+            "nav": {
+              "left": 68,
+              "right": 372,
+              "top": 0,
+              "bottom": 51,
+              "width": 304,
+              "height": 51
+            },
+            "cells": [
+              {
+                "id": "customers",
+                "rect": {
+                  "left": 68,
+                  "right": 192,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 76,
+                  "right": 136,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 140,
+                  "right": 172,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 140,
+                  "right": 157.453125,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 17.453125,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "more",
+                "rect": {
+                  "left": 200,
+                  "right": 268,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 68,
+                  "height": 51
+                },
+                "label": null,
+                "slot": null,
+                "badge": null,
+                "font": "14px"
+              }
+            ],
+            "account": {
+              "left": 344,
+              "right": 372,
+              "top": 0,
+              "bottom": 51,
+              "width": 28,
+              "height": 51
+            },
+            "bodyWidth": 390,
+            "viewport": 390,
+            "more": true,
+            "status": false
+          }
+        },
+        {
+          "count": 0,
+          "positions": [
+            [
+              "customers",
+              68,
+              124
+            ],
+            [
+              "more",
+              200,
+              68
+            ]
+          ],
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 390,
+              "top": 0,
+              "bottom": 52,
+              "width": 390,
+              "height": 52
+            },
+            "nav": {
+              "left": 68,
+              "right": 372,
+              "top": 0,
+              "bottom": 51,
+              "width": 304,
+              "height": 51
+            },
+            "cells": [
+              {
+                "id": "customers",
+                "rect": {
+                  "left": 68,
+                  "right": 192,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 76,
+                  "right": 136,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 140,
+                  "right": 172,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": null,
+                "font": "14px"
+              },
+              {
+                "id": "more",
+                "rect": {
+                  "left": 200,
+                  "right": 268,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 68,
+                  "height": 51
+                },
+                "label": null,
+                "slot": null,
+                "badge": null,
+                "font": "14px"
+              }
+            ],
+            "account": {
+              "left": 344,
+              "right": 372,
+              "top": 0,
+              "bottom": 51,
+              "width": 28,
+              "height": 51
+            },
+            "bodyWidth": 390,
+            "viewport": 390,
+            "more": true,
+            "status": false
+          }
+        },
+        {
+          "count": 100,
+          "positions": [
+            [
+              "customers",
+              68,
+              124
+            ],
+            [
+              "more",
+              200,
+              68
+            ]
+          ],
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 390,
+              "top": 0,
+              "bottom": 52,
+              "width": 390,
+              "height": 52
+            },
+            "nav": {
+              "left": 68,
+              "right": 372,
+              "top": 0,
+              "bottom": 51,
+              "width": 304,
+              "height": 51
+            },
+            "cells": [
+              {
+                "id": "customers",
+                "rect": {
+                  "left": 68,
+                  "right": 192,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 124,
+                  "height": 51
+                },
+                "label": {
+                  "left": 76,
+                  "right": 136,
+                  "top": 14.5,
+                  "bottom": 34.5,
+                  "width": 60,
+                  "height": 20
+                },
+                "slot": {
+                  "left": 140,
+                  "right": 172,
+                  "top": 15.5,
+                  "bottom": 33.5,
+                  "width": 32,
+                  "height": 18
+                },
+                "badge": {
+                  "left": 140,
+                  "right": 163.171875,
+                  "top": 16.5,
+                  "bottom": 32.5,
+                  "width": 23.171875,
+                  "height": 16
+                },
+                "font": "14px"
+              },
+              {
+                "id": "more",
+                "rect": {
+                  "left": 200,
+                  "right": 268,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 68,
+                  "height": 51
+                },
+                "label": null,
+                "slot": null,
+                "badge": null,
+                "font": "14px"
+              }
+            ],
+            "account": {
+              "left": 344,
+              "right": 372,
+              "top": 0,
+              "bottom": 51,
+              "width": 28,
+              "height": 51
+            },
+            "bodyWidth": 390,
+            "viewport": 390,
+            "more": true,
+            "status": false
+          }
+        }
+      ]
+    }
+  ],
+  "sourcePins": {
+    "/home/ubuntu/work/procurement-demo-restore-release-20261122-1610/capture/dependency-36.css": "87a9e4c8f3507ff46da85a5655232556fa33de184cf6f4a05347127c8be8d1ad",
+    "/home/ubuntu/work/procurement-demo-restore-release-20261122-1610/capture/lazy-css-1.css": "0d7c518bbaa7983d4491180b997e8ef3405512910439a623d71ebcbf04024d39",
+    "/home/ubuntu/work/procurement-demo-restore-release-20261122-1610/final/assets/procurement-notification-redesign-b0e1b46815716c96.css": "b0e1b46815716c96a08c5d83beaf1340b30d03063984eefef37a12c496f48da3",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminHeaderNavigation.css": "04a933d83aeff81dc2fe44d37a428fba520e04e67db24b23cd7cf2d245c8a8d3"
+  },
+  "mouseMoreCheck": {
+    "viewport": 1280,
+    "hoverThenClick": "inventory-management",
+    "originalPath": "/workbench/inbound",
+    "calls": 1,
+    "passed": true
+  },
+  "checks": {
+    "allPassed": true,
+    "noNetwork": true,
+    "zeroAndLargeCountsStable": true,
+    "fiveViewports": true,
+    "notAProductionBusinessTest": true
+  }
+}

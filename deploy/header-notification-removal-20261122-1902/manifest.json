@@ -1,0 +1,69 @@
+{
+  "status": "IMPLEMENTED_VALIDATED_NOT_PUBLISHED",
+  "authorization": "2026-11-22 19:02 用户按照建议实施，未包含上线",
+  "baseCommit": "e965247bba9469927a8a7f9eb96e9a22720f05b1",
+  "sourcePins": {
+    "client/src/business/platform/client/src/pages/CustomerDetail.tsx": "99a8341d757865c96727c7d1cd37e1737419ffde3fe793b7c5177a742368278e",
+    "client/src/business/platform/client/src/pages/CustomerDetailReadability.css": "73a368ebc9ae5389eaeea06a5050defcd785d26c5e76ab63b05a6584eda16c77",
+    "client/src/components/DashboardLayout.tsx": "2536ea70fa4362dac505e6c37194f9830503fc01d6af93c6b80c749bae6fd3a2",
+    "client/src/components/admin/AdminWorkspaceNavigation.tsx": "cab1e404d95bbe815cd953f786cb9d445da96f46bfa2e14369993c1bf537d0a1",
+    "client/src/components/admin/AdminHeaderNavigation.css": "04a933d83aeff81dc2fe44d37a428fba520e04e67db24b23cd7cf2d245c8a8d3",
+    "client/src/lib/adminHeaderNavigationLayout.ts": "e573435f24387a8335288dc5f2d8016094950ce545dd5d1f2d8aa51457ab180e",
+    "client/src/lib/adminNewInformation.test.ts": "a7173946aecdb038911b2b2d7645ed5b96650ddb0743e2c90b27f31be7be9672",
+    "client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts": "4c606640f5200af0d8e7c47806876bbc1031aa6b49b15a52d3ddc5a80e4269ca",
+    "client/src/lib/adminHeaderNavigationLayout.test.ts": "2fcae81afac088f18f7e5921fb978d16289d967e90200f794d09e86b5581d87f",
+    "client/src/business/platform/client/src/pages/CustomerDetail.notification-presentation.test.ts": "bf162be105d9e91f9309a20d0ab27a85c3315ea2ed9bede2705c894591a9c62a"
+  },
+  "deleted": [
+    "client/src/components/admin/AdminNewInformationStatus.tsx",
+    "client/src/components/admin/AdminNewInformationStatus.css"
+  ],
+  "protectedSourcePins": {
+    "client/src/lib/adminNewInformation.tsx": "dda94052103eb52ffc707cc40b5803a3398a91c0197884534faafa51a81603b3",
+    "client/src/business/platform/client/src/pages/ProcurementDemands.tsx": "de06a21f9fde4f72659526aa099a4388b835f56ee9c17dd7ddb9028e95cfada9",
+    "server/services/adminNewInformation.ts": "364e0e811492e8fe97a34bfc2fb27371acb8484851302c1fb4344a881bce8798",
+    "shared/adminNewInformation.ts": "29690138f57fcc31b88e33aef0cb6f4dab2fbe7064db564636a83f9cd883add2"
+  },
+  "checks": {
+    "focusedTests": {
+      "files": 4,
+      "passed": 140,
+      "failed": 0
+    },
+    "es2020TypeErrors": 0,
+    "standardTypeBaseline": "only existing MapIterator TS2802 at server/services/adminNewInformation.ts:873",
+    "geometry": {
+      "allPassed": true,
+      "noNetwork": true,
+      "zeroAndLargeCountsStable": true,
+      "fiveViewports": true,
+      "notAProductionBusinessTest": true
+    },
+    "actualDesktopMouse": {
+      "viewport": 1280,
+      "hoverThenClick": "inventory-management",
+      "originalPath": "/workbench/inbound",
+      "calls": 1,
+      "passed": true
+    },
+    "expandedTests": {
+      "baseline": {
+        "numTotalTests": 167,
+        "numPassedTests": 150,
+        "numFailedTests": 17
+      },
+      "final": {
+        "numTotalTests": 167,
+        "numPassedTests": 150,
+        "numFailedTests": 17
+      },
+      "sameHistoricalFailures": true,
+      "newFailures": []
+    },
+    "productionConnected": false,
+    "productionPublished": false,
+    "databaseWrites": false,
+    "serviceReload": false,
+    "historicalSales503RootCause": "OPEN"
+  }
+}
