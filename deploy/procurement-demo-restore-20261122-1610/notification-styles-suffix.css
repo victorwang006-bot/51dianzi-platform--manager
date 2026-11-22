@@ -1,0 +1,113 @@
+/* Derived from demand-redesign-implementation-20261122-1302/notification/notification-styles-suffix.css.
+ * notification-silent-refresh-20261122: only notification presentation;
+ * count/unknown/zero share ONE bounded slot, no busy animation or nav symbols. */
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-workspace-nav__tab:has(> .admin-new-information-nav-slot) {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-nav-slot {
+  position: static;
+  display: inline-flex;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 18px;
+  align-self: center;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 0;
+  padding: 0;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-nav-slot > [data-admin-new-information="count"][data-placement="nav"] {
+  position: static;
+  inset: auto;
+  transform: none;
+  z-index: auto;
+  display: inline-flex;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  align-self: center;
+  min-width: 16px;
+  max-width: 32px;
+  height: 16px;
+  margin: 0;
+  padding: 0 3px;
+  font-size: 10px !important;
+  line-height: 16px;
+  background: #e5484d;
+  color: #fff;
+  box-shadow: none !important;
+  pointer-events: auto;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status {
+  position: relative;
+  flex: 0 0 84px;
+  width: 84px;
+  font-size: 12px;
+  line-height: 18px;
+  color: #475569;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 28px;
+  list-style: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status > summary::-webkit-details-marker { display: none; }
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status > summary:focus-visible {
+  outline: 2px solid #64748b;
+  outline-offset: 2px;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status:is([data-admin-new-information-global="failed"], [data-admin-new-information-global="blocked"]) > summary {
+  color: #92400e;
+  background: #fffbeb;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status__icon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  flex: 0 0 10px;
+  width: 10px;
+  height: 10px;
+  animation: none !important;
+  border: 0;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status__panel {
+  position: fixed;
+  z-index: 65;
+  right: 12px;
+  top: 72px;
+  box-sizing: border-box;
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(420px, calc(100svh - 80px));
+  overflow: auto;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-shadow: 0 6px 22px #0f172a24;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status__panel p { margin: 0 0 8px; }
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status__panel ul { margin: 0 0 10px; padding: 0; list-style: none; }
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status__panel li { margin-bottom: 7px; }
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status__panel small { display: block; color: #64748b; font-size: 11px; }
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-status__panel button {
+  min-height: 30px;
+  padding: 3px 9px;
+  margin-bottom: 8px;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+}

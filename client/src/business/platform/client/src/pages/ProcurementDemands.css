@@ -1,12 +1,10 @@
-/* Page-owned layout only; shared admin primitives provide the blue/white theme. */
-.procurement-demands-page,
+/* Detail styles retain the existing shared-admin presentation. */
 .procurement-demands-detail {
   min-width: 0;
   color: var(--admin-color-text, #1f2937);
   font-size: var(--admin-content-font-body, 12px);
   line-height: var(--admin-content-line-height, 1.5);
 }
-.procurement-demands-page .procurement-demand-control,
 .procurement-demands-detail .procurement-demand-control {
   height: var(--admin-content-control-height, 32px);
   border-radius: 6px;
@@ -19,47 +17,6 @@
   width: var(--admin-content-control-height, 32px);
   height: var(--admin-content-control-height, 32px);
 }
-.procurement-demands-page .procurement-demands-table-scroll {
-  max-width: 100%;
-  overflow-x: auto;
-}
-.procurement-demands-page .procurement-demands-table {
-  width: 100%;
-  min-width: 920px;
-  font-size: var(--admin-content-font-body, 12px);
-}
-/* Five information groups; every action remains reachable by horizontal scroll. */
-.procurement-demands-page
-  .procurement-demands-table
-  > colgroup
-  > col:nth-child(1) {
-  width: auto;
-}
-.procurement-demands-page
-  .procurement-demands-table
-  > colgroup
-  > col:nth-child(2) {
-  width: 160px;
-}
-.procurement-demands-page
-  .procurement-demands-table
-  > colgroup
-  > col:nth-child(3) {
-  width: 210px;
-}
-.procurement-demands-page
-  .procurement-demands-table
-  > colgroup
-  > col:nth-child(4) {
-  width: 170px;
-}
-.procurement-demands-page
-  .procurement-demands-table
-  > colgroup
-  > col:nth-child(5) {
-  width: 110px;
-}
-.procurement-demands-page .procurement-demands-table th,
 .procurement-demands-detail .procurement-demand-items th {
   height: 36px;
   padding: 8px 12px;
@@ -67,56 +24,14 @@
   font-size: var(--admin-content-font-caption, 11px);
   font-weight: 500;
 }
-.procurement-demands-page .procurement-demands-table td,
 .procurement-demands-detail .procurement-demand-items td {
   padding: 12px;
   vertical-align: middle;
+  overflow-wrap: anywhere;
 }
-.procurement-demands-page .procurement-demand-number,
-.procurement-demands-page .procurement-demand-model,
-.procurement-demands-page .procurement-demand-secondary-data,
 .procurement-demands-detail .procurement-demand-model {
   overflow-wrap: anywhere;
   white-space: normal;
-}
-.procurement-demands-page .procurement-demand-priority,
-.procurement-demands-page .procurement-demand-conditions {
-  font-size: var(--admin-content-font-caption, 11px);
-}
-.procurement-demands-page .procurement-demand-secondary-data,
-.procurement-demands-page .procurement-demand-conditions {
-  color: var(--admin-color-secondary, #475569);
-}
-.procurement-demands-page .procurement-demand-actions {
-  position: static;
-  background: white;
-}
-.procurement-demands-page .procurement-demand-text-link {
-  color: #185fa5;
-  text-align: left;
-  border-radius: 3px;
-}
-.procurement-demands-page .procurement-demand-text-link:hover {
-  text-decoration: underline;
-}
-.procurement-demands-page .procurement-demand-text-link:focus-visible {
-  outline: 2px solid #185fa5;
-  outline-offset: 3px;
-}
-.procurement-demands-page .procurement-demand-arrivals {
-  padding: 10px 12px;
-  border: 1px solid #bfdbfe;
-  border-radius: 6px;
-  background: #f5f9fd;
-  color: #185fa5;
-}
-.procurement-demands-page .procurement-demand-reconfirm {
-  color: #a16207;
-}
-.procurement-demands-page .procurement-demand-update-alert {
-  border-bottom: 1px solid #fde68a;
-  background: #fffbeb;
-  color: #92400e;
 }
 .procurement-demands-detail .procurement-demand-metadata {
   overflow-wrap: anywhere;
@@ -128,16 +43,293 @@
 .procurement-demands-detail .procurement-demand-items tbody tr {
   height: 56px;
 }
-.procurement-demands-detail .procurement-demand-items td {
+
+/* Page-only tokens feed the shared theme's important role bridges. The explicit
+ * section/page selector also wins normal shared/lazy CSS independent of load order.
+ * No global theme or detail-dialog tokens are changed. */
+section.aui-page.procurement-demands-page[data-admin-ui-system] {
+  --admin-font-body: 13px;
+  --admin-font-label: 12px;
+  --admin-font-caption: 12px;
+  --admin-font-table-heading: 12px;
+  --admin-control-height: 34px;
+  --admin-row-action-height: 28px;
+  --admin-content-font-body: 13px;
+  --admin-content-font-caption: 12px;
+  --admin-content-control-height: 34px;
+  --admin-content-row-action-height: 28px;
+  --admin-content-line-height: 20px;
+  --admin-content-caption-line-height: 18px;
+  --admin-color-text: #263445;
+  --admin-color-secondary: #3e4f63;
+  min-width: 0;
+  background: #fff;
+  color: #263445;
+  font-size: 13px;
+  line-height: 20px;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-control {
+  --admin-font-body: 12px;
+  height: 34px;
+  min-height: 34px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .aui-filterbar {
+  background: #fff;
+  border-color: #d6e0eb;
+  box-shadow: none;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-panel {
+  container-type: inline-size;
+  min-width: 0;
+  background: #fff;
+  border: 1px solid #d6e0eb;
+  border-radius: 10px;
+  box-shadow: none;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table {
+  --pd-model-width: clamp(210px, 20vw, 260px);
+  --pd-state-width: 164px;
+  --pd-action-width: 152px;
+  --pd-other-width: calc(max(100cqw, 980px) - var(--pd-model-width) - var(--pd-state-width) - var(--pd-action-width));
+  width: 100%;
+  min-width: 980px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+  color: #263445;
+}
+/* All nine columns consume a length budget, never table-col percentage calc. */
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table > colgroup > col:nth-child(1) {
+  width: calc(var(--pd-other-width) * .22);
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table > colgroup > col:nth-child(2) {
+  width: var(--pd-model-width);
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table > colgroup > col:nth-child(3) {
+  width: calc(var(--pd-other-width) * .14);
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table > colgroup > col:nth-child(4) {
+  width: calc(var(--pd-other-width) * .12);
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table > colgroup > col:nth-child(5) {
+  width: calc(var(--pd-other-width) * .14);
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table > colgroup > col:nth-child(6) {
+  width: calc(var(--pd-other-width) * .25);
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table > colgroup > col:nth-child(7) {
+  width: calc(var(--pd-other-width) * .13);
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table > colgroup > col:nth-child(8) {
+  width: var(--pd-state-width);
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table > colgroup > col:nth-child(9) {
+  width: var(--pd-action-width);
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table th {
+  height: 34px;
+  padding: 7px 10px;
+  background: #f0f6fc;
+  border-bottom: 1px solid #d6e0eb;
+  color: #354d67;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table td {
+  height: 60px;
+  padding: 10px;
+  border-bottom: 1px solid #e6edf4;
+  background: #fff;
+  color: #263445;
+  font-size: 13px;
+  vertical-align: middle;
+  line-height: 20px;
+  white-space: normal;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table tbody tr:hover td {
+  background: #f7fbff;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table td.procurement-demand-caption-cell {
+  --admin-font-body: 12px;
+  font-size: 12px;
+  color: #3e4f63;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-number {
+  color: #345b83;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
   overflow-wrap: anywhere;
+  white-space: normal;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-model {
+  --admin-color-text: #1d3047;
+  color: #1d3047;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-secondary-data {
+  color: #3e4f63;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table td.procurement-demand-brand {
+  padding-inline: 6px;
+  overflow-wrap: normal;
+  word-break: normal;
+  white-space: normal;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-time {
+  overflow-wrap: normal;
+  white-space: normal;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-reply {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-flags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 2px;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-flags:empty {
+  display: none;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-priority,
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-conditions {
+  font-size: 12px;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-conditions {
+  color: #65798f;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-quote-status,
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-actions {
+  position: sticky;
+  z-index: 2;
+  background: #fff;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-quote-status {
+  right: var(--pd-action-width);
+  box-shadow: -1px 0 0 #dfe7ef;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-actions {
+  right: 0;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table th.procurement-demand-quote-status,
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table th.procurement-demand-actions {
+  z-index: 3;
+  background: #f0f6fc;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table th.procurement-demand-actions {
+  text-align: center;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-row-actions {
+  display: grid;
+  grid-template-columns: 44px 76px;
+  gap: 6px;
+  justify-content: end;
+  align-items: center;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-row-actions > button {
+  width: 100%;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 20px;
+  white-space: nowrap;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-row-actions > button:first-child {
+  color: #465b73;
+  border-color: #c5d0dd;
+  background: #fff;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-row-actions > button:last-child {
+  color: #185fa5;
+  background: #edf5fd;
+  border-color: #9cbddd;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-row-actions > button:last-child:hover {
+  background: #e3effb;
+  border-color: #6b9bc9;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .admin-row-action {
+  height: 28px;
+  min-height: 28px;
+  font-size: 12px;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-text-link:not(.procurement-demand-model):not(.procurement-demand-number) {
+  color: #185fa5;
+  text-align: left;
+  border-radius: 3px;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-text-link:hover {
+  text-decoration: underline;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-text-link:focus-visible {
+  outline: 2px solid #185fa5;
+  outline-offset: 3px;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-arrivals {
+  padding: 10px 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  background: #f5f9fd;
+  color: #185fa5;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-reconfirm {
+  color: #8b641d;
+}
+section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-update-alert {
+  border-bottom: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+@media (max-width: 1100px) {
+  section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table {
+    --pd-state-width: 142px;
+    --pd-action-width: 148px;
+  }
+  section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table > colgroup > col:nth-child(1) { width: 138px; }
+  section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table > colgroup > col:nth-child(2) { width: calc(max(100cqw, 980px) - 842px); }
+  section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table > colgroup > col:nth-child(3) { width: 78px; }
+  section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table > colgroup > col:nth-child(4) { width: 76px; }
+  section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table > colgroup > col:nth-child(5) { width: 70px; }
+  section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table > colgroup > col:nth-child(6) { width: 130px; }
+  section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demands-table > colgroup > col:nth-child(7) { width: 60px; }
+}
+@media (max-width: 760px) {
+  /* All nine columns scroll on small windows; no pinned overlay covers data. */
+  section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-quote-status,
+  section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-actions {
+    position: static;
+    right: auto;
+    box-shadow: none;
+  }
 }
 @media (max-width: 640px) {
-  .procurement-demands-page .procurement-demand-conditions {
+  section.aui-page.procurement-demands-page[data-admin-ui-system] .procurement-demand-conditions {
     gap: 6px;
-  }
-  .procurement-demands-page .procurement-demands-table th,
-  .procurement-demands-page .procurement-demands-table td {
-    padding-left: 10px;
-    padding-right: 10px;
   }
 }

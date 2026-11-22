@@ -584,7 +584,7 @@ function ProcurementDemandsSession() {
             </button>
           </div>
         )}
-        <AdminDataPanel className="gap-0 overflow-hidden p-0">
+        <AdminDataPanel className="procurement-demands-panel gap-0 overflow-hidden p-0">
           {ordinaryFailure && (
             <div
               role="alert"
@@ -642,18 +642,26 @@ function ProcurementDemandsSession() {
             >
               <colgroup>
                 <col />
-                <col className="w-[160px]" />
-                <col className="w-[210px]" />
-                <col className="w-[170px]" />
-                <col className="w-[110px]" />
+                <col />
+                <col />
+                <col />
+                <col />
+                <col />
+                <col />
+                <col />
+                <col />
               </colgroup>
               <TableHeader>
                 <TableRow className="bg-slate-50 hover:bg-slate-50">
-                  <TableHead>物料</TableHead>
-                  <TableHead>数量 / 交期</TableHead>
-                  <TableHead>提交信息</TableHead>
-                  <TableHead>本人报价</TableHead>
-                  <TableHead className="text-right">报价</TableHead>
+                  <TableHead>需求编号</TableHead>
+                  <TableHead>型号</TableHead>
+                  <TableHead>品牌</TableHead>
+                  <TableHead className="text-right">数量</TableHead>
+                  <TableHead>交期</TableHead>
+                  <TableHead>提交时间</TableHead>
+                  <TableHead>销售</TableHead>
+                  <TableHead className="procurement-demand-quote-status">本人报价状态</TableHead>
+                  <TableHead className="procurement-demand-actions text-right">操作</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -673,15 +681,15 @@ function ProcurementDemandsSession() {
                       data-page-memory-row={String(demand.id)}
                     >
                       <TableCell>
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                          <button
-                            type="button"
-                            onClick={() => setOpenedId(demand.id)}
-                            className="admin-cell-primary procurement-demand-model procurement-demand-text-link"
-                            aria-label={`查看需求 ${demand.demandNo} 的型号详情`}
-                          >
-                            {material.partNumber || "查看物料详情"}
-                          </button>
+                        <button
+                          type="button"
+                          className="procurement-demand-number procurement-demand-text-link"
+                          aria-label={`查看需求 ${demand.demandNo} 详情`}
+                          onClick={() => setOpenedId(demand.id)}
+                        >
+                          {demand.demandNo}
+                        </button>
+                        <div className="procurement-demand-flags">
                           <AdminNewInformationRowBadge
                             isNew={
                               newInformationRows.getRow(`demand:${demand.id}`)
@@ -694,9 +702,16 @@ function ProcurementDemandsSession() {
                             </span>
                           )}
                         </div>
-                        <div className="admin-cell-secondary mt-1 procurement-demand-secondary-data">
-                          品牌：{material.brand || "待确认"}
-                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <button
+                          type="button"
+                          onClick={() => setOpenedId(demand.id)}
+                          className="admin-cell-primary procurement-demand-model procurement-demand-text-link"
+                          aria-label={`查看需求 ${demand.demandNo} 的型号详情`}
+                        >
+                          {material.partNumber || "查看物料详情"}
+                        </button>
                         {demand.itemCount > 1 && (
                           <button
                             type="button"
@@ -710,15 +725,18 @@ function ProcurementDemandsSession() {
                           </button>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="procurement-demand-caption-cell procurement-demand-brand" title={material.brand || "待确认"}>
+                        {material.brand || "待确认"}
+                      </TableCell>
+                      <TableCell className="text-right">
                         <div className="admin-cell-primary tabular-nums">
                           {formatQty(material.qty, material.qtyUnit)}
                         </div>
-                        <div className="admin-cell-secondary mt-1 procurement-demand-secondary-data">
-                          交期：{material.deliveryRequirement || "待确认"}
-                        </div>
+                      </TableCell>
+                      <TableCell className="procurement-demand-caption-cell procurement-demand-secondary-data">
+                        <div>{material.deliveryRequirement || "待确认"}</div>
                         <div
-                          className="admin-cell-secondary mt-1"
+                          className="admin-cell-secondary procurement-demand-reply mt-1"
                           title={
                             formatBeijingDateTime(demand.replyDueAt) ||
                             undefined
@@ -728,26 +746,18 @@ function ProcurementDemandsSession() {
                           {formatBeijingDateTime(demand.replyDueAt) || "待确认"}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="procurement-demand-caption-cell">
                         <div
-                          className="tabular-nums"
+                          className="procurement-demand-time tabular-nums"
                           title={`提交时间（北京时间）：${formatBeijingDateTimeWithSeconds(demand.submittedAt) || "待确认"}`}
                         >
                           {submitted || "提交时间待确认"}
                         </div>
-                        <button
-                          type="button"
-                          className="procurement-demand-number procurement-demand-text-link mt-1"
-                          aria-label={`查看需求 ${demand.demandNo} 详情`}
-                          onClick={() => setOpenedId(demand.id)}
-                        >
-                          {demand.demandNo}
-                        </button>
-                        <div className="admin-cell-secondary mt-1 procurement-demand-secondary-data">
-                          销售：{demand.salesName || "—"}
-                        </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="procurement-demand-caption-cell procurement-demand-secondary-data">
+                        {demand.salesName || "—"}
+                      </TableCell>
+                      <TableCell className="procurement-demand-caption-cell procurement-demand-quote-status">
                         <div className="font-medium">
                           {quoteProgress(demand)}
                         </div>
@@ -763,6 +773,17 @@ function ProcurementDemandsSession() {
                         )}
                       </TableCell>
                       <TableCell className="procurement-demand-actions text-right">
+                        <div className="procurement-demand-row-actions">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setOpenedId(demand.id)}
+                            aria-label={`查看需求 ${demand.demandNo}`}
+                            className="admin-row-action procurement-demand-view-action"
+                          >
+                            查看
+                          </Button>
                         <Button
                           type="button"
                           variant="outline"
@@ -782,7 +803,7 @@ function ProcurementDemandsSession() {
                                 ? "正在核验当前需求，请稍候"
                                 : undefined
                           }
-                          className="admin-row-action border-[#185FA5]/30 bg-white px-2.5 text-[#185FA5] hover:bg-[#f5f9fd]"
+                          className="admin-row-action procurement-demand-quote-action border-[#185FA5]/30 bg-white px-2.5 text-[#185FA5] hover:bg-[#f5f9fd]"
                         >
                           {demand.myQuoteNeedsReconfirmation
                             ? "更新报价"
@@ -790,6 +811,7 @@ function ProcurementDemandsSession() {
                               ? "新增报价"
                               : "报价"}
                         </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

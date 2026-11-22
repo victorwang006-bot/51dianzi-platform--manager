@@ -338,6 +338,26 @@ describe("采购需求摘要与完整物料详情", () => {
     expect(host.textContent).not.toContain("SYNTHETIC-402");
     expect(host.textContent).toContain("共4项 · 查看全部物料");
   });
+  it("restores nine independent columns and a real view button without opening the quote editor", async () => {
+    render();
+    expect([...host.querySelectorAll(".procurement-demands-table thead th")].map(cell => cell.textContent)).toEqual([
+      "需求编号", "型号", "品牌", "数量", "交期", "提交时间", "销售", "本人报价状态", "操作",
+    ]);
+    expect(host.querySelectorAll(".procurement-demands-table colgroup col")).toHaveLength(9);
+    const cells = [...host.querySelectorAll(".procurement-demands-table tbody td")];
+    expect(cells).toHaveLength(9);
+    expect(cells[0].textContent).toContain("SYNTHETIC-XQ-41");
+    expect(cells[1].textContent).toContain("SYNTHETIC-401");
+    expect(cells[2].textContent).toBe("TEST1");
+    expect(cells[3].textContent).toBe("100片");
+    expect(cells[4].textContent).toContain("2天");
+    expect(cells[5].textContent).toBe("2026-11-14 09:04");
+    expect(cells[6].textContent).toBe("合成销售");
+    expect(cells[7].textContent).toContain("1家 · 累计2轮");
+    await click("查看需求 SYNTHETIC-XQ-41");
+    expect(runtime.detailQuery).toHaveBeenCalledWith({ id: 41 });
+    expect(runtime.quoteDialog).not.toHaveBeenCalled();
+  });
   it("opens every persisted material with project, quantities, delivery, package, row notes and demand notes", async () => {
     render();
     await click("共4项 · 查看全部物料");
@@ -791,7 +811,7 @@ describe("采购新排序、条件记忆、授权与增量提醒", () => {
     expect(host.querySelector("tbody")).toBeNull();
     expect(runtime.rowsHook.mock.calls.at(-1)?.[0].refs).toEqual([]);
   });
-  it("uses exactly one row-level quote primary action; reconfirm enters controlled detail instead of guessing a quote ID; exports real mock DOM", async () => {
+  it("uses stable view and single quote slots; reconfirm enters controlled detail instead of guessing a quote ID; exports real mock DOM", async () => {
     runtime.list!.items = [
       summary(),
       {
@@ -822,7 +842,7 @@ describe("采购新排序、条件记忆、授权与增量提醒", () => {
         matchedItem: {
           index: 2,
           partNumber: "SEARCH-SECOND-MATERIAL",
-          brand: "MOCK-BRAND",
+          brand: "Microchip",
           qty: 2500,
           qtyUnit: "个",
           deliveryRequirement: "待确认 · 长交期说明不会裁剪",
@@ -831,15 +851,20 @@ describe("采购新排序、条件记忆、授权与增量提醒", () => {
     ];
     runtime.newIds.add("demand:41");
     render();
-    for (const row of host.querySelectorAll("tbody tr"))
-      expect(row.querySelectorAll("td:last-child button")).toHaveLength(1);
+    for (const row of host.querySelectorAll("tbody tr")) {
+      expect(row.querySelectorAll("td:last-child button")).toHaveLength(2);
+      expect(row.querySelectorAll(".procurement-demand-view-action")).toHaveLength(1);
+      expect(row.querySelectorAll(".procurement-demand-quote-action")).toHaveLength(1);
+      expect(row.querySelector(".procurement-demand-view-action")?.hasAttribute("disabled")).toBe(false);
+    }
     expect(
       host
-        .querySelector('[data-page-memory-row="43"] td:last-child button')
+        .querySelector('[data-page-memory-row="43"] .procurement-demand-quote-action')
         ?.hasAttribute("disabled")
     ).toBe(true);
     expect(host.textContent).toContain("旧版报价待重新确认");
     const output =
+      process.env.PROCUREMENT_DOM_FIXTURE_OUTPUT ??
       "/home/ubuntu/work/demand-redesign-implementation-20261122-1302/frontend/dom-fixture.html";
     mkdirSync(output.slice(0, output.lastIndexOf("/")), { recursive: true });
     writeFileSync(
@@ -854,7 +879,7 @@ describe("采购新排序、条件记忆、授权与增量提醒", () => {
     await click("关闭");
     expect(
       host
-        .querySelector('[data-page-memory-row="41"] td:last-child button')
+        .querySelector('[data-page-memory-row="41"] .procurement-demand-quote-action')
         ?.hasAttribute("disabled")
     ).toBe(true);
   });

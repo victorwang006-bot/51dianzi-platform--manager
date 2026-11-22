@@ -37,9 +37,10 @@ export function AdminNewInformationBadge({
     : state === "pending" ? (total === undefined ? "核验中" : "待更新")
     : state === "refreshing" ? "后台刷新中"
     : state === "failed" || lastKnown ? "暂不可用" : undefined;
-  // A verified zero stays quiet during ordinary polling. The one global status
-  // explains the in-flight read; an invalidation/unknown/failure is NOT quiet.
-  if ((!updateLabel || state === "refreshing") && (total === undefined || total === 0)) {
+  // Navigation is a count, not a per-module status indicator. Unknown never
+  // becomes zero; permission-blocked proof is never shown. The shared details
+  // explains uncertainty/failure without changing count colour or placement.
+  if (total === undefined || total === 0) {
     return placement === "inline" && reserveSpace ? (
       <span
         className={`relative ml-1 inline-block h-[18px] min-w-[18px] shrink-0 ${className}`}
@@ -57,30 +58,8 @@ export function AdminNewInformationBadge({
       : placement === "nav"
         ? "absolute right-[2px] -top-[3px] z-[1]"
         : "relative ml-1 shrink-0";
-  // An unknown/error state is not a red unread count. Keep any verified last
-  // number as neutral context, and never turn an unknown response into zero.
-  if (updateLabel) return (
-    <span
-      className={`${placementClass} inline-flex items-center justify-center whitespace-nowrap ${className}`}
-      style={{ background: "#f1f5f9", color: "#475569", boxShadow: "none", borderRadius: 4,
-        height: 16, padding: "0 4px", fontSize: 10, lineHeight: "16px", fontWeight: 400 }}
-      data-admin-new-information="update-status"
-      data-placement={placement}
-      data-update-state={state}
-      data-known-count={total}
-      data-last-successful-at={lastSuccessfulAt}
-      aria-label={label}
-      title={label}
-      role="status"
-    >
-      {placement === "nav" ? (
-        <>
-          {total !== undefined && total > 0 ? formatAdminNewInformationCount(total) : null}
-          {state !== "refreshing" ? <span aria-hidden="true" className="admin-new-information-nav-symbol">{blocked ? "⊘" : state === "failed" || lastKnown ? "!" : total === undefined ? "?" : "↻"}</span> : null}
-        </>
-      ) : <>{total !== undefined && total > 0 ? `${formatAdminNewInformationCount(total)} · ` : ""}{updateLabel}</>}
-    </span>
-  );
+  // Keep the last successful positive count's visual treatment while polling
+  // or retrying. Its accessible provenance stays explicit, not a fresh receipt.
   return (
     <span
       className={`${placementClass} inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#E5484D] px-[5px] text-[11px] font-semibold leading-[18px] text-white tabular-nums ring-2 ring-white ${className}`}
@@ -93,7 +72,7 @@ export function AdminNewInformationBadge({
       title={label}
       role="status"
     >
-      {formatAdminNewInformationCount(total!)}
+      {formatAdminNewInformationCount(total)}
     </span>
   );
 }

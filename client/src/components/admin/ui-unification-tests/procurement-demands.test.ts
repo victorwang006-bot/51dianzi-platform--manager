@@ -147,16 +147,19 @@ describe("procurement-demands unified page", () => {
     expect(control("tbody td:last-child").classList.contains("text-right")).toBe(true);
   });
 
-  it("uses five information groups and Beijing submittedAt, with demand and sales in submission metadata", () => {
+  it("uses nine compact columns and Beijing submittedAt, with independent demand and sales cells", () => {
     render();
     expect(container.querySelector('nav[aria-label="采购工作台功能"]')).toBeNull();
-    expect(Array.from(container.querySelectorAll("thead th")).map(node => node.textContent)).toEqual(["物料", "数量 / 交期", "提交信息", "本人报价", "报价"]);
-    expect(control("tbody td:nth-child(3)").textContent).toContain("2026-11-13 09:02");
+    expect(Array.from(container.querySelectorAll("thead th")).map(node => node.textContent)).toEqual(["需求编号", "型号", "品牌", "数量", "交期", "提交时间", "销售", "本人报价状态", "操作"]);
+    expect(control("tbody td:nth-child(6)").textContent).toContain("2026-11-13 09:02");
+    expect(control("tbody td:nth-child(7)").textContent).toBe("原销售");
     expect(control("tbody td:first-child").textContent).not.toContain("原项目");
     expect(container.textContent).toContain("全体当前 2 份");
-    expect(control("colgroup").children).toHaveLength(5);
+    expect(control("colgroup").children).toHaveLength(9);
     expect(control("colgroup col:nth-child(1)").getAttribute("class")).toBeNull();
     expect(control("tbody td:last-child").classList.contains("procurement-demand-actions")).toBe(true);
+    expect(control(".procurement-demands-panel")).toBeTruthy();
+    expect(control(".procurement-demand-row-actions").children).toHaveLength(2);
   });
 
   it.each([null, "", "   ", "真实需求说明"])("only displays meaningful notes, keeps real project and one quote create button: %j", note => {
@@ -276,19 +279,33 @@ describe("procurement-demands unified page", () => {
     expect(nav.querySelector('[aria-current="page"]')?.getAttribute("href")).toBe("/procurement/demands");
   });
 
-  it("owns only compact page CSS without blanket important rules or scale hacks", () => {
+  it("owns page-only length-budget columns, typography and responsive sticky slots without scale hacks", () => {
     const css = readFileSync(resolve(process.cwd(), "client/src/business/platform/client/src/pages/ProcurementDemands.css"), "utf8");
-    expect(css).toContain("height: var(--admin-content-control-height, 32px)");
-    expect(css).toContain("font-size: var(--admin-content-font-body, 12px)");
-    expect(css).toContain("font-size: var(--admin-content-font-caption, 11px)");
+    expect(css).toContain("--admin-font-body: 13px");
+    expect(css).toContain("--admin-font-caption: 12px");
+    expect(css).toContain("--admin-control-height: 34px");
+    expect(css).toContain("--admin-row-action-height: 28px");
     expect(css).toContain("border-radius: 6px");
     expect(css).toMatch(/\.procurement-demands-table-scroll\s*\{[^}]*overflow-x: auto/);
-    expect(css).toContain("min-width: 920px");
-    ["auto", "160px", "210px", "170px", "110px"].forEach((width, index) => {
-      expect(css).toMatch(new RegExp(`col:nth-child\\(${index + 1}\\)\\s*\\{\\s*width: ${width};`));
-    });
-    expect(css).toMatch(/\.procurement-demand-actions\s*\{[^}]*position: static/);
-    expect(css).not.toContain("position: sticky");
+    expect(css).toContain("container-type: inline-size");
+    expect(css).toContain("min-width: 980px");
+    expect(css).toContain("clamp(210px, 20vw, 260px)");
+    expect(css).toContain("max(100cqw, 980px)");
+    for (const share of [".22", ".14", ".12", ".25", ".13"])
+      expect(css).toContain(`calc(var(--pd-other-width) * ${share})`);
+    expect(css).toContain("--pd-state-width: 164px");
+    expect(css).toContain("--pd-action-width: 152px");
+    expect(css).toContain("--pd-state-width: 142px");
+    expect(css).toContain("--pd-action-width: 148px");
+    expect(css).toContain("calc(max(100cqw, 980px) - 842px)");
+    for (const width of ["138px", "78px", "76px", "70px", "130px", "60px"])
+      expect(css).toContain(`width: ${width};`);
+    expect(css).toContain("grid-template-columns: 44px 76px");
+    expect(css).toContain("gap: 6px");
+    expect(css).toContain("right: var(--pd-action-width)");
+    expect(css).toContain("position: sticky");
+    expect(css).toMatch(/@media \(max-width: 760px\)[\s\S]*position: static/);
+    expect(css).not.toMatch(/width:\s*calc\([^;]*\d%/);
     expect(css).not.toMatch(/!important|\bzoom\s*:|\btransform\s*:/);
   });
 });
