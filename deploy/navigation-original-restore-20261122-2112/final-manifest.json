@@ -1,0 +1,288 @@
+{
+  "scope": "navigation-original-restore-release-20261122-2112",
+  "sourceCommits": {
+    "manager": "684552d91d504029e867808c65bd057822a8992c",
+    "platform": "bac021ca40e9670bb790229600dbedf968846538"
+  },
+  "sourcePins": {
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminNewInformation.tsx": "dda94052103eb52ffc707cc40b5803a3398a91c0197884534faafa51a81603b3",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx": "de06a21f9fde4f72659526aa099a4388b835f56ee9c17dd7ddb9028e95cfada9",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformation.ts": "364e0e811492e8fe97a34bfc2fb27371acb8484851302c1fb4344a881bce8798",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/adminNewInformation.ts": "29690138f57fcc31b88e33aef0cb6f4dab2fbe7064db564636a83f9cd883add2",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/CustomerDetail.tsx": "99a8341d757865c96727c7d1cd37e1737419ffde3fe793b7c5177a742368278e",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/CustomerDetailReadability.css": "73a368ebc9ae5389eaeea06a5050defcd785d26c5e76ab63b05a6584eda16c77",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminHeaderNavigation.css": "04a933d83aeff81dc2fe44d37a428fba520e04e67db24b23cd7cf2d245c8a8d3",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminHeaderNavigationLayout.ts": "e573435f24387a8335288dc5f2d8016094950ce545dd5d1f2d8aa51457ab180e",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminNewInformation.test.ts": "a7173946aecdb038911b2b2d7645ed5b96650ddb0743e2c90b27f31be7be9672",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminHeaderNavigationLayout.test.ts": "2fcae81afac088f18f7e5921fb978d16289d967e90200f794d09e86b5581d87f",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/CustomerDetail.notification-presentation.test.ts": "bf162be105d9e91f9309a20d0ab27a85c3315ea2ed9bede2705c894591a9c62a",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminWorkspaceNavigation.tsx": "1670ab0b10da1baba5d24f109f426e7d046e47348bd1657a7bf098b18909c29f",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/DashboardLayout.tsx": "a45cfc7afde76f5a391acef3a20d9437c27f85d57f0fd33e4ca87f0810330514",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/salesOrderWorkspace.ts": "490dd1f4bbf25a78141fcc445c87bd169ba089d439fe7a93e627367b21c8a680",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/adminListLocationLayout.ts": "bbcf068f8f1218e15edd2a4d2e1cf8fc3b6e29f61c36e9dbf7ab18922f9e8e2a",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminWorkspaceDropdownWidth.ts": "5e20251b082445685b0d6fa91587e6d31e35056ba4aefe9a29abf774300b3926",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/beijingTime.ts": "d92d45e834b966af24df57d82bff60e988c0f3189b6662710078d34cc9066b15",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/channelInventoryNavigation.ts": "20509a6940df5f5323f739d44f04f834e6405513fb8f0658779cc2021895001a",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/adminWorkspaceNavigationModel.ts": "31a02591479c9e1b3983a63195ad202b0714291e9097cda27e153808b7fcd664",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/adminWorkbenchNavigationModel.ts": "95f1f43d20e91357396f6a4000659632e74cac835239a36d14e2a7ebce118f11",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminWorkspaceNavigation.css": "5d72fb7d941b34c6329d5b8274d002ed393ddd70bfe4d563e7688b232f5e895b",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts": "082e90eae3a2c8fb3ad3be00cfc5d70e7c0374c6fb3fd62d954408e1b110341e"
+  },
+  "html": {
+    "local": "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/final/index.html",
+    "beforeSHA": "5efa0b67f9dcea7d971b806ad66c97b2c435c70c5ff09416f1a5c870eb162aa2",
+    "afterSHA": "de7ad8f0890c342920ac8ab2835be62ccd6e395a410d792dc38bd30cf90511d0",
+    "size": 952633
+  },
+  "assets": [
+    {
+      "side": "admin",
+      "url": "/assets/AdminHeaderNavigation-navigation-original-restore-release-20261122-2112-bc333a2af3cf630eb8d3e8e5eddb0b6f55a9973eb690d656ad195a2ab9b648a7.js",
+      "local": "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/final/assets/AdminHeaderNavigation-navigation-original-restore-release-20261122-2112-bc333a2af3cf630eb8d3e8e5eddb0b6f55a9973eb690d656ad195a2ab9b648a7.js",
+      "sha256": "bc333a2af3cf630eb8d3e8e5eddb0b6f55a9973eb690d656ad195a2ab9b648a7",
+      "size": 52501
+    },
+    {
+      "side": "admin",
+      "url": "/assets/DashboardLayout-navigation-original-restore-release-20261122-2112-678ee5d6930725f0adeda3893f2eaddba452615f4fa94da61d40cda102af5f05.js",
+      "local": "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/final/assets/DashboardLayout-navigation-original-restore-release-20261122-2112-678ee5d6930725f0adeda3893f2eaddba452615f4fa94da61d40cda102af5f05.js",
+      "sha256": "678ee5d6930725f0adeda3893f2eaddba452615f4fa94da61d40cda102af5f05",
+      "size": 99647
+    },
+    {
+      "side": "admin",
+      "local": "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/final/assets/navigation-original-restored-9d61d190409aa40c.css",
+      "url": "/assets/navigation-original-restored-9d61d190409aa40c.css",
+      "sha256": "9d61d190409aa40c45e757f32af13510fea5f9102476cd8ce2c6ef73c90a157b",
+      "size": 27590
+    }
+  ],
+  "apis": [],
+  "runtimes": [],
+  "replacements": {
+    "/assets/DashboardLayout-header-ui-release-20261122-1928-30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426.js": "/assets/DashboardLayout-navigation-original-restore-release-20261122-2112-678ee5d6930725f0adeda3893f2eaddba452615f4fa94da61d40cda102af5f05.js"
+  },
+  "resolutions": [
+    {
+      "from": "/assets/DashboardLayout-header-ui-release-20261122-1928-30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426.js",
+      "to": "/assets/DashboardLayout-navigation-original-restore-release-20261122-2112-678ee5d6930725f0adeda3893f2eaddba452615f4fa94da61d40cda102af5f05.js",
+      "spec": "/assets/AdminHeaderNavigation-navigation-original-restore-release-20261122-2112-bc333a2af3cf630eb8d3e8e5eddb0b6f55a9973eb690d656ad195a2ab9b648a7.js",
+      "before": null,
+      "after": "/assets/AdminHeaderNavigation-navigation-original-restore-release-20261122-2112-bc333a2af3cf630eb8d3e8e5eddb0b6f55a9973eb690d656ad195a2ab9b648a7.js",
+      "newImport": true
+    },
+    {
+      "from": "/assets/DashboardLayout-header-ui-release-20261122-1928-30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426.js",
+      "to": "/assets/DashboardLayout-navigation-original-restore-release-20261122-2112-678ee5d6930725f0adeda3893f2eaddba452615f4fa94da61d40cda102af5f05.js",
+      "spec": "/assets/AdminNewInformation-notification-redesign-8a0443b2848920b4.js",
+      "before": "/assets/AdminNewInformation-ui-removal-2ea5904ede64accf.js",
+      "after": "/assets/AdminNewInformation-ui-removal-2ea5904ede64accf.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/DashboardLayout-header-ui-release-20261122-1928-30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426.js",
+      "to": "/assets/DashboardLayout-navigation-original-restore-release-20261122-2112-678ee5d6930725f0adeda3893f2eaddba452615f4fa94da61d40cda102af5f05.js",
+      "spec": "./index-8jluR_FO.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/DashboardLayout-header-ui-release-20261122-1928-30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426.js",
+      "to": "/assets/DashboardLayout-navigation-original-restore-release-20261122-2112-678ee5d6930725f0adeda3893f2eaddba452615f4fa94da61d40cda102af5f05.js",
+      "spec": "/assets/BusinessWorkbenchPage-inquiry-reception-1-1db2f6d03b11ad8d376113ca82af755197612b2da4f5bcf36f2b4edfd311ebe8.js",
+      "before": "/assets/BusinessWorkbenchPage-customer-status-removal-1-8f37988bf5c60f40.js",
+      "after": "/assets/BusinessWorkbenchPage-customer-status-removal-1-8f37988bf5c60f40.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/DashboardLayout-header-ui-release-20261122-1928-30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426.js",
+      "to": "/assets/DashboardLayout-navigation-original-restore-release-20261122-2112-678ee5d6930725f0adeda3893f2eaddba452615f4fa94da61d40cda102af5f05.js",
+      "spec": "/assets/admin-list-location-db1bfac861e62ccff0feefed4e69f00deeb4ac329b22c41164e38f24f589a0f9.js",
+      "before": "/assets/admin-list-location-reception-experience-a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c.js",
+      "after": "/assets/admin-list-location-reception-experience-a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c.js",
+      "newImport": false
+    },
+    {
+      "from": "/assets/DashboardLayout-header-ui-release-20261122-1928-30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426.js",
+      "to": "/assets/DashboardLayout-navigation-original-restore-release-20261122-2112-678ee5d6930725f0adeda3893f2eaddba452615f4fa94da61d40cda102af5f05.js",
+      "spec": "./index-CKHSh4Pc.js",
+      "before": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js",
+      "after": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js",
+      "newImport": false
+    }
+  ],
+  "componentManifests": {
+    "navigation": "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/navigation-candidate/manifest.json",
+    "styles": "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/styles-candidate/manifest.json"
+  },
+  "checks": {
+    "pureStatic": true,
+    "twoAPIsUnchanged": true,
+    "noAPIReload": true,
+    "fullHTMLInverse": true,
+    "allNonTargetAliasesAndOldScopesPreserved": true,
+    "originalSingletonsPreserved": true,
+    "sourceFreeze": true,
+    "frontHTMLUnchanged": true,
+    "noWorkbenchOrNotificationRebuild": true,
+    "actualNativeCssChain": true,
+    "customerSyncRowDeletionRetained": true,
+    "statusDeletionRetained": true,
+    "originalNavigationPropsAndAccountExact": true,
+    "procurementUntouched": true,
+    "retained1746BackendRepair": true,
+    "onlyFixedHeaderCSSSuffixRemoved": true
+  },
+  "tests": {
+    "status": "TARGETED_NATIVE_PASS_WITH_DISCLOSED_LIMITS",
+    "source": {
+      "passed": 23,
+      "files": 1
+    },
+    "navigation": {
+      "status": "PASS",
+      "passed": 12,
+      "failed": 0,
+      "cases": [
+        {
+          "name": "implementation-source-pins-and-original-navigation-baseline",
+          "status": "PASS",
+          "navigationSHA": "1670ab0b10da1baba5d24f109f426e7d046e47348bd1657a7bf098b18909c29f",
+          "baselineRevision": "e965247",
+          "dashboardSourceSHA": "a45cfc7afde76f5a391acef3a20d9437c27f85d57f0fd33e4ca87f0810330514"
+        },
+        {
+          "name": "eight-pure-source-dependencies-no-business-compilation",
+          "status": "PASS",
+          "compiledSourceCount": 8,
+          "compiledInputs": [
+            "native:react",
+            "shared/beijingTime.ts",
+            "client/src/lib/channelInventoryNavigation.ts",
+            "client/src/components/admin/adminWorkbenchNavigationModel.ts",
+            "client/src/components/admin/adminWorkspaceNavigationModel.ts",
+            "client/src/components/admin/adminListLocationLayout.ts",
+            "client/src/lib/salesOrderWorkspace.ts",
+            "client/src/lib/adminWorkspaceDropdownWidth.ts",
+            "excluded-css:./AdminWorkspaceNavigation.css",
+            "excluded-css:./AdminListPage.css",
+            "native:react/jsx-runtime",
+            "client/src/components/admin/AdminWorkspaceNavigation.tsx",
+            "original-navigation-entry.ts"
+          ]
+        },
+        {
+          "name": "source-only-factory-syntax-no-new-layout-more-fixed-groups-permanent-slots",
+          "status": "PASS"
+        },
+        {
+          "name": "full-byte-inverse",
+          "status": "PASS",
+          "beforeSHA": "30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426",
+          "inverseSHA": "30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426"
+        },
+        {
+          "name": "outside-patch-bytes-exact",
+          "status": "PASS",
+          "segmentCount": 4
+        },
+        {
+          "name": "AST-header-three-siblings-logo-and-all-non-account-props-exact",
+          "status": "PASS",
+          "originalChildren": 2,
+          "restoredChildren": 3,
+          "originalNavigationPropCount": 6
+        },
+        {
+          "name": "AST-original-account-expression-SHA",
+          "status": "PASS",
+          "sha256": "f1f610b651aa8f643a0c696a2a4b9aae554463f8206d8217cca6d602ffd1823b",
+          "size": 2097
+        },
+        {
+          "name": "NI-import-initialization-provider-and-native-bridge-unchanged",
+          "status": "PASS",
+          "NIImportSHA": "3ad0e1a72a67555bad171e08d438982cd6dddd5fc2dd2d1c17198d337df207ad",
+          "NIInitializationSHA": "2bccf4c7c1d0578c23deca64ba13126b75dcd98461861319c092979099485111",
+          "navInitializationSHA": "1791df748fe934b37943675ca87e76a509a04133871a4e0d9db4c7bd85f302d4",
+          "providerOwnProperties": [
+            "client:__niClient",
+            "accountKey:t?.hasNativeAdminAccount===!0?g:null",
+            "canRead:Object.values(__niAccess).some(Boolean)",
+            "moduleCanRead:__niAccess"
+          ],
+          "proof": "Provider wrapper and non-children properties AST-equal; all unaffected bytes including provider/child subtree outside the three narrow patches compare exactly."
+        },
+        {
+          "name": "factory-native-fake-hooks-empty-items-return-null",
+          "status": "PASS",
+          "exportAPI": [
+            "AdminWorkspaceTabs",
+            "WorkspaceTabs"
+          ],
+          "emptyItemsResult": null,
+          "hooksInvoked": {
+            "useRef": 7,
+            "useId": 1,
+            "useState": 1,
+            "useEffect": 3,
+            "useLayoutEffect": 1
+          }
+        },
+        {
+          "name": "factory-native-fake-hooks-JSX-original-items-routing-preload-dynamic-badges",
+          "status": "PASS",
+          "primaryButtons": 6,
+          "originalAuthorizedObjectIdentity": true,
+          "channelIntent": [
+            "materials",
+            "flat"
+          ],
+          "nativeHookCalls": {
+            "useRef": 14,
+            "useId": 2,
+            "useState": 2,
+            "useEffect": 6,
+            "useLayoutEffect": 2
+          }
+        },
+        {
+          "name": "source-pins-frozen-after-build",
+          "status": "PASS",
+          "pinnedSourceCount": 9,
+          "compiledPureNavigationCount": 8,
+          "nativeDashboardSourceNotCompiled": true
+        },
+        {
+          "name": "exactly-two-JS-assets-no-navigation-or-list-CSS-assets",
+          "status": "PASS",
+          "assetCount": 2
+        }
+      ]
+    },
+    "layout": {
+      "viewports": [
+        1440,
+        1280,
+        860,
+        390
+      ],
+      "allPassed": true,
+      "headerTrueSameRow": true,
+      "zeroAnd99Plus": true,
+      "originalLevelsAndRoutes": true,
+      "narrowScrollerReachable": true,
+      "network": 0,
+      "cssLayers": 53,
+      "syntheticNotRealAccount": true
+    }
+  },
+  "limitations": {
+    "realAccountBusinessTest": false,
+    "realUnreadMarkWrites": false,
+    "inspect503RootCauseClosed": false,
+    "platformNotDeployed": true,
+    "syntheticGeometryIsNotRealAccountValidation": true
+  }
+}

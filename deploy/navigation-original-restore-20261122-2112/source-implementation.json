@@ -1,0 +1,80 @@
+{
+  "status": "completed_source_only",
+  "completed_at": "2026-11-22T21:15:42+08:00",
+  "repository": "/home/ubuntu/work/channel-release-20261121-1837/manager",
+  "starting_head": "e09bcb5a02180a82fe3a451bd1e530efb32c0978",
+  "head_after_validation": "e09bcb5a02180a82fe3a451bd1e530efb32c0978",
+  "starting_worktree_clean": true,
+  "authorization_context": "父代理转达用户 21:12 明确授权：按照此设计，上线；本子任务仅实施源码恢复，不发布或提交。",
+  "baseline": {
+    "file": "/home/ubuntu/work/header-layout-investigation-20261122-2049/original-navigation.tsx",
+    "git_revision": "e965247",
+    "sha256": "1670ab0b10da1baba5d24f109f426e7d046e47348bd1657a7bf098b18909c29f",
+    "restored_navigation_equal_to_baseline_file_and_revision": true,
+    "method": "从提供的原文件提取 WorkspaceTabs 局部组件，移除对应新 header import/prop/More type；未做整个仓库或版本回滚。"
+  },
+  "changed_files": [
+    {
+      "path": "client/src/components/admin/AdminWorkspaceNavigation.tsx",
+      "sha256": "1670ab0b10da1baba5d24f109f426e7d046e47348bd1657a7bf098b18909c29f",
+      "change": "恢复原同级自然宽度、原 nav 内横向 scroller 和原菜单层级；移除新预算布局、More、business/utilities 固定组及永久 badge/arrow 槽；保留原父授权对象、onNavigate 路由意图、预加载、动态 badge。"
+    },
+    {
+      "path": "client/src/components/DashboardLayout.tsx",
+      "sha256": "a45cfc7afde76f5a391acef3a20d9437c27f85d57f0fd33e4ca87f0810330514",
+      "change": "仅删除 AdminHeaderNavigation.css import，并将原完整 DropdownMenu 从 accountMenu prop 移到 Tabs 之后，作为 header 独立兄弟。",
+      "account_node_byte_identical_to_starting_head": true,
+      "only_requested_import_and_account_placement_changed": true
+    },
+    {
+      "path": "client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts",
+      "sha256": "082e90eae3a2c8fb3ad3be00cfc5d70e7c0374c6fb3fd62d954408e1b110341e",
+      "change": "原新布局测试替换成 23 个原导航恢复合同用例；不修改其它测试文件。"
+    }
+  ],
+  "preserved": [
+    "AdminNewInformationStatus 组件及 CSS 保持删除，未重新引入",
+    "AdminNewInformationProvider、真实 NI badge 数据链路及未读修复保持原样",
+    "客户同步行保持删除，未恢复",
+    "原客户详情位置条删除与其它导航位置逻辑保持原样",
+    "原授权模型、业务模型和 CSS 无变更",
+    "未引用 adminHeaderNavigationLayout helper 和 AdminHeaderNavigation.css 文件保留",
+    "platform 和 Demo 未读取或修改；未将 Demo 数字引入正式站点"
+  ],
+  "validation": {
+    "test_command": "node_modules/.bin/vitest run client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts --reporter=verbose",
+    "test_files_run": 1,
+    "tests_passed": 23,
+    "tests_failed": 0,
+    "duration_seconds": 2.49,
+    "test_log": "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/header-layout-test.log",
+    "syntax_check": "TypeScript createSourceFile parseDiagnostics 对三份改动文件为 0；仅语法解析，未执行全站 tsc。",
+    "git_diff_check": "passed",
+    "exact_three_file_scope": "passed",
+    "account_node_preservation_and_layout_delta_check": "passed",
+    "navigation_baseline_file_and_e965247_hash_check": "passed",
+    "model_original_css_retained_helper_and_header_css_unchanged": "passed",
+    "test_fixture_adjustment": "首轮 22/23：商城销售来源 fixture 错用平台 /orders；按既有 salesOrderWorkspace helper 改为原 /workbench/outbound 授权对象后，最终 23/23；未为测试改变业务源码。",
+    "coverage": [
+      "1920/1050/390 宽度保持全部授权一级同级入口，无 More/固定组/永久槽",
+      "原 CSS 自然宽度和 nav 内横向滚动合同",
+      "原父授权对象身份、渠道 materials/flat 意图和销售 business/mall 来源",
+      "运营二/三级菜单、移动 drawer、Escape 焦点、横向键及预加载",
+      "内部 scroller 重锚、resize、撤权和 URL/query 变化",
+      "动态 badge、独立完整账号节点、Status 删除与 Provider/未读保留"
+    ]
+  },
+  "safety": {
+    "network_used": false,
+    "key_token_or_ssh_read": false,
+    "production_access_or_deploy": false,
+    "git_commit": false,
+    "git_push": false,
+    "full_site_build": false,
+    "full_site_tsc": false,
+    "platform_modified": false,
+    "demo_modified": false
+  },
+  "limitations": "验证限于源码合同、jsdom 交互和 mocked geometry；未进行实浏览器视觉、生产真实 NI 数据或发布验收。发布与 Git commit/push 由父代理负责。",
+  "blockers": []
+}

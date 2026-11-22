@@ -1,0 +1,59 @@
+{
+  "scope": "navigation-original-restore-release-20261122-2112",
+  "sourceCommit": "684552d91d504029e867808c65bd057822a8992c",
+  "files": {
+    "source-implementation.json": {
+      "sha256": "4a55ff21f0a8bce1ff410239b12678e66b8a37b5de26ef00db8b41a5bbbaeeab",
+      "bytes": 4766
+    },
+    "source-version.json": {
+      "sha256": "8c4f868e95645fadd27a7e31ac88c1ec064d7bc40c78823de7535b3a98679bcf",
+      "bytes": 4597
+    },
+    "header-layout-test.log": {
+      "sha256": "2f49aac9ade5d0612edfbe2558d17c2ca19cb367ac8739a9177bdb5e51e74d83",
+      "bytes": 5819
+    },
+    "header-geometry.json": {
+      "sha256": "43f60b2d41ec9e4aebf2f649c2e2ef98e0ade652b0a6c1644f21cb2ef2691e1f",
+      "bytes": 82402
+    },
+    "integration-release-review.json": {
+      "sha256": "ceaa5e3c1ed2f0d4917d29888a0c2cc10b224bb712b3838897f0fb62465eee20",
+      "bytes": 12918
+    },
+    "integration-release-review.md": {
+      "sha256": "55a13150a1c00fabe46827b7bc51a71eb0e7deba559f25695c51467d26d7c23d",
+      "bytes": 2996
+    },
+    "receipt.json": {
+      "sha256": "7ef1e2e9edf8f4cee4aca552ecf05511686696f73e4ac0bfdcbd785abc0a42eb",
+      "bytes": 13731
+    },
+    "post-release-check.json": {
+      "sha256": "53bb206af8c413ffc458ac84d9e1ff1f68c0023d9841db60193e34096f5e21d8",
+      "bytes": 141
+    },
+    "release-manifest.json": {
+      "sha256": "2a2d771d3fe34a143a1c08ddd8d0cb7f9760029ad477d0a6676d6cbe0858d172",
+      "bytes": 104008
+    },
+    "原顶部导航恢复-正式上线回执.md": {
+      "sha256": "860005d966766f4163c0cceb1948176d8ad0c9db6bba4da6d1c3535c243e0c08",
+      "bytes": 3366
+    },
+    "final-manifest.json": {
+      "sha256": "40e6c3813af3802668b7ccc8fc33ff3663be248f8e21352141b1842aec6e1ed0",
+      "bytes": 16401
+    },
+    "navigation-manifest.json": {
+      "sha256": "4015a6ea4bb355f5ec0c3e9681f1882cbc48943af38eae16d1caad08ff586d4d",
+      "bytes": 29838
+    },
+    "styles-manifest.json": {
+      "sha256": "5058d4bd2ac7762fb2ad8fd804b57da09bf85a1d9a876cd53f8845b508154683",
+      "bytes": 1488
+    }
+  },
+  "payloadOrSecretsArchived": false
+}

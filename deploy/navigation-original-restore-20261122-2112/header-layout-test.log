@@ -1,0 +1,32 @@
+
+ RUN  v2.1.9 /home/ubuntu/work/channel-release-20261121-1837/manager
+
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > 1920px 的全部授权一级入口直接同级，不新增 More 或固定业务/功能组
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > 1050px 的全部授权一级入口直接同级，不新增 More 或固定业务/功能组
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > 390px 的全部授权一级入口直接同级，不新增 More 或固定业务/功能组
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > 原 CSS 合同采用 nav 横向滚动和按钮自然宽度，而不是固定网格槽
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > customers 点击仍以同一个父授权对象调用一次 onNavigate
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > mall-materials 点击仍以同一个父授权对象调用一次 onNavigate
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > inquiries 点击仍以同一个父授权对象调用一次 onNavigate
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > procurement-management 点击仍以同一个父授权对象调用一次 onNavigate
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > inventory-management 点击仍以同一个父授权对象调用一次 onNavigate
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > personal 点击仍以同一个父授权对象调用一次 onNavigate
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > 库存入口保留原对象及 materials/flat 路由意图
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > 销售来源 /workbench/orders 保留来源意图和真实授权对象
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > 销售来源 /workbench/outbound 保留来源意图和真实授权对象
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > 运营保留二/三级原菜单，Escape 回到运营入口焦点
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > 运营三级消息叶仍传原对象，并同步关闭菜单
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > 横向键只移动同级焦点；预加载也只收到原授权对象
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > 原内部 scroller 滚动只重锚原桌面菜单，resize 不折叠入口
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > 移动端继续使用原菜单 drawer，不把授权入口搬进 More
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > 撤权立即删除入口/旧菜单，空授权不合成业务入口
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > URL/query 驱动当前项与菜单关闭，不引入本地路由选择
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > 动态真实角标回调继续直接渲染；零值没有永久空槽
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > Dashboard header 只含 brand/Tabs/独立完整账号节点，账号不再是 Tabs prop
+ ✓ client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts > 原导航恢复合同：同级自然宽度、内部滚动、原对象与原层级 > Status 仍删除；原 NIProvider、真实 badge 和未读修复保留，未恢复客户同步行
+
+ Test Files  1 passed (1)
+      Tests  23 passed (23)
+   Start at  13:15:38
+   Duration  2.49s (transform 241ms, setup 0ms, collect 1.02s, tests 519ms, environment 590ms, prepare 84ms)
+

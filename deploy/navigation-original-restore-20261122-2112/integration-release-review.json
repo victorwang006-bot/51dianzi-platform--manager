@@ -1,0 +1,323 @@
+{
+  "result": "PASS",
+  "scope": "navigation-original-restore-release-20261122-2112",
+  "manifest": "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/final/manifest.json",
+  "manifestSHA256": "40e6c3813af3802668b7ccc8fc33ff3663be248f8e21352141b1842aec6e1ed0",
+  "reviewedAtUtc": "2026-11-22T13:25:08.213034+00:00",
+  "reviewMode": "INDEPENDENT_LOCAL_READ_ONLY_PREPUBLICATION",
+  "checks": [
+    {
+      "name": "dashboard_exact_three_patches_fullbyte_inverse_outside",
+      "status": "PASS",
+      "patchCount": 3,
+      "outsideSegments": 4,
+      "beforeSHA256": "30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426",
+      "inverseSHA256": "30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426"
+    },
+    {
+      "name": "dashboard_three_siblings_all_nonaccount_props_logo_account_exact",
+      "status": "PASS",
+      "beforeChildren": 2,
+      "afterChildren": 3,
+      "nonAccountPropCount": 6,
+      "accountSHA256": "f1f610b651aa8f643a0c696a2a4b9aae554463f8206d8217cca6d602ffd1823b",
+      "accountBytes": 2097
+    },
+    {
+      "name": "NI_import_init_provider_native_react_jsx_singletons_unchanged",
+      "status": "PASS",
+      "NIImportSHA256": "3ad0e1a72a67555bad171e08d438982cd6dddd5fc2dd2d1c17198d337df207ad",
+      "NIInitializationSHA256": "2bccf4c7c1d0578c23deca64ba13126b75dcd98461861319c092979099485111",
+      "navInitializationSHA256": "1791df748fe934b37943675ca87e76a509a04133871a4e0d9db4c7bd85f302d4",
+      "providerChildrenMayContainTargetHeader": true
+    },
+    {
+      "name": "HTML_only_dashboard_mapping_copied_scope_one_css_href_inverse_exact",
+      "status": "PASS",
+      "inverseSHA256": "5efa0b67f9dcea7d971b806ad66c97b2c435c70c5ff09416f1a5c870eb162aa2",
+      "oldHTMLSHA256": "5efa0b67f9dcea7d971b806ad66c97b2c435c70c5ff09416f1a5c870eb162aa2",
+      "newHTMLSHA256": "de7ad8f0890c342920ac8ab2835be62ccd6e395a410d792dc38bd30cf90511d0",
+      "originalScopeCount": 130,
+      "copiedScope": "/assets/DashboardLayout-navigation-original-restore-release-20261122-2112-678ee5d6930725f0adeda3893f2eaddba452615f4fa94da61d40cda102af5f05.js"
+    },
+    {
+      "name": "new_dashboard_every_literal_import_same_resolution_except_one_installed_factory",
+      "status": "PASS",
+      "literalImportCount": 6,
+      "resolutions": [
+        {
+          "specifier": "/assets/AdminHeaderNavigation-navigation-original-restore-release-20261122-2112-bc333a2af3cf630eb8d3e8e5eddb0b6f55a9973eb690d656ad195a2ab9b648a7.js",
+          "newFactory": true,
+          "resolved": "https://admin.51dianzi.com/assets/AdminHeaderNavigation-navigation-original-restore-release-20261122-2112-bc333a2af3cf630eb8d3e8e5eddb0b6f55a9973eb690d656ad195a2ab9b648a7.js"
+        },
+        {
+          "specifier": "/assets/AdminNewInformation-notification-redesign-8a0443b2848920b4.js",
+          "newFactory": false,
+          "resolved": "https://admin.51dianzi.com/assets/AdminNewInformation-ui-removal-2ea5904ede64accf.js"
+        },
+        {
+          "specifier": "./index-8jluR_FO.js",
+          "newFactory": false,
+          "resolved": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js"
+        },
+        {
+          "specifier": "/assets/BusinessWorkbenchPage-inquiry-reception-1-1db2f6d03b11ad8d376113ca82af755197612b2da4f5bcf36f2b4edfd311ebe8.js",
+          "newFactory": false,
+          "resolved": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-customer-status-removal-1-8f37988bf5c60f40.js"
+        },
+        {
+          "specifier": "/assets/admin-list-location-db1bfac861e62ccff0feefed4e69f00deeb4ac329b22c41164e38f24f589a0f9.js",
+          "newFactory": false,
+          "resolved": "https://admin.51dianzi.com/assets/admin-list-location-reception-experience-a4f7e97ad38d0e7cbff27100656524181f842ae9210fdc957983861fbc46ef8c.js"
+        },
+        {
+          "specifier": "./index-CKHSh4Pc.js",
+          "newFactory": false,
+          "resolved": "https://admin.51dianzi.com/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-CKHSh4Pc.js"
+        }
+      ]
+    },
+    {
+      "name": "pure_factory_only_eight_navigation_sources_no_new_layout_no_bundled_business_react_query_trpc",
+      "status": "PASS",
+      "compiledSourceCount": 8,
+      "nativeBridge": true,
+      "factoryBytes": 52501,
+      "metafileOutputBytes": 52179,
+      "metafileSHA256": "c04f92ec50ecdc805310cc117efe8a09b305bb827d8482e85ba4d5fec47cbbae"
+    },
+    {
+      "name": "exact_final_three_assets_and_expected_HTML_hash",
+      "status": "PASS",
+      "assets": [
+        {
+          "url": "/assets/AdminHeaderNavigation-navigation-original-restore-release-20261122-2112-bc333a2af3cf630eb8d3e8e5eddb0b6f55a9973eb690d656ad195a2ab9b648a7.js",
+          "bytes": 52501,
+          "sha256": "bc333a2af3cf630eb8d3e8e5eddb0b6f55a9973eb690d656ad195a2ab9b648a7"
+        },
+        {
+          "url": "/assets/DashboardLayout-navigation-original-restore-release-20261122-2112-678ee5d6930725f0adeda3893f2eaddba452615f4fa94da61d40cda102af5f05.js",
+          "bytes": 99647,
+          "sha256": "678ee5d6930725f0adeda3893f2eaddba452615f4fa94da61d40cda102af5f05"
+        },
+        {
+          "url": "/assets/navigation-original-restored-9d61d190409aa40c.css",
+          "bytes": 27590,
+          "sha256": "9d61d190409aa40c45e757f32af13510fea5f9102476cd8ce2c6ef73c90a157b"
+        }
+      ],
+      "htmlBytes": 952633,
+      "htmlSHA256": "de7ad8f0890c342920ac8ab2835be62ccd6e395a410d792dc38bd30cf90511d0",
+      "apis": [],
+      "runtimes": []
+    },
+    {
+      "name": "frozen_commit_all_pins_and_original_navigation_baseline",
+      "status": "PASS",
+      "sourceCommit": "684552d91d504029e867808c65bd057822a8992c",
+      "sourceTree": "62ea2ea404a0b47ca902dfdaf53c1a65c4a3f0d5",
+      "pinCount": 22,
+      "baselineRevision": "e965247",
+      "baselineNavigationSHA256": "1670ab0b10da1baba5d24f109f426e7d046e47348bd1657a7bf098b18909c29f",
+      "statusSourcesRemainDeleted": true,
+      "readOnlyGit": true
+    },
+    {
+      "name": "CSS_exact_4074_byte_fixedHeader_suffix_removal_base_Status_preserved_inverse",
+      "status": "PASS",
+      "oldBytes": 31664,
+      "retainedBytes": 27590,
+      "exactRemovedBytes": 4074,
+      "removedSHA256": "7e6581757e759ac9204f118a9cc1c2816e5a24b11fffb12670ec5c96bd74193b",
+      "inverseSHA256": "7a5a46158781c78f3dc13465ab2ca09a3295d0e26c6282fa37e13e4bf139567a",
+      "baseCSSRetainedSHA256": "5d72fb7d941b34c6329d5b8274d002ed393ddd70bfe4d563e7688b232f5e895b",
+      "noAddedOverride": true,
+      "statusDeletionRetained": true
+    },
+    {
+      "name": "fresh_four_captured_targets_only_adminHTML_change_existing_business_references_retained",
+      "status": "PASS",
+      "targets": [
+        {
+          "label": "admin-html",
+          "beforeSHA256": "5efa0b67f9dcea7d971b806ad66c97b2c435c70c5ff09416f1a5c870eb162aa2",
+          "changed": true
+        },
+        {
+          "label": "front-html",
+          "beforeSHA256": "fa07f52da0938c940488ecf6bb4df92f62d517507d45a604ddf1afeee8ac5757",
+          "changed": false
+        },
+        {
+          "label": "admin-api",
+          "beforeSHA256": "ea0940846697fb8ec96aab6d3cbb24b13cdf155515e85e810b3f17f1b0fb2515",
+          "changed": false
+        },
+        {
+          "label": "front-api",
+          "beforeSHA256": "696900d36d6a03abf7569a8fb832a47e5f9c201c03c510604f55940b0e351073",
+          "changed": false
+        }
+      ],
+      "onlyAdminHTMLChanges": true,
+      "NIWorkbenchProcurementReferencesUntouched": "Independent AST/importmap exactness and outside-patch bytes cover references; no business assets are candidates."
+    },
+    {
+      "name": "recorded_true_three_sibling_native_53CSS_4viewport_geometry_routes_levels_zero_network",
+      "status": "PASS",
+      "reportSHA256": "43f60b2d41ec9e4aebf2f649c2e2ef98e0ade652b0a6c1644f21cb2ef2691e1f",
+      "cssLayers": 53,
+      "nativeBaseCSSSHA256": "0d7c518bbaa7983d4491180b997e8ef3405512910439a623d71ebcbf04024d39",
+      "viewports": [
+        {
+          "viewport": 1440,
+          "states": [
+            78,
+            0,
+            "99+"
+          ],
+          "threeSiblingSameRow": true
+        },
+        {
+          "viewport": 1280,
+          "states": [
+            78,
+            0,
+            "99+"
+          ],
+          "threeSiblingSameRow": true
+        },
+        {
+          "viewport": 860,
+          "states": [
+            78,
+            0,
+            "99+"
+          ],
+          "threeSiblingSameRow": true
+        },
+        {
+          "viewport": 390,
+          "states": [
+            78,
+            0,
+            "99+"
+          ],
+          "threeSiblingSameRow": true
+        }
+      ],
+      "interactions": [
+        {
+          "type": "sales",
+          "source": "mall",
+          "call": {
+            "path": "/workbench/outbound",
+            "tab": null,
+            "view": null,
+            "source": "mall",
+            "target": "/workbench/orders?orderSource=mall"
+          },
+          "labels": [
+            "商城订单",
+            "业务订单"
+          ],
+          "passed": true
+        },
+        {
+          "type": "sales",
+          "source": "business",
+          "call": {
+            "path": "/workbench/orders",
+            "tab": null,
+            "view": null,
+            "source": "business",
+            "target": "/workbench/orders?orderSource=business"
+          },
+          "labels": [
+            "商城订单",
+            "业务订单"
+          ],
+          "passed": true
+        },
+        {
+          "type": "operations",
+          "groups": [
+            "基础资料›",
+            "交易与服务›",
+            "数据与监控›"
+          ],
+          "thirdLevelMessage": true,
+          "passed": true
+        },
+        {
+          "type": "organization",
+          "labels": [
+            "员工与权限",
+            "团队管理",
+            "员工操作记录"
+          ],
+          "passed": true
+        },
+        {
+          "type": "narrowNativeScroller",
+          "viewport": 860,
+          "organizationReachable": true,
+          "scrollLeft": 153,
+          "scrollWidth": 803,
+          "clientWidth": 650,
+          "passed": true
+        }
+      ],
+      "networkRequests": 0,
+      "sourceTestEvidence": "23/23 recorded, no rerun",
+      "fixtureAdjustment": "补捕既存 lazyDashboard baseCSS；零值自然宽度至少3种阈值修正是离线夹具修正，并非业务源码或发布资产修复。",
+      "notRealAccountValidation": true
+    },
+    {
+      "name": "publisher_client_and_remote_scope_owner_dual_lock_immutable_assets_guards_CAS_close",
+      "status": "PASS",
+      "mode": "LOCAL_STATIC_REVIEW_NOT_EXECUTED",
+      "clientSHA256": "af6f8373d3311604d7bd5233909d23e927130b8f31b9368cf485719189fe1e40",
+      "remoteSHA256": "5a85ddb6fe6f1b315fe3a33b7dde186f8d652aab29fb3fbef6f2df3a467f00ff",
+      "scope": "navigation-original-restore-release-20261122-2112",
+      "owner": "ebvPYDkJVIW0yJK27DsOEU",
+      "dualLocks": [
+        "/var/lock/dianzi51-public-deploy.lock",
+        "/var/lock/dianzi51-production-code.lock"
+      ],
+      "assetAllowlistCount": 3,
+      "capturedGuardProcesses": 12,
+      "capturedCoordStatus": "closed",
+      "targets": 4,
+      "onlyAdminHTMLMayDiffer": true,
+      "apis": [],
+      "runtimes": [],
+      "noAPIReload": "API targets enforced no-op; api_touched stays empty, reload loop has no sides.",
+      "zeroBusinessRPC": "RPC helpers exist but are unreachable from release entry; live checks only static GETs and file/process pins.",
+      "immutableAssetsNoOverwrite": true,
+      "privateDurableBackups": true,
+      "CASAndDurableClose": true,
+      "ambiguousFailureRetainsLocks": true,
+      "executionNotPerformed": true
+    },
+    {
+      "name": "manifest_unchanged_during_independent_review",
+      "status": "PASS",
+      "manifestSHA256": "40e6c3813af3802668b7ccc8fc33ff3663be248f8e21352141b1842aec6e1ed0"
+    }
+  ],
+  "blockers": [],
+  "limitations": {
+    "realAccountUnreadSQL": "NOT_VALIDATED_THIS_ROUND; real-account customer/SQL/business/unread and mark-read writes are not verified by offline fixture.",
+    "inspect503": "OPEN; no root-cause closure claimed.",
+    "productionFreshness": "Only local captured evidence reviewed; publisher must recheck fresh baseline, dual locks and all 12 process/config/environment guard fingerprints under locks.",
+    "published": false,
+    "platformDeployed": false,
+    "fullSiteBuildOrTSC": false,
+    "networkOrSSH": false,
+    "businessRPC": false,
+    "secretFilesRead": false,
+    "sourceOrGitModified": false
+  },
+  "fixtureCorrection": "Existing lazyDashboard baseCSS capture and >=3 natural-width categories in zero count state are fixture/test-evidence corrections, not business fixes or extra release overrides."
+}

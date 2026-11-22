@@ -1,0 +1,66 @@
+{
+  "scope": "navigation-original-restore-release-20261122-2112",
+  "createdAtUtc": "2026-11-22T13:17:41.673832+00:00",
+  "repositories": {
+    "manager": {
+      "sourceCommit": "684552d91d504029e867808c65bd057822a8992c",
+      "sourceTree": "62ea2ea404a0b47ca902dfdaf53c1a65c4a3f0d5",
+      "sourceRemoteConfirmed": true,
+      "remoteMainObserved": "684552d91d504029e867808c65bd057822a8992c",
+      "changedCodePins": {
+        "client/src/components/admin/AdminWorkspaceNavigation.tsx": {
+          "sha256": "1670ab0b10da1baba5d24f109f426e7d046e47348bd1657a7bf098b18909c29f",
+          "gitBlob": "348be748385f08c64ff4471181d17bb2360968d4"
+        },
+        "client/src/components/DashboardLayout.tsx": {
+          "sha256": "a45cfc7afde76f5a391acef3a20d9437c27f85d57f0fd33e4ca87f0810330514",
+          "gitBlob": "7f00e6718dc02df1dd3cb38ddbe5389bc6c1ecb8"
+        },
+        "client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts": {
+          "sha256": "082e90eae3a2c8fb3ad3be00cfc5d70e7c0374c6fb3fd62d954408e1b110341e",
+          "gitBlob": "27a945642e2f72e0a21bf00227681af1de6e28b1"
+        }
+      },
+      "deployedThisWindow": true
+    },
+    "platform": {
+      "sourceCommit": "bac021ca40e9670bb790229600dbedf968846538",
+      "sourceTree": "45803bdc243e98ce5cd29d7c43b7f6531b308e8c",
+      "sourceRemoteConfirmed": false,
+      "remoteMainObserved": "3409364250f6b1d36ae64bfe11b26cf8ad3a0bbc",
+      "changedCodePins": {},
+      "deployedThisWindow": false
+    }
+  },
+  "protectedBusinessSourcePins": {
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminNewInformation.tsx": "dda94052103eb52ffc707cc40b5803a3398a91c0197884534faafa51a81603b3",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/ProcurementDemands.tsx": "de06a21f9fde4f72659526aa099a4388b835f56ee9c17dd7ddb9028e95cfada9",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/server/services/adminNewInformation.ts": "364e0e811492e8fe97a34bfc2fb27371acb8484851302c1fb4344a881bce8798",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/adminNewInformation.ts": "29690138f57fcc31b88e33aef0cb6f4dab2fbe7064db564636a83f9cd883add2",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/CustomerDetail.tsx": "99a8341d757865c96727c7d1cd37e1737419ffde3fe793b7c5177a742368278e",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/CustomerDetailReadability.css": "73a368ebc9ae5389eaeea06a5050defcd785d26c5e76ab63b05a6584eda16c77",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminHeaderNavigation.css": "04a933d83aeff81dc2fe44d37a428fba520e04e67db24b23cd7cf2d245c8a8d3",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminHeaderNavigationLayout.ts": "e573435f24387a8335288dc5f2d8016094950ce545dd5d1f2d8aa51457ab180e",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminNewInformation.test.ts": "a7173946aecdb038911b2b2d7645ed5b96650ddb0743e2c90b27f31be7be9672",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminHeaderNavigationLayout.test.ts": "2fcae81afac088f18f7e5921fb978d16289d967e90200f794d09e86b5581d87f",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/business/platform/client/src/pages/CustomerDetail.notification-presentation.test.ts": "bf162be105d9e91f9309a20d0ab27a85c3315ea2ed9bede2705c894591a9c62a"
+  },
+  "deletedStatusSource": [
+    "client/src/components/admin/AdminNewInformationStatus.tsx",
+    "client/src/components/admin/AdminNewInformationStatus.css"
+  ],
+  "authorization": "2026-11-22 21:12:37 用户：按照此设计，上线；原导航恢复Demo，不版本回滚",
+  "productionAPIs": {
+    "front": "696900d36d6a03abf7569a8fb832a47e5f9c201c03c510604f55940b0e351073",
+    "admin": "ea0940846697fb8ec96aab6d3cbb24b13cdf155515e85e810b3f17f1b0fb2515"
+  },
+  "frontHTMLBaselineSHA": "fa07f52da0938c940488ecf6bb4df92f62d517507d45a604ddf1afeee8ac5757",
+  "openLimits": {
+    "realAccountBusinessTest": false,
+    "realUnreadMarkWrites": false,
+    "inspect503RootCauseClosed": false,
+    "platformNotDeployed": true,
+    "syntheticGeometryIsNotRealAccountValidation": true
+  },
+  "deployment": "Only exact admin two JS assets, one CSS and admin HTML. No API/runtime/reload/DB migration; retain previous customer sync-line deletion, NI Status deletion, unread core, procurement and 17:46 repairs."
+}

@@ -1,0 +1,2676 @@
+{
+  "scope": "FINAL_CANDIDATE_FACTORY_AND_FRESH_NATIVE_CSS_TRUE_THREE_SIBLING_HEADER",
+  "productionConnected": false,
+  "networkRequests": [],
+  "cssLayers": 53,
+  "rows": [
+    {
+      "viewport": 1440,
+      "states": [
+        {
+          "count": 78,
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 1440,
+              "top": 0,
+              "bottom": 52,
+              "width": 1440,
+              "height": 52,
+              "cy": 26
+            },
+            "nav": {
+              "left": 146,
+              "right": 1306,
+              "top": 0,
+              "bottom": 51,
+              "width": 1160,
+              "height": 51,
+              "cy": 25.5
+            },
+            "brand": {
+              "left": 18,
+              "right": 124,
+              "top": 9.5,
+              "bottom": 41.5,
+              "width": 106,
+              "height": 32,
+              "cy": 25.5
+            },
+            "account": {
+              "left": 1328,
+              "right": 1422,
+              "top": 10.5,
+              "bottom": 40.5,
+              "width": 94,
+              "height": 30,
+              "cy": 25.5
+            },
+            "siblings": [
+              true,
+              true,
+              true
+            ],
+            "cells": [
+              {
+                "id": "customers",
+                "label": "客户列表",
+                "rect": {
+                  "left": 146,
+                  "right": 241,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 95,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory",
+                "label": "库存列表",
+                "rect": {
+                  "left": 255,
+                  "right": 313,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "mall-materials",
+                "label": "商城物料",
+                "rect": {
+                  "left": 327,
+                  "right": 385,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inquiries",
+                "label": "询价接待",
+                "rect": {
+                  "left": 399,
+                  "right": 457,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "procurement-management",
+                "label": "采购需求",
+                "rect": {
+                  "left": 471,
+                  "right": 566,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 95,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory-management",
+                "label": "采购入库",
+                "rect": {
+                  "left": 580,
+                  "right": 638,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "sales-orders",
+                "label": "销售订单",
+                "rect": {
+                  "left": 652,
+                  "right": 722.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "personal",
+                "label": "个人中心",
+                "rect": {
+                  "left": 736.03125,
+                  "right": 794.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "operations",
+                "label": "平台运营",
+                "rect": {
+                  "left": 808.03125,
+                  "right": 878.0625,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "organization",
+                "label": "组织与权限",
+                "rect": {
+                  "left": 892.0625,
+                  "right": 976.09375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 84.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              }
+            ],
+            "scrollWidth": 1160,
+            "clientWidth": 1160,
+            "scrollLeft": 0,
+            "bodyWidth": 1440,
+            "viewport": 1440,
+            "more": false,
+            "groups": false,
+            "permanentSlots": false,
+            "status": false,
+            "badges": [
+              "78",
+              "1"
+            ]
+          }
+        },
+        {
+          "count": 0,
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 1440,
+              "top": 0,
+              "bottom": 52,
+              "width": 1440,
+              "height": 52,
+              "cy": 26
+            },
+            "nav": {
+              "left": 146,
+              "right": 1306,
+              "top": 0,
+              "bottom": 51,
+              "width": 1160,
+              "height": 51,
+              "cy": 25.5
+            },
+            "brand": {
+              "left": 18,
+              "right": 124,
+              "top": 9.5,
+              "bottom": 41.5,
+              "width": 106,
+              "height": 32,
+              "cy": 25.5
+            },
+            "account": {
+              "left": 1328,
+              "right": 1422,
+              "top": 10.5,
+              "bottom": 40.5,
+              "width": 94,
+              "height": 30,
+              "cy": 25.5
+            },
+            "siblings": [
+              true,
+              true,
+              true
+            ],
+            "cells": [
+              {
+                "id": "customers",
+                "label": "客户列表",
+                "rect": {
+                  "left": 146,
+                  "right": 204,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory",
+                "label": "库存列表",
+                "rect": {
+                  "left": 218,
+                  "right": 276,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "mall-materials",
+                "label": "商城物料",
+                "rect": {
+                  "left": 290,
+                  "right": 348,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inquiries",
+                "label": "询价接待",
+                "rect": {
+                  "left": 362,
+                  "right": 420,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "procurement-management",
+                "label": "采购需求",
+                "rect": {
+                  "left": 434,
+                  "right": 492,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory-management",
+                "label": "采购入库",
+                "rect": {
+                  "left": 506,
+                  "right": 564,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "sales-orders",
+                "label": "销售订单",
+                "rect": {
+                  "left": 578,
+                  "right": 648.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "personal",
+                "label": "个人中心",
+                "rect": {
+                  "left": 662.03125,
+                  "right": 720.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "operations",
+                "label": "平台运营",
+                "rect": {
+                  "left": 734.03125,
+                  "right": 804.0625,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "organization",
+                "label": "组织与权限",
+                "rect": {
+                  "left": 818.0625,
+                  "right": 902.09375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 84.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              }
+            ],
+            "scrollWidth": 1160,
+            "clientWidth": 1160,
+            "scrollLeft": 0,
+            "bodyWidth": 1440,
+            "viewport": 1440,
+            "more": false,
+            "groups": false,
+            "permanentSlots": false,
+            "status": false,
+            "badges": []
+          }
+        },
+        {
+          "count": 100,
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 1440,
+              "top": 0,
+              "bottom": 52,
+              "width": 1440,
+              "height": 52,
+              "cy": 26
+            },
+            "nav": {
+              "left": 146,
+              "right": 1306,
+              "top": 0,
+              "bottom": 51,
+              "width": 1160,
+              "height": 51,
+              "cy": 25.5
+            },
+            "brand": {
+              "left": 18,
+              "right": 124,
+              "top": 9.5,
+              "bottom": 41.5,
+              "width": 106,
+              "height": 32,
+              "cy": 25.5
+            },
+            "account": {
+              "left": 1328,
+              "right": 1422,
+              "top": 10.5,
+              "bottom": 40.5,
+              "width": 94,
+              "height": 30,
+              "cy": 25.5
+            },
+            "siblings": [
+              true,
+              true,
+              true
+            ],
+            "cells": [
+              {
+                "id": "customers",
+                "label": "客户列表",
+                "rect": {
+                  "left": 146,
+                  "right": 241,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 95,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory",
+                "label": "库存列表",
+                "rect": {
+                  "left": 255,
+                  "right": 313,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "mall-materials",
+                "label": "商城物料",
+                "rect": {
+                  "left": 327,
+                  "right": 385,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inquiries",
+                "label": "询价接待",
+                "rect": {
+                  "left": 399,
+                  "right": 457,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "procurement-management",
+                "label": "采购需求",
+                "rect": {
+                  "left": 471,
+                  "right": 566,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 95,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory-management",
+                "label": "采购入库",
+                "rect": {
+                  "left": 580,
+                  "right": 638,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "sales-orders",
+                "label": "销售订单",
+                "rect": {
+                  "left": 652,
+                  "right": 722.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "personal",
+                "label": "个人中心",
+                "rect": {
+                  "left": 736.03125,
+                  "right": 794.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "operations",
+                "label": "平台运营",
+                "rect": {
+                  "left": 808.03125,
+                  "right": 878.0625,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "organization",
+                "label": "组织与权限",
+                "rect": {
+                  "left": 892.0625,
+                  "right": 976.09375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 84.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              }
+            ],
+            "scrollWidth": 1160,
+            "clientWidth": 1160,
+            "scrollLeft": 0,
+            "bodyWidth": 1440,
+            "viewport": 1440,
+            "more": false,
+            "groups": false,
+            "permanentSlots": false,
+            "status": false,
+            "badges": [
+              "99+",
+              "99+"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "viewport": 1280,
+      "states": [
+        {
+          "count": 78,
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 1280,
+              "top": 0,
+              "bottom": 52,
+              "width": 1280,
+              "height": 52,
+              "cy": 26
+            },
+            "nav": {
+              "left": 146,
+              "right": 1146,
+              "top": 0,
+              "bottom": 51,
+              "width": 1000,
+              "height": 51,
+              "cy": 25.5
+            },
+            "brand": {
+              "left": 18,
+              "right": 124,
+              "top": 9.5,
+              "bottom": 41.5,
+              "width": 106,
+              "height": 32,
+              "cy": 25.5
+            },
+            "account": {
+              "left": 1168,
+              "right": 1262,
+              "top": 10.5,
+              "bottom": 40.5,
+              "width": 94,
+              "height": 30,
+              "cy": 25.5
+            },
+            "siblings": [
+              true,
+              true,
+              true
+            ],
+            "cells": [
+              {
+                "id": "customers",
+                "label": "客户列表",
+                "rect": {
+                  "left": 146,
+                  "right": 241,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 95,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory",
+                "label": "库存列表",
+                "rect": {
+                  "left": 255,
+                  "right": 313,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "mall-materials",
+                "label": "商城物料",
+                "rect": {
+                  "left": 327,
+                  "right": 385,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inquiries",
+                "label": "询价接待",
+                "rect": {
+                  "left": 399,
+                  "right": 457,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "procurement-management",
+                "label": "采购需求",
+                "rect": {
+                  "left": 471,
+                  "right": 566,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 95,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory-management",
+                "label": "采购入库",
+                "rect": {
+                  "left": 580,
+                  "right": 638,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "sales-orders",
+                "label": "销售订单",
+                "rect": {
+                  "left": 652,
+                  "right": 722.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "personal",
+                "label": "个人中心",
+                "rect": {
+                  "left": 736.03125,
+                  "right": 794.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "operations",
+                "label": "平台运营",
+                "rect": {
+                  "left": 808.03125,
+                  "right": 878.0625,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "organization",
+                "label": "组织与权限",
+                "rect": {
+                  "left": 892.0625,
+                  "right": 976.09375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 84.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              }
+            ],
+            "scrollWidth": 1000,
+            "clientWidth": 1000,
+            "scrollLeft": 0,
+            "bodyWidth": 1280,
+            "viewport": 1280,
+            "more": false,
+            "groups": false,
+            "permanentSlots": false,
+            "status": false,
+            "badges": [
+              "78",
+              "1"
+            ]
+          }
+        },
+        {
+          "count": 0,
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 1280,
+              "top": 0,
+              "bottom": 52,
+              "width": 1280,
+              "height": 52,
+              "cy": 26
+            },
+            "nav": {
+              "left": 146,
+              "right": 1146,
+              "top": 0,
+              "bottom": 51,
+              "width": 1000,
+              "height": 51,
+              "cy": 25.5
+            },
+            "brand": {
+              "left": 18,
+              "right": 124,
+              "top": 9.5,
+              "bottom": 41.5,
+              "width": 106,
+              "height": 32,
+              "cy": 25.5
+            },
+            "account": {
+              "left": 1168,
+              "right": 1262,
+              "top": 10.5,
+              "bottom": 40.5,
+              "width": 94,
+              "height": 30,
+              "cy": 25.5
+            },
+            "siblings": [
+              true,
+              true,
+              true
+            ],
+            "cells": [
+              {
+                "id": "customers",
+                "label": "客户列表",
+                "rect": {
+                  "left": 146,
+                  "right": 204,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory",
+                "label": "库存列表",
+                "rect": {
+                  "left": 218,
+                  "right": 276,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "mall-materials",
+                "label": "商城物料",
+                "rect": {
+                  "left": 290,
+                  "right": 348,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inquiries",
+                "label": "询价接待",
+                "rect": {
+                  "left": 362,
+                  "right": 420,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "procurement-management",
+                "label": "采购需求",
+                "rect": {
+                  "left": 434,
+                  "right": 492,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory-management",
+                "label": "采购入库",
+                "rect": {
+                  "left": 506,
+                  "right": 564,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "sales-orders",
+                "label": "销售订单",
+                "rect": {
+                  "left": 578,
+                  "right": 648.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "personal",
+                "label": "个人中心",
+                "rect": {
+                  "left": 662.03125,
+                  "right": 720.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "operations",
+                "label": "平台运营",
+                "rect": {
+                  "left": 734.03125,
+                  "right": 804.0625,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "organization",
+                "label": "组织与权限",
+                "rect": {
+                  "left": 818.0625,
+                  "right": 902.09375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 84.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              }
+            ],
+            "scrollWidth": 1000,
+            "clientWidth": 1000,
+            "scrollLeft": 0,
+            "bodyWidth": 1280,
+            "viewport": 1280,
+            "more": false,
+            "groups": false,
+            "permanentSlots": false,
+            "status": false,
+            "badges": []
+          }
+        },
+        {
+          "count": 100,
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 1280,
+              "top": 0,
+              "bottom": 52,
+              "width": 1280,
+              "height": 52,
+              "cy": 26
+            },
+            "nav": {
+              "left": 146,
+              "right": 1146,
+              "top": 0,
+              "bottom": 51,
+              "width": 1000,
+              "height": 51,
+              "cy": 25.5
+            },
+            "brand": {
+              "left": 18,
+              "right": 124,
+              "top": 9.5,
+              "bottom": 41.5,
+              "width": 106,
+              "height": 32,
+              "cy": 25.5
+            },
+            "account": {
+              "left": 1168,
+              "right": 1262,
+              "top": 10.5,
+              "bottom": 40.5,
+              "width": 94,
+              "height": 30,
+              "cy": 25.5
+            },
+            "siblings": [
+              true,
+              true,
+              true
+            ],
+            "cells": [
+              {
+                "id": "customers",
+                "label": "客户列表",
+                "rect": {
+                  "left": 146,
+                  "right": 241,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 95,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory",
+                "label": "库存列表",
+                "rect": {
+                  "left": 255,
+                  "right": 313,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "mall-materials",
+                "label": "商城物料",
+                "rect": {
+                  "left": 327,
+                  "right": 385,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inquiries",
+                "label": "询价接待",
+                "rect": {
+                  "left": 399,
+                  "right": 457,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "procurement-management",
+                "label": "采购需求",
+                "rect": {
+                  "left": 471,
+                  "right": 566,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 95,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory-management",
+                "label": "采购入库",
+                "rect": {
+                  "left": 580,
+                  "right": 638,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "sales-orders",
+                "label": "销售订单",
+                "rect": {
+                  "left": 652,
+                  "right": 722.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "personal",
+                "label": "个人中心",
+                "rect": {
+                  "left": 736.03125,
+                  "right": 794.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "operations",
+                "label": "平台运营",
+                "rect": {
+                  "left": 808.03125,
+                  "right": 878.0625,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "organization",
+                "label": "组织与权限",
+                "rect": {
+                  "left": 892.0625,
+                  "right": 976.09375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 84.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              }
+            ],
+            "scrollWidth": 1000,
+            "clientWidth": 1000,
+            "scrollLeft": 0,
+            "bodyWidth": 1280,
+            "viewport": 1280,
+            "more": false,
+            "groups": false,
+            "permanentSlots": false,
+            "status": false,
+            "badges": [
+              "99+",
+              "99+"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "viewport": 860,
+      "states": [
+        {
+          "count": 78,
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 860,
+              "top": 0,
+              "bottom": 52,
+              "width": 860,
+              "height": 52,
+              "cy": 26
+            },
+            "nav": {
+              "left": 140,
+              "right": 790,
+              "top": 0,
+              "bottom": 51,
+              "width": 650,
+              "height": 51,
+              "cy": 25.5
+            },
+            "brand": {
+              "left": 18,
+              "right": 124,
+              "top": 9.5,
+              "bottom": 41.5,
+              "width": 106,
+              "height": 32,
+              "cy": 25.5
+            },
+            "account": {
+              "left": 806,
+              "right": 842,
+              "top": 11.5,
+              "bottom": 39.5,
+              "width": 36,
+              "height": 28,
+              "cy": 25.5
+            },
+            "siblings": [
+              true,
+              true,
+              true
+            ],
+            "cells": [
+              {
+                "id": "customers",
+                "label": "客户列表",
+                "rect": {
+                  "left": 140,
+                  "right": 235,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 95,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory",
+                "label": "库存列表",
+                "rect": {
+                  "left": 246,
+                  "right": 304,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "mall-materials",
+                "label": "商城物料",
+                "rect": {
+                  "left": 315,
+                  "right": 373,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inquiries",
+                "label": "询价接待",
+                "rect": {
+                  "left": 384,
+                  "right": 442,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "procurement-management",
+                "label": "采购需求",
+                "rect": {
+                  "left": 453,
+                  "right": 548,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 95,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory-management",
+                "label": "采购入库",
+                "rect": {
+                  "left": 559,
+                  "right": 617,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "sales-orders",
+                "label": "销售订单",
+                "rect": {
+                  "left": 628,
+                  "right": 698.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "personal",
+                "label": "个人中心",
+                "rect": {
+                  "left": 709.03125,
+                  "right": 767.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "operations",
+                "label": "平台运营",
+                "rect": {
+                  "left": 778.03125,
+                  "right": 848.0625,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "organization",
+                "label": "组织与权限",
+                "rect": {
+                  "left": 859.0625,
+                  "right": 943.09375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 84.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              }
+            ],
+            "scrollWidth": 803,
+            "clientWidth": 650,
+            "scrollLeft": 0,
+            "bodyWidth": 860,
+            "viewport": 860,
+            "more": false,
+            "groups": false,
+            "permanentSlots": false,
+            "status": false,
+            "badges": [
+              "78",
+              "1"
+            ]
+          }
+        },
+        {
+          "count": 0,
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 860,
+              "top": 0,
+              "bottom": 52,
+              "width": 860,
+              "height": 52,
+              "cy": 26
+            },
+            "nav": {
+              "left": 140,
+              "right": 790,
+              "top": 0,
+              "bottom": 51,
+              "width": 650,
+              "height": 51,
+              "cy": 25.5
+            },
+            "brand": {
+              "left": 18,
+              "right": 124,
+              "top": 9.5,
+              "bottom": 41.5,
+              "width": 106,
+              "height": 32,
+              "cy": 25.5
+            },
+            "account": {
+              "left": 806,
+              "right": 842,
+              "top": 11.5,
+              "bottom": 39.5,
+              "width": 36,
+              "height": 28,
+              "cy": 25.5
+            },
+            "siblings": [
+              true,
+              true,
+              true
+            ],
+            "cells": [
+              {
+                "id": "customers",
+                "label": "客户列表",
+                "rect": {
+                  "left": 140,
+                  "right": 198,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory",
+                "label": "库存列表",
+                "rect": {
+                  "left": 209,
+                  "right": 267,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "mall-materials",
+                "label": "商城物料",
+                "rect": {
+                  "left": 278,
+                  "right": 336,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inquiries",
+                "label": "询价接待",
+                "rect": {
+                  "left": 347,
+                  "right": 405,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "procurement-management",
+                "label": "采购需求",
+                "rect": {
+                  "left": 416,
+                  "right": 474,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory-management",
+                "label": "采购入库",
+                "rect": {
+                  "left": 485,
+                  "right": 543,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "sales-orders",
+                "label": "销售订单",
+                "rect": {
+                  "left": 554,
+                  "right": 624.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "personal",
+                "label": "个人中心",
+                "rect": {
+                  "left": 635.03125,
+                  "right": 693.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "operations",
+                "label": "平台运营",
+                "rect": {
+                  "left": 704.03125,
+                  "right": 774.0625,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "organization",
+                "label": "组织与权限",
+                "rect": {
+                  "left": 785.0625,
+                  "right": 869.09375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 84.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              }
+            ],
+            "scrollWidth": 729,
+            "clientWidth": 650,
+            "scrollLeft": 0,
+            "bodyWidth": 860,
+            "viewport": 860,
+            "more": false,
+            "groups": false,
+            "permanentSlots": false,
+            "status": false,
+            "badges": []
+          }
+        },
+        {
+          "count": 100,
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 860,
+              "top": 0,
+              "bottom": 52,
+              "width": 860,
+              "height": 52,
+              "cy": 26
+            },
+            "nav": {
+              "left": 140,
+              "right": 790,
+              "top": 0,
+              "bottom": 51,
+              "width": 650,
+              "height": 51,
+              "cy": 25.5
+            },
+            "brand": {
+              "left": 18,
+              "right": 124,
+              "top": 9.5,
+              "bottom": 41.5,
+              "width": 106,
+              "height": 32,
+              "cy": 25.5
+            },
+            "account": {
+              "left": 806,
+              "right": 842,
+              "top": 11.5,
+              "bottom": 39.5,
+              "width": 36,
+              "height": 28,
+              "cy": 25.5
+            },
+            "siblings": [
+              true,
+              true,
+              true
+            ],
+            "cells": [
+              {
+                "id": "customers",
+                "label": "客户列表",
+                "rect": {
+                  "left": 140,
+                  "right": 235,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 95,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory",
+                "label": "库存列表",
+                "rect": {
+                  "left": 246,
+                  "right": 304,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "mall-materials",
+                "label": "商城物料",
+                "rect": {
+                  "left": 315,
+                  "right": 373,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inquiries",
+                "label": "询价接待",
+                "rect": {
+                  "left": 384,
+                  "right": 442,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "procurement-management",
+                "label": "采购需求",
+                "rect": {
+                  "left": 453,
+                  "right": 548,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 95,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory-management",
+                "label": "采购入库",
+                "rect": {
+                  "left": 559,
+                  "right": 617,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "sales-orders",
+                "label": "销售订单",
+                "rect": {
+                  "left": 628,
+                  "right": 698.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "personal",
+                "label": "个人中心",
+                "rect": {
+                  "left": 709.03125,
+                  "right": 767.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "operations",
+                "label": "平台运营",
+                "rect": {
+                  "left": 778.03125,
+                  "right": 848.0625,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "organization",
+                "label": "组织与权限",
+                "rect": {
+                  "left": 859.0625,
+                  "right": 943.09375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 84.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              }
+            ],
+            "scrollWidth": 803,
+            "clientWidth": 650,
+            "scrollLeft": 0,
+            "bodyWidth": 860,
+            "viewport": 860,
+            "more": false,
+            "groups": false,
+            "permanentSlots": false,
+            "status": false,
+            "badges": [
+              "99+",
+              "99+"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "viewport": 390,
+      "states": [
+        {
+          "count": 78,
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 390,
+              "top": 0,
+              "bottom": 52,
+              "width": 390,
+              "height": 52,
+              "cy": 26
+            },
+            "nav": {
+              "left": 68,
+              "right": 332,
+              "top": 0,
+              "bottom": 51,
+              "width": 264,
+              "height": 51,
+              "cy": 25.5
+            },
+            "brand": {
+              "left": 18,
+              "right": 56,
+              "top": 11.5,
+              "bottom": 39.5,
+              "width": 38,
+              "height": 28,
+              "cy": 25.5
+            },
+            "account": {
+              "left": 344,
+              "right": 372,
+              "top": 11.5,
+              "bottom": 39.5,
+              "width": 28,
+              "height": 28,
+              "cy": 25.5
+            },
+            "siblings": [
+              true,
+              true,
+              true
+            ],
+            "cells": [
+              {
+                "id": "customers",
+                "label": "客户列表",
+                "rect": {
+                  "left": 68,
+                  "right": 163,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 95,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory",
+                "label": "库存列表",
+                "rect": {
+                  "left": 177,
+                  "right": 235,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "mall-materials",
+                "label": "商城物料",
+                "rect": {
+                  "left": 249,
+                  "right": 307,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inquiries",
+                "label": "询价接待",
+                "rect": {
+                  "left": 321,
+                  "right": 379,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "procurement-management",
+                "label": "采购需求",
+                "rect": {
+                  "left": 393,
+                  "right": 488,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 95,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory-management",
+                "label": "采购入库",
+                "rect": {
+                  "left": 502,
+                  "right": 560,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "sales-orders",
+                "label": "销售订单",
+                "rect": {
+                  "left": 574,
+                  "right": 644.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "personal",
+                "label": "个人中心",
+                "rect": {
+                  "left": 658.03125,
+                  "right": 716.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "operations",
+                "label": "平台运营",
+                "rect": {
+                  "left": 730.03125,
+                  "right": 800.0625,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "organization",
+                "label": "组织与权限",
+                "rect": {
+                  "left": 814.0625,
+                  "right": 898.09375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 84.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              }
+            ],
+            "scrollWidth": 830,
+            "clientWidth": 264,
+            "scrollLeft": 0,
+            "bodyWidth": 390,
+            "viewport": 390,
+            "more": false,
+            "groups": false,
+            "permanentSlots": false,
+            "status": false,
+            "badges": [
+              "78",
+              "1"
+            ]
+          }
+        },
+        {
+          "count": 0,
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 390,
+              "top": 0,
+              "bottom": 52,
+              "width": 390,
+              "height": 52,
+              "cy": 26
+            },
+            "nav": {
+              "left": 68,
+              "right": 332,
+              "top": 0,
+              "bottom": 51,
+              "width": 264,
+              "height": 51,
+              "cy": 25.5
+            },
+            "brand": {
+              "left": 18,
+              "right": 56,
+              "top": 11.5,
+              "bottom": 39.5,
+              "width": 38,
+              "height": 28,
+              "cy": 25.5
+            },
+            "account": {
+              "left": 344,
+              "right": 372,
+              "top": 11.5,
+              "bottom": 39.5,
+              "width": 28,
+              "height": 28,
+              "cy": 25.5
+            },
+            "siblings": [
+              true,
+              true,
+              true
+            ],
+            "cells": [
+              {
+                "id": "customers",
+                "label": "客户列表",
+                "rect": {
+                  "left": 68,
+                  "right": 126,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory",
+                "label": "库存列表",
+                "rect": {
+                  "left": 140,
+                  "right": 198,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "mall-materials",
+                "label": "商城物料",
+                "rect": {
+                  "left": 212,
+                  "right": 270,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inquiries",
+                "label": "询价接待",
+                "rect": {
+                  "left": 284,
+                  "right": 342,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "procurement-management",
+                "label": "采购需求",
+                "rect": {
+                  "left": 356,
+                  "right": 414,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory-management",
+                "label": "采购入库",
+                "rect": {
+                  "left": 428,
+                  "right": 486,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "sales-orders",
+                "label": "销售订单",
+                "rect": {
+                  "left": 500,
+                  "right": 570.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "personal",
+                "label": "个人中心",
+                "rect": {
+                  "left": 584.03125,
+                  "right": 642.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "operations",
+                "label": "平台运营",
+                "rect": {
+                  "left": 656.03125,
+                  "right": 726.0625,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "organization",
+                "label": "组织与权限",
+                "rect": {
+                  "left": 740.0625,
+                  "right": 824.09375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 84.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              }
+            ],
+            "scrollWidth": 756,
+            "clientWidth": 264,
+            "scrollLeft": 0,
+            "bodyWidth": 390,
+            "viewport": 390,
+            "more": false,
+            "groups": false,
+            "permanentSlots": false,
+            "status": false,
+            "badges": []
+          }
+        },
+        {
+          "count": 100,
+          "geometry": {
+            "header": {
+              "left": 0,
+              "right": 390,
+              "top": 0,
+              "bottom": 52,
+              "width": 390,
+              "height": 52,
+              "cy": 26
+            },
+            "nav": {
+              "left": 68,
+              "right": 332,
+              "top": 0,
+              "bottom": 51,
+              "width": 264,
+              "height": 51,
+              "cy": 25.5
+            },
+            "brand": {
+              "left": 18,
+              "right": 56,
+              "top": 11.5,
+              "bottom": 39.5,
+              "width": 38,
+              "height": 28,
+              "cy": 25.5
+            },
+            "account": {
+              "left": 344,
+              "right": 372,
+              "top": 11.5,
+              "bottom": 39.5,
+              "width": 28,
+              "height": 28,
+              "cy": 25.5
+            },
+            "siblings": [
+              true,
+              true,
+              true
+            ],
+            "cells": [
+              {
+                "id": "customers",
+                "label": "客户列表",
+                "rect": {
+                  "left": 68,
+                  "right": 163,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 95,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory",
+                "label": "库存列表",
+                "rect": {
+                  "left": 177,
+                  "right": 235,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "mall-materials",
+                "label": "商城物料",
+                "rect": {
+                  "left": 249,
+                  "right": 307,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inquiries",
+                "label": "询价接待",
+                "rect": {
+                  "left": 321,
+                  "right": 379,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "procurement-management",
+                "label": "采购需求",
+                "rect": {
+                  "left": 393,
+                  "right": 488,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 95,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "inventory-management",
+                "label": "采购入库",
+                "rect": {
+                  "left": 502,
+                  "right": 560,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "sales-orders",
+                "label": "销售订单",
+                "rect": {
+                  "left": 574,
+                  "right": 644.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "personal",
+                "label": "个人中心",
+                "rect": {
+                  "left": 658.03125,
+                  "right": 716.03125,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 58,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "operations",
+                "label": "平台运营",
+                "rect": {
+                  "left": 730.03125,
+                  "right": 800.0625,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 70.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              },
+              {
+                "id": "organization",
+                "label": "组织与权限",
+                "rect": {
+                  "left": 814.0625,
+                  "right": 898.09375,
+                  "top": 0,
+                  "bottom": 51,
+                  "width": 84.03125,
+                  "height": 51,
+                  "cy": 25.5
+                },
+                "font": "14px",
+                "directParent": true
+              }
+            ],
+            "scrollWidth": 830,
+            "clientWidth": 264,
+            "scrollLeft": 0,
+            "bodyWidth": 390,
+            "viewport": 390,
+            "more": false,
+            "groups": false,
+            "permanentSlots": false,
+            "status": false,
+            "badges": [
+              "99+",
+              "99+"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "interactions": [
+    {
+      "type": "sales",
+      "source": "mall",
+      "call": {
+        "path": "/workbench/outbound",
+        "tab": null,
+        "view": null,
+        "source": "mall",
+        "target": "/workbench/orders?orderSource=mall"
+      },
+      "labels": [
+        "商城订单",
+        "业务订单"
+      ],
+      "passed": true
+    },
+    {
+      "type": "sales",
+      "source": "business",
+      "call": {
+        "path": "/workbench/orders",
+        "tab": null,
+        "view": null,
+        "source": "business",
+        "target": "/workbench/orders?orderSource=business"
+      },
+      "labels": [
+        "商城订单",
+        "业务订单"
+      ],
+      "passed": true
+    },
+    {
+      "type": "operations",
+      "groups": [
+        "基础资料›",
+        "交易与服务›",
+        "数据与监控›"
+      ],
+      "thirdLevelMessage": true,
+      "passed": true
+    },
+    {
+      "type": "organization",
+      "labels": [
+        "员工与权限",
+        "团队管理",
+        "员工操作记录"
+      ],
+      "passed": true
+    },
+    {
+      "type": "narrowNativeScroller",
+      "viewport": 860,
+      "organizationReachable": true,
+      "scrollLeft": 153,
+      "scrollWidth": 803,
+      "clientWidth": 650,
+      "passed": true
+    }
+  ],
+  "cssPins": {
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-101.css": "194389615e8848675383024d7f856bbe892d140b2c24d0a2340d4780bc38719b",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-121.css": "1bc41785d5ab2453c96bfd97e08b04c03670449bb91c092828389e4b6bb7f328",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-55.css": "403b8716333e170e448e7fbaf7d4812f49fd8311c762b5a5ca2352f3a60d5085",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-129.css": "0551f32fcd334ced8270979fe467e011f95095c8700cdf03da663ca4f7695f7e",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-36.css": "87a9e4c8f3507ff46da85a5655232556fa33de184cf6f4a05347127c8be8d1ad",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-113.css": "d608d923a66f8e343a0212e46b1017fa3ccbc9baff7bab490d9f8bd4946bca20",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-97.css": "8fb5bd555322ed40d748e4a4217f06f8a5ff750fccf8dfaae36dc36589c5842e",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-128.css": "03dae7d34255efb97c625272233bbad7831dbe8085268184c54a1f0a04ea11ac",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-130.css": "ab7377762ccd427fcc1cd54c04121856198863e1e6bdb6212a3caf581f4bc72c",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-127.css": "ba0c8aa45192096f53979c509733dba55a6b0bd7051eb9576a78d5ff3add2436",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-106.css": "58182fae8f34ebefe8991ab56e654f9d057c9faa51793c3e7380eb5989fa87a3",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-105.css": "67080a2ed3d9df308bdfcfdcad6766fa285c98e027b8c69867b22502bf6ede60",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-104.css": "f52a1e2467f48bf29cdc11ffae9912f78c96f5fcc04fd717a2393e3664d10007",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-98.css": "8ffadcc0979c5e7b1a7416137144b3beffb75444b5907d18e5384eb7bae8cb2d",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-124.css": "7dc97ecfc1c40bbcaa66de96f0aeb326c913dfd4f87467120102cdf6771140fc",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-100.css": "8ca656c3fc7973284c44cd32b8f5334ca7fb44f282ff6207f90e3b2939fbadfe",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-125.css": "1841c7bc1e1588584ab4785210eb08d7e686913035a5e85bd8cf5c3ba83e9af4",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-126.css": "e412e6a7d87028b454ac1a485b8feafb0f944769a3c33e71f3e38e3bb2d4bdbd",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-136.css": "025e4489de338468e2eca53ce7eebf15edcb1c4b9b7afd3a36c8a8cf137c32e7",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-131.css": "967d4546ae9c41417f7305e2e56fb6003e96f0651865310996400121cf034c35",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-137.css": "dc940e31bf165037f5c2f9ae9e46c012f5dde3460ead7ee891a195ef4ab43d28",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-135.css": "0bcd06cfbf169e87873512df62dafe28ae61fc8c1fbdf593b019a46dab12fb24",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-122.css": "57da79a664a78c88d9d8dd548d9a63ecf3e0b1af325755cfeab5f7eefec2a827",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-114.css": "295de5e736a635117c974037ae49307eda98f44bee69ea7e656591230a64814f",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-132.css": "bcc036e6514be8943a4218ee83a0cdea8a7f01708634a81ae9222969c6cbb049",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-134.css": "82debf05eb11e875a558434575b181e935021cd9dc152616ec376c10bf491c55",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-103.css": "84184014c648680f5a538e88353ee8f41fc4e00c5beeeb77b1838a5af40de4c0",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-80.css": "e0e24486164aa6c60b3fb3213bdb0d68dbf201f66652f5ae75c04baf549e5efc",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-84.css": "367eba0c8f63fe5cb098dd972d15de74a9db3c9a4915801a9e25d0b1b766505c",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-82.css": "bb14afb63f856ad40526de19d7436cd8fbbb6a1393f9b2aa597c411a52df80e6",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-81.css": "8a057e3b66a85a83b8e475457138a45798ffa2ee07f9b5e97071d6d90fd26edf",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-83.css": "7ec863b61664fc7a58c1683e39623869fb72b82705366ad4fccb1a792fc8a65c",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-87.css": "cdd5358599db3ebe1ee2d3c774789fb63e46b130558b34b5b946fef4c045d8e6",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-88.css": "8dd5ff8562c287e8a173d2208d5f71644c28e22baca9bcf6530d501492d30a31",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-89.css": "deabd14d5a0cc1a0e053ed520cf2ffb50a335a927dece552d8de89010e32af24",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-96.css": "8da2d002881676a1e6eeeffd4ed3f1faceb8f9728e1711e026a6797690da8d12",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-68.css": "08e7332c1c26a0bea31b3fc36b733b1239d748a206eb569c9f4305e3aec20665",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-92.css": "a213f3b6c1c556c38a66c557e97f93432977b0da6c4cd100a22db744a4baa1d2",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-86.css": "c511e36ac5cf5bfcc51a72c8a3e6c423511c2a6b4bbe5b97847b897c6d64e29b",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-107.css": "70ac2ce2d3507909e5e084855aa364b75c7b74d03cbbafbeb8daee5913c384d0",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-133.css": "7f2cb86c3b489b732cd67677787e98ee66c5cdcdf916aa67b719263b3f0b9e12",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-118.css": "bb24e724fc97e425d4c245d2811d83af4c8beff2b080d43eb65e851d8e3ffe21",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-119.css": "3cddbfc1c80d3769dca9dda9855981d5cf99ed12118045b8908f436dabcf0d95",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-120.css": "3b83db4061a4088ea88d1a192377024f93b026913c730c41d044c71ea0978ea3",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-108.css": "0abf3e1aacf580cfda4a0f9f45db055a549ed5cb4e59d2c09b96b8e22c23fb97",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-111.css": "ea794bf45ade4eb3186427faa1141072408e995cbbb984d17913a5e995ecc725",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-110.css": "cdd99dcb83de0c20872d3a14b71329565f14207e6ae4ffd9d8a665536dbfaba4",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-109.css": "af6b970e3a2e2e06ede82b8ea6e2f4f16596b8171072c9d6aea2b761d377f3c0",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-115.css": "f8d5bedee4c9c8a76aae5a4c6dd9906e18a1f89301f9526e5b6ecc99343f7072",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-102.css": "4a72eb9795dbe8ac794fe52f8e65c3da26d5b004aca50167e1ad9492e4e7c4ef",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-116.css": "8ddad65bc0ac0f6b8a0c4ecfe16c1b8ab402ee43a2498df5be29948835fb06cb",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/styles-candidate/assets/navigation-original-restored-9d61d190409aa40c.css": "9d61d190409aa40c45e757f32af13510fea5f9102476cd8ce2c6ef73c90a157b",
+    "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/lazy-css-header-base.css": "0d7c518bbaa7983d4491180b997e8ef3405512910439a623d71ebcbf04024d39"
+  },
+  "checks": {
+    "allPassed": true,
+    "trueHeaderSameRow": true,
+    "originalTenSiblingEntrances": true,
+    "noMoreOrFixedGroups": true,
+    "naturalWidthsAndDynamicBadges": true,
+    "narrowScrollerReachable": true,
+    "salesSourcesAndOriginalLevels": true,
+    "noNetwork": true,
+    "notProductionBusinessTest": true
+  }
+}

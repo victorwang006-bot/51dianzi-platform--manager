@@ -1,0 +1,37 @@
+{
+  "scope": "navigation-original-restore-release-20261122-2112",
+  "assets": [
+    {
+      "side": "admin",
+      "local": "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/styles-candidate/assets/navigation-original-restored-9d61d190409aa40c.css",
+      "url": "/assets/navigation-original-restored-9d61d190409aa40c.css",
+      "sha256": "9d61d190409aa40c45e757f32af13510fea5f9102476cd8ce2c6ef73c90a157b",
+      "size": 27590
+    }
+  ],
+  "oldCSSURL": "/assets/header-notification-removal-7a5a46158781c78f.css",
+  "cssURL": "/assets/navigation-original-restored-9d61d190409aa40c.css",
+  "sourcePins": {
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminWorkspaceNavigation.css": "5d72fb7d941b34c6329d5b8274d002ed393ddd70bfe4d563e7688b232f5e895b",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminHeaderNavigation.css": "04a933d83aeff81dc2fe44d37a428fba520e04e67db24b23cd7cf2d245c8a8d3"
+  },
+  "patches": [
+    {
+      "start": 27590,
+      "end": 31664,
+      "beforeSHA": "7e6581757e759ac9204f118a9cc1c2816e5a24b11fffb12670ec5c96bd74193b",
+      "removedBytes": 4074
+    }
+  ],
+  "checks": {
+    "exactOnlyFixedHeaderSuffixRemoved": true,
+    "originalNavigationCSSPreserved": true,
+    "priorStatusDeletionPreserved": true,
+    "allProcurementAndBadgeRulesPreserved": true,
+    "fullByteInverse": true,
+    "noAddedOverride": true
+  },
+  "tests": {
+    "cssParse": true
+  }
+}

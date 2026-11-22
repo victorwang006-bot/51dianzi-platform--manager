@@ -1,0 +1,550 @@
+{
+  "scope": "navigation-original-restore-release-20261122-2112",
+  "status": "NAVIGATION_READY_NOT_ASSEMBLED_NOT_PUBLISHED",
+  "capture": "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture",
+  "assets": [
+    {
+      "side": "admin",
+      "url": "/assets/AdminHeaderNavigation-navigation-original-restore-release-20261122-2112-bc333a2af3cf630eb8d3e8e5eddb0b6f55a9973eb690d656ad195a2ab9b648a7.js",
+      "local": "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/navigation-candidate/assets/AdminHeaderNavigation-navigation-original-restore-release-20261122-2112-bc333a2af3cf630eb8d3e8e5eddb0b6f55a9973eb690d656ad195a2ab9b648a7.js",
+      "sha256": "bc333a2af3cf630eb8d3e8e5eddb0b6f55a9973eb690d656ad195a2ab9b648a7",
+      "size": 52501
+    },
+    {
+      "side": "admin",
+      "url": "/assets/DashboardLayout-navigation-original-restore-release-20261122-2112-678ee5d6930725f0adeda3893f2eaddba452615f4fa94da61d40cda102af5f05.js",
+      "local": "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/navigation-candidate/assets/DashboardLayout-navigation-original-restore-release-20261122-2112-678ee5d6930725f0adeda3893f2eaddba452615f4fa94da61d40cda102af5f05.js",
+      "sha256": "678ee5d6930725f0adeda3893f2eaddba452615f4fa94da61d40cda102af5f05",
+      "size": 99647
+    }
+  ],
+  "replacements": {
+    "/assets/DashboardLayout-header-ui-release-20261122-1928-30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426.js": "/assets/DashboardLayout-navigation-original-restore-release-20261122-2112-678ee5d6930725f0adeda3893f2eaddba452615f4fa94da61d40cda102af5f05.js"
+  },
+  "sourcePins": {
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminWorkspaceNavigation.tsx": "1670ab0b10da1baba5d24f109f426e7d046e47348bd1657a7bf098b18909c29f",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/DashboardLayout.tsx": "a45cfc7afde76f5a391acef3a20d9437c27f85d57f0fd33e4ca87f0810330514",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/salesOrderWorkspace.ts": "490dd1f4bbf25a78141fcc445c87bd169ba089d439fe7a93e627367b21c8a680",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/adminListLocationLayout.ts": "bbcf068f8f1218e15edd2a4d2e1cf8fc3b6e29f61c36e9dbf7ab18922f9e8e2a",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminWorkspaceDropdownWidth.ts": "5e20251b082445685b0d6fa91587e6d31e35056ba4aefe9a29abf774300b3926",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/beijingTime.ts": "d92d45e834b966af24df57d82bff60e988c0f3189b6662710078d34cc9066b15",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/channelInventoryNavigation.ts": "20509a6940df5f5323f739d44f04f834e6405513fb8f0658779cc2021895001a",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/adminWorkspaceNavigationModel.ts": "31a02591479c9e1b3983a63195ad202b0714291e9097cda27e153808b7fcd664",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/adminWorkbenchNavigationModel.ts": "95f1f43d20e91357396f6a4000659632e74cac835239a36d14e2a7ebce118f11"
+  },
+  "allowedSource": [
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminWorkspaceNavigation.tsx",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/salesOrderWorkspace.ts",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/adminListLocationLayout.ts",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/adminWorkspaceDropdownWidth.ts",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/shared/beijingTime.ts",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/lib/channelInventoryNavigation.ts",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/adminWorkspaceNavigationModel.ts",
+    "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/adminWorkbenchNavigationModel.ts"
+  ],
+  "exclusions": [
+    {
+      "source": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminWorkspaceNavigation.tsx",
+      "start": 49123,
+      "end": 49201,
+      "beforeSHA": "4f40dd542f8c00bb60df79322cdf2a44343ecfb062722f8910d65773cf0bdc6f",
+      "afterSHA": "d8a9ed1dae4b8516b3e0649f3cac87a427a70f490eb578c4ae3a9942583e06a4",
+      "name": "AdminModuleTabs export alias",
+      "reason": "Remove alias of the unused in-memory-pruned ModuleTabs only.",
+      "inMemoryOnly": true
+    },
+    {
+      "source": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminWorkspaceNavigation.tsx",
+      "start": 39224,
+      "end": 48644,
+      "beforeSHA": "57326e485f4c2c640cbead6a5389bb79de2c58d1a61c439a5911a1dfa3b3a0f0",
+      "afterSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "name": "ModuleTabs",
+      "reason": "Unused ModuleTabs export removed in memory only.",
+      "inMemoryOnly": true
+    },
+    {
+      "source": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminWorkspaceNavigation.tsx",
+      "start": 842,
+      "end": 922,
+      "beforeSHA": "74b80c145262a3ec041eb64fdc88a5f8f02f68089d1b50aba5832d8de46bf2fe",
+      "afterSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "name": "./InquiryReceptionNavigationBadge",
+      "reason": "Unused badge import removed in memory; its business module never resolved/compiled.",
+      "inMemoryOnly": true
+    },
+    {
+      "source": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminWorkspaceNavigation.tsx",
+      "import": "./AdminWorkspaceNavigation.css",
+      "reason": "CSS omitted entirely; parent handles CSS separately.",
+      "notReadOrCompiled": true
+    },
+    {
+      "source": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/AdminWorkspaceNavigation.tsx",
+      "import": "./AdminListPage.css",
+      "reason": "CSS omitted entirely; parent handles CSS separately.",
+      "notReadOrCompiled": true
+    },
+    {
+      "source": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/adminWorkspaceNavigationModel.ts",
+      "start": 368,
+      "end": 811,
+      "beforeSHA": "b1921023513fcb62cb371ce58621efa38c101db18c339cfd4b29d765bb53831f",
+      "afterSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "name": "hasAdminChannelInventoryRead",
+      "reason": "Unused hasAdminChannelInventoryRead excluded in memory only.",
+      "inMemoryOnly": true
+    },
+    {
+      "source": "/home/ubuntu/work/channel-release-20261121-1837/manager/client/src/components/admin/adminWorkspaceNavigationModel.ts",
+      "start": 0,
+      "end": 78,
+      "beforeSHA": "74cafc1da02a5e82c5e6f65ed57bc4215e4c0e0b8957303bfab85eb32c6035a8",
+      "afterSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "name": "@shared/adminPermissions",
+      "reason": "Unused permission projection import excluded; native authorization remains byte-exact.",
+      "inMemoryOnly": true
+    }
+  ],
+  "runtimeURL": "/assets/AdminHeaderNavigation-navigation-original-restore-release-20261122-2112-bc333a2af3cf630eb8d3e8e5eddb0b6f55a9973eb690d656ad195a2ab9b648a7.js",
+  "inputs": {
+    "records": "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/records.json",
+    "recordsSHA": "80dc230a6b5d67539b60feb92408855aaa5b743e02bb621c48033e80bc060fa5",
+    "environment": "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/environment.json",
+    "environmentSHA": "fbd95aebbd9291ae6344d74b102accae440d294abf3b6d0e5e81042c0d4e4b69",
+    "sourceImplementation": "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/source-implementation.json",
+    "sourceImplementationSHA": "4a55ff21f0a8bce1ff410239b12678e66b8a37b5de26ef00db8b41a5bbbaeeab"
+  },
+  "nav": {
+    "beforeURL": "/assets/DashboardLayout-header-ui-release-20261122-1928-30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426.js",
+    "beforeSHA": "30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426",
+    "beforeSize": 99641,
+    "beforeLocal": "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/capture/dependency-91.js",
+    "afterURL": "/assets/DashboardLayout-navigation-original-restore-release-20261122-2112-678ee5d6930725f0adeda3893f2eaddba452615f4fa94da61d40cda102af5f05.js",
+    "afterSHA": "678ee5d6930725f0adeda3893f2eaddba452615f4fa94da61d40cda102af5f05",
+    "afterSize": 99647,
+    "local": "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/navigation-candidate/assets/DashboardLayout-navigation-original-restore-release-20261122-2112-678ee5d6930725f0adeda3893f2eaddba452615f4fa94da61d40cda102af5f05.js",
+    "nativeAliases": {
+      "React": "c",
+      "jsx": "a"
+    },
+    "oldRuntimeURL": "/assets/AdminHeaderNavigation-header-ui-release-20261122-1928-dd9009dd71f79c6e3ef3ddd37ff5fe07d8fa6ab0b499dd70d0fe037723a850b2.js",
+    "newRuntimeURL": "/assets/AdminHeaderNavigation-navigation-original-restore-release-20261122-2112-bc333a2af3cf630eb8d3e8e5eddb0b6f55a9973eb690d656ad195a2ab9b648a7.js",
+    "originalTabsComponent": "__HeaderUINav",
+    "originalHeaderChildren": 2,
+    "newHeaderChildren": 3,
+    "accountExpressionSHA": "f1f610b651aa8f643a0c696a2a4b9aae554463f8206d8217cca6d602ffd1823b",
+    "accountExpressionSize": 2097,
+    "originalPropsSHA": "26f76f9958ff49fea8077591a057cf6e8a9d082e3f6ea00510a124b13d0c9d56",
+    "preservedPropsSHA": [
+      {
+        "name": "data-loc",
+        "sha256": "9a57e71b8b548d76128adefb2325450a482cdade66bf5a972c7f10b40ae605fb"
+      },
+      {
+        "name": "items",
+        "sha256": "74741f22d8072941364a08bb6473079c060fa4676f0b02a49331a9fdc1bcdf15"
+      },
+      {
+        "name": "location",
+        "sha256": "8ca37cf63f0314de092a87d9857ae0f64ea05fe451dafaae48092cf104f15d74"
+      },
+      {
+        "name": "onNavigate",
+        "sha256": "d9059f18af149262ca291ee55abafd149c187e9d1a68aae467e473fa4637cb3d"
+      },
+      {
+        "name": "onPreload",
+        "sha256": "6de52cc22ff9a842c7043bcdfa5c86bb1a9da5eea59b00b72cd73fbdb24269e1"
+      },
+      {
+        "name": "renderBadge",
+        "sha256": "10dcc48ee73448427b62ab640d53afa81d6bdf9c6306839ce857293ff52bebb7"
+      }
+    ],
+    "NIImportSHA": "3ad0e1a72a67555bad171e08d438982cd6dddd5fc2dd2d1c17198d337df207ad",
+    "NIInitializationSHA": "2bccf4c7c1d0578c23deca64ba13126b75dcd98461861319c092979099485111",
+    "navInitializationSHA": "1791df748fe934b37943675ca87e76a509a04133871a4e0d9db4c7bd85f302d4",
+    "patches": [
+      {
+        "start": 62,
+        "end": 193,
+        "after": "\"/assets/AdminHeaderNavigation-navigation-original-restore-release-20261122-2112-bc333a2af3cf630eb8d3e8e5eddb0b6f55a9973eb690d656ad195a2ab9b648a7.js\"",
+        "reason": "Replace ONLY the existing __HeaderUICreate import URL; aliases/import structure unchanged.",
+        "before": "\"/assets/AdminHeaderNavigation-header-ui-release-20261122-1928-dd9009dd71f79c6e3ef3ddd37ff5fe07d8fa6ab0b499dd70d0fe037723a850b2.js\"",
+        "afterStart": 62,
+        "afterEnd": 211,
+        "byteStart": 62,
+        "byteEnd": 193,
+        "afterByteStart": 62,
+        "afterByteEnd": 211,
+        "beforeSHA": "3d9739980bc7e99f0f91976d60da787cda77862be39b00d0ac5a711e074b530a",
+        "afterSHA": "94130ff0b767918c9d968a25e472ee255a192aeaac23dbe22cd39d415221d0ca"
+      },
+      {
+        "start": 95988,
+        "end": 98080,
+        "after": "",
+        "reason": "Remove final accountMenu property plus its own preceding comma only.",
+        "before": ",accountMenu:a.jsxs(po,{\"data-loc\":\"client/src/components/DashboardLayout.tsx:633\",children:[a.jsx(mo,{\"data-loc\":\"client/src/components/DashboardLayout.tsx:634\",asChild:!0,children:a.jsxs(\"button\",{\"data-loc\":\"client/src/components/DashboardLayout.tsx:635\",type:\"button\",onPointerEnter:()=>{T&&Ae(\"profile\")},onFocus:()=>{T&&Ae(\"profile\")},className:\"admin-workspace-shell__account flex shrink-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring\",children:[a.jsx(Gn,{\"data-loc\":\"client/src/components/DashboardLayout.tsx:645\",className:\"h-8 w-8 border shrink-0\",children:a.jsx(Vn,{\"data-loc\":\"client/src/components/DashboardLayout.tsx:646\",className:\"bg-primary text-xs font-medium text-primary-foreground\",children:t?.name?.charAt(0).toUpperCase()||\"管\"})}),a.jsxs(\"div\",{\"data-loc\":\"client/src/components/DashboardLayout.tsx:650\",className:\"hidden min-w-0 text-left sm:block\",children:[a.jsx(\"p\",{\"data-loc\":\"client/src/components/DashboardLayout.tsx:651\",className:\"max-w-28 truncate text-sm font-medium leading-none\",children:t?.name||\"-\"}),a.jsx(\"p\",{\"data-loc\":\"client/src/components/DashboardLayout.tsx:654\",className:\"mt-1 max-w-28 truncate text-xs text-muted-foreground\",children:O})]})]})}),a.jsxs(ho,{\"data-loc\":\"client/src/components/DashboardLayout.tsx:660\",align:\"end\",className:\"w-48\",children:[T?a.jsxs(Xe,{\"data-loc\":\"client/src/components/DashboardLayout.tsx:662\",onClick:()=>s(\"/profile\"),className:\"cursor-pointer\",children:[a.jsx(kn,{\"data-loc\":\"client/src/components/DashboardLayout.tsx:666\",className:\"mr-2 h-4 w-4\"}),a.jsx(\"span\",{\"data-loc\":\"client/src/components/DashboardLayout.tsx:667\",children:\"个人中心\"})]}):null,a.jsxs(Xe,{\"data-loc\":\"client/src/components/DashboardLayout.tsx:670\",onClick:n,className:\"cursor-pointer text-destructive focus:text-destructive\",children:[a.jsx(En,{\"data-loc\":\"client/src/components/DashboardLayout.tsx:674\",className:\"mr-2 h-4 w-4\"}),a.jsx(\"span\",{\"data-loc\":\"client/src/components/DashboardLayout.tsx:675\",children:\"退出登录\"})]})]})]})",
+        "afterStart": 96006,
+        "afterEnd": 96006,
+        "byteStart": 96664,
+        "byteEnd": 98774,
+        "afterByteStart": 96682,
+        "afterByteEnd": 96682,
+        "beforeSHA": "6326caef1071c90f0a42808c8bebf3ac8f1dcd34bcca80196363df7723af1048",
+        "afterSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "start": 98082,
+        "end": 98082,
+        "after": ",a.jsxs(po,{\"data-loc\":\"client/src/components/DashboardLayout.tsx:633\",children:[a.jsx(mo,{\"data-loc\":\"client/src/components/DashboardLayout.tsx:634\",asChild:!0,children:a.jsxs(\"button\",{\"data-loc\":\"client/src/components/DashboardLayout.tsx:635\",type:\"button\",onPointerEnter:()=>{T&&Ae(\"profile\")},onFocus:()=>{T&&Ae(\"profile\")},className:\"admin-workspace-shell__account flex shrink-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring\",children:[a.jsx(Gn,{\"data-loc\":\"client/src/components/DashboardLayout.tsx:645\",className:\"h-8 w-8 border shrink-0\",children:a.jsx(Vn,{\"data-loc\":\"client/src/components/DashboardLayout.tsx:646\",className:\"bg-primary text-xs font-medium text-primary-foreground\",children:t?.name?.charAt(0).toUpperCase()||\"管\"})}),a.jsxs(\"div\",{\"data-loc\":\"client/src/components/DashboardLayout.tsx:650\",className:\"hidden min-w-0 text-left sm:block\",children:[a.jsx(\"p\",{\"data-loc\":\"client/src/components/DashboardLayout.tsx:651\",className:\"max-w-28 truncate text-sm font-medium leading-none\",children:t?.name||\"-\"}),a.jsx(\"p\",{\"data-loc\":\"client/src/components/DashboardLayout.tsx:654\",className:\"mt-1 max-w-28 truncate text-xs text-muted-foreground\",children:O})]})]})}),a.jsxs(ho,{\"data-loc\":\"client/src/components/DashboardLayout.tsx:660\",align:\"end\",className:\"w-48\",children:[T?a.jsxs(Xe,{\"data-loc\":\"client/src/components/DashboardLayout.tsx:662\",onClick:()=>s(\"/profile\"),className:\"cursor-pointer\",children:[a.jsx(kn,{\"data-loc\":\"client/src/components/DashboardLayout.tsx:666\",className:\"mr-2 h-4 w-4\"}),a.jsx(\"span\",{\"data-loc\":\"client/src/components/DashboardLayout.tsx:667\",children:\"个人中心\"})]}):null,a.jsxs(Xe,{\"data-loc\":\"client/src/components/DashboardLayout.tsx:670\",onClick:n,className:\"cursor-pointer text-destructive focus:text-destructive\",children:[a.jsx(En,{\"data-loc\":\"client/src/components/DashboardLayout.tsx:674\",className:\"mr-2 h-4 w-4\"}),a.jsx(\"span\",{\"data-loc\":\"client/src/components/DashboardLayout.tsx:675\",children:\"退出登录\"})]})]})]})",
+        "reason": "Move the original complete account expression byte-for-byte to the third header sibling.",
+        "before": "",
+        "afterStart": 96008,
+        "afterEnd": 98088,
+        "byteStart": 98776,
+        "byteEnd": 98776,
+        "afterByteStart": 96684,
+        "afterByteEnd": 98782,
+        "beforeSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "afterSHA": "6ef82eb4770b564d543f04d01fe72bb0bb5f4c66b92dcd6e21e34981717b7092"
+      }
+    ],
+    "outsidePatchSegments": [
+      {
+        "beforeStart": 0,
+        "beforeEnd": 62,
+        "afterStart": 0,
+        "afterEnd": 62,
+        "size": 62,
+        "sha256": "8f7b127f709b68eb6836d8cfdf52065a924cbdac47c0c798ab52bcd8b5d48d8e"
+      },
+      {
+        "beforeStart": 193,
+        "beforeEnd": 95988,
+        "afterStart": 211,
+        "afterEnd": 96006,
+        "size": 96471,
+        "sha256": "ef92658fa7b3f979f911838da7fa933d01d0efb93008127026c9e99c92424715"
+      },
+      {
+        "beforeStart": 98080,
+        "beforeEnd": 98082,
+        "afterStart": 96006,
+        "afterEnd": 96008,
+        "size": 2,
+        "sha256": "2c58b0f2b094944d28f1ed21e17051fc219216cc0ca0cb12e9431d4344937b6b"
+      },
+      {
+        "beforeStart": 98082,
+        "beforeEnd": 98947,
+        "afterStart": 98088,
+        "afterEnd": 98953,
+        "size": 865,
+        "sha256": "d4422565d63a547cb386b8048fc08a2ef07d2e8d296237c515a6fdaf7d94bf3b"
+      }
+    ]
+  },
+  "checks": {
+    "syntax": true,
+    "navFullByteInverse": true,
+    "outsideSlotsExact": true,
+    "outsidePatchBytesExact": true,
+    "originalReactJSXQuerySingletons": true,
+    "noBundledReactQueryTRPC": true,
+    "noNewQueryClient": true,
+    "noBusinessScopeImported": true,
+    "noBusinessSourceCompiled": true,
+    "noNIStatusBundled": true,
+    "noNIStatusReintroduced": true,
+    "originalProviderAndReadGatesExact": true,
+    "allHistoricalHandlersPreserved": true,
+    "exactOriginalAccountExpression": true,
+    "allOriginalNavigationPropsExact": true,
+    "originalLogoExact": true,
+    "headerChildrenLogoNavAccount": true,
+    "NIImportAndFactoryCallUntouched": true,
+    "existingNavFactoryInitUntouched": true,
+    "originalNavigationBaselineExact": true,
+    "eightPureNavigationDependencies": true,
+    "noNewHeaderLayoutMoreFixedGroupsPermanentSlots": true,
+    "sourceFreeze": true,
+    "offlineFactoryBridgeUnit": true,
+    "originalEmptyItemsReturnsNull": true,
+    "onlyTwoJSAssets": true,
+    "noCSSAssets": true,
+    "noWholeSiteBuild": true,
+    "noWholeSiteTSC": true,
+    "tests": {
+      "status": "PASS",
+      "passed": 12,
+      "failed": 0,
+      "cases": [
+        {
+          "name": "implementation-source-pins-and-original-navigation-baseline",
+          "status": "PASS",
+          "navigationSHA": "1670ab0b10da1baba5d24f109f426e7d046e47348bd1657a7bf098b18909c29f",
+          "baselineRevision": "e965247",
+          "dashboardSourceSHA": "a45cfc7afde76f5a391acef3a20d9437c27f85d57f0fd33e4ca87f0810330514"
+        },
+        {
+          "name": "eight-pure-source-dependencies-no-business-compilation",
+          "status": "PASS",
+          "compiledSourceCount": 8,
+          "compiledInputs": [
+            "native:react",
+            "shared/beijingTime.ts",
+            "client/src/lib/channelInventoryNavigation.ts",
+            "client/src/components/admin/adminWorkbenchNavigationModel.ts",
+            "client/src/components/admin/adminWorkspaceNavigationModel.ts",
+            "client/src/components/admin/adminListLocationLayout.ts",
+            "client/src/lib/salesOrderWorkspace.ts",
+            "client/src/lib/adminWorkspaceDropdownWidth.ts",
+            "excluded-css:./AdminWorkspaceNavigation.css",
+            "excluded-css:./AdminListPage.css",
+            "native:react/jsx-runtime",
+            "client/src/components/admin/AdminWorkspaceNavigation.tsx",
+            "original-navigation-entry.ts"
+          ]
+        },
+        {
+          "name": "source-only-factory-syntax-no-new-layout-more-fixed-groups-permanent-slots",
+          "status": "PASS"
+        },
+        {
+          "name": "full-byte-inverse",
+          "status": "PASS",
+          "beforeSHA": "30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426",
+          "inverseSHA": "30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426"
+        },
+        {
+          "name": "outside-patch-bytes-exact",
+          "status": "PASS",
+          "segmentCount": 4
+        },
+        {
+          "name": "AST-header-three-siblings-logo-and-all-non-account-props-exact",
+          "status": "PASS",
+          "originalChildren": 2,
+          "restoredChildren": 3,
+          "originalNavigationPropCount": 6
+        },
+        {
+          "name": "AST-original-account-expression-SHA",
+          "status": "PASS",
+          "sha256": "f1f610b651aa8f643a0c696a2a4b9aae554463f8206d8217cca6d602ffd1823b",
+          "size": 2097
+        },
+        {
+          "name": "NI-import-initialization-provider-and-native-bridge-unchanged",
+          "status": "PASS",
+          "NIImportSHA": "3ad0e1a72a67555bad171e08d438982cd6dddd5fc2dd2d1c17198d337df207ad",
+          "NIInitializationSHA": "2bccf4c7c1d0578c23deca64ba13126b75dcd98461861319c092979099485111",
+          "navInitializationSHA": "1791df748fe934b37943675ca87e76a509a04133871a4e0d9db4c7bd85f302d4",
+          "providerOwnProperties": [
+            "client:__niClient",
+            "accountKey:t?.hasNativeAdminAccount===!0?g:null",
+            "canRead:Object.values(__niAccess).some(Boolean)",
+            "moduleCanRead:__niAccess"
+          ],
+          "proof": "Provider wrapper and non-children properties AST-equal; all unaffected bytes including provider/child subtree outside the three narrow patches compare exactly."
+        },
+        {
+          "name": "factory-native-fake-hooks-empty-items-return-null",
+          "status": "PASS",
+          "exportAPI": [
+            "AdminWorkspaceTabs",
+            "WorkspaceTabs"
+          ],
+          "emptyItemsResult": null,
+          "hooksInvoked": {
+            "useRef": 7,
+            "useId": 1,
+            "useState": 1,
+            "useEffect": 3,
+            "useLayoutEffect": 1
+          }
+        },
+        {
+          "name": "factory-native-fake-hooks-JSX-original-items-routing-preload-dynamic-badges",
+          "status": "PASS",
+          "primaryButtons": 6,
+          "originalAuthorizedObjectIdentity": true,
+          "channelIntent": [
+            "materials",
+            "flat"
+          ],
+          "nativeHookCalls": {
+            "useRef": 14,
+            "useId": 2,
+            "useState": 2,
+            "useEffect": 6,
+            "useLayoutEffect": 2
+          }
+        },
+        {
+          "name": "source-pins-frozen-after-build",
+          "status": "PASS",
+          "pinnedSourceCount": 9,
+          "compiledPureNavigationCount": 8,
+          "nativeDashboardSourceNotCompiled": true
+        },
+        {
+          "name": "exactly-two-JS-assets-no-navigation-or-list-CSS-assets",
+          "status": "PASS",
+          "assetCount": 2
+        }
+      ]
+    }
+  },
+  "tests": {
+    "status": "PASS",
+    "passed": 12,
+    "failed": 0,
+    "cases": [
+      {
+        "name": "implementation-source-pins-and-original-navigation-baseline",
+        "status": "PASS",
+        "navigationSHA": "1670ab0b10da1baba5d24f109f426e7d046e47348bd1657a7bf098b18909c29f",
+        "baselineRevision": "e965247",
+        "dashboardSourceSHA": "a45cfc7afde76f5a391acef3a20d9437c27f85d57f0fd33e4ca87f0810330514"
+      },
+      {
+        "name": "eight-pure-source-dependencies-no-business-compilation",
+        "status": "PASS",
+        "compiledSourceCount": 8,
+        "compiledInputs": [
+          "native:react",
+          "shared/beijingTime.ts",
+          "client/src/lib/channelInventoryNavigation.ts",
+          "client/src/components/admin/adminWorkbenchNavigationModel.ts",
+          "client/src/components/admin/adminWorkspaceNavigationModel.ts",
+          "client/src/components/admin/adminListLocationLayout.ts",
+          "client/src/lib/salesOrderWorkspace.ts",
+          "client/src/lib/adminWorkspaceDropdownWidth.ts",
+          "excluded-css:./AdminWorkspaceNavigation.css",
+          "excluded-css:./AdminListPage.css",
+          "native:react/jsx-runtime",
+          "client/src/components/admin/AdminWorkspaceNavigation.tsx",
+          "original-navigation-entry.ts"
+        ]
+      },
+      {
+        "name": "source-only-factory-syntax-no-new-layout-more-fixed-groups-permanent-slots",
+        "status": "PASS"
+      },
+      {
+        "name": "full-byte-inverse",
+        "status": "PASS",
+        "beforeSHA": "30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426",
+        "inverseSHA": "30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426"
+      },
+      {
+        "name": "outside-patch-bytes-exact",
+        "status": "PASS",
+        "segmentCount": 4
+      },
+      {
+        "name": "AST-header-three-siblings-logo-and-all-non-account-props-exact",
+        "status": "PASS",
+        "originalChildren": 2,
+        "restoredChildren": 3,
+        "originalNavigationPropCount": 6
+      },
+      {
+        "name": "AST-original-account-expression-SHA",
+        "status": "PASS",
+        "sha256": "f1f610b651aa8f643a0c696a2a4b9aae554463f8206d8217cca6d602ffd1823b",
+        "size": 2097
+      },
+      {
+        "name": "NI-import-initialization-provider-and-native-bridge-unchanged",
+        "status": "PASS",
+        "NIImportSHA": "3ad0e1a72a67555bad171e08d438982cd6dddd5fc2dd2d1c17198d337df207ad",
+        "NIInitializationSHA": "2bccf4c7c1d0578c23deca64ba13126b75dcd98461861319c092979099485111",
+        "navInitializationSHA": "1791df748fe934b37943675ca87e76a509a04133871a4e0d9db4c7bd85f302d4",
+        "providerOwnProperties": [
+          "client:__niClient",
+          "accountKey:t?.hasNativeAdminAccount===!0?g:null",
+          "canRead:Object.values(__niAccess).some(Boolean)",
+          "moduleCanRead:__niAccess"
+        ],
+        "proof": "Provider wrapper and non-children properties AST-equal; all unaffected bytes including provider/child subtree outside the three narrow patches compare exactly."
+      },
+      {
+        "name": "factory-native-fake-hooks-empty-items-return-null",
+        "status": "PASS",
+        "exportAPI": [
+          "AdminWorkspaceTabs",
+          "WorkspaceTabs"
+        ],
+        "emptyItemsResult": null,
+        "hooksInvoked": {
+          "useRef": 7,
+          "useId": 1,
+          "useState": 1,
+          "useEffect": 3,
+          "useLayoutEffect": 1
+        }
+      },
+      {
+        "name": "factory-native-fake-hooks-JSX-original-items-routing-preload-dynamic-badges",
+        "status": "PASS",
+        "primaryButtons": 6,
+        "originalAuthorizedObjectIdentity": true,
+        "channelIntent": [
+          "materials",
+          "flat"
+        ],
+        "nativeHookCalls": {
+          "useRef": 14,
+          "useId": 2,
+          "useState": 2,
+          "useEffect": 6,
+          "useLayoutEffect": 2
+        }
+      },
+      {
+        "name": "source-pins-frozen-after-build",
+        "status": "PASS",
+        "pinnedSourceCount": 9,
+        "compiledPureNavigationCount": 8,
+        "nativeDashboardSourceNotCompiled": true
+      },
+      {
+        "name": "exactly-two-JS-assets-no-navigation-or-list-CSS-assets",
+        "status": "PASS",
+        "assetCount": 2
+      }
+    ]
+  },
+  "safety": {
+    "localOnly": true,
+    "writeRoot": "/home/ubuntu/work/navigation-original-restore-release-20261122-2112/navigation-candidate",
+    "sourceRepositoryModified": false,
+    "captureModified": false,
+    "productionAccess": false,
+    "SSH": false,
+    "deployment": false,
+    "gitCommit": false,
+    "gitPush": false,
+    "platformOrDemoAccess": false,
+    "secretAccess": false,
+    "wholeSiteBuild": false,
+    "wholeSiteTSC": false
+  },
+  "parentIntegration": [
+    "Parent alone assembles/publishes and applies replacements to existing Dashboard import-map aliases. This candidate is not deployed.",
+    "Copy the two JS assets as-is. Dashboard already references the new runtime URL. Do not recompile Dashboard or business bundles.",
+    "Keep existing NI import URL/import-map resolution, __NI initialization, Query hooks and Provider unchanged. Do not add NI Status.",
+    "CSS is completely delegated to parent. No navCSS/listCSS assets or CSS pin/read/build were produced here.",
+    "Keep current customer two BusinessWorkbenchPage deletions, customer-detail location retirement,采购/inbound assets and all other fresh assets unchanged. No BusinessWorkbenchPage or procurement bundle is compiled or replaced.",
+    "Only patches: existing navigation factory module URL; remove accountMenu property; append its identical complete expression as third header child."
+  ],
+  "limitations": [
+    "Offline syntax/AST/fake-hooks validation only; no real-browser visual acceptance, production real-NI-data test, deployment or publish performed."
+  ],
+  "blockers": []
+}
