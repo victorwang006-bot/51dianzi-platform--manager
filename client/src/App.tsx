@@ -177,13 +177,19 @@ const OrganizationRoute = () => (
     <LazyScreen><LazyOrganization /></LazyScreen>
   </PermissionGate>
 );
-const OrdersRoute = () => (
-  <PermissionGate permission="orders.read">
-    <LazyScreen>
-      <LazyOrders />
-    </LazyScreen>
-  </PermissionGate>
-);
+function OrdersRoute() {
+  const [location, setLocation] = useLocation();
+  const search = useSearch();
+  return (
+    <PermissionGate permission="orders.read">
+      <ErrorBoundary compact resetKeys={[location, search]} onBack={() => setLocation(DEFAULT_ADMIN_PATH, { replace: true })}>
+        <LazyScreen>
+          <LazyOrders />
+        </LazyScreen>
+      </ErrorBoundary>
+    </PermissionGate>
+  );
+}
 const ProfileRoute = () => (
   <LazyScreen>
     <LazyProfile />
@@ -349,10 +355,30 @@ function AppRoutes() {
   );
 }
 
+function RouteErrorBoundary({ children }: { children: React.ReactNode }) {
+  const [location, setLocation] = useLocation();
+  const search = useSearch();
+  const { user, loading, error } = useAuth();
+  // Re-mount only on confirmed account/access facts, not ordinary route changes:
+  // stable workbench mounts must keep their existing query/context identity.
+  const accountKey = JSON.stringify([
+    loading ? "loading" : error ? "unavailable" : user ? "authenticated" : "anonymous",
+    user?.id ?? null,
+    user?.adminRole ?? null,
+    user?.hasNativeAdminAccount ?? false,
+    (user as { permissions?: string[] } | null)?.permissions ?? [],
+  ]);
+  return (
+    <ErrorBoundary key={accountKey} resetKeys={[location, search]} onBack={() => setLocation(DEFAULT_ADMIN_PATH, { replace: true })}>
+      {children}
+    </ErrorBoundary>
+  );
+}
+
 function Router() {
   return (
     <WouterRouter base={ROUTER_BASE}>
-      <AppRoutes />
+      <RouteErrorBoundary><AppRoutes /></RouteErrorBoundary>
     </WouterRouter>
   );
 }

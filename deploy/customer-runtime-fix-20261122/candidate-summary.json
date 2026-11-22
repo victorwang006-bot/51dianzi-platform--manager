@@ -1,0 +1,103 @@
+{
+  "status": "ASSEMBLED_NOT_PUBLISHED",
+  "baseHtmlSHA": "319ed68fdf73704daefd944ca28fce11a970ca4e041dc56f5ef171670600b22f",
+  "sourcePins": {
+    "client/src/App.tsx": "28419036b8ab509434f13f68dc409a66347b55a3ec51115d27c919552312b2f7",
+    "client/src/components/ErrorBoundary.tsx": "cf2ec6df4c68f00532445e821d9bb59da419e7a7c6b5f4ec7c756465477533a6",
+    "client/src/lib/adminNewInformation.tsx": "3170238df498dbd98f61be655b372aac6f777b0825fb0e4f0876373b69fe6ac6",
+    "client/src/components/admin/AdminNewInformationBadge.tsx": "73a008229e11e3e115b857082078bce8b3ddacb6ef4b073bc9e919d81fed6a05",
+    "client/src/components/admin/AdminNewInformationBadge.css": "1c9ddd07e55df5ec8d6deccf4f48060ecb17cac19224d65f716735ecf791ba36",
+    "client/src/components/admin/AdminNewInformationMenuBadge.tsx": "069e624af72c9243f7faa01731cd795b3653a6f45f0fc45f84d13c57747c66ae",
+    "client/src/business/platform/client/src/pages/CustomerList.css": "7d0cb8957ad0b2125aaee5b1984d874a1fab0cf12c17bc335592e106f57e33dc",
+    "client/src/business/platform/client/src/pages/CustomerList.tsx": "a96ea86bedb3ea211c85ccd748a97e79e8f5b2c3e49899d2c6203794a73099bb",
+    "client/src/business/platform/client/src/pages/CustomerDetail.tsx": "29c7112b50173414d76b97d8dd8958476c8c7189b616a892e5a31cb77b8806ac",
+    "shared/adminNewInformation.ts": "29690138f57fcc31b88e33aef0cb6f4dab2fbe7064db564636a83f9cd883add2",
+    "shared/adminNewInformationConstants.ts": "a2a9194ca9f48cb45e3be30fc6b3f54310c465f0012c101ac50afcca8c2c1988",
+    "deploy/admin-new-information-v1/build-page-markers.mjs": "edfc9bba1efeed7c4333485ec18257529b3487291646ea446b26cbb7067a9a0f",
+    "deploy/customer-runtime-fix-20261122/build-notification.mjs": "9689bd63d8e7a84a939062bd527728ffcff945a84baff5b90c2869093cbef0f6",
+    "deploy/customer-runtime-fix-20261122/assemble-candidate.mjs": "29cf0eea81ee68fbedfda1a55cf6ba7407398323212a53403e19c02b4263bb11",
+    "deploy/customer-consistency-20261122/patch-detail.mjs": "d0ada7381023514e7569e2005c5800d9f42fc8a04326fc9e4c2191f5cc2c592f",
+    "deploy/customer-runtime-fix-20261122/build-orders-candidate.mjs": "9a3d252029bb03da08a7bda9118717248d3c7f78b21172be434457b01e9c26d0",
+    "deploy/customer-runtime-fix-20261122/build-entry-recovery-candidate.mjs": "bb71bd768d65eb912c3b6d992de1bf30e3f045db8c03d95dbafa973db7e2adec"
+  },
+  "replacements": {
+    "/assets/BusinessWorkbenchPage-customer-consistency-d2d15dd34c5cdf0d.js": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+    "/assets/BusinessWorkbenchPage-customer-consistency-a24dc29e7d929523.js": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-new-information-fa1a2d10a628ef49.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+    "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Orders-new-information-e30f28c6506b3062.js": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Orders-new-information-355a474a561e630b.js",
+    "/assets/AdminNewInformation-customer-consistency-runtime-cff8bad8c4d94617.js": "/assets/AdminNewInformation-runtime-fix-26903de9e5a06e89.js"
+  },
+  "checks": {
+    "exactHTMLInverse": true,
+    "allNonTargetMappingsPreserved": true,
+    "allTargetDependenciesSameResolvedInstances": true,
+    "ordersActualSpecifierVerified": true,
+    "sequentialSyntaxChecksPassed": true,
+    "noNewProviderOrQueryClient": true,
+    "noImmutableFileOverwritten": true,
+    "oldCSSPrefixAndFoundationRetained": true,
+    "largeWorkbenchWhitespaceOptimizationDeferred": true
+  },
+  "tests": {
+    "status": "TARGETED_PASS_WITH_DISCLOSED_BASELINE_LIMITS",
+    "notificationSource": 90,
+    "ordersAndRecoverySource": 50,
+    "nativeEntryRecovery": 6,
+    "nativeNotificationPhases": 7,
+    "finalNativeDetailIntegrationScenarios": 5,
+    "layoutCases": 10,
+    "fullFrontendBuild": "PASS",
+    "tscES2020": "PASS",
+    "standardPnpmCheck": "EXISTING_TS2802_IN_UNMODIFIED_SERVER",
+    "realAccountAckValidated": false,
+    "inspect503": "NOT_ROOT_CAUSE_CLOSED"
+  },
+  "releasePrerequisites": [
+    "User approval to publish",
+    "Fresh production capture and CAS; this is an offline candidate",
+    "No real account ack validation performed"
+  ],
+  "html": {
+    "sha256": "9b64edef5024defe7dcfd53a9a3b44afe30951c155ad760e97365e6394c64acb",
+    "bytes": 901269
+  },
+  "assets": [
+    {
+      "side": "admin",
+      "url": "/assets/BusinessWorkbenchPage-customer-consistency-bbfa67a20e86462d.js",
+      "sha256": "bbfa67a20e86462dde41aca04c6139382820042fe19db7d871a6d321bd82280c",
+      "size": 5547632
+    },
+    {
+      "side": "admin",
+      "url": "/assets/BusinessWorkbenchPage-customer-consistency-56c952cdab984a3a.js",
+      "sha256": "56c952cdab984a3ab92fd6f5e6207af26acbd36fec94c9922290c22bca6ba294",
+      "size": 6445258
+    },
+    {
+      "side": "admin",
+      "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/index-error-recovery-f742d1b3420e4d10.js",
+      "sha256": "f742d1b3420e4d10413482df5d1667e884503012f83f919186fe196dcaccb73a",
+      "size": 447758
+    },
+    {
+      "side": "admin",
+      "url": "/assets/20261106-one-click-review-images-v11-admin-4ebf4856da0f/Orders-new-information-355a474a561e630b.js",
+      "sha256": "355a474a561e630be2190f11a9612ba5e01baffcf06b44113e0647c43545fce2",
+      "size": 25917
+    },
+    {
+      "side": "admin",
+      "url": "/assets/AdminNewInformation-runtime-fix-26903de9e5a06e89.js",
+      "sha256": "26903de9e5a06e8942a4a6a516f3c9ed22653a6a68fea8306a61da2b4f655663",
+      "size": 24294
+    },
+    {
+      "side": "admin",
+      "url": "/assets/customer-runtime-fix-8ddad65bc0ac0f6b.css",
+      "sha256": "8ddad65bc0ac0f6b8a0c4ecfe16c1b8ab402ee43a2498df5be29948835fb06cb",
+      "size": 27134
+    }
+  ],
+  "resolvedDependencies": 131
+}

@@ -1,11 +1,8 @@
 import { z } from "zod";
-
-export const ADMIN_NEW_INFORMATION_MODULES = [
-  "customers", "inventory", "mall", "reception", "procurement", "inbound", "sales",
-] as const;
+import { ADMIN_NEW_INFORMATION_MODULES } from "./adminNewInformationConstants";
+export { ADMIN_NEW_INFORMATION_MODULES, ADMIN_NEW_INFORMATION_REFRESH_MS } from "./adminNewInformationConstants";
 export type AdminNewInformationModule = typeof ADMIN_NEW_INFORMATION_MODULES[number];
 export const adminNewInformationModuleSchema = z.enum(ADMIN_NEW_INFORMATION_MODULES);
-export const ADMIN_NEW_INFORMATION_REFRESH_MS = 15_000;
 
 export type AdminNewInformationRef = {
   /** Server-defined scoped source key; never a front actor identity. */

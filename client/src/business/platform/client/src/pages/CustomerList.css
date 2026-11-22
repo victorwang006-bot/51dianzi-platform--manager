@@ -565,12 +565,27 @@
 
 /* customer-layout-20261122 BEGIN — finite, data-independent list geometry.
  * The name column alone absorbs 280–360px; the other seven total 1032px.
- * Keep one scroll owner and the original sticky demand/follow-up actions. */
+ * Keep one scroll owner; fixed actions must not cover supply in narrow content. */
 .customer-list-page {
   --customer-list-demand-width: 128px;
   --customer-list-actions-width: 88px;
   --customer-list-table-min-width: 1312px;
   --customer-list-table-max-width: 1392px;
+}
+.customer-list-page .customer-list-table-scroll {
+  container-type: inline-size;
+  container-name: customer-list-scroll;
+}
+/* Use the scroll owner's actual width, not the viewport. Below the table's
+ * minimum budget both right columns scroll naturally, including restored
+ * positions and phone layouts. Keep all actions; never shrink or clip them. */
+@container customer-list-scroll (width < 1312px) {
+  .customer-list-page .customer-list-table :is(th, td):is(.customer-list-demand-column, .customer-list-actions-column) {
+    position: static;
+    right: auto;
+    z-index: auto;
+    box-shadow: none;
+  }
 }
 .customer-list-page .customer-list-table {
   width: 100%;

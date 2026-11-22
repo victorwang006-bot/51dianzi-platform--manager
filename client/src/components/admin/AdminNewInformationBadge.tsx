@@ -14,7 +14,7 @@ export type AdminNewInformationBadgeProps = {
   placement?: "absolute" | "inline" | "nav";
   reserveSpace?: boolean;
   lastKnown?: boolean;
-  updateState?: "disabled" | "pending" | "failed" | "synced";
+  updateState?: "disabled" | "blocked" | "pending" | "failed" | "synced";
 };
 /** Same 18px visual language as ChatUnreadBadge; never import its chat queries. */
 export function AdminNewInformationBadge({
@@ -26,10 +26,14 @@ export function AdminNewInformationBadge({
   lastKnown = false,
   updateState,
 }: AdminNewInformationBadgeProps) {
-  const updateLabel = updateState === "disabled" ? "核验阻断"
-    : updateState === "pending" ? "待更新"
-    : updateState === "failed" || lastKnown ? "更新失败" : undefined;
-  if (!updateLabel && (count === undefined || !Number.isFinite(count) || count <= 0)) {
+  const state = updateState ?? (lastKnown ? "failed" : "synced");
+  const blocked = state === "disabled" || state === "blocked";
+  const total = !blocked && count !== undefined && Number.isSafeInteger(count) && count >= 0
+    ? count : undefined;
+  const updateLabel = blocked ? "核验阻断"
+    : state === "pending" ? (total === undefined ? "核验中" : "待更新")
+    : state === "failed" || lastKnown ? "暂不可用" : undefined;
+  if (!updateLabel && (total === undefined || total === 0)) {
     return placement === "inline" && reserveSpace ? (
       <span
         className={`relative ml-1 inline-block h-[18px] min-w-[18px] shrink-0 ${className}`}
@@ -37,27 +41,44 @@ export function AdminNewInformationBadge({
       />
     ) : null;
   }
-  const total = count !== undefined && Number.isFinite(count) ? Math.max(0, Math.floor(count)) : undefined;
   const label =
-    `${ariaLabel ?? (total === undefined ? "新信息数量尚未核验" : `${total} 条新信息`)}${updateLabel ? `（${updateLabel}）` : ""}`;
+    `${blocked ? "当前新信息核验受权限或身份限制" : ariaLabel ?? (total === undefined ? "新信息数量尚未核验" : `${total} 条新信息${lastKnown ? "（上次成功核验，非本次实时数量）" : ""}`)}${updateLabel ? `（${updateLabel}）` : ""}`;
   const placementClass =
     placement === "absolute"
       ? "absolute -right-[9px] -top-[7px]"
       : placement === "nav"
         ? "absolute right-[2px] -top-[3px] z-[1]"
         : "relative ml-1 shrink-0";
+  // An unknown/error state is not a red unread count. Keep any verified last
+  // number as neutral context, and never turn an unknown response into zero.
+  if (updateLabel) return (
+    <span
+      className={`${placementClass} inline-flex items-center justify-center whitespace-nowrap ${className}`}
+      style={{ background: "#f1f5f9", color: "#475569", boxShadow: "none", borderRadius: 4,
+        height: 16, padding: "0 4px", fontSize: 10, lineHeight: "16px", fontWeight: 400 }}
+      data-admin-new-information="update-status"
+      data-placement={placement}
+      data-update-state={state}
+      data-known-count={total}
+      aria-label={label}
+      title={label}
+      role="status"
+    >
+      {total !== undefined && total > 0 ? `${formatAdminNewInformationCount(total)} · ` : ""}{updateLabel}
+    </span>
+  );
   return (
     <span
       className={`${placementClass} inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#E5484D] px-[5px] text-[11px] font-semibold leading-[18px] text-white tabular-nums ring-2 ring-white ${className}`}
       data-admin-new-information="count"
       data-placement={placement}
-      data-update-state={updateState ?? (lastKnown ? "failed" : "synced")}
+      data-update-state={state}
+      data-known-count={total}
       aria-label={label}
       title={label}
       role="status"
     >
-      {total === undefined ? "…" : formatAdminNewInformationCount(total)}
-      {updateLabel && <span style={{ position: "absolute", top: "100%", right: 0, marginTop: 1, whiteSpace: "nowrap", borderRadius: 3, background: "white", padding: "0 2px", fontSize: 9, lineHeight: "12px", fontWeight: 400, color: "#92400e", boxShadow: "0 0 0 1px #fde68a" }} data-admin-new-information="update-status">{updateLabel}</span>}
+      {formatAdminNewInformationCount(total!)}
     </span>
   );
 }

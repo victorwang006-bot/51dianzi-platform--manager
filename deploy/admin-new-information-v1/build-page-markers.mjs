@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
-const require=createRequire('/home/ubuntu/work/51dianzi-platform--manager/package.json');
+const require=createRequire(new URL('../../package.json',import.meta.url));
 export const ts=require('typescript');
 export const D='/home/ubuntu/work/admin-new-info-v1-20261117', R='/home/ubuntu/work/51dianzi-platform--manager';
 export const H=s=>crypto.createHash('sha256').update(s).digest('hex');
@@ -15,6 +15,11 @@ export const one=(xs,label)=>{assert.equal(xs.length,1,label);return xs[0];};
 const prop=(o,name)=>o.properties.find(p=>ts.isPropertyAssignment(p)&&(p.name.text===name));
 const state=q=>`${q}.isSuccess===true&&!${q}.isError&&!${q}.isFetching&&!${q}.isPlaceholderData&&${q}.isFetchedAfterMount!==false`;
 const verified=s=>`${s}.contextVerification?.state==="verified"&&${s}.contextVerification.identity===${s}.storageScope&&${s}.staffPrincipal?.status==="ready"`;
+export function nullablePageReceiver(family,receiver){
+ if(family==='CrmSalesOrders')return receiver.replace(/\.data\.items$/,'.data?.items');
+ if(family==='Orders')return receiver.replace(/\.data\.rows$/,'.data?.rows');
+ return receiver;
+}
 function apply(before,patches){patches.sort((a,b)=>a.start-b.start||a.end-b.end);let shift=0;for(let i=0;i<patches.length;i++){const p=patches[i];if(i)assert(p.start>=patches[i-1].end,'overlapping patches');assert.equal(before.slice(p.start,p.end),p.before);p.afterStart=p.start+shift;p.afterEnd=p.afterStart+p.after.length;shift+=p.after.length-p.before.length;}let next=before;for(const p of [...patches].reverse())next=next.slice(0,p.start)+p.after+next.slice(p.end);let inverse=next;for(const p of [...patches].reverse())inverse=inverse.slice(0,p.afterStart)+p.before+inverse.slice(p.afterEnd);assert.equal(inverse,before);parse(next);return next;}
 export function resolve(spec,from,map){const key=/^[./]/.test(spec)?new URL(spec,'https://admin.51dianzi.com'+from).pathname:spec;const tables=Object.keys(map.scopes??{}).filter(s=>from.startsWith(s)).sort((a,b)=>b.length-a.length).map(s=>map.scopes[s]);tables.push(map.imports??{});for(const t of tables){if(Object.hasOwn(t,key))return t[key];if(Object.hasOwn(t,spec))return t[spec];}return key;}
 export function specs(s){const a=parse(s);return [...new Set(nodes(a,n=>(ts.isImportDeclaration(n)||ts.isExportDeclaration(n))&&n.moduleSpecifier||ts.isCallExpression(n)&&n.expression.kind===ts.SyntaxKind.ImportKeyword).map(n=>n.moduleSpecifier??n.arguments[0]).map(n=>{assert(ts.isStringLiteral(n),'literal module imports required');return n.text;}))];}
@@ -88,8 +93,8 @@ export async function build(){
    const returns=fn.body.statements.filter(ts.isReturnStatement);const finalReturn=returns.at(-1);assert(finalReturn,'main page render return');let insert=finalReturn.getStart(a);
    // Mall has auth/denied returns: initialize rows before the first original render barrier, with listReady false.
    if(family==='MallMaterials'){const barrier=fn.body.statements.find(n=>ts.isIfStatement(n)&&nodes(n,ts.isReturnStatement).length);if(barrier)insert=barrier.getStart(a);}
-   // CRM rendering originally guards absent/cleared query data. Keep that guard when lifting rows before JSX.
-   const safeReceiver=family==='CrmSalesOrders'?receiver.getText(a).replace(/\.data\.items$/,'.data?.items'):receiver.getText(a);
+   // CRM and platform Orders guard absent/cleared data in JSX; retain that guard when lifting rows.
+   const safeReceiver=nullablePageReceiver(family,receiver.getText(a));
    const rowRefs=`__niPageRows.map(row=>${JSON.stringify(prefix+':')}+row.id)`;
    const safeRefs=family==='CrmSalesOrders'?`__niListReady?${rowRefs}:[]`:rowRefs;
    const prelude=`const ${business?'__niBusiness=__NIUseBusinessScope(),':''}__niPageRows=(${safeReceiver}??[]),__niListReady=Boolean(${ready}),__niRows=__NI.useAdminNewInformationContextRows({module:${JSON.stringify(module)},refs:${safeRefs},${scope||business?'scope:'+(scope??'String(__niBusiness.merchantId)')+',':''}listReady:__niListReady}),__niDisplayed=[...__niPageRows].sort((left,right)=>Number(__niRows.getRow(${JSON.stringify(prefix+':')}+right.id).isNew)-Number(__niRows.getRow(${JSON.stringify(prefix+':')}+left.id).isNew));\n`;

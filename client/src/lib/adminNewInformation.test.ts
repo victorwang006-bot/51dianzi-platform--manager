@@ -466,13 +466,14 @@ describe("account-isolated summary", () => {
     failed.modules.sales = { count: 0, available: false, reason: "temporary", lastKnown: false, children: { business: 0, mall: 0 } };
     await refetchSummary(failed);
     const badge = (selector: string) => host.querySelector(`${selector} [role=status]`)!;
-    expect(badge('[data-module="customers"]').textContent).toBe("3");
+    expect(badge('[data-module="customers"]').getAttribute("data-known-count")).toBe("3");
+    expect(badge('[data-module="customers"]').getAttribute("data-admin-new-information")).toBe("update-status");
     expect(badge('[data-module="customers"]').getAttribute("title")).toContain("上次成功");
     expect(badge('[data-module="inventory"]').textContent).toBe("7");
     expect(badge('[data-module="inventory"]').getAttribute("title")).not.toContain("上次成功");
-    expect(badge('[data-module="sales"]').textContent).toBe("5");
-    expect(badge('[data-source="business"]').textContent).toBe("2");
-    expect(badge('[data-source="mall"]').textContent).toBe("3");
+    expect(badge('[data-module="sales"]').getAttribute("data-known-count")).toBe("5");
+    expect(badge('[data-source="business"]').getAttribute("data-known-count")).toBe("2");
+    expect(badge('[data-source="mall"]').getAttribute("data-known-count")).toBe("3");
     expect(badge('[data-source="mall"]').getAttribute("title")).toContain("上次成功");
     await refetchSummary(good);
     expect(badge('[data-module="sales"]').getAttribute("title")).not.toContain("上次成功");
@@ -1081,7 +1082,9 @@ describe("customer detail acknowledgement and full-set unread filter", () => {
     expect(vi.mocked(api.markDisplayed).mock.calls[0][0].receipts).toEqual(["server.signed.receipt.1"]);
     expect(host.querySelector("[role=status]")).toBeNull();
     expect(latestRows.getRow("customer:801").markState).toBe("seen");
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["adminNewInformation", "string:admin:1"] });
+    expect(invalidate).toHaveBeenCalledWith(expect.objectContaining({
+      queryKey: ["adminNewInformation", "string:admin:1"], predicate: expect.any(Function),
+    }));
   });
   it("failed/expired confirmation keeps unread and retries ONLY after fresh inspection, never the old token", async () => {
     vi.mocked(api.inspect).mockResolvedValue(inspection("customer:801", "expired.token"));
@@ -1169,5 +1172,68 @@ describe("customer bound-admin identity", () => {
     expect(api.inspect).not.toHaveBeenCalled(); expect(api.markDisplayed).not.toHaveBeenCalled();
     await render(view("admin:1")); await intersect();
     expect(api.inspect).toHaveBeenCalled(); expect(api.markDisplayed).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("notification verification status is not a red unread count", () => {
+  it.each([
+    [undefined, "pending", "核验中"],
+    [0, "pending", "待更新"],
+    [undefined, "failed", "暂不可用"],
+    [0, "failed", "暂不可用"],
+    [3, "failed", "3 · 暂不可用"],
+    [9, "blocked", "核验阻断"],
+  ] as const)("neutral count=%s state=%s preserves uncertainty", async (count, updateState, text) => {
+    await render(h(AdminNewInformationBadge, { count, updateState, placement: "nav" }));
+    expect(host.querySelector('[data-admin-new-information="count"]')).toBeNull();
+    const status = host.querySelector<HTMLElement>('[data-admin-new-information="update-status"]')!;
+    expect(status.textContent).toBe(text);
+    expect(status.style.background).toBe("rgb(241, 245, 249)");
+    expect(status.textContent).not.toContain("…");
+    expect(status.textContent).not.toMatch(/^0/);
+    if (updateState === "blocked") expect(status.hasAttribute("data-known-count")).toBe(false);
+    expect(api.markDisplayed).not.toHaveBeenCalled();
+  });
+  it("shared initial request shows neutral verification status, then verified zero disappears", async () => {
+    const first = deferred<AdminNewInformationSummary>();
+    vi.mocked(api.summary).mockReturnValue(first.promise);
+    await render(h(MenuView));
+    expect(host.querySelector('[data-admin-new-information="count"]')).toBeNull();
+    expect(host.textContent).toContain("核验中");
+    await act(async () => first.resolve(summary(0))); await tick();
+    expect(host.querySelector('[data-admin-new-information]')).toBeNull();
+    expect(api.markDisplayed).not.toHaveBeenCalled();
+  });
+  it("source denial stays blocked until fresh authorized success and never resurrects old proof", async () => {
+    const denied = summary(0);
+    denied.modules.customers = { count: 9, available: false, reason: "denied", lastKnown: true };
+    vi.mocked(api.summary).mockResolvedValue(denied);
+    await render(h(MenuView));
+    const customer = () => host.querySelector('[data-module="customers"]')!;
+    expect(customer().textContent).toBe("核验阻断");
+    expect(customer().querySelector('[data-update-state="blocked"]')).not.toBeNull();
+    expect(customer().textContent).not.toContain("9");
+    const temporary = summary(0);
+    temporary.modules.customers = { count: 9, available: false, reason: "temporary", lastKnown: true };
+    await refetchSummary(temporary);
+    expect(customer().textContent).toBe("暂不可用");
+    expect(customer().querySelector('[data-known-count]')).toBeNull();
+    await refetchSummary(summary(2));
+    expect(customer().querySelector('[data-admin-new-information="count"]')!.textContent).toBe("2");
+    expect(api.markDisplayed).not.toHaveBeenCalled();
+  });
+  it("a proved zero remains neutral during refetch instead of reappearing as red zero", async () => {
+    vi.mocked(api.summary).mockResolvedValue(summary(0));
+    await render(h(MenuView));
+    const next = deferred<AdminNewInformationSummary>();
+    vi.mocked(api.summary).mockReturnValue(next.promise);
+    let pending!: Promise<void>;
+    await act(async () => { pending = queryClient.invalidateQueries({ queryKey: adminNewInformationKeys.account("admin:1") }); });
+    await tick();
+    expect(host.querySelector('[data-admin-new-information="count"]')).toBeNull();
+    expect(host.textContent).toContain("待更新");
+    expect(host.textContent).not.toContain("0");
+    await act(async () => { next.resolve(summary(0)); await pending; }); await tick();
+    expect(host.querySelector('[data-admin-new-information]')).toBeNull();
   });
 });

@@ -581,7 +581,7 @@ function CustomerDetailPage({ d51Ready, sessionKey }: { d51Ready: boolean; sessi
             已读确认失败，未读提醒未清除。
             <button type="button" onClick={() => void newInformationRows.retryDisplayed()}>重试确认</button>
           </div> : readAcknowledged ? <span className="customer-detail-read-status" role="status">
-            {newInformationRows.summarySyncState === "synced" ? "已读 · 已确认" : newInformationRows.summarySyncState === "failed" ? "已读 · 已确认，顶部更新失败（待同步）" : newInformationRows.summarySyncState === "disabled" ? "已读 · 已确认，顶部核验阻断（待同步）" : "已读 · 已确认，顶部待同步…"}
+            {newInformationRows.summarySyncState === "synced" ? "已读 · 已确认" : newInformationRows.summarySyncState === "failed" ? "已读 · 已确认，顶部更新失败（待同步）" : newInformationRows.summarySyncState === "disabled" || newInformationRows.summarySyncState === "blocked" ? "已读 · 已确认，顶部核验阻断（待同步）" : "已读 · 已确认，顶部待同步…"}
             {newInformationRows.summarySyncState !== "synced" && newInformationRows.summarySyncState !== "disabled" && <button type="button" onClick={() => void newInformationRows.retrySummary()}>重查顶部摘要</button>}
           </span> : newInformationRow.verificationState === "missing" ? <span className="customer-detail-read-status" role="status">当前客户核验未返回完整凭证，未读提醒未清除</span>
             : newInformationRow.isNew ? <span className="customer-detail-read-status" role="status">{newInformationRow.markState === "pending" ? "正在确认已读…" : "未读 · 待确认"}</span>

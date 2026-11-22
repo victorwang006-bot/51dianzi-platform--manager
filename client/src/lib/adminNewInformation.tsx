@@ -18,10 +18,12 @@ import {
 import {
   ADMIN_NEW_INFORMATION_MODULES,
   ADMIN_NEW_INFORMATION_REFRESH_MS,
-  type AdminNewInformationInspection,
-  type AdminNewInformationModule,
-  type AdminNewInformationSummary,
-  type AdminNewInformationModuleSummary,
+} from "@shared/adminNewInformationConstants";
+import type {
+  AdminNewInformationInspection,
+  AdminNewInformationModule,
+  AdminNewInformationSummary,
+  AdminNewInformationModuleSummary,
 } from "@shared/adminNewInformation";
 
 export type AdminNewInformationAccountKey = string | number | null | undefined;
@@ -475,10 +477,13 @@ export function useAdminNewInformationSummary(
     const item = moduleSummary(module, canReadModule);
     return item !== undefined && (query.isError || item.lastKnown === true);
   };
-  const syncState = (module: AdminNewInformationModule): "disabled" | "pending" | "failed" | "synced" => {
+  const syncState = (module: AdminNewInformationModule): "disabled" | "blocked" | "pending" | "failed" | "synced" => {
     if (!access.permitted || revoked || options.moduleCanRead?.[module] === false) return "disabled";
-    if (query.isFetching) return "pending";
     const item = summary?.modules[module];
+    // Keep an explicit source denial distinct from a transient read failure.
+    // Only a fresh authorized snapshot may restore this module's proof.
+    if (item?.reason === "denied") return "blocked";
+    if (query.isFetching) return "pending";
     if (query.isError || (query.isSuccess && !item?.available)) return "failed";
     if (access.queryClient.getQueryState(adminNewInformationKeys.summary(options.accountKey))?.isInvalidated) return "pending";
     const key = invalidationKey(access.token!);
