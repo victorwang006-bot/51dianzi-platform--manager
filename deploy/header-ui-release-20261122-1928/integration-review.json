@@ -1,0 +1,50 @@
+{
+  "scope": "header-ui-release-20261122-1928",
+  "result": "PASS",
+  "manifestSHA256": "77eb28c88d89534171e8f6987bd82f29445f35bd15e947049dfb262719eccc96",
+  "issues": [],
+  "checks": {
+    "sixRealAssetHashesAndSizes": true,
+    "allSourcePinsAndFourProtectedNotificationBusinessPins": true,
+    "retained1746APIsAndFrontHTML": {
+      "front": "696900d36d6a03abf7569a8fb832a47e5f9c201c03c510604f55940b0e351073",
+      "admin": "ea0940846697fb8ec96aab6d3cbb24b13cdf155515e85e810b3f17f1b0fb2515",
+      "frontHTML": "fa07f52da0938c940488ecf6bb4df92f62d517507d45a604ddf1afeee8ac5757"
+    },
+    "nativeTwoWorkbench2573ByteInverseAndCompleteFunctionHashes": [
+      21687,
+      24336
+    ],
+    "dashboardOnlyThreeSplicesFullByteInverseOriginalPropsAccountProviderHandlers": true,
+    "onlyTwelveActiveStatusCSSRulesDeletedHistoricImmutableCSSRetained": true,
+    "htmlFullByteInverseOnlyImportmapOneCSSHrefAnd99EffectiveDependencySingletonResolutions": true,
+    "notificationNoStatusCoreAPIMinusOnlyStatusOriginalSingletonBridgeAndNavigationUIOnly": true,
+    "reusedFinalFactory52FreshCSSFiveViewportStableCounts52Height32SlotsAccountMoreMouseEvidence": true,
+    "fresh12PIDConfigEnvironmentProtected2ExactPublisherConstants": true,
+    "publisherReadReviewDualLockFullCASPrivateBackupHTMLLastPublicFullHashOwnedInodeRecoveryDurableCloseIndependentLocksSSHFinally": true,
+    "sourceCommitLocalOriginMain200194cTODOIsPendingPublishRecord": true,
+    "independentDashboardASTOriginalPropsAndAccountExactNIProviderSingletonRetained": true,
+    "independentImportedOldNewNotificationExportsMinusOnlyStatusAndSameFactorySingleton": {
+      "passed": true,
+      "remainingAPIExports": 22,
+      "noBusinessQueries": true
+    },
+    "nonTargetPlatformConcurrentRemoteAdvancePreservedNotMergedOrDeployed": {
+      "sourceCommit": "bac021ca40e9670bb790229600dbedf968846538",
+      "originMainAtFreshCheck": "3409364250f6b1d36ae64bfe11b26cf8ad3a0bbc",
+      "originMainSame": false,
+      "sourceExistsOnRemoteHistory": true,
+      "deployedThisWindow": false,
+      "remoteAdvancePreservedNotMergedOrDeployed": true
+    }
+  },
+  "limitations": [
+    "只读有限审核；未执行SSH、网络、生产、浏览器、真实业务查询或全库build/test。",
+    "几何和More鼠标证据复用已完成离线factory与52层fresh CSS测量；合成账号/计数夹具不是员工真实业务、SQL/MySQL排序或未读标记验收。",
+    "503根因仍OPEN；真实员工账号业务写测、真实SQL和未读业务写验收未做。",
+    "历史导航17项同基线失败保留、新失败0依据现有定向证据；未重跑全suite。",
+    "历史immutable CSS三文件的CustomerDetail死规则保留；删除为无DOM渲染，不是CSS隐藏；不删除历史immutable链。",
+    "本PASS仅适用于本次manifestSHA256；任何候选或manifest改动必须重新独立审核。",
+    "平台本地观察源bac021ca40e9670bb790229600dbedf968846538已在远端历史，origin/main并发前进3409364250f6b1d36ae64bfe11b26cf8ad3a0bbc；本轮platform不部署、不合并、不覆盖。生产fresh front HTML fa07f52d…保留，发布CAS若发现新漂移必须停止。"
+  ]
+}

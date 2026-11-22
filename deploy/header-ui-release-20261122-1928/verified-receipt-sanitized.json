@@ -1,0 +1,147 @@
+{
+  "scope": "header-ui-release-20261122-1928",
+  "result": "VERIFIED",
+  "closed": true,
+  "finishedAtBeijing": "2026-11-22T19:48:06+08:00",
+  "runtimeSourceCommit": "200194c5834babfb79251ae17f20342d26ab62db",
+  "publishedAdminURL": "https://admin.51dianzi.com",
+  "html": {
+    "beforeSHA256": "eb21e460a4b0335de2c1b2545decc37f0c0943d78946fe2c15be2a0a55c9d05b",
+    "afterSHA256": "5efa0b67f9dcea7d971b806ad66c97b2c435c70c5ff09416f1a5c870eb162aa2"
+  },
+  "staticAssets": [
+    {
+      "url": "/assets/AdminHeaderNavigation-header-ui-release-20261122-1928-dd9009dd71f79c6e3ef3ddd37ff5fe07d8fa6ab0b499dd70d0fe037723a850b2.js",
+      "sha256": "dd9009dd71f79c6e3ef3ddd37ff5fe07d8fa6ab0b499dd70d0fe037723a850b2",
+      "size": 62971
+    },
+    {
+      "url": "/assets/DashboardLayout-header-ui-release-20261122-1928-30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426.js",
+      "sha256": "30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426",
+      "size": 99641
+    },
+    {
+      "url": "/assets/AdminNewInformation-ui-removal-2ea5904ede64accf.js",
+      "sha256": "2ea5904ede64accf566dfd97a839193add31e4adec07b40d5533e7adf8b9b07c",
+      "size": 302989
+    },
+    {
+      "url": "/assets/BusinessWorkbenchPage-customer-status-removal-0-b5c460f8fe5a12f0.js",
+      "sha256": "b5c460f8fe5a12f0f9288b91f19939fe5f9c4875a65bb0e66a8a5313d735d1bc",
+      "size": 5539388
+    },
+    {
+      "url": "/assets/BusinessWorkbenchPage-customer-status-removal-1-8f37988bf5c60f40.js",
+      "sha256": "8f37988bf5c60f4011fab78b3cb6f71e3c6a4f44e5095cb77099e5367fe4a8eb",
+      "size": 6437014
+    },
+    {
+      "url": "/assets/header-notification-removal-7a5a46158781c78f.css",
+      "sha256": "7a5a46158781c78f3dc13465ab2ca09a3295d0e26c6282fa37e13e4bf139567a",
+      "size": 31664
+    }
+  ],
+  "apiSHA256Unchanged": {
+    "front": "696900d36d6a03abf7569a8fb832a47e5f9c201c03c510604f55940b0e351073",
+    "admin": "ea0940846697fb8ec96aab6d3cbb24b13cdf155515e85e810b3f17f1b0fb2515"
+  },
+  "apiReloadGroups": [],
+  "backendRuntimesChanged": 0,
+  "originalProcessesPreserved": 12,
+  "processConfigAndEnvironmentPreserved": true,
+  "businessTestWrites": 0,
+  "noDatabaseMigration": true,
+  "frontHTMLUnchanged": true,
+  "procurementBusinessUntouched": true,
+  "retained1746CustomerFixAndDiagnostics": true,
+  "coordFinalSHA256": "0bed5aeabc247bb50ebfe1c623d4b273a3e8d7802025785c3bdf975f1388dda6",
+  "independentDualLockReleaseVerified": true,
+  "sshClosed": true,
+  "finalManifestSHA256": "77eb28c88d89534171e8f6987bd82f29445f35bd15e947049dfb262719eccc96",
+  "integrationReview": "PASS",
+  "gitProvenance": {
+    "manager": {
+      "sourceCommit": "200194c5834babfb79251ae17f20342d26ab62db",
+      "originMainAtFreshCheck": "200194c5834babfb79251ae17f20342d26ab62db",
+      "originMainSame": true,
+      "sourceExistsOnRemoteHistory": true,
+      "deployedThisWindow": true,
+      "remoteAdvancePreservedNotMergedOrDeployed": false
+    },
+    "platform": {
+      "sourceCommit": "bac021ca40e9670bb790229600dbedf968846538",
+      "originMainAtFreshCheck": "3409364250f6b1d36ae64bfe11b26cf8ad3a0bbc",
+      "originMainSame": false,
+      "sourceExistsOnRemoteHistory": true,
+      "deployedThisWindow": false,
+      "remoteAdvancePreservedNotMergedOrDeployed": true
+    }
+  },
+  "limits": {
+    "realAccountBusinessTest": false,
+    "realSQLOrMySQLCollationExecuted": false,
+    "realUnreadMarksOrBusinessWrites": false,
+    "inspect503RootCauseClosed": false,
+    "historicalNavigationTests": {
+      "sameBaselineFailures": 17,
+      "newFailures": 0
+    },
+    "platformNotDeployed": true
+  },
+  "publicHashChecks": [
+    {
+      "url": "https://51dianzi.com/",
+      "status": 200,
+      "sha256": "fa07f52da0938c940488ecf6bb4df92f62d517507d45a604ddf1afeee8ac5757",
+      "size": 725593
+    },
+    {
+      "url": "https://51dianzi.com/search",
+      "status": 200,
+      "sha256": "fa07f52da0938c940488ecf6bb4df92f62d517507d45a604ddf1afeee8ac5757",
+      "size": 725593
+    },
+    {
+      "url": "https://admin.51dianzi.com/",
+      "status": 200,
+      "sha256": "5efa0b67f9dcea7d971b806ad66c97b2c435c70c5ff09416f1a5c870eb162aa2",
+      "size": 949243
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/AdminHeaderNavigation-header-ui-release-20261122-1928-dd9009dd71f79c6e3ef3ddd37ff5fe07d8fa6ab0b499dd70d0fe037723a850b2.js",
+      "status": 200,
+      "sha256": "dd9009dd71f79c6e3ef3ddd37ff5fe07d8fa6ab0b499dd70d0fe037723a850b2",
+      "size": 62971
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/DashboardLayout-header-ui-release-20261122-1928-30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426.js",
+      "status": 200,
+      "sha256": "30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426",
+      "size": 99641
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/AdminNewInformation-ui-removal-2ea5904ede64accf.js",
+      "status": 200,
+      "sha256": "2ea5904ede64accf566dfd97a839193add31e4adec07b40d5533e7adf8b9b07c",
+      "size": 302989
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-customer-status-removal-0-b5c460f8fe5a12f0.js",
+      "status": 200,
+      "sha256": "b5c460f8fe5a12f0f9288b91f19939fe5f9c4875a65bb0e66a8a5313d735d1bc",
+      "size": 5539388
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/BusinessWorkbenchPage-customer-status-removal-1-8f37988bf5c60f40.js",
+      "status": 200,
+      "sha256": "8f37988bf5c60f4011fab78b3cb6f71e3c6a4f44e5095cb77099e5367fe4a8eb",
+      "size": 6437014
+    },
+    {
+      "url": "https://admin.51dianzi.com/assets/header-notification-removal-7a5a46158781c78f.css",
+      "status": 200,
+      "sha256": "7a5a46158781c78f3dc13465ab2ca09a3295d0e26c6282fa37e13e4bf139567a",
+      "size": 31664
+    }
+  ]
+}

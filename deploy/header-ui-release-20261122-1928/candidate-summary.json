@@ -1,0 +1,124 @@
+{
+  "scope": "header-ui-release-20261122-1928",
+  "sourceCommits": {
+    "manager": "200194c5834babfb79251ae17f20342d26ab62db",
+    "platform": "bac021ca40e9670bb790229600dbedf968846538"
+  },
+  "sourcePins": {
+    "client/src/lib/adminNewInformation.tsx": "dda94052103eb52ffc707cc40b5803a3398a91c0197884534faafa51a81603b3",
+    "client/src/business/platform/client/src/pages/ProcurementDemands.tsx": "de06a21f9fde4f72659526aa099a4388b835f56ee9c17dd7ddb9028e95cfada9",
+    "server/services/adminNewInformation.ts": "364e0e811492e8fe97a34bfc2fb27371acb8484851302c1fb4344a881bce8798",
+    "shared/adminNewInformation.ts": "29690138f57fcc31b88e33aef0cb6f4dab2fbe7064db564636a83f9cd883add2",
+    "client/src/components/admin/AdminWorkspaceNavigation.tsx": "cab1e404d95bbe815cd953f786cb9d445da96f46bfa2e14369993c1bf537d0a1",
+    "client/src/lib/salesOrderWorkspace.ts": "490dd1f4bbf25a78141fcc445c87bd169ba089d439fe7a93e627367b21c8a680",
+    "client/src/components/admin/adminListLocationLayout.ts": "bbcf068f8f1218e15edd2a4d2e1cf8fc3b6e29f61c36e9dbf7ab18922f9e8e2a",
+    "shared/beijingTime.ts": "d92d45e834b966af24df57d82bff60e988c0f3189b6662710078d34cc9066b15",
+    "client/src/lib/channelInventoryNavigation.ts": "20509a6940df5f5323f739d44f04f834e6405513fb8f0658779cc2021895001a",
+    "client/src/components/admin/adminWorkspaceNavigationModel.ts": "31a02591479c9e1b3983a63195ad202b0714291e9097cda27e153808b7fcd664",
+    "client/src/lib/adminWorkspaceDropdownWidth.ts": "5e20251b082445685b0d6fa91587e6d31e35056ba4aefe9a29abf774300b3926",
+    "client/src/lib/adminHeaderNavigationLayout.ts": "e573435f24387a8335288dc5f2d8016094950ce545dd5d1f2d8aa51457ab180e",
+    "client/src/components/admin/adminWorkbenchNavigationModel.ts": "95f1f43d20e91357396f6a4000659632e74cac835239a36d14e2a7ebce118f11",
+    "client/src/components/admin/AdminWorkspaceNavigation.css": "5d72fb7d941b34c6329d5b8274d002ed393ddd70bfe4d563e7688b232f5e895b",
+    "client/src/components/admin/AdminListPage.css": "fd13381b06ba48c79b058b897e31ca7f1e6bb15254ed48a4019a1b2883b78461",
+    "client/src/components/DashboardLayout.tsx": "2536ea70fa4362dac505e6c37194f9830503fc01d6af93c6b80c749bae6fd3a2",
+    "shared/adminNewInformationConstants.ts": "a2a9194ca9f48cb45e3be30fc6b3f54310c465f0012c101ac50afcca8c2c1988",
+    "client/src/components/admin/AdminNewInformationBadge.tsx": "9f61d6ba5fb8ec14a53cddffa4f3fb0c75dcd41732a62f9eab6b0aff02e427cc",
+    "client/src/components/admin/AdminNewInformationMenuBadge.tsx": "8ddbf075feed75738857215ec1dc68c06e2ef346ee0c34da6a6fef56b0ba1503",
+    "client/src/business/platform/client/src/pages/CustomerDetail.tsx": "99a8341d757865c96727c7d1cd37e1737419ffde3fe793b7c5177a742368278e",
+    "client/src/business/platform/client/src/pages/CustomerDetailReadability.css": "73a368ebc9ae5389eaeea06a5050defcd785d26c5e76ab63b05a6584eda16c77",
+    "client/src/components/admin/AdminHeaderNavigation.css": "04a933d83aeff81dc2fe44d37a428fba520e04e67db24b23cd7cf2d245c8a8d3",
+    "client/src/lib/adminNewInformation.test.ts": "a7173946aecdb038911b2b2d7645ed5b96650ddb0743e2c90b27f31be7be9672",
+    "client/src/components/admin/AdminWorkspaceNavigation.header-layout.test.ts": "4c606640f5200af0d8e7c47806876bbc1031aa6b49b15a52d3ddc5a80e4269ca",
+    "client/src/lib/adminHeaderNavigationLayout.test.ts": "2fcae81afac088f18f7e5921fb978d16289d967e90200f794d09e86b5581d87f",
+    "client/src/business/platform/client/src/pages/CustomerDetail.notification-presentation.test.ts": "bf162be105d9e91f9309a20d0ab27a85c3315ea2ed9bede2705c894591a9c62a"
+  },
+  "html": {
+    "beforeSHA256": "eb21e460a4b0335de2c1b2545decc37f0c0943d78946fe2c15be2a0a55c9d05b",
+    "afterSHA256": "5efa0b67f9dcea7d971b806ad66c97b2c435c70c5ff09416f1a5c870eb162aa2"
+  },
+  "assets": [
+    {
+      "url": "/assets/AdminHeaderNavigation-header-ui-release-20261122-1928-dd9009dd71f79c6e3ef3ddd37ff5fe07d8fa6ab0b499dd70d0fe037723a850b2.js",
+      "sha256": "dd9009dd71f79c6e3ef3ddd37ff5fe07d8fa6ab0b499dd70d0fe037723a850b2",
+      "size": 62971
+    },
+    {
+      "url": "/assets/DashboardLayout-header-ui-release-20261122-1928-30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426.js",
+      "sha256": "30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426",
+      "size": 99641
+    },
+    {
+      "url": "/assets/AdminNewInformation-ui-removal-2ea5904ede64accf.js",
+      "sha256": "2ea5904ede64accf566dfd97a839193add31e4adec07b40d5533e7adf8b9b07c",
+      "size": 302989
+    },
+    {
+      "url": "/assets/BusinessWorkbenchPage-customer-status-removal-0-b5c460f8fe5a12f0.js",
+      "sha256": "b5c460f8fe5a12f0f9288b91f19939fe5f9c4875a65bb0e66a8a5313d735d1bc",
+      "size": 5539388
+    },
+    {
+      "url": "/assets/BusinessWorkbenchPage-customer-status-removal-1-8f37988bf5c60f40.js",
+      "sha256": "8f37988bf5c60f4011fab78b3cb6f71e3c6a4f44e5095cb77099e5367fe4a8eb",
+      "size": 6437014
+    },
+    {
+      "url": "/assets/header-notification-removal-7a5a46158781c78f.css",
+      "sha256": "7a5a46158781c78f3dc13465ab2ca09a3295d0e26c6282fa37e13e4bf139567a",
+      "size": 31664
+    }
+  ],
+  "replacements": {
+    "/assets/DashboardLayout-notification-redesign-18d7a0494bb6665e.js": "/assets/DashboardLayout-header-ui-release-20261122-1928-30ee96c4d9abd398a9fdbbaa2d57c9113a57806ecad53126e61b1245add7c426.js",
+    "/assets/AdminNewInformation-notification-redesign-8a0443b2848920b4.js": "/assets/AdminNewInformation-ui-removal-2ea5904ede64accf.js",
+    "/assets/BusinessWorkbenchPage-procurement-compact-0-46d6dd6b4387ddef.js": "/assets/BusinessWorkbenchPage-customer-status-removal-0-b5c460f8fe5a12f0.js",
+    "/assets/BusinessWorkbenchPage-procurement-compact-1-b187a39a371a3f0e.js": "/assets/BusinessWorkbenchPage-customer-status-removal-1-8f37988bf5c60f40.js"
+  },
+  "checks": {
+    "pureStatic": true,
+    "twoAPIsUnchanged": true,
+    "noAPIReload": true,
+    "fullHTMLInverse": true,
+    "allNonTargetAliasesAndOldScopesPreserved": true,
+    "allOldTargetAliasesRedirected": true,
+    "originalSingletonsPreserved": true,
+    "sourceFreeze": true,
+    "frontHTMLUnchanged": true,
+    "noFullWorkbenchRebuild": true,
+    "actualNativeCssChain": true,
+    "customerAuxiliaryRenderingDeleted": true,
+    "statusBodyAndExportDeleted": true,
+    "originalNavigationPropsAndAccountExact": true,
+    "procurementBusinessUntouched": true,
+    "retained1746BackendRepair": true
+  },
+  "tests": {
+    "status": "TARGETED_NATIVE_PASS_WITH_DISCLOSED_LIMITS",
+    "sourceReuse": {
+      "targetedPassed": 140,
+      "es2020Errors": 0,
+      "historicalFailuresUnchanged": 17,
+      "newFailures": 0
+    },
+    "layout": {
+      "fiveViewports": true,
+      "stable82Zero99Plus": true,
+      "moreHoverClick": true,
+      "network": 0,
+      "cssLayers": 52,
+      "syntheticNotRealAccount": true
+    }
+  },
+  "limitations": {
+    "realAccountBusinessTest": false,
+    "realSQLOrMySQLCollationExecuted": false,
+    "realUnreadMarksOrBusinessWrites": false,
+    "inspect503RootCauseClosed": false,
+    "historicalNavigationTests": {
+      "sameBaselineFailures": 17,
+      "newFailures": 0
+    },
+    "platformNotDeployed": true
+  },
+  "manifestSHA256": "77eb28c88d89534171e8f6987bd82f29445f35bd15e947049dfb262719eccc96"
+}
