@@ -362,21 +362,9 @@ export function DemandQuoteDialog({
       items: current.items.map((item, itemIndex) => {
         if (itemIndex !== index) return item;
         const options = item.options.length ? item.options : [blankOption(1)];
-        return {
-          ...item,
-          include,
-          options: options.map((option, i) =>
-            i === 0 && include && !option.qty
-              ? {
-                  ...option,
-                  qty:
-                    item.demandQty && item.demandQty > 0
-                      ? String(item.demandQty)
-                      : "",
-                }
-              : option
-          ),
-        };
+        // Supplier quantity is entered by procurement; the demand quantity is
+        // only shown as a placeholder reference and never pre-filled.
+        return { ...item, include, options };
       }),
     }));
 
@@ -469,6 +457,11 @@ export function DemandQuoteDialog({
         }
         nextErrors[path.join(".")] = issue.message;
       });
+    selected.forEach(({ option, formIndex, optionIndex }) => {
+      if (!option.qty.trim())
+        nextErrors[`items.${formIndex}.options.${optionIndex}.qty`] =
+          "请填写供应商可供数量";
+    });
     current.items.forEach((item, index) => {
       if (item.include && !selected.some(row => row.formIndex === index))
         nextErrors[`items.${index}`] = "勾选物料至少填写一个完整报价方案";
@@ -635,17 +628,14 @@ export function DemandQuoteDialog({
           }}
         >
           <div className="flex min-w-0 shrink-0 items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
-            <div className="min-w-0">
+            <div className="flex min-w-0 items-baseline gap-2">
               <DialogTitle className="text-base font-semibold text-slate-800">
                 {quoteMeta
                   ? `修改报价 · 第${quoteMeta.version + 1}轮`
                   : "新增供应商报价"}
               </DialogTitle>
-              <DialogDescription className="mt-1 truncate text-xs text-slate-500">
-                {detail?.demandNo
-                  ? `${detail.demandNo} · V${detail.revision ?? 1} · `
-                  : ""}
-                可选择部分物料报价；保存修改会生成新一轮并保留历史
+              <DialogDescription className="truncate text-xs font-normal text-slate-400">
+                {detail?.demandNo ?? ""}
               </DialogDescription>
             </div>
             <button
@@ -770,9 +760,6 @@ export function DemandQuoteDialog({
                     <h3 className="text-sm font-semibold text-slate-800">
                       报价明细
                     </h3>
-                    <p className="mt-0.5 text-[11px] text-slate-500">
-                      勾选物料后可添加多个备选方案；每行至少一个完整方案，空白新增不提交。备选方案不累计为采购金额。
-                    </p>
                   </div>
                   {fieldError(errors, "items") && (
                     <p role="alert" className="mb-2 text-xs text-red-600">
@@ -876,7 +863,11 @@ export function DemandQuoteDialog({
                                           placeholder={
                                             key === "leadTime"
                                               ? "现货 / 7天到货"
-                                              : undefined
+                                              : key === "qty" &&
+                                                  item.demandQty &&
+                                                  item.demandQty > 0
+                                                ? `需求 ${item.demandQty}`
+                                                : undefined
                                           }
                                           value={option[key]}
                                           disabled={
@@ -892,11 +883,23 @@ export function DemandQuoteDialog({
                                           }
                                           className={`${compactInput} w-full`}
                                         />
-                                        {error && (
+                                        {error ? (
                                           <p className="mt-1 text-[11px] text-red-600">
                                             {error}
                                           </p>
-                                        )}
+                                        ) : key === "qty" &&
+                                          item.demandQty &&
+                                          /^\d+$/.test(option.qty.trim()) &&
+                                          Number(option.qty.trim()) > 0 &&
+                                          Number(option.qty.trim()) <
+                                            item.demandQty ? (
+                                          <p className="mt-1 text-[11px] text-amber-600">
+                                            少于需求{" "}
+                                            {item.demandQty -
+                                              Number(option.qty.trim())}{" "}
+                                            {item.qtyUnit}
+                                          </p>
+                                        ) : null}
                                       </td>
                                     );
                                   })}
