@@ -1149,6 +1149,17 @@ describe("customer detail acknowledgement and full-set unread filter", () => {
     expect(latestUnread.customerIds).toBeUndefined();
     expect(queryClient.getQueryData(adminNewInformationKeys.unreadRefs("admin:2", "customers", "30062"))).toBeUndefined();
   });
+  it("background refresh of the SAME key keeps the confirmed unread set available (no list flicker)", async () => {
+    const refresh = deferred<{ refs: string[]; available: true }>();
+    api.unreadRefs = vi.fn().mockResolvedValueOnce({ refs: ["customer:801", "customer:802"], available: true }).mockReturnValueOnce(refresh.promise);
+    await render(h(UnreadProvider)); await tick();
+    expect(latestUnread.available).toBe(true); expect(latestUnread.customerIds).toEqual([801, 802]);
+    await act(async () => { void latestUnread.retry(); }); await tick();
+    expect(queryClient.getQueryState(adminNewInformationKeys.unreadRefs("admin:1", "customers", "30061"))?.fetchStatus).toBe("fetching");
+    expect(latestUnread.available).toBe(true); expect(latestUnread.customerIds).toEqual([801, 802]);
+    await act(async () => refresh.resolve({ refs: ["customer:802"], available: true })); await tick();
+    expect(latestUnread.available).toBe(true); expect(latestUnread.customerIds).toEqual([802]);
+  });
   it.each([["customer:0"], ["customer:-1"], ["customer:01"], ["customer:1.5"], ["channel:1"], ["customer:9007199254740992"]])("rejects unsafe/non-customer refs %j", refs => {
     expect(() => customerIdsFromAdminUnreadRefs(refs)).toThrow();
   });

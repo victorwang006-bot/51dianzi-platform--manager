@@ -1207,7 +1207,10 @@ export function useAdminNewInformationContextUnreadRefs(options: {
   });
   const revoked = authorizationError(query.error);
   useEffect(() => { if (revoked) access.deny(); }, [revoked, access.deny]);
-  const available = enabled && !query.isError && query.isSuccess && !query.isFetching;
+  // Background refreshes (15s interval / focus / displayed invalidation) keep the
+  // last confirmed unread set for the SAME account/module/scope key; the key is
+  // removed above on any identity change, so no other account's data is reused.
+  const available = enabled && !query.isError && query.isSuccess;
   const error = options.enabled && options.listReady && !access.permitted
     ? new Error("未读客户权限或后台账号核验失败，请重新核验后重试") : query.error;
   return { query, available, error, customerIds: available ? query.data?.customerIds : undefined,

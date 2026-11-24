@@ -302,12 +302,24 @@ export default function CustomerList() {
   // Never render a previous identity/enterprise page, including its old total.
   const unreadNarrowingFailed = unreadOnly && unreadCanQuery && listQuery.isSuccess && !listQuery.isFetching
     && listQuery.data?.items.some(customer => !unreadCustomers.customerIds?.includes(customer.id));
-  const result = unreadCanQuery && !unreadNarrowingFailed && !filterConfirmationRequired && rangeIdentityReady && !appliedRangeError && !appliedDateError && d51Ready && contactScope.ready && !contextQuery.isPending && !contextQuery.isError
+  const confirmedResult = unreadCanQuery && !unreadNarrowingFailed && !filterConfirmationRequired && rangeIdentityReady && !appliedRangeError && !appliedDateError && d51Ready && contactScope.ready && !contextQuery.isPending && !contextQuery.isError
     && !listQuery.isError && listQuery.isFetchedAfterMount !== false && !listQuery.isPlaceholderData && (appliedFilters.starredOnly !== true || stars.ready)
     && listQuery.data?.items.every(customer => customer.enterpriseId === contactScope.scope?.enterpriseId
       && (customer.starUserId === undefined || customer.starUserId === null || customer.starUserId === customer.assignedUserId))
     ? listQuery.data : undefined;
-  useListPositionRestore(listQuery, Boolean(result) && d51Ready && contactScope.ready && !contextQuery.isPending && !contextQuery.isError);
+  useListPositionRestore(listQuery, Boolean(confirmedResult) && d51Ready && contactScope.ready && !contextQuery.isPending && !contextQuery.isError);
+  // Unread-only: when the unread id set changes, keep the last confirmed page of
+  // the SAME identity/filters (minus rows no longer unread) instead of a spinner.
+  const unreadStickyRef = useRef<{ base: string; data: NonNullable<typeof confirmedResult> } | null>(null);
+  const unreadStickyBase = JSON.stringify([contactScope.identityKey, unreadOnly, { ...listInput, customerIds: undefined }]);
+  let result = confirmedResult;
+  if (confirmedResult) unreadStickyRef.current = { base: unreadStickyBase, data: confirmedResult };
+  else if (unreadOnly && unreadCanQuery && !unreadNarrowingFailed && !listQuery.isError && listQuery.isFetching
+    && unreadStickyRef.current?.base === unreadStickyBase) {
+    const ids = unreadCustomers.customerIds ?? [];
+    result = { ...unreadStickyRef.current.data,
+      items: unreadStickyRef.current.data.items.filter(customer => ids.includes(customer.id)) };
+  }
   // Original successful CURRENT page only. Never inspect prefetches/all pages or clear on menu entry.
   const pageRows = result?.items ?? [];
   const newInformationListReady = Boolean(result) && canQueryList && listQuery.isSuccess
@@ -873,7 +885,7 @@ export default function CustomerList() {
             <div className="customer-list-empty" role="status"><p className="customer-list-caption">正在核验未读客户…</p></div>
           ) : unreadEmpty ? (
             <div className="customer-list-empty"><p className="admin-cell-primary font-medium">没有未读客户</p></div>
-          ) : listQuery.isPending ? (
+          ) : listQuery.isPending && !result ? (
             <div className="flex justify-center p-12">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
