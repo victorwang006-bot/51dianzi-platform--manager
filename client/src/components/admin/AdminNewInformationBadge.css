@@ -73,14 +73,15 @@
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   white-space: nowrap;
 }
+/* Compact header: the slot takes space only when a real count is shown; no fixed reservation. */
 .admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-nav-slot {
   position: static;
   display: inline-flex;
-  flex: 0 0 32px;
-  width: 32px;
+  flex: 0 0 auto;
+  width: auto;
   height: 18px;
   align-self: center;
   align-items: center;
@@ -113,3 +114,8 @@
   line-height: 16px;
 }
 /* notification-nav-20261122 END */
+
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-nav-slot:empty,
+.admin-workspace-shell[data-admin-layout="top-two-level-v1"] .admin-new-information-nav-slot:not(:has(> [data-admin-new-information])) {
+  display: none;
+}

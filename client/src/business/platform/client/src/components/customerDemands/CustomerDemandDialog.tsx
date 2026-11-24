@@ -495,7 +495,10 @@ function CustomerDemandDialogSession({ customer, demandId, mode = "edit", onClos
         showCloseButton={false}
         className="customer-demand-dialog flex h-auto max-h-[90dvh] w-[calc(100vw-32px)] max-w-[1180px] sm:max-w-[1180px] flex-col gap-0 overflow-hidden p-0"
         onEscapeKeyDown={event => { event.preventDefault(); requestClose(); }}
-        onInteractOutside={event => { event.preventDefault(); requestClose(); }}>
+        // Only a real pointer press outside asks to close. Focus moving into the separate
+        // BOM import or confirmation portals (e.g. "选择 BOM 文件") must never trigger discard.
+        onPointerDownOutside={event => { event.preventDefault(); requestClose(); }}
+        onFocusOutside={event => { event.preventDefault(); }}>
         <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1"><DialogTitle className="text-base font-semibold text-slate-800">{editingMode === "view" ? "需求详情" : demandId ? "编辑需求" : "需求录入"}</DialogTitle><span data-testid="demand-number-header" className="text-xs font-normal text-slate-500">单号：{activeDemandId && !detail ? "核验中" : demandNo || "保存后自动生成"}{detail?.revision ? ` · V${detail.revision}` : ""}</span></div>
