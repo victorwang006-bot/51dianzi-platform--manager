@@ -27,6 +27,11 @@ vi.mock("../../../../../lib/adminNewInformation", async importOriginal => ({
     }) };
   },
 }));
+// Identity readiness is an independent dependency; this test does not mount
+// the auth provider that useCompanyStockScope normally requires.
+vi.mock("../components/companyStock/useCompanyStockSession", () => ({
+  useCompanyStockScope: () => ({ ready: true, identityKey: "scope-301", storageScope: "scope-301" }),
+}));
 vi.mock("wouter", () => ({ useLocation: () => [runtime.location, vi.fn()] }));
 vi.mock("../../../../api/business-trpc", () => {
   const query = (name: string) => ({
@@ -89,7 +94,7 @@ describe("actual inbound page new information wiring (mock transport, no DB)", (
     runtime.query = { ...runtime.query, ...flags };
     await renderPage();
     expect(latest().listReady).toBe(false);
-    expect(host.querySelector("tbody")?.querySelector('[role="status"]')).toBeNull();
+    expect(host.querySelector('tbody [role="status"]')).toBeNull();
   });
   it("revalidation, inactive identity and hidden route cannot confirm displayed rows", async () => {
     runtime.verified = false;

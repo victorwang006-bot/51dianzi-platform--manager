@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import PlatformLayout from "../../../../BusinessContentFrame";
 import {
   AdminPage,
@@ -299,6 +306,42 @@ export default function InboundManagement() {
   });
   const [receiveRequestId, setReceiveRequestId] = useState(newRequestId());
   const [createRequestId, setCreateRequestId] = useState(newRequestId());
+  const [singleCreateError, setSingleCreateError] = useState<{
+    identity: string;
+    generation: number;
+    message: string;
+  } | null>(null);
+  const createPresentationIdentity = JSON.stringify([
+    storageScope,
+    contextVerification.identity,
+    contextVerification.authorizationVersion,
+    activeInboundIdentity,
+    createRequestId,
+    formOpen,
+    editingRow?.id ?? null,
+    entryMode,
+  ]);
+  const createPresentation = useRef({
+    identity: createPresentationIdentity,
+    generation: 0,
+    mounted: false,
+  });
+  // Fence committed A → B → A transitions before callbacks can run, without
+  // mutating shared refs during a StrictMode or abandoned concurrent render.
+  useLayoutEffect(() => {
+    if (createPresentation.current.identity !== createPresentationIdentity) {
+      createPresentation.current.identity = createPresentationIdentity;
+      createPresentation.current.generation += 1;
+      setSingleCreateError(null);
+    }
+  }, [createPresentationIdentity]);
+  useLayoutEffect(() => {
+    createPresentation.current.mounted = true;
+    return () => {
+      createPresentation.current.mounted = false;
+      createPresentation.current.generation += 1;
+    };
+  }, []);
   const [cancelRow, setCancelRow] = useState<InboundRow | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelRefundConfirmed, setCancelRefundConfirmed] = useState(false);
@@ -563,19 +606,7 @@ export default function InboundManagement() {
       Number(newInformationRows.getRow(`inbound:${a.id}`).isNew)
   );
 
-  const createMutation = trpc.inbound.create.useMutation({
-    onSuccess: result => {
-      toast.success(
-        result.status === "received"
-          ? `入库单 ${result.slipNo} 已完成入库`
-          : `在途单 ${result.slipNo} 已创建`
-      );
-      setFormOpen(false);
-      refetch();
-      void inboundUtils.overview.invalidate();
-    },
-    onError: error => toast.error(error.message),
-  });
+  const createMutation = trpc.inbound.create.useMutation({ retry: false });
   const updateMutation = trpc.inbound.update.useMutation({
     onSuccess: () => {
       toast.success("在途单已更新");
@@ -616,7 +647,9 @@ export default function InboundManagement() {
   });
   const editOpenGeneration = useRef(0);
   const liveInboundIdentity = useRef(activeInboundIdentity);
-  liveInboundIdentity.current = activeInboundIdentity;
+  useLayoutEffect(() => {
+    liveInboundIdentity.current = activeInboundIdentity;
+  }, [activeInboundIdentity]);
   useEffect(
     () => () => {
       editOpenGeneration.current += 1;
@@ -851,6 +884,8 @@ export default function InboundManagement() {
 
   const openCreate = () => {
     editOpenGeneration.current += 1;
+    createPresentation.current.generation += 1;
+    setSingleCreateError(null);
     documentDraft.reset();
     buyerDefaultInitialized.current = false;
     setEntryMode("single");
@@ -880,6 +915,8 @@ export default function InboundManagement() {
       setConfirmBulkClose(true);
       return;
     }
+    createPresentation.current.generation += 1;
+    setSingleCreateError(null);
     setFormOpen(false);
   };
   useEffect(() => {
@@ -895,6 +932,8 @@ export default function InboundManagement() {
     if (row.status === "cancelled") return toast.error("已作废入库单不能编辑");
     if (!activeInboundIdentity)
       return toast.error("业务身份尚未核验，请稍后重试");
+    createPresentation.current.generation += 1;
+    setSingleCreateError(null);
     const ticket = ++editOpenGeneration.current;
     let photos: InboundPhoto[] = [];
     let documents: AuthorizedInboundDocument[] = [];
@@ -1229,6 +1268,14 @@ export default function InboundManagement() {
       if (form.paymentDate > todayLocal())
         return toast.error("付款日期不能晚于今天");
     }
+    const generation = ++createPresentation.current.generation;
+    setSingleCreateError(null);
+    const current = () =>
+      createPresentation.current.mounted &&
+      generation === createPresentation.current.generation &&
+      createPresentationIdentity === createPresentation.current.identity &&
+      liveInboundIdentity.current &&
+      businessStorageScope() === storageScope;
     createMutation.mutate({
       ...payload,
       clientRequestId: createRequestId,
@@ -1244,7 +1291,31 @@ export default function InboundManagement() {
             : form.paymentDate,
         note: form.paymentNote.trim() || undefined,
       },
-    } as any);
+    } as any, {
+      onSuccess: result => {
+        if (!current()) return;
+        setSingleCreateError(null);
+        toast.success(
+          result.status === "received"
+            ? `入库单 ${result.slipNo} 已完成入库`
+            : `在途单 ${result.slipNo} 已创建`
+        );
+        setFormOpen(false);
+        refetch();
+        void inboundUtils.overview.invalidate();
+      },
+      onError: error => {
+        if (!current()) return;
+        onAuthorizationError?.(error);
+        if (!current()) return;
+        setSingleCreateError({
+          identity: createPresentationIdentity,
+          generation,
+          message: error.message,
+        });
+        toast.error("保存遇到问题，请查看表单中的错误详情");
+      },
+    });
   };
   const submitReceive = () => {
     if (!receiveRow) return;
@@ -2229,6 +2300,24 @@ export default function InboundManagement() {
                 hidden={!editingRow && entryMode === "bulk"}
                 className="inbound-form-controls"
               >
+                {!editingRow && activeInboundIdentity &&
+                  businessStorageScope() === storageScope &&
+                  singleCreateError?.identity === createPresentationIdentity &&
+                  singleCreateError.generation === createPresentation.current.generation && (
+                  <details open className="inbound-entry-card mb-3" role="alert">
+                    <summary className="inbound-entry-card-title cursor-pointer text-[#B42318]">
+                      保存遇到问题 · 错误详情
+                    </summary>
+                    <div className="inbound-entry-card-body text-[12px]">
+                      <p className="mb-2 text-[#666]">
+                        输入内容和已上传附件已保留。保存结果请以系统确认为准；如需重试，请在当前表单再次保存。
+                      </p>
+                      <p className="whitespace-pre-wrap break-words text-[#B42318]">
+                        {singleCreateError.message}
+                      </p>
+                    </div>
+                  </details>
+                )}
                 {documentsOnlyEdit && (
                   <p className="mb-2 text-[12px] text-[#666]">
                     此单仅可编辑附件
