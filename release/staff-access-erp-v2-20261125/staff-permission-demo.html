@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>员工与权限 · 配置权限（新版 Demo）</title>
+<style>
+:root{--font:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;--text:#1f2937;--sec:#475569;--muted:#64748b;--border:#e2e8f0;--brand:#315c9e;--brand-soft:#e8eef8;--page:#f5f7fa;--ok:#2563eb}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font);color:var(--text);background:var(--page);font-size:15px}
+/* 背景页（员工与权限列表） */
+.topbar{height:56px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:28px}
+.logo{font-weight:700;color:var(--brand);font-size:17px}
+.nav a{color:var(--sec);text-decoration:none;margin-right:22px;font-size:14px}
+.nav a.on{color:var(--brand);font-weight:600}
+.page{padding:20px 24px}
+.page h1{font-size:22px;margin:0 0 14px}
+.list{background:#fff;border:1px solid var(--border);border-radius:10px}
+.list .row{display:grid;grid-template-columns:160px 140px 120px 1fr;padding:16px 18px;border-top:1px solid #edf1f5;font-size:14px;color:var(--sec)}
+.list .row:first-child{border-top:0;color:var(--muted);font-size:13px}
+/* 遮罩与抽屉 */
+.mask{position:fixed;inset:0;background:rgba(15,23,42,.45)}
+.sheet{position:fixed;top:0;right:0;bottom:0;width:min(780px,100vw);background:#fff;display:flex;flex-direction:column;box-shadow:-8px 0 30px rgba(15,23,42,.18)}
+.sheet-h{padding:22px 28px 14px;border-bottom:1px solid var(--border);position:relative}
+.sheet-h h2{margin:0;font-size:24px;font-weight:700;letter-spacing:.5px}
+.sheet-h .id{margin-top:6px;color:var(--muted);font-size:14px}
+.close{position:absolute;right:22px;top:20px;font-size:22px;color:var(--muted);cursor:pointer;border:0;background:none}
+.tabs{display:flex;gap:8px;padding:10px 20px;border-bottom:1px solid var(--border)}
+.tab{padding:8px 12px;border-radius:8px;font-size:15px;color:var(--text);cursor:default}
+.tab.on{background:var(--brand-soft);color:var(--brand);font-weight:600}
+.body{flex:1;overflow:auto;padding:18px 22px;background:#f8fafc}
+.card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:14px}
+.card h3{margin:0 0 12px;font-size:16px;font-weight:600}
+/* 团队身份 */
+.ident{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.ident label{font-size:14px;color:var(--sec)}
+select{height:36px;border:1px solid var(--border);border-radius:8px;padding:0 30px 0 12px;font:inherit;font-size:14px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center;appearance:none;color:var(--text)}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:0 18px;height:36px;font:inherit;font-size:14px;color:var(--sec);cursor:pointer}
+.seg button+button{border-left:1px solid var(--border)}
+.seg button.on{background:var(--brand);color:#fff}
+/* 权限表 */
+table{width:100%;border-collapse:collapse}
+th{font-size:13px;color:var(--muted);font-weight:500;text-align:left;padding:8px 6px;border-bottom:1px solid var(--border)}
+td{padding:11px 6px;border-bottom:1px solid #edf1f5;font-size:15px;vertical-align:middle}
+tr:last-child td{border-bottom:0}
+th.c,td.c{text-align:center;width:70px}
+th.s,td.s{width:150px}
+.mod small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--ok);cursor:pointer}
+input[type=checkbox]:disabled{cursor:not-allowed}
+.fixed{display:inline-block;height:34px;line-height:34px;padding:0 12px;border-radius:8px;background:#f1f5f9;color:var(--sec);font-size:14px}
+tr.off td:not(:first-child):not(:nth-child(2)){opacity:.35;pointer-events:none}
+tr.off .mod{color:var(--muted)}
+.flash{animation:fl 1.1s ease}
+@keyframes fl{0%{background:#fff7d6}100%{background:transparent}}
+/* 指定成员 */
+.picker td{padding-top:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:4px 0 6px}
+.chip{border:1px solid var(--border);border-radius:999px;padding:4px 12px;font-size:13px;color:var(--sec);background:#fff;cursor:pointer;user-select:none}
+.chip.on{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
+/* 开关 */
+.sw-row{display:flex;gap:14px;flex-wrap:wrap}
+.sw{flex:1;min-width:220px;display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:15px}
+.toggle{position:relative;width:42px;height:24px}
+.toggle input{opacity:0;width:0;height:0}
+.toggle span{position:absolute;inset:0;background:#cbd5e1;border-radius:999px;transition:.2s;cursor:pointer}
+.toggle span:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+.toggle input:checked+span{background:var(--brand)}
+.toggle input:checked+span:before{transform:translateX(18px)}
+details{border-top:0}
+details summary{cursor:pointer;font-size:15px;font-weight:600;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary:before{content:"▸";display:inline-block;width:16px;color:var(--muted)}
+details[open] summary:before{content:"▾"}
+.adv{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.adv label{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:15px}
+.foot{display:flex;justify-content:flex-end;gap:12px;padding:14px 22px;border-top:1px solid var(--border);background:#fff}
+.btn{height:40px;padding:0 22px;border-radius:10px;font:inherit;font-size:15px;cursor:pointer}
+.btn.ghost{border:1px solid var(--border);background:#fff;color:var(--text)}
+.btn.pri{border:0;background:var(--brand);color:#fff}
+.btn.pri:disabled{background:#9fb6d9;cursor:not-allowed}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 18px;border-radius:8px;font-size:14px;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}
+/* 演示切换条（不属于产品界面） */
+.demo{position:fixed;left:16px;bottom:16px;background:#0f172a;color:#e2e8f0;border-radius:10px;padding:10px 12px;font-size:13px;display:flex;gap:8px;align-items:center;z-index:9}
+.demo button{border:1px solid #334155;background:#1e293b;color:#e2e8f0;border-radius:6px;padding:5px 10px;font:inherit;font-size:13px;cursor:pointer}
+.demo button.on{background:#315c9e;border-color:#315c9e}
+@media (max-width:640px){th.s,td.s{width:118px}.adv{grid-template-columns:1fr}.sheet-h h2{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="logo">51电子 · 管理后台</div>
+<div class="nav"><a>工作台</a><a>客户</a><a>库存</a><a>采购</a><a>销售订单</a><a class="on">员工与权限</a></div></div>
+<div class="page"><h1>员工与权限</h1>
+<div class="list"><div class="row"><span>员工</span><span>团队</span><span>身份</span><span>操作</span></div>
+<div class="row"><span>victor</span><span>智捷团队1</span><span>组长</span><span>配置权限</span></div>
+<div class="row"><span>莫66</span><span>智捷团队1</span><span>组长</span><span>配置权限</span></div>
+<div class="row"><span>Jack</span><span>智捷团队1</span><span>组员</span><span>配置权限</span></div>
+<div class="row"><span>Mark</span><span>智捷团队1</span><span>组员</span><span>配置权限</span></div></div></div>
+
+<div class="mask"></div>
+<aside class="sheet" role="dialog" aria-label="配置权限">
+  <div class="sheet-h"><h2 id="title">Jack ・ 配置权限</h2><div class="id" id="sub">jack ・ 普通用户 ・ 启用</div><button class="close" aria-label="关闭">✕</button></div>
+  <nav class="tabs"><span class="tab">员工资料</span><span class="tab">平台权限</span><span class="tab on">业务ERP</span><span class="tab">账号与安全</span></nav>
+  <div class="body">
+    <section class="card">
+      <h3>团队身份</h3>
+      <div class="ident">
+        <select id="team"><option>智捷团队1</option><option>未加入团队</option></select>
+        <div class="seg" id="role"><button data-r="member" class="on">组员</button><button data-r="leader">组长</button></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>业务权限</h3>
+      <table>
+        <thead><tr><th>模块</th><th class="c">开通</th><th class="s">数据范围</th><th class="c">改他人</th><th class="c">导出</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h3>价格与利润</h3>
+      <div class="sw-row">
+        <div class="sw">采购价 / 成本<label class="toggle"><input type="checkbox" id="pCost"><span></span></label></div>
+        <div class="sw">利润<label class="toggle"><input type="checkbox" id="pProfit"><span></span></label></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <details><summary>管理权限</summary>
+        <div class="adv">
+          <label><input type="checkbox" id="aMembers">用户与权限管理</label>
+          <label><input type="checkbox" id="aAssign">客户分配与转移</label>
+        </div>
+      </details>
+    </section>
+  </div>
+  <div class="foot"><button class="btn ghost">关闭</button><button class="btn pri" id="save" disabled>保存</button></div>
+</aside>
+<div class="toast" id="toast"></div>
+<div class="demo"><span>演示：</span><button data-p="jack" class="on">Jack（组员）</button><button data-p="mo">莫66（组长）</button><button data-p="mark">Mark（组员+指定成员）</button></div>
+
+<script>
+const MEMBERS=["victor","莫66","Mark","黄紫银","Jack","成员430575","成员936709","成员1925083","成员397823"];
+const MODULES=[
+ {k:"customers",name:"客户",sub:"列表 · 跟进 · 需求",scopes:["self","team","picked","all"]},
+ {k:"inquiry",name:"询价接待",sub:"分配给本人的询价",fixed:"本人"},
+ {k:"purchase",name:"采购",sub:"需求报价 · 采购入库",scopes:["self","team","picked","all"]},
+ {k:"sales",name:"销售订单",scopes:["self","team","picked","all"]},
+ {k:"stocks",name:"库存列表",sub:"含渠道库存",scopes:["self","team","picked","all"]},
+ {k:"mall",name:"商城物料",fixed:"全公司"},
+];
+const LABEL={self:"本人",team:"本团队",picked:"指定成员",all:"全公司"};
+const ROLE_DEFAULT={member:"self",leader:"team"};
+const PRESETS={
+ jack:{title:"Jack",sub:"jack ・ 普通用户 ・ 启用",role:"member",me:"Jack",
+  m:{customers:[1,"self",0,0],inquiry:[1],purchase:[1,"self",0,0],sales:[1,"self",0,0],stocks:[1,"self",0,0],mall:[1]},cost:0,profit:0,picked:[]},
+ mo:{title:"莫66",sub:"mo66 ・ 普通用户 ・ 启用",role:"leader",me:"莫66",
+  m:{customers:[1,"team",1,1],inquiry:[1],purchase:[1,"team",1,1],sales:[1,"team",1,1],stocks:[1,"team",1,1],mall:[1]},cost:1,profit:1,picked:[]},
+ mark:{title:"Mark",sub:"mark ・ 普通用户 ・ 启用",role:"member",me:"Mark",
+  m:{customers:[1,"picked",0,0],inquiry:[1],purchase:[1,"picked",0,0],sales:[1,"picked",0,0],stocks:[1,"self",0,0],mall:[1]},cost:1,profit:0,picked:["黄紫银","成员430575"]},
+};
+let S, base;
+const $=s=>document.querySelector(s);
+function load(p){S=JSON.parse(JSON.stringify(PRESETS[p]));base=JSON.stringify(S);render();}
+function dirty(){$("#save").disabled=JSON.stringify(S)===base;}
+function render(flashKeys=[]){
+ $("#title").textContent=S.title+" ・ 配置权限";$("#sub").textContent=S.sub;
+ document.querySelectorAll("#role button").forEach(b=>b.classList.toggle("on",b.dataset.r===S.role));
+ const tb=$("#rows");tb.innerHTML="";
+ const anyPicked=MODULES.some(m=>m.scopes&&S.m[m.k][1]==="picked");
+ MODULES.forEach(m=>{
+  const v=S.m[m.k];const tr=document.createElement("tr");if(!v[0])tr.className="off";
+  if(flashKeys.includes(m.k))tr.classList.add("flash");
+  let scope,edit,exp;
+  if(m.fixed){scope=`<span class="fixed">${m.fixed}</span>`;edit="";exp="";}
+  else{
+   scope=`<select data-k="${m.k}" data-f="scope">${m.scopes.filter(s=>s!=="team"||S.role==="leader").map(s=>`<option value="${s}" ${v[1]===s?"selected":""}>${LABEL[s]}</option>`).join("")}</select>`;
+   const canEditOthers=v[1]!=="self";
+   edit=`<input type="checkbox" data-k="${m.k}" data-f="edit" ${v[2]&&canEditOthers?"checked":""} ${canEditOthers?"":"disabled"} aria-label="${m.name}改他人">`;
+   exp=`<input type="checkbox" data-k="${m.k}" data-f="exp" ${v[3]?"checked":""} aria-label="${m.name}导出">`;
+  }
+  tr.innerHTML=`<td class="mod">${m.name}${m.sub?`<small>${m.sub}</small>`:""}</td>
+   <td class="c"><input type="checkbox" data-k="${m.k}" data-f="on" ${v[0]?"checked":""} aria-label="${m.name}开通"></td>
+   <td class="s">${scope}</td><td class="c">${edit}</td><td class="c">${exp}</td>`;
+  tb.appendChild(tr);
+ });
+ if(anyPicked){
+  const tr=document.createElement("tr");tr.className="picker";
+  tr.innerHTML=`<td colspan="5"><div class="chips">${MEMBERS.filter(n=>n!==S.me).map(n=>`<span class="chip ${S.picked.includes(n)?"on":""}" data-n="${n}">${n}</span>`).join("")}</div></td>`;
+  tb.appendChild(tr);
+ }
+ $("#pCost").checked=!!S.cost;$("#pProfit").checked=!!S.profit;
+ dirty();
+}
+document.addEventListener("change",e=>{
+ const t=e.target,k=t.dataset.k,f=t.dataset.f;
+ if(t.id==="pCost"){S.cost=+t.checked;return dirty();}
+ if(t.id==="pProfit"){S.profit=+t.checked;return dirty();}
+ if(!k)return;const v=S.m[k];
+ if(f==="on")v[0]=+t.checked;
+ if(f==="scope"){v[1]=t.value;if(t.value==="self")v[2]=0;}
+ if(f==="edit")v[2]=+t.checked;
+ if(f==="exp")v[3]=+t.checked;
+ render();
+});
+document.addEventListener("click",e=>{
+ const c=e.target.closest(".chip");
+ if(c){const n=c.dataset.n;S.picked=S.picked.includes(n)?S.picked.filter(x=>x!==n):[...S.picked,n];render();return;}
+ const rb=e.target.closest("#role button");
+ if(rb&&rb.dataset.r!==S.role){
+  S.role=rb.dataset.r;const flash=[];
+  MODULES.forEach(m=>{if(!m.scopes)return;const v=S.m[m.k];
+   if(S.role==="leader"&&v[1]==="self"){v[1]="team";v[2]=1;flash.push(m.k);}
+   if(S.role==="member"&&v[1]==="team"){v[1]="self";v[2]=0;flash.push(m.k);}
+  });
+  render(flash);return;
+ }
+ const db=e.target.closest(".demo button");
+ if(db){document.querySelectorAll(".demo button").forEach(b=>b.classList.toggle("on",b===db));load(db.dataset.p);return;}
+ if(e.target.id==="save"){base=JSON.stringify(S);dirty();const t=$("#toast");t.textContent="已保存";t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1400);}
+});
+load("jack");
+</script>
+</body>
+</html>

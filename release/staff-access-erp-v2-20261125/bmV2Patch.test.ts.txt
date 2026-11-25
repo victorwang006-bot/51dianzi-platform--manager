@@ -1,0 +1,118 @@
+// @vitest-environment jsdom
+import { describe, it, expect, vi, afterEach } from "vitest";
+import React, { act } from "react";
+import { jsx, jsxs, Fragment } from "react/jsx-runtime";
+import { createRoot } from "react-dom/client";
+import fs from "node:fs";
+(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+let mounted: any[] = [];
+function render(el: any) { const host = document.createElement("div"); document.body.appendChild(host); const root = createRoot(host); act(() => root.render(el)); mounted.push([root, host]); return { rerender: (e: any) => act(() => root.render(e)) }; }
+const $ = (l: string) => { const e = document.querySelector(`[aria-label="${l}"]`); if (!e) throw new Error("no " + l); return e as any; };
+const btn = (t: string) => { const e = [...document.querySelectorAll("button")].find(b => b.textContent === t); if (!e) throw new Error("no " + t); return e as any; };
+const click = (e: any) => act(() => { e.click(); });
+const change = (e: any, v: string) => act(() => { Object.getOwnPropertyDescriptor(e.constructor.prototype, "value")!.set!.call(e, v); e.dispatchEvent(new Event("change", { bubbles: true })); });
+afterEach(() => { for (const [r, h] of mounted) { try { act(() => r.unmount()); } catch {} h.remove(); } mounted = []; });
+const src = fs.readFileSync("/home/ubuntu/work/p1/staff-v2.js", "utf8");
+const s0 = src.indexOf("function __bmV2"); const s1 = src.indexOf("function __bmAccess", s0);
+const BM = new Function("pe", "n", "i", "Oe", src.slice(s0, s1) + "; return __bmV2;")(React, jsx, jsxs, Fragment);
+const acc = (cust: string, stock = "team") => ["customers", "demands", "channels", "stocks"].map((module, k) => ({ module, read: true, write: true, scope: module === "stocks" ? stock : module === "channels" ? "self" : cust, revision: 10 + k, explicit: true }));
+const org = (teamRole: any, cust = "self", stock = "team") => ({ teams: [{ id: 1, name: "智捷团队1", status: "active", revision: 3 }], members: [{ userId: 7, teamId: 1, teamRole, revision: 50, moduleAccess: acc(cust, stock) }] });
+const ALL = ["customers.manage", "inquiry.receive", "procurement.demands", "inventory.inbound", "sales.business_orders", "customers.manage_all", "enterprise.members.manage"];
+function setup(o: any, extra: any = {}) {
+  const ref: any = { current: null }; const ST = vi.fn(async () => ({ saved: true, member: {} })); const SA = vi.fn(async () => {}); const TK = vi.fn(); const OD = vi.fn();
+  const props = { organization: o, frontUserId: 7, canEditBiz: true, onSaveTeam: ST, onSaveAccess: SA, draft: { erpPermissionKeys: ["customers.manage", "sales.business_orders", "procurement.demands"], adminPermissions: ["officialInventory.read"] }, toggleKey: TK, canErp: true, busy: false, grantable: new Set(ALL), member: { isOwner: false }, actorIsOwner: true, readonlyNote: null, apiRef: ref, onDirty: OD, ...extra };
+  render(jsx(BM, props)); return { ref, ST, SA, TK, OD };
+}
+describe("新版业务ERP页签", () => {
+  it("组员：本人范围，无本团队选项；无改动不脏", () => {
+    const { ref } = setup(org("member"));
+    expect([...$("客户数据范围").options].map((o: any) => o.value)).toEqual(["self"]);
+    expect(ref.current.dirty).toBe(false);
+    expect(btn("组员").getAttribute("aria-pressed")).toBe("true");
+  });
+  it("组员升为组长：客户与库存自动切本团队，保存先改团队再改范围", async () => {
+    const { ref, ST, SA } = setup(org("member", "self", "self"));
+    click(btn("组长"));
+    expect($("客户数据范围").value).toBe("team");
+    expect($("库存数据范围").value).toBe("team");
+    expect(ref.current.dirty).toBe(true);
+    await act(async () => { await ref.current.save(); });
+    expect(ST).toHaveBeenCalledWith({ teamId: 1, teamRole: "leader", revision: 50 });
+    expect((SA.mock.calls[0] as any)[0].modules).toEqual([
+      { module: "customers", read: true, write: true, scope: "team", expectedRevision: 10 },
+      { module: "demands", read: true, write: true, scope: "team", expectedRevision: 11 },
+      { module: "channels", read: true, write: true, scope: "self", expectedRevision: 12 },
+      { module: "stocks", read: true, write: true, scope: "team", expectedRevision: 13 },
+    ]);
+    expect(ST.mock.invocationCallOrder[0]).toBeLessThan(SA.mock.invocationCallOrder[0]);
+  });
+  it("组长降为组员：本团队回到本人；全公司保留不收紧", async () => {
+    const { ref, SA } = setup(org("leader", "enterprise"), { draft: { erpPermissionKeys: ["customers.manage", "customers.manage_all"], adminPermissions: [] } });
+    click(btn("组员"));
+    expect($("客户数据范围").value).toBe("enterprise");
+    expect($("库存数据范围").value).toBe("self");
+    await act(async () => { await ref.current.save(); });
+    const m = (SA.mock.calls[0] as any)[0].modules;
+    expect(m[0].scope).toBe("enterprise"); expect(m[3].scope).toBe("self");
+  });
+  it("只改团队身份不改范围时不调用范围接口", async () => {
+    const { ref, ST, SA } = setup(org("leader", "enterprise", "self"), { draft: { erpPermissionKeys: ["customers.manage_all"], adminPermissions: [] } });
+    click(btn("组员"));
+    await act(async () => { await ref.current.save(); });
+    expect(ST).toHaveBeenCalledTimes(1); expect(SA).not.toHaveBeenCalled();
+  });
+  it("开通勾选走 ERP 草稿：采购同时开关两项", () => {
+    const { TK } = setup(org("member"));
+    expect($("采购开通").checked).toBe(true);
+    click($("采购开通"));
+    expect(TK.mock.calls.map((c: any) => c[0])).toEqual(["procurement.demands"]);
+    TK.mockClear(); click($("询价接待开通"));
+    expect(TK.mock.calls.map((c: any) => c[0])).toEqual(["inquiry.receive"]);
+  });
+  it("销售订单范围跟随客户，采购跟随岗位，商城物料固定全公司", () => {
+    setup(org("leader", "team"));
+    const t = document.body.textContent!;
+    expect(t).toContain("销售订单本团队"); expect(t).toContain("采购需求报价 · 采购入库本团队"); expect(t).toContain("商城物料全公司");
+    expect(t).not.toContain("ERP 数据范围"); expect(t).not.toContain("我的库存"); expect(t).not.toContain("发布库存");
+  });
+  it("关闭库存列表：两项库存模块读写关闭", async () => {
+    const { ref, SA } = setup(org("member", "self", "self"));
+    click($("库存列表开通"));
+    await act(async () => { await ref.current.save(); });
+    const m = (SA.mock.calls[0] as any)[0].modules;
+    expect(m[2]).toMatchObject({ module: "channels", read: false, write: false }); expect(m[3]).toMatchObject({ module: "stocks", read: false, write: false });
+  });
+  it("无权编辑时全部禁用并显示只读原因；所有者只读", () => {
+    setup(org("leader"), { canEditBiz: false, canErp: false, readonlyNote: "不能修改自己的权限。" });
+    expect($("客户数据范围").disabled).toBe(true); expect($("客户开通").disabled).toBe(true);
+    expect(document.body.textContent).toContain("不能修改自己的权限。");
+    for (const [r, h] of mounted) { act(() => r.unmount()); h.remove(); } mounted = [];
+    const { ref } = setup(org("leader"), { member: { isOwner: true } });
+    expect(ref.current.dirty).toBe(false); expect(document.querySelector('[aria-label="客户数据范围"]')).toBeNull();
+  });
+  it("保存失败显示原因并抛出", async () => {
+    void 0;
+  });
+  it("数据刷新时保留未保存草稿；切换到其他员工时重置", () => {
+    const ref: any = { current: null };
+    const base = { organization: org("member", "self", "self"), frontUserId: 7, canEditBiz: true, onSaveTeam: vi.fn(), onSaveAccess: vi.fn(), draft: { erpPermissionKeys: [], adminPermissions: [] }, toggleKey: vi.fn(), canErp: true, busy: false, grantable: new Set(ALL), member: { isOwner: false }, actorIsOwner: true, readonlyNote: null, apiRef: ref, onDirty: vi.fn() };
+    const r = render(jsx(BM, base));
+    click(btn("组长"));
+    const o2 = org("member", "self", "self"); o2.members[0].revision = 51;
+    r.rerender(jsx(BM, { ...base, organization: o2 }));
+    expect($("客户数据范围").value).toBe("team"); expect(ref.current.dirty).toBe(true);
+    const o3 = { ...org("member", "self", "self") }; o3.members = [{ ...o3.members[0], userId: 8 }];
+    r.rerender(jsx(BM, { ...base, organization: o3, frontUserId: 8 }));
+    expect($("客户数据范围").value).toBe("self"); expect(ref.current.dirty).toBe(false);
+  });
+  it("保存失败显示原因并抛出（范围接口）", async () => {
+    const { ref } = setup(org("member", "self", "self"), {});
+    const SA2 = vi.fn(async () => { throw new Error("模块权限版本已变化"); });
+    for (const [r, h] of mounted) { act(() => r.unmount()); h.remove(); } mounted = [];
+    const s2 = setup(org("member", "self", "self"), { onSaveAccess: SA2 });
+    click(btn("组长"));
+    await act(async () => { await expect(s2.ref.current.save()).rejects.toThrow("模块权限版本已变化"); });
+    expect(document.querySelector('[role="alert"]')!.textContent).toBe("模块权限版本已变化");
+    void ref;
+  });
+});
