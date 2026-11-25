@@ -829,6 +829,49 @@ export default function Staff() {
     enterpriseAccess,
     businessOrganization
   );
+  const saveBusinessAccess = async (input: {
+    userId: number;
+    modules: {
+      module: "customers" | "demands" | "channels" | "stocks";
+      read: boolean;
+      write: boolean;
+      scope: "self" | "team" | "enterprise";
+      expectedRevision: number;
+    }[];
+  }) => {
+    const target = selectedRow
+      ? staffRows.find(candidate => candidate.key === selectedRow.key)
+      : null;
+    const guard = staffBusinessTeamGuard(
+      target,
+      enterpriseAccess,
+      businessOrganization
+    );
+    if (!guard.allowed) throw new Error(guard.reason);
+    if (!scopeClient || !target?.binding || !businessOrganization)
+      throw new Error("业务上下文不可用，请刷新后重试");
+    if (target.binding.frontUserId !== input.userId)
+      throw new Error("业务成员与当前选择不一致，请重新打开");
+    const result = (await scopeClient.organization.updateMemberAccess.mutate({
+      userId: input.userId,
+      modules: input.modules,
+      requestId: requestId("staff_business_access"),
+    })) as { success?: boolean } | null;
+    if (!result || result.success !== true)
+      throw new Error("业务权限接口未返回可信成功结果，请刷新核验，勿重复提交");
+    const latest = readStaffBusinessOrganization(
+      await scopeClient.organization.overview.query(undefined),
+      contextValidation.context
+    );
+    queryClient.setQueryData(
+      [
+        ...staffQueryKey(accountId, merchantId, "organization-teams"),
+        contextValidation.context?.frontendUserId ?? null,
+        contextValidation.context?.enterpriseId ?? null,
+      ],
+      latest
+    );
+  };
   const saveBusinessTeam = async (
     draft: StaffBusinessTeamDraft
   ): Promise<StaffBusinessTeamSaveResult> => {
@@ -1408,6 +1451,7 @@ export default function Staff() {
               void businessTeamsQuery.refetch();
             },
             onSave: saveBusinessTeam,
+            onSaveAccess: saveBusinessAccess,
           }}
           onOpenChange={open => {
             if (!open && !saving) setSelectedRow(null);

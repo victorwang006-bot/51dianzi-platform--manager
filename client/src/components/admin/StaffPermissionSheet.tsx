@@ -1,3 +1,4 @@
+import BusinessModuleAccessTable from "./BusinessModuleAccessTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -900,6 +901,17 @@ export default function StaffPermissionSheet({
                   )}
                 </section>
 
+                <BusinessModuleAccessTable
+                  organization={businessTeam?.overview}
+                  frontUserId={businessTeam?.frontUserId ?? null}
+                  canEdit={
+                    Boolean(businessTeam?.canEdit) &&
+                    Boolean(businessTeam?.onSaveAccess)
+                  }
+                  onSave={async input => {
+                    await businessTeam?.onSaveAccess?.(input);
+                  }}
+                />
                 <section
                   className="space-y-2 rounded-md border p-3"
                   aria-labelledby="staff-scope-title"

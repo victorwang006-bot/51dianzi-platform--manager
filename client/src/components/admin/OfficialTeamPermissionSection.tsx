@@ -53,6 +53,16 @@ export type StaffBusinessTeamEditor = {
   onSave: (
     draft: StaffBusinessTeamDraft
   ) => Promise<StaffBusinessTeamSaveResult>;
+  onSaveAccess?: (input: {
+    userId: number;
+    modules: {
+      module: "customers" | "demands" | "channels" | "stocks";
+      read: boolean;
+      write: boolean;
+      scope: "self" | "team" | "enterprise";
+      expectedRevision: number;
+    }[];
+  }) => Promise<void>;
 };
 function sameTeam(
   a: StaffBusinessTeamDraft | null,

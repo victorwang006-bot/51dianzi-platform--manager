@@ -1,0 +1,72 @@
+// @vitest-environment jsdom
+import { describe, it, expect, vi } from "vitest";
+import React from "react";
+import { jsx, jsxs, Fragment } from "react/jsx-runtime";
+import { createRoot } from "react-dom/client";
+import { act } from "react";
+(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+let mounted: any[] = [];
+const q = (t: string) => document.body.textContent;
+function render(el: any) { const host = document.createElement("div"); document.body.appendChild(host); const root = createRoot(host); act(() => root.render(el)); mounted.push([root, host]); return { container: host, unmount: () => { act(() => root.unmount()); host.remove(); } }; }
+const screen = {
+  getByLabelText: (l: string) => { const e = document.querySelector(`[aria-label="${l}"]`); if (!e) throw new Error("no " + l); return e as any; },
+  getByText: (t: string) => { const e = [...document.querySelectorAll("button")].find(b => b.textContent === t); if (!e) throw new Error("no " + t); return e as any; },
+  findByRole: async (r: string) => { for (let i = 0; i < 20; i++) { const e = document.querySelector(`[role="${r}"]`); if (e) return e; await act(async () => { await new Promise(r => setTimeout(r, 10)); }); } throw new Error("no role"); },
+};
+const fireEvent = {
+  click: (e: any) => act(() => { e.click(); }),
+  change: (e: any, o: any) => act(() => { const set = Object.getOwnPropertyDescriptor(e.constructor.prototype, "value")!.set!; set.call(e, o.target.value); e.dispatchEvent(new Event("change", { bubbles: true })); }),
+};
+const waitFor = async (f: () => void) => { for (let i = 0; i < 30; i++) { try { f(); return; } catch { await act(async () => { await new Promise(r => setTimeout(r, 10)); }); } } f(); };
+import { afterEach } from "vitest";
+afterEach(() => { for (const [r, h] of mounted) { try { act(() => r.unmount()); } catch {} h.remove(); } mounted = []; });
+import fs from "node:fs";
+const src = fs.readFileSync("/home/ubuntu/work/p1/staff-new.js", "utf8");
+const start = src.indexOf("function __bmAccess");
+const end = src.indexOf("function Vs(e){return e===\"password\"", start);
+const body = src.slice(start, end);
+const H = (p: any) => React.createElement("button", { disabled: p.disabled, onClick: p.onClick }, p.children);
+const BM = new Function("pe", "n", "i", "Oe", "H", body + "; return __bmAccess;")(React, jsx, jsxs, Fragment, H);
+const access = (scope: any) => ["customers", "demands", "channels", "stocks"].map((module, k) => ({ module, read: true, write: module !== "stocks", scope: module === "stocks" ? "self" : scope, revision: 3 + k, explicit: true }));
+const org = (teamRole: any) => ({ members: [{ userId: 7, teamId: 2, teamRole, moduleAccess: access("self") }] });
+describe("第1期补丁：业务数据权限表", () => {
+  it("组长可选本团队，保存提交完整四模块与版本", async () => {
+    const onSave = vi.fn(async () => {});
+    render(jsx(BM, { organization: org("leader"), frontUserId: 7, canEdit: true, onSave }));
+    const sel = screen.getByLabelText("客户列表（含跟进记录）数据范围") as HTMLSelectElement;
+    expect([...sel.options].map(o => o.textContent)).toEqual(["本人", "本团队", "全公司"]);
+    fireEvent.change(sel, { target: { value: "team" } });
+    fireEvent.click(screen.getByText("保存"));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    const arg = (onSave.mock.calls[0] as any)[0];
+    expect(arg.userId).toBe(7);
+    expect(arg.modules).toEqual([
+      { module: "customers", read: true, write: true, scope: "team", expectedRevision: 3 },
+      { module: "demands", read: true, write: true, scope: "self", expectedRevision: 4 },
+      { module: "channels", read: true, write: true, scope: "self", expectedRevision: 5 },
+      { module: "stocks", read: true, write: false, scope: "self", expectedRevision: 6 },
+    ]);
+  });
+  it("业务员不可选本团队；取消查看同时取消编辑；库存无全公司", () => {
+    render(jsx(BM, { organization: org("member"), frontUserId: 7, canEdit: true, onSave: vi.fn() }));
+    const sel = screen.getByLabelText("客户需求数据范围") as HTMLSelectElement;
+    expect([...sel.options].map(o => o.value)).toEqual(["self", "enterprise"]);
+    const st = screen.getByLabelText("库存列表数据范围") as HTMLSelectElement;
+    expect([...st.options].map(o => o.value)).toEqual(["self", "team"]);
+    fireEvent.click(screen.getByLabelText("客户需求查看"));
+    expect((screen.getByLabelText("客户需求编辑") as HTMLInputElement).checked).toBe(false);
+  });
+  it("无编辑权时全部禁用，未改动时保存禁用，保存失败显示原因", async () => {
+    const { unmount } = render(jsx(BM, { organization: org("leader"), frontUserId: 7, canEdit: false, onSave: vi.fn() }));
+    expect((screen.getByLabelText("客户列表（含跟进记录）查看") as HTMLInputElement).disabled).toBe(true);
+    unmount();
+    render(jsx(BM, { organization: org("leader"), frontUserId: 7, canEdit: true, onSave: async () => { throw new Error("版本已变化"); } }));
+    fireEvent.click(screen.getByLabelText("客户需求编辑"));
+    fireEvent.click(screen.getByText("保存"));
+    expect(await screen.findByRole("alert")).toHaveProperty("textContent", "版本已变化");
+  });
+  it("成员不在组织或缺模块数据时不渲染", () => {
+    const { container } = render(jsx(BM, { organization: { members: [{ userId: 7, teamId: null, teamRole: null }] }, frontUserId: 7, canEdit: true, onSave: vi.fn() }));
+    expect(container.innerHTML).toBe("");
+  });
+});
