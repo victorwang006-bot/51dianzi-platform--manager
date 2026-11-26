@@ -1,0 +1,17 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const source=fs.readFileSync(__dirname+'/component.runtime.js','utf8');
+const c={};vm.createContext(c);vm.runInContext(source.slice(source.indexOf('function __i2_scaled'),source.indexOf('function __i2_Dialog')),c);
+assert.equal(c.__i2_fmt('7680',0),'7,680');
+assert.equal(c.__i2_fmt('21',4),'21.0000');
+assert.equal(c.__i2_fmt('9999999999999.99'),'9,999,999,999,999.99');
+assert.equal(c.__i2_scaled('0.123456',6),123456n);
+assert.equal(c.__i2_scaled('0.1234567',6),null);
+const multi=c.__i2_figures([{qty:'100',unitCost:'12.34'},{qty:'30',unitCost:'0.38'}],'CNY_TAX_INCLUDED','13',[{amount:'10.25',payee:'supplier'},{amount:'20.50',payee:'third_party'}]);
+assert.equal(multi.total,127615n);assert.equal(multi.payable,125565n);
+const demo=c.__i2_figures([{qty:'7680',unitCost:'21'}],'CNY_TAX_INCLUDED','13',[{amount:'180',payee:'third_party'},{amount:'25',payee:'third_party'}]);
+assert.equal(demo.total,16148500n);assert.equal(demo.unit,21026693n);
+const excl=c.__i2_figures([{qty:'100',unitCost:'1.01'}],'CNY_TAX_EXCLUDED','13',[]);assert.equal(excl.goods,11413n);
+assert.match(c.__i2_error({message:'403',data:{code:'FORBIDDEN'}}),/权限/);
+assert.match(c.__i2_error({message:'NetworkError'}),/网络/);
+assert.match(c.__i2_error({message:JSON.stringify([{path:['costs',0,'amount'],message:'Invalid'}])}),/采购费用.*第1行.*金额/);
+console.log('PASS: BigInt precision / large amounts / tax / fee payee / Chinese errors');
