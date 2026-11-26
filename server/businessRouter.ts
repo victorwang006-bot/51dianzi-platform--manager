@@ -1,3 +1,4 @@
+import { salesReviseSchema } from "./salesOrderReviseContract";
 import { mallInventoryListSchema, mallInventoryMutationSchema, mallInventoryRequestIdSchema, MALL_INVENTORY_METHOD_IDS, mallInventoryMethodRequirement } from "../shared/mallInventory";
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
@@ -776,6 +777,7 @@ const COMPANY_STOCK_BUSINESS_INPUT_SCHEMAS: Record<string, z.ZodTypeAny> = {
   "crmSalesOrder.allocateCompanyStock": salesOrderCompanyStockAllocateSchema,
   "crmSalesOrder.shipCompanyStock": salesOrderCompanyStockShipSchema,
   "crmSalesOrder.updateSalesExpenses": salesOrderExpensesSchema,
+  "crmSalesOrder.revise": salesReviseSchema,
   "crmSalesOrder.orderDraftGet": salesOrderDraftGetSchema,
   "crmSalesOrder.orderDraftSave": salesOrderDraftSaveSchema,
   "crmSalesOrder.orderDraftDelete": salesOrderDraftDeleteSchema,
@@ -1000,6 +1002,9 @@ const importInventoryBusinessRouter = router({
 });
 
 const inboundBusinessRouter = router({
+  revise: businessMutation("inbound.revise", "inventory"),
+  costs: businessQuery("inbound.costs", "inventory"),
+  history: businessQuery("inbound.history", "inventory"),
   newInformationFacts: businessQuery("inbound.newInformationFacts", "inventory"),
   procurementBuyers: businessQuery("inbound.procurementBuyers", "inventory"),
   companyStockReconciliationCandidates: businessQuery("inbound.companyStockReconciliationCandidates", "inventory"),
@@ -1076,6 +1081,7 @@ const customerDemandBusinessRouter = router({
 });
 
 const crmSalesOrderBusinessRouter = router({
+  revise: businessMutation("crmSalesOrder.revise", "orders"),
   newInformationFacts: businessQuery("crmSalesOrder.newInformationFacts", "orders"),
   orderDraftGet: publicProcedure.input(salesOrderDraftGetSchema).output(salesOrderDraftResultSchema).query(async ({ ctx, input }) =>
     salesOrderDraftResultSchema.parse(await forwardBusinessMethod(ctx, input, { method: "crmSalesOrder.orderDraftGet", module: "orders", mode: "read" }))),
