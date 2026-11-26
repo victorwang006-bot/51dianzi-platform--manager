@@ -1,3 +1,4 @@
+import { BusinessSalesOrdersPage } from './BusinessSalesOrdersPage';
 import {
   usePageMemory,
   useRememberedState,
@@ -193,7 +194,7 @@ export default function CrmSalesOrders() {
   };
   return (
     <PlatformLayout>
-      <SalesOrdersContent key={scope.identityKey} ready={ready} state={state} />
+      <BusinessSalesOrdersPage key={scope.identityKey} ready={ready} state={state} />
     </PlatformLayout>
   );
 }
@@ -234,7 +235,7 @@ function CustomerOrdersSession(props: CustomerSalesOrdersProps) {
   };
   return <SalesOrdersContent ready state={state} embedded={props} />;
 }
-function SalesOrdersContent({
+export function SalesOrdersContent({
   ready,
   state,
   embedded,
