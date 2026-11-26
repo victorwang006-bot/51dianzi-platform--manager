@@ -257,10 +257,11 @@ vi.mock("../components/customers/ConfirmDialog", () => ({
       )
     ),
 }));
-import CrmSalesOrders, {
+import {
   CustomerSalesOrders,
   type CustomerSalesOrdersProps,
 } from "./CrmSalesOrders";
+import CrmSalesOrders from "./legacySalesOrders-test-helper";
 import { toast } from "sonner";
 import {
   loadSalesOrderDraft,
@@ -1213,7 +1214,7 @@ describe("customer-embedded sales orders (real component, mocked transport only)
   });
 });
 
-describe("standalone durable order integration (real outer page and forms)", () => {
+describe("legacy retained sales-order model durable integration (real forms, not v2 workbench)", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
   it.each(["tombstone", "newer draft"])(
