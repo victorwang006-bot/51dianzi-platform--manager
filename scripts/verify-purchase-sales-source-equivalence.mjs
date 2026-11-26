@@ -66,3 +66,5 @@ const mainChinese = metrics((await Promise.all(mainTexts.map((t, i) => esbuild.t
 const result = { livePath, sourceCompiler: "esbuild transform, ES2020, classic JSX（类型擦除后）", reports, listChecks, beforeMergeSourceDrift: { originalChinese: originalChinese.length, mainChinese: mainChinese.length, onlineOriginalOnly: originalChinese.filter(x => !mainChinese.includes(x)), coverage: "main 的全部业务前端 TS/TSX（不含测试），仅文案存在性检查，不代表所有行为一致" }, limitations: ["集合核对不证明所有交互与数据库语义等价。", "按钮集合含封装控件与动态标签片段；样式从 inline 移至正式 CSS 导入。", "全工作台其他叶子模块的历史补丁不在本任务迁移范围。"] };
 fs.mkdirSync(path.dirname(output), {recursive:true}); fs.writeFileSync(output, JSON.stringify(result, null, 2) + "\n");
 console.log(JSON.stringify({ reports: reports.map(r => ({name:r.name, counts:r.counts, differences:r.differences, css:r.css})), listChecks, output },null,2));
+const equalityPassed = reports.every(r => r.css.normalizedEqual && Object.values(r.differences).every(d => d.sourceOnly.length === 0 && d.liveOnly.length === 0)) && Object.values(listChecks).every(Boolean);
+if (!equalityPassed) process.exitCode = 1;
